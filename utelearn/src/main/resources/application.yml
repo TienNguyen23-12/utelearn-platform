@@ -1,0 +1,118 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+  # Apache Tomcat 11
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000ms
+
+spring:
+  application:
+    name: utelearn
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:utelearn_db}?reWriteBatchedInserts=true&stringtype=unspecified
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: UTELearnHikariPool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
+      auto-commit: true
+
+  # Configuration to load initial DB from schema.sql (if needed for automatic table & seed data)
+  sql:
+    init:
+      mode: never # Change to 'always' on the first run if you want to automatically run schema.sql
+      schema-locations: classpath:schema.sql
+      continue-on-error: true
+
+  jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+        default_schema: public
+        jdbc:
+          batch_size: 30
+          order_inserts: true
+          order_updates: true
+          lob:
+            non_contextual_creation: true
+          time_zone: Asia/Ho_Chi_Minh
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  thymeleaf:
+    cache: false
+    mode: HTML
+    encoding: UTF-8
+    suffix: .html
+    prefix: classpath:/templates/
+
+  # Static resources handling
+  web:
+    resources:
+      chain:
+        cache: false
+      static-locations:
+        - classpath:/static/
+        - classpath:/templates/
+
+utelearn:
+  # JWT
+  jwt:
+    secret: ${JWT_SECRET:uTeLeArn_sUpEr_sEcReT_kEy_fOr_jWt_tOkEn_gEnErAtIoN_2026_mIn_64_bYtEs_lOnG!}
+    access-token-expiration-ms: 86400000 # 24 hours
+    refresh-token-expiration-ms: 604800000 # 7 days
+    cookie-name: UTELearn_Token
+    header-prefix: "Bearer "
+
+  # Cloudinary
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:utelearn}
+    api-key: ${CLOUDINARY_API_KEY:your_cloudinary_api_key}
+    api-secret: ${CLOUDINARY_API_SECRET:your_cloudinary_api_secret}
+    folder-base: utelearn_assets
+
+  # Moderation
+  moderation:
+    max-daily-minutes: 480
+    default-review-minutes: 60
+    sla-timeout-hours: 24
+
+  # WebSocket
+  websocket:
+    endpoint: /ws
+    app-destination-prefix: /app
+    topic-destination-prefix: /topic
+    queue-destination-prefix: /queue
+
+  # Data Seeder
+  seeder:
+    enabled: true
+    seed-sample-users: true
+    default-password: 123456
+
