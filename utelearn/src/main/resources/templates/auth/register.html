@@ -30,6 +30,7 @@
             color: #1e293b;
         }
         .auth-card {
+            position: relative;
             width: 100%;
             max-width: 440px;
             background: #ffffff;
@@ -213,17 +214,45 @@
             text-decoration: underline;
             color: #1d4ed8;
         }
+        .btn-back-home {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #2563eb;
+            color: #ffffff;
+            border-radius: 50%;
+            text-decoration: none;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        .btn-back-home:hover {
+            background: #1d4ed8;
+            color: #ffffff;
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4);
+        }
     </style>
 </head>
 <body>
 
 <div class="auth-card">
+    <!-- Nút quay lại trang chủ -->
+    <a href="/" class="btn-back-home" title="Về trang chủ">
+        <i class="bi bi-arrow-left"></i>
+    </a>
     <div class="brand-header">
         <div class="brand-logo-icon">
             <i class="bi bi-person-plus-fill"></i>
         </div>
         <div class="brand-title">Đăng ký tài khoản <span>UTELearn</span></div>
-        <p class="brand-subtitle">Trở thành thành viên cộng đồng học tập số HCMUTE</p>
+        <p class="brand-subtitle">Trở thành thành viên cộng đồng học tập số HCM-UTE</p>
     </div>
 
     <div class="auth-card-body">
@@ -280,7 +309,7 @@
 
         <!-- ĐƯỜNG PHÂN CÁCH -->
         <div class="divider">
-            <span>Hoặc đăng ký nhanh bằng</span>
+            <span>Hoặc</span>
         </div>
 
         <!-- NÚT GOOGLE OAUTH (Ở DƯỚI) -->
@@ -291,7 +320,7 @@
                 <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
             </svg>
-            <span>Đăng ký nhanh với tài khoản Google</span>
+            <span>Tiếp tục với tài khoản Google</span>
         </a>
 
         <!-- LIÊN KẾT ĐĂNG NHẬP -->
