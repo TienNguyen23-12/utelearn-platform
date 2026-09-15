@@ -146,4 +146,73 @@ public class AuthController {
         authService.logout(response);
         return "redirect:/login?logout=true";
     }
+
+    @GetMapping("/forgot-password")
+    public String showForgotPasswordPage(Model model) {
+        if (!model.containsAttribute("forgotPasswordForm")) {
+            model.addAttribute("forgotPasswordForm", new vn.edu.ute.utelearn.dto.ForgotPasswordRequestDTO());
+        }
+        return "auth/forgot-password";
+    }
+
+    @PostMapping("/forgot-password")
+    public String processForgotPassword(
+        @Valid @ModelAttribute("forgotPasswordForm") vn.edu.ute.utelearn.dto.ForgotPasswordRequestDTO requestDTO,
+        BindingResult bindingResult,
+        Model model,
+        RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            return "auth/forgot-password";
+        }
+        try {
+            authService.processForgotPassword(requestDTO.getEmail());
+            redirectAttributes.addFlashAttribute("successMessage", "Link đặt lại mật khẩu đã được gửi đến email của bạn.");
+            return "redirect:/forgot-password";
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/forgot-password";
+        } catch (Exception ex) {
+            log.error("Lỗi khi gửi email đặt lại mật khẩu: {}", ex.getMessage(), ex);
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi hệ thống! Vui lòng thử lại sau.");
+            return "auth/forgot-password";
+        }
+    }
+
+    @GetMapping("/reset-password")
+    public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
+        if (!model.containsAttribute("resetPasswordForm")) {
+            vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO form = new vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO();
+            form.setToken(token);
+            model.addAttribute("resetPasswordForm", form);
+        }
+        return "auth/reset-password";
+    }
+
+    @PostMapping("/reset-password")
+    public String processResetPassword(
+        @Valid @ModelAttribute("resetPasswordForm") vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO requestDTO,
+        BindingResult bindingResult,
+        Model model,
+        RedirectAttributes redirectAttributes
+    ) {
+        if (!requestDTO.isPasswordMatching()) {
+            bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không trùng khớp!");
+        }
+        if (bindingResult.hasErrors()) {
+            return "auth/reset-password";
+        }
+        try {
+            authService.processResetPassword(requestDTO.getToken(), requestDTO.getNewPassword());
+            redirectAttributes.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
+            return "redirect:/login";
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            return "auth/reset-password";
+        } catch (Exception ex) {
+            log.error("Lỗi khi đặt lại mật khẩu: {}", ex.getMessage(), ex);
+            model.addAttribute("errorMessage", "Đã xảy ra lỗi hệ thống! Vui lòng thử lại sau.");
+            return "auth/reset-password";
+        }
+    }
 }

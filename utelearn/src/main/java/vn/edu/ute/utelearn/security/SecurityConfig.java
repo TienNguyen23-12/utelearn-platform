@@ -47,6 +47,8 @@ public class SecurityConfig {
                     "/courses/**",
                     "/login",
                     "/register",
+                    "/forgot-password",
+                    "/reset-password",
                     "/auth/**",
                     "/api/auth/**",
                     "/oauth2/**",

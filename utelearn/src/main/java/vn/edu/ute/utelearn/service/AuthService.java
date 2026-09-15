@@ -13,4 +13,6 @@ public interface AuthService {
     AuthResponseDTO login(LoginRequestDTO requestDTO, HttpServletResponse response);
     void logout(HttpServletResponse response);
     Optional<User> getCurrentAuthenticatedUser();
+    void processForgotPassword(String email);
+    void processResetPassword(String token, String newPassword);
 }

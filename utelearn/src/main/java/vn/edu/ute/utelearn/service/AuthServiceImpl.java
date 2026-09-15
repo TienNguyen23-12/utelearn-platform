@@ -21,7 +21,11 @@ import vn.edu.ute.utelearn.entity.Permission;
 import vn.edu.ute.utelearn.entity.Role;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.security.JwtTokenProvider;
+import vn.edu.ute.utelearn.dao.PasswordResetTokenRepository;
+import vn.edu.ute.utelearn.entity.PasswordResetToken;
+import vn.edu.ute.utelearn.service.EmailService;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,6 +38,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final UtelearnProperties properties;
@@ -169,5 +175,57 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return userRepository.findByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public void processForgotPassword(String email) {
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nào với email này!"));
+
+        // Generate token
+        String token = java.util.UUID.randomUUID().toString();
+        
+        // Delete old token if exists
+        passwordResetTokenRepository.deleteByUser(user);
+
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+            .token(token)
+            .user(user)
+            .expiryDate(Instant.now().plus(15, java.time.temporal.ChronoUnit.MINUTES))
+            .build();
+            
+        passwordResetTokenRepository.save(resetToken);
+
+        // Send Email
+        String baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String resetUrl = baseUrl + "/reset-password?token=" + token;
+        
+        String emailContent = "<h3>Đặt lại mật khẩu UTELearn</h3>"
+            + "<p>Xin chào " + user.getFullName() + ",</p>"
+            + "<p>Bạn đã yêu cầu đặt lại mật khẩu. Vui lòng click vào link bên dưới để đặt lại mật khẩu của bạn. Link này sẽ hết hạn sau 15 phút.</p>"
+            + "<p><a href=\"" + resetUrl + "\">Nhấn vào đây để đặt lại mật khẩu</a></p>"
+            + "<br><p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>";
+
+        emailService.sendHtmlEmail(user.getEmail(), "Yêu cầu đặt lại mật khẩu UTELearn", emailContent);
+    }
+
+    @Override
+    @Transactional
+    public void processResetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+            .orElseThrow(() -> new IllegalArgumentException("Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!"));
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn!");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken);
+        log.info("Người dùng {} đã đặt lại mật khẩu thành công.", user.getUsername());
     }
 }
