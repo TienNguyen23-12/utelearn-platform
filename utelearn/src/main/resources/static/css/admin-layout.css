@@ -399,6 +399,16 @@ body {
     border: 1px solid #fecaca;
 }
 
+/* Desktop Sidebar Collapse */
+@media (min-width: 993px) {
+    body.sidebar-collapsed .app-sidebar {
+        transform: translateX(-100%);
+    }
+    body.sidebar-collapsed .app-content-wrapper {
+        margin-left: 0;
+    }
+}
+
 /* Responsive Collapse */
 @media (max-width: 992px) {
     .app-sidebar {

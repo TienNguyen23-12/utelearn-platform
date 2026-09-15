@@ -53,7 +53,7 @@ spring:
 
   sql:
     init:
-      mode: always # Tạm thời bật always để tạo bảng cho database mới
+      mode: never # Đã tự động tạo xong, đổi về never để không bị mất dữ liệu
       schema-locations: classpath:schema.sql
       continue-on-error: true
 

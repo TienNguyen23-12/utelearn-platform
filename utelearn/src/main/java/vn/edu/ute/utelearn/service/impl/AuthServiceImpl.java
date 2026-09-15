@@ -1,4 +1,6 @@
-package vn.edu.ute.utelearn.service;
+package vn.edu.ute.utelearn.service.impl;
+
+import vn.edu.ute.utelearn.service.AuthService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
