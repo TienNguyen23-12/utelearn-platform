@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<aside th:fragment="sidebar(activePage)" id="appSidebar" class="app-sidebar">
+    <!-- Brand Logo & Platform Title -->
+    <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
+        <a href="/dashboard" class="d-flex align-items-center gap-3 text-decoration-none">
+            <span class="brand-logo-badge">
+                <i class="bi bi-mortarboard-fill"></i>
+            </span>
+            <div>
+                <div class="brand-title">UTE<span class="text-primary">Learn</span></div>
+                <div class="brand-sub">Platform Management</div>
+            </div>
+        </a>
+        <button class="btn btn-sm btn-light d-lg-none text-muted" type="button" onclick="toggleSidebar()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <!-- User Profile Card in Sidebar (Clickable to Profile) -->
+    <a href="/profile" class="sidebar-user-card text-decoration-none d-block" th:if="${currentUser != null}" title="Xem & Chỉnh sửa hồ sơ cá nhân">
+        <div class="d-flex align-items-center gap-3">
+            <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden flex-shrink-0" style="width: 42px; height: 42px;">
+                <img th:src="${currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
+            </div>
+            <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder flex-shrink-0" th:text="${#strings.substring(currentUser.fullName, 0, 1)}">U</div>
+            <div class="overflow-hidden flex-grow-1">
+                <div class="fw-bold text-dark text-truncate" style="font-size: 13.5px;" th:text="${currentUser.fullName}">Quản trị viên</div>
+                <div class="text-muted text-truncate" style="font-size: 11px;" th:text="${currentUser.email}">admin@utelearn.edu.vn</div>
+                <div class="mt-1">
+                    <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill" style="font-size: 10px; font-weight: 700;" th:text="${r.code}">ADMIN</span>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <!-- Navigation Menu Items -->
+    <div class="sidebar-nav-container">
+        <!-- Section: TỔNG QUAN -->
+        <div class="sidebar-heading">TỔNG QUAN</div>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'dashboard'} ? ' active' : ''" href="/dashboard">
+                    <i class="bi bi-grid-1x2-fill text-primary"></i>
+                    <span>Bảng điều khiển</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'profile'} ? ' active' : ''" href="/profile">
+                    <i class="bi bi-person-circle text-success"></i>
+                    <span>Hồ sơ cá nhân</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section: QUẢN TRỊ HỆ THỐNG -->
+        <div class="sidebar-heading" th:if="${@rbac.hasRole('ADMIN')}">QUẢN TRỊ HỆ THỐNG</div>
+        <ul class="nav flex-column mb-2" th:if="${@rbac.hasRole('ADMIN')}">
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'users'} ? ' active' : ''" href="/admin/users">
+                    <i class="bi bi-people-fill text-info"></i>
+                    <span>Quản lý Tài khoản</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'roles'} ? ' active' : ''" href="/admin/roles">
+                    <i class="bi bi-shield-lock-fill text-warning"></i>
+                    <span>Vai trò & Phân quyền</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section: QUẢN LÝ ĐÀO TẠO & KHÓA HỌC -->
+        <div class="sidebar-heading">QUẢN LÝ ĐÀO TẠO</div>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'courses'} ? ' active' : ''" href="/instructor/courses">
+                    <i class="bi bi-journal-bookmark-fill text-success"></i>
+                    <span>Khóa học chuẩn</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'cohorts'} ? ' active' : ''" href="/instructor/cohorts">
+                    <i class="bi bi-calendar2-week-fill text-purple" style="color: #8b5cf6;"></i>
+                    <span>Đợt học (Cohorts)</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'assets'} ? ' active' : ''" href="/instructor/assets">
+                    <i class="bi bi-cloud-arrow-up-fill text-secondary"></i>
+                    <span>Kho tài nguyên số</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Section: KIỂM DUYỆT & THỰC HÀNH -->
+        <div class="sidebar-heading">KIỂM DUYỆT & THỰC HÀNH</div>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'moderation'} ? ' active' : ''" href="/moderator/queue">
+                    <i class="bi bi-check2-circle text-danger"></i>
+                    <span>Hàng đợi kiểm duyệt</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'oj'} ? ' active' : ''" href="/oj/problems">
+                    <i class="bi bi-code-slash text-teal" style="color: #0d9488;"></i>
+                    <span>Online Judge (OJ)</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Sidebar Bottom Footer -->
+    <div class="sidebar-footer mt-auto">
+        <a href="/logout" class="btn btn-soft-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Đăng xuất tài khoản</span>
+        </a>
+    </div>
+</aside>
+
+</body>
+</html>

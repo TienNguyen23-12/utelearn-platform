@@ -186,7 +186,7 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.update(
                 "INSERT INTO users (username, email, password_hash, full_name, phone_number, is_active) " +
                 "VALUES (?, ?, ?, ?, ?, true) " +
-                "ON CONFLICT (username) DO NOTHING",
+                "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash",
                 username, email, defaultHashedPassword, fullName, phone
             );
 

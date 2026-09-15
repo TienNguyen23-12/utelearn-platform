@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Vai trò & Phân quyền - UTELearn Admin</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Admin Master Layout CSS -->
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- Master Sidebar Fragment -->
+<aside th:replace="~{fragments/sidebar :: sidebar('roles')}"></aside>
+
+<!-- Master Content Wrapper -->
+<div class="app-content-wrapper">
+    <!-- Top Navbar Fragment -->
+    <header th:replace="~{fragments/navbar :: navbar('Quản trị Phân quyền')}"></header>
+
+    <!-- Main Content Area -->
+    <main class="app-main-content">
+        <!-- Page Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper bg-warning-subtle text-warning" style="width: 48px; height: 48px; font-size: 22px;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Vai trò & Phân quyền Động (Dynamic RBAC)</h3>
+                    <p class="text-muted small mb-0">Quản trị viên có thể thêm mới vai trò, chỉnh sửa và tick chọn các quyền hạn tương ứng được lưu trong hệ thống</p>
+                </div>
+            </div>
+            <a th:href="@{/admin/roles/create}" class="btn btn-gradient-primary">
+                <i class="bi bi-plus-circle-fill me-2"></i>Thêm vai trò mới
+            </a>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 d-flex align-items-center mb-4 p-3" role="alert" style="background-color: #ecfdf5; color: #065f46;">
+            <i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i>
+            <div th:text="${successMessage}">Thao tác thành công!</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 d-flex align-items-center mb-4 p-3" role="alert" style="background-color: #fef2f2; color: #991b1b;">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-danger"></i>
+            <div th:text="${errorMessage}">Đã xảy ra lỗi!</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Bảng danh sách vai trò -->
+        <div class="card card-custom p-4">
+            <div class="table-responsive rounded-3">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">STT</th>
+                            <th style="width: 170px;">Mã vai trò (Code)</th>
+                            <th style="width: 240px;">Tên hiển thị & Mô tả</th>
+                            <th>Danh sách Quyền hạn được gán (Permissions)</th>
+                            <th style="width: 110px;" class="text-center">Số quyền</th>
+                            <th style="width: 150px;" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="role, iter : ${roles}">
+                            <td class="text-muted fw-semibold" th:text="${iter.count}">1</td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fw-bold" style="font-size: 12px;" th:text="${role.code}">ADMIN</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${role.name}">Quản trị viên</div>
+                                <small class="text-muted mt-1 d-block" style="font-size: 12px;" th:text="${role.description}">Mô tả vai trò</small>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span th:each="perm : ${role.permissions}" class="badge-pill-soft badge-pill-primary" style="font-size: 11.5px;" th:title="${perm.name}">
+                                        <i class="bi bi-key-fill me-1"></i><span th:text="${perm.code}">COURSE_CREATE</span>
+                                    </span>
+                                    <span th:if="${#lists.isEmpty(role.permissions)}" class="text-muted fst-italic small">Chưa gán quyền hạn nào</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-bold" th:text="${#lists.size(role.permissions)}">0</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <a th:href="@{/admin/roles/{id}/edit(id=${role.id})}" class="btn btn-soft-primary btn-sm rounded-pill px-3" title="Chỉnh sửa vai trò & phân quyền">
+                                        <i class="bi bi-pencil-square me-1"></i>Sửa
+                                    </a>
+                                    <form th:if="${role.code != 'ADMIN'}" th:action="@{/admin/roles/{id}/delete(id=${role.id})}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này?');">
+                                        <button type="submit" class="btn btn-soft-danger btn-sm rounded-circle p-2" title="Xóa vai trò">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Bootstrap 5 Bundle JS & Layout Script -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+</body>
+</html>

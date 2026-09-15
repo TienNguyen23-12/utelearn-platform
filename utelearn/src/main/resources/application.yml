@@ -18,6 +18,25 @@ spring:
   application:
     name: utelearn
 
+  config:
+    import:
+      - "optional:classpath:application-secret.properties"
+      - "optional:file:.env[.properties]"
+      - "optional:file:../.env[.properties]"
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-google-client-id.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+            scope:
+              - email
+              - profile
+              - openid
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:utelearn_db}?reWriteBatchedInserts=true&stringtype=unspecified
     username: ${DB_USERNAME:postgres}
@@ -85,7 +104,7 @@ utelearn:
   # JWT
   jwt:
     secret: ${JWT_SECRET:uTeLeArn_sUpEr_sEcReT_kEy_fOr_jWt_tOkEn_gEnErAtIoN_2026_mIn_64_bYtEs_lOnG!}
-    access-token-expiration-ms: 86400000 # 24 hours
+    access-token-expiration-ms: 900000 # 15 minutes (15 * 60 * 1000 ms)
     refresh-token-expiration-ms: 604800000 # 7 days
     cookie-name: UTELearn_Token
     header-prefix: "Bearer "

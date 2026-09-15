@@ -21,7 +21,7 @@ public class UtelearnProperties {
     @Data
     public static class Jwt {
         private String secret;
-        private long accessTokenExpirationMs = 86400000L;
+        private long accessTokenExpirationMs = 900000L; // 15 minutes (15 * 60 * 1000 ms)
         private long refreshTokenExpirationMs = 604800000L;
         private String cookieName = "UTELearn_Token";
         private String headerPrefix = "Bearer ";

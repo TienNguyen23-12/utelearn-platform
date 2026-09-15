@@ -1,0 +1,65 @@
+[
+  {
+    "id": "dashboard",
+    "title": "Bảng điều khiển",
+    "icon": "bi-speedometer2",
+    "url": "/dashboard",
+    "badge": "Chính",
+    "badgeClass": "bg-primary",
+    "allowedRoles": ["ADMIN", "INSTRUCTOR", "MODERATOR", "TA", "STUDENT"]
+  },
+  {
+    "id": "courses",
+    "title": "Quản lý Khóa học & Lớp học",
+    "icon": "bi-journal-bookmark-fill",
+    "url": "/instructor/courses",
+    "badge": "Giảng dạy",
+    "badgeClass": "bg-info text-dark",
+    "allowedRoles": ["ADMIN", "INSTRUCTOR"]
+  },
+  {
+    "id": "assets",
+    "title": "Kho Tài nguyên Số Giảng viên",
+    "icon": "bi-cloud-arrow-up-fill",
+    "url": "/instructor/assets",
+    "badge": "Cloudinary",
+    "badgeClass": "bg-secondary",
+    "allowedRoles": ["ADMIN", "INSTRUCTOR"]
+  },
+  {
+    "id": "moderation",
+    "title": "Hàng đợi Kiểm duyệt (Fair Queue)",
+    "icon": "bi-check2-square",
+    "url": "/moderator/queue",
+    "badge": "Kiểm duyệt",
+    "badgeClass": "bg-warning text-dark",
+    "allowedRoles": ["ADMIN", "MODERATOR"]
+  },
+  {
+    "id": "oj",
+    "title": "Luyện code Online Judge",
+    "icon": "bi-code-slash",
+    "url": "/oj/problems",
+    "badge": "Chấm tự động",
+    "badgeClass": "bg-success",
+    "allowedRoles": ["ADMIN", "INSTRUCTOR", "STUDENT"]
+  },
+  {
+    "id": "roles",
+    "title": "Quản lý Vai trò & Phân quyền (Tick chọn)",
+    "icon": "bi-shield-check",
+    "url": "/admin/roles",
+    "badge": "Dynamic RBAC",
+    "badgeClass": "bg-warning text-dark",
+    "allowedRoles": ["ADMIN"]
+  },
+  {
+    "id": "users",
+    "title": "Quản trị Tài khoản Người dùng",
+    "icon": "bi-people-fill",
+    "url": "/admin/users",
+    "badge": "Admin Only",
+    "badgeClass": "bg-danger",
+    "allowedRoles": ["ADMIN"]
+  }
+]

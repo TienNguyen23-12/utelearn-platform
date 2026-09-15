@@ -1,1 +1,7 @@
 UTELearn_PostgreSQL_Schema.sql
+.idea/
+.vscode/
+*.log
+.env
+.env.*
+application-secret.properties
