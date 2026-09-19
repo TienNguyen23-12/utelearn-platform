@@ -16,6 +16,9 @@
 
     <!-- Admin Master Layout CSS -->
     <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
 
@@ -31,18 +34,7 @@
 
     <!-- Main Content Area -->
     <main class="app-main-content">
-        <!-- Thông báo thành công -->
-        <div th:if="${profileSuccessMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4 rounded-4 shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill fs-5 me-3 text-success"></i>
-            <div th:text="${profileSuccessMessage}">Cập nhật thông tin thành công!</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-
-        <div th:if="${passwordSuccessMessage}" class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4 rounded-4 shadow-sm" role="alert">
-            <i class="bi bi-shield-check fs-5 me-3 text-success"></i>
-            <div th:text="${passwordSuccessMessage}">Đổi mật khẩu thành công!</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <!-- Thông báo (đã chuyển sang dùng Toastify bên dưới) -->
 
         <!-- Header Card: User Info Overview -->
         <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
@@ -198,5 +190,54 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Admin Custom JS -->
 <script th:src="@{/js/admin-layout.js}"></script>
+
+<!-- Toastify JS & Alert Handler -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:inline="javascript">
+                function showToast(message, type) {
+        let iconHtml = '';
+        if (type === 'success') {
+            iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+        } else if (type === 'warning') {
+            iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+        } else {
+            iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+        }
+
+        let toast = Toastify({
+            text: `<div style="display: flex; align-items: center; gap: 10px;">
+                    ${iconHtml}
+                    <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
+                   </div>`,
+            escapeMarkup: false,
+            duration: 3000,
+            close: false,
+            gravity: "top",
+            position: "right",
+            style: {
+                background: "white",
+                borderRadius: "30px",
+                boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                padding: "10px 20px 10px 12px",
+                border: "1px solid #f0f0f0",
+                cursor: "pointer"
+            },
+            onClick: function() {
+                toast.hideToast();
+            }
+        });
+        toast.showToast();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var profileMsg = /*[[${profileSuccessMessage}]]*/ null;
+        var passMsg = /*[[${passwordSuccessMessage}]]*/ null;
+        var errorMsg = /*[[${errorMessage}]]*/ null;
+
+        if (profileMsg) showToast(profileMsg, 'success');
+        if (passMsg) showToast(passMsg, 'success');
+        if (errorMsg) showToast(errorMsg, 'error');
+    });
+</script>
 </body>
 </html>
