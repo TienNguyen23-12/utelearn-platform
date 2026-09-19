@@ -101,7 +101,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         tokenProvider.setTokenCookie(response, accessToken, true);
 
         boolean isAdmin = roleCodes.contains("ADMIN") || roleCodes.contains("ROLE_ADMIN");
-        String targetUrl = isAdmin ? "/dashboard" : "/home";
+        String targetUrl = isAdmin ? "/dashboard?loginSuccess=true" : "/home?loginSuccess=true";
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
