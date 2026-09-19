@@ -14,6 +14,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
     <style>
         * {
             box-sizing: border-box;
@@ -273,47 +276,48 @@
     </div>
 
     <div class="auth-card-body">
-        <!-- Thông báo lỗi -->
-        <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3" role="alert" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 12px; font-size: 13.5px;">
-            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"></i>
-            <div th:text="${errorMessage}">Đã xảy ra lỗi đăng nhập!</div>
-        </div>
-
-        <!-- Thông báo thành công -->
-        <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-3" role="alert" style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; border-radius: 12px; font-size: 13.5px;">
-            <i class="bi bi-check-circle-fill flex-shrink-0 me-2"></i>
-            <div th:text="${successMessage}">Đăng xuất thành công.</div>
-        </div>
+        <!-- Hiển thị thông báo bằng Toastify thay vì Alert tĩnh -->
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                var errorMsg = /*[[${errorMessage}]]*/ null;
+                var successMsg = /*[[${successMessage}]]*/ null;
+                
+                if (errorMsg) {
+                    showToast(errorMsg, 'error');
+                }
+                if (successMsg) {
+                    showToast(successMsg, 'success');
+                }
+            });
+        </script>
 
         <!-- FORM ĐĂNG NHẬP (Ở TRÊN) -->
-        <form th:action="@{/login}" th:object="${loginForm}" method="post">
+        <form id="ajaxLoginForm" onsubmit="handleLogin(event)">
             <div class="mb-3">
-                <label class="form-label" for="usernameOrEmail">Email</label>
+                <label class="form-label" for="usernameOrEmail">Email hoặc tên đăng nhập</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                    <input type="text" id="usernameOrEmail" th:field="*{usernameOrEmail}" class="form-control" placeholder="Email..." required autofocus>
+                    <input type="text" id="usernameOrEmail" name="usernameOrEmail" class="form-control" placeholder="Email..." required autofocus>
                 </div>
-                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('usernameOrEmail')}" th:errors="*{usernameOrEmail}"></div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label mb-1" for="password">Mật khẩu</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                    <input type="password" id="password" th:field="*{password}" class="form-control" placeholder="Nhập mật khẩu..." required>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu..." required>
                 </div>
-                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
             </div>
 
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="rememberMe" th:field="*{rememberMe}">
+                    <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
                     <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
                 </div>
                 <a th:href="@{/forgot-password}" class="text-decoration-none" style="font-size: 13.5px; font-weight: 600; color: #2563eb;">Quên mật khẩu?</a>
             </div>
 
-            <button type="submit" class="btn btn-primary-gradient w-100">
+            <button type="submit" class="btn btn-primary-gradient w-100" id="loginBtn">
                 <i class="bi bi-box-arrow-in-right"></i>
                 <span>Đăng nhập</span>
             </button>
@@ -344,5 +348,64 @@
 
 <!-- Bootstrap 5 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script>
+    function showToast(message, type) {
+        Toastify({
+            text: message,
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: {
+                background: type === 'success' ? "linear-gradient(to right, #00b09b, #96c93d)" : "linear-gradient(to right, #ff5f6d, #ffc371)",
+            }
+        }).showToast();
+    }
+
+    function handleLogin(event) {
+        event.preventDefault();
+        
+        const form = document.getElementById('ajaxLoginForm');
+        const btn = document.getElementById('loginBtn');
+        const originalBtnHtml = btn.innerHTML;
+        
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+        btn.disabled = true;
+
+        const data = {
+            usernameOrEmail: form.usernameOrEmail.value,
+            password: form.password.value,
+            rememberMe: form.rememberMe.checked
+        };
+
+        fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.success) {
+                showToast(res.message, 'success');
+                setTimeout(() => {
+                    window.location.href = res.redirectUrl;
+                }, 1000);
+            } else {
+                showToast(res.message || 'Đăng nhập thất bại', 'error');
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Đã xảy ra lỗi khi gọi API.', 'error');
+            btn.innerHTML = originalBtnHtml;
+            btn.disabled = false;
+        });
+    }
+</script>
 </body>
 </html>
