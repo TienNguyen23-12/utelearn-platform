@@ -9,5 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecificationExecutor<Course> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
     Optional<Course> findBySlug(String slug);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category"})
+    org.springframework.data.domain.Page<Course> findByCreatedById(Long createdById, org.springframework.data.domain.Pageable pageable);
 }
