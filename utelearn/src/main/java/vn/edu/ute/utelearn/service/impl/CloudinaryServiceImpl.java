@@ -33,7 +33,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             extension = fileName.substring(fileName.lastIndexOf("."));
             fileName = fileName.substring(0, fileName.lastIndexOf("."));
         }
-        
+
         String publicId = fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
         if ("raw".equalsIgnoreCase(resourceType)) {
             publicId += extension;
@@ -67,14 +67,14 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             extension = fileName.substring(fileName.lastIndexOf("."));
             fileName = fileName.substring(0, fileName.lastIndexOf("."));
         }
-        
+
         String publicId = fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
         if ("raw".equalsIgnoreCase(resourceType)) {
             publicId += extension;
         }
 
         long timestamp = System.currentTimeMillis() / 1000L;
-        
+
         Map<String, Object> paramsToSign = new java.util.HashMap<>();
         paramsToSign.put("timestamp", timestamp);
         paramsToSign.put("folder", fullPath);
@@ -90,7 +90,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         response.put("public_id", publicId);
         response.put("api_key", cloudinary.config.apiKey);
         response.put("cloud_name", cloudinary.config.cloudName);
-        
+
         return response;
     }
 }
