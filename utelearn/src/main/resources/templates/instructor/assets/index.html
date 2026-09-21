@@ -176,7 +176,7 @@
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Chọn file tải lên <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="file" id="fileInput" required>
+                        <input type="file" class="form-control" name="file" id="fileInput" accept="video/*,.mkv,.wmv,.flv,.avi" required>
                     </div>
                     
                     <div class="mb-3">
@@ -187,7 +187,7 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Loại tài nguyên <span class="text-danger">*</span></label>
-                            <select name="assetType" class="form-select" required>
+                            <select name="assetType" id="assetTypeSelect" class="form-select" onchange="updateFileAccept()" required>
                                 <option value="VIDEO">Video bài giảng</option>
                                 <option value="DOCUMENT">Tài liệu (PDF, DOC)</option>
                                 <option value="SLIDE">Slide (PPTX, PDF)</option>
@@ -258,6 +258,34 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <script th:inline="javascript">
+    function updateFileAccept() {
+        const assetType = document.getElementById('assetTypeSelect').value;
+        const fileInput = document.getElementById('fileInput');
+        
+        switch(assetType) {
+            case 'VIDEO':
+                fileInput.accept = 'video/*,.mkv,.wmv,.flv,.avi';
+                break;
+            case 'DOCUMENT':
+                fileInput.accept = '.pdf,.doc,.docx,.txt';
+                break;
+            case 'SLIDE':
+                fileInput.accept = '.pdf,.ppt,.pptx';
+                break;
+            case 'CODE_TEMPLATE':
+                fileInput.accept = '.zip,.rar,.tar,.gz,.7z';
+                break;
+            case 'TESTCASE':
+                fileInput.accept = '.zip';
+                break;
+            default:
+                fileInput.removeAttribute('accept');
+        }
+    }
+
+    // Run on initial load
+    updateFileAccept();
+
     function checkNewFolder(select) {
         const newFolderInput = document.getElementById('newFolderInput');
         const realFolderPath = document.getElementById('realFolderPath');
@@ -357,7 +385,6 @@
             cloudinaryFormData.append("api_key", sigData.api_key);
             cloudinaryFormData.append("timestamp", sigData.timestamp);
             cloudinaryFormData.append("signature", sigData.signature);
-            cloudinaryFormData.append("folder", sigData.folder);
             cloudinaryFormData.append("public_id", sigData.public_id);
             
             // Determine resource_type
@@ -391,7 +418,18 @@
                         
                         // 3. Save metadata to backend
                         const metadataFormData = new FormData();
-                        metadataFormData.append("name", form.elements['name'].value || file.name);
+                        
+                        let finalName = form.elements['name'].value.trim();
+                        if (finalName) {
+                            const originalExt = file.name.substring(file.name.lastIndexOf('.'));
+                            if (originalExt && originalExt.startsWith('.') && !finalName.toLowerCase().endsWith(originalExt.toLowerCase())) {
+                                finalName += originalExt;
+                            }
+                        } else {
+                            finalName = file.name;
+                        }
+                        
+                        metadataFormData.append("name", finalName);
                         metadataFormData.append("assetType", assetType);
                         metadataFormData.append("folderPath", folderPath);
                         metadataFormData.append("visibility", form.elements['visibility'].value);
