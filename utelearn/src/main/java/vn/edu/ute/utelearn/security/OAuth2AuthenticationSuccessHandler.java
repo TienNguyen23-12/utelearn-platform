@@ -57,8 +57,16 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         if (existingUserOpt.isPresent()) {
             user = existingUserOpt.get();
+            boolean needsUpdate = false;
             if (picture != null && (user.getAvatarUrl() == null || user.getAvatarUrl().isEmpty())) {
                 user.setAvatarUrl(picture);
+                needsUpdate = true;
+            }
+            if (!"GOOGLE".equals(user.getAuthProvider())) {
+                user.setAuthProvider("GOOGLE");
+                needsUpdate = true;
+            }
+            if (needsUpdate) {
                 userRepository.save(user);
             }
         } else {
@@ -84,6 +92,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .fullName(name != null ? name : username)
                 .avatarUrl(picture)
                 .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .authProvider("GOOGLE")
                 .isActive(true)
                 .roles(Set.of(studentRole))
                 .build();

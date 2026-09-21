@@ -49,6 +49,7 @@ CREATE TABLE users (
     phone_number VARCHAR(20),
     avatar_url TEXT,
     is_active BOOLEAN DEFAULT TRUE,
+    auth_provider VARCHAR(50) DEFAULT 'LOCAL',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
