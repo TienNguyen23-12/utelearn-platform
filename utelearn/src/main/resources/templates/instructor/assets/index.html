@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kho tài nguyên số - UTELearn</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <!-- Custom Admin CSS -->
+    <link th:href="@{/css/admin-layout.css}" rel="stylesheet">
+    <style>
+        .asset-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .asset-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        }
+        .asset-icon-wrapper {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+<!-- Sidebar -->
+<aside th:replace="~{fragments/sidebar :: sidebar('assets')}"></aside>
+
+<!-- Master Content Wrapper -->
+<div class="app-content-wrapper">
+    <!-- Navbar -->
+    <header th:replace="~{fragments/navbar :: navbar('Kho tài nguyên số')}"></header>
+
+    <!-- Main Content Area -->
+    <main class="app-main-content">
+        <!-- Welcome Banner (Giống bảng điều khiển) -->
+        <div class="welcome-banner mb-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-white text-primary border px-3 py-1 rounded-pill mb-3 fw-bold shadow-sm" style="font-size: 11.5px; letter-spacing: 0.5px;">
+                        <i class="bi bi-cloud-check-fill me-1"></i>UTELearn Asset Library
+                    </span>
+                    <h2 class="fw-bold text-white mb-2">Kho tài nguyên số cá nhân</h2>
+                    <p class="text-slate-300 text-light opacity-75 mb-0" style="font-size: 14.5px; max-width: 600px;">
+                        Quản lý toàn bộ Video bài giảng, Tài liệu PDF, Slide và Source code mẫu. Dữ liệu được lưu trữ và tối ưu hóa tốc độ cao bởi Cloudinary.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold shadow-sm text-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Tải lên tài nguyên mới
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid px-0">
+            <!-- Filter & Search -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-3">
+                    <form th:action="@{/instructor/assets}" method="get" class="row g-3 align-items-center">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" name="keyword" class="form-control border-start-0" th:value="${keyword}" placeholder="Tìm kiếm tên tài nguyên...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="type" class="form-select">
+                                <option value="ALL" th:selected="${type == 'ALL' || type == null}">Tất cả loại file</option>
+                                <option value="VIDEO" th:selected="${type == 'VIDEO'}">Video bài giảng</option>
+                                <option value="DOCUMENT" th:selected="${type == 'DOCUMENT'}">Tài liệu (PDF, Word)</option>
+                                <option value="SLIDE" th:selected="${type == 'SLIDE'}">Slide bài giảng</option>
+                                <option value="CODE_TEMPLATE" th:selected="${type == 'CODE_TEMPLATE'}">Code mẫu</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-outline-secondary w-100 rounded-pill">Lọc kết quả</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Asset Grid -->
+            <div class="row g-4">
+                <div class="col-12" th:if="${assets.empty}">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-folder2-open display-1"></i>
+                        <h5 class="mt-3">Chưa có tài nguyên nào</h5>
+                        <p>Hãy tải lên tài nguyên đầu tiên của bạn để sử dụng cho các bài giảng.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 col-xl-3" th:each="asset : ${assets.content}">
+                    <div class="card asset-card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4 position-relative">
+                            <!-- Dropdown Menu -->
+                            <div class="dropdown position-absolute top-0 end-0 mt-3 me-3">
+                                <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li><a class="dropdown-item" th:href="@{|/assets/${asset.id}/download|}" target="_blank"><i class="bi bi-eye me-2"></i>Xem/Tải xuống</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form th:action="@{|/instructor/assets/${asset.id}/delete|}" method="post" onsubmit="return showConfirmModal(event, this, 'Bạn có chắc chắn muốn xóa tài nguyên này? Hành động này không thể hoàn tác.');">
+                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa file</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Icon based on type -->
+                            <div class="asset-icon-wrapper bg-primary-subtle text-primary mb-3">
+                                <i class="bi bi-file-earmark-fill"></i>
+                            </div>
+
+                            <h6 class="fw-bold mb-1 text-truncate" th:text="${asset.name}" th:title="${asset.name}">Asset Name</h6>
+                            <p class="text-muted small mb-3">
+                                <span th:text="${asset.folderPath ?: 'Thư mục chung'}">Chung</span> 
+                                <span class="mx-1">•</span> 
+                                <span th:text="${(asset.fileSizeBytes != null ? asset.fileSizeBytes : 0) / 1024}">Size</span> KB
+                                <br>
+                                <i class="bi bi-person me-1 mt-1 d-inline-block"></i><span th:text="${asset.instructor?.fullName ?: 'Không rõ'}">Tên người dùng</span>
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto border-top pt-3">
+                                <span class="badge bg-secondary" th:text="${asset.visibility == 'PRIVATE' ? 'Chỉ mình tôi' : (asset.visibility == 'DEPARTMENT_SHARED' ? 'Chia sẻ Bộ môn' : 'Công khai Lớp học')}">Chỉ mình tôi</span>
+                                <small class="text-muted">Đã tải lên</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-4 d-flex justify-content-center" th:if="${assets.totalPages > 1}">
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item" th:classappend="${assets.first ? 'disabled' : ''}">
+                            <a class="page-link rounded-start-pill px-3" th:href="@{/instructor/assets(page=${assets.number - 1}, keyword=${keyword}, type=${type})}">Trước</a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, assets.totalPages - 1)}" th:classappend="${assets.number == i ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/instructor/assets(page=${i}, keyword=${keyword}, type=${type})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${assets.last ? 'disabled' : ''}">
+                            <a class="page-link rounded-end-pill px-3" th:href="@{/instructor/assets(page=${assets.number + 1}, keyword=${keyword}, type=${type})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" id="uploadModalLabel">Tải lên tài nguyên mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Chọn file tải lên <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" name="file" id="fileInput" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên hiển thị (Tùy chọn)</label>
+                        <input type="text" class="form-control" name="name" placeholder="Để trống sẽ lấy tên gốc của file">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Loại tài nguyên <span class="text-danger">*</span></label>
+                            <select name="assetType" class="form-select" required>
+                                <option value="VIDEO">Video bài giảng</option>
+                                <option value="DOCUMENT">Tài liệu (PDF, DOC)</option>
+                                <option value="SLIDE">Slide (PPTX, PDF)</option>
+                                <option value="CODE_TEMPLATE">Code mẫu</option>
+                                <option value="TESTCASE">Testcase ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Quyền xem</label>
+                            <select name="visibility" id="visibilitySelect" class="form-select" onchange="toggleSharedEmails()">
+                                <option value="PRIVATE">Chỉ mình tôi</option>
+                                <option value="DEPARTMENT_SHARED">Chia sẻ Bộ môn</option>
+                                <option value="COHORT_PUBLIC">Công khai Lớp học</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="sharedEmailsGroup" style="display: none;">
+                        <label class="form-label fw-semibold small">Chia sẻ cho Email</label>
+                        <input type="text" class="form-control" name="sharedEmails" placeholder="VD: nguyenvan@gmail.com, gv01@utelearn.edu.vn">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Thư mục phân loại <span class="text-danger">*</span></label>
+                        <select class="form-select" id="folderSelect" onchange="checkNewFolder(this)">
+                            <option value="Thư mục chung">Thư mục chung</option>
+                            <option value="Video Bài giảng">Video Bài giảng</option>
+                            <option value="Tài liệu tham khảo">Tài liệu tham khảo</option>
+                            <th:block th:each="f : ${folders}">
+                                <option th:if="${f != 'Thư mục chung' and f != 'Video Bài giảng' and f != 'Tài liệu tham khảo'}" th:value="${f}" th:text="${f}"></option>
+                            </th:block>
+                            <option value="_NEW_">[+] Tạo thư mục mới...</option>
+                        </select>
+                        <input type="text" class="form-control mt-2 d-none" id="newFolderInput" placeholder="Nhập tên thư mục mới...">
+                        <input type="hidden" name="folderPath" id="realFolderPath" value="Thư mục chung">
+                        
+                        <small class="text-muted mt-2 d-block">Lưu ý: Thời gian tải lên phụ thuộc vào dung lượng file và tốc độ mạng của bạn.</small>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="uploadProgressContainer" class="d-none mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted fw-semibold">Đang tải lên...</span>
+                            <span id="uploadPercentage" class="text-primary fw-bold">0%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+    
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnUpload">
+                            <i class="bi bi-cloud-upload me-2"></i>Tải lên ngay
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Admin Custom JS -->
+<script th:src="@{/js/admin-layout.js}"></script>
+<!-- Toastify JS -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<script th:inline="javascript">
+    function checkNewFolder(select) {
+        const newFolderInput = document.getElementById('newFolderInput');
+        const realFolderPath = document.getElementById('realFolderPath');
+        
+        if (select.value === '_NEW_') {
+            newFolderInput.classList.remove('d-none');
+            newFolderInput.required = true;
+            newFolderInput.focus();
+            realFolderPath.value = newFolderInput.value;
+        } else {
+            newFolderInput.classList.add('d-none');
+            newFolderInput.required = false;
+            realFolderPath.value = select.value;
+        }
+    }
+
+    document.getElementById('newFolderInput').addEventListener('input', function() {
+        document.getElementById('realFolderPath').value = this.value;
+    });
+
+    function toggleSharedEmails() {
+        const visibility = document.getElementById('visibilitySelect').value;
+        const group = document.getElementById('sharedEmailsGroup');
+        if (visibility === 'PRIVATE') {
+            group.style.display = 'block';
+        } else {
+            group.style.display = 'none';
+            group.querySelector('input').value = '';
+        }
+    }
+
+    // Run on initial load
+    toggleSharedEmails();
+
+    function showToast(text, type) {
+        let iconHtml = type === 'success' 
+            ? `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-check text-white"></i></div>`
+            : `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-x text-white"></i></div>`;
+
+        Toastify({
+            text: `<div style="display: flex; align-items: center; gap: 10px;">${iconHtml}<span style="color: #111; font-weight: 500;">${text}</span></div>`,
+            escapeMarkup: false,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            style: { background: "white", borderRadius: "12px", boxShadow: "0 6px 16px rgba(0,0,0,0.12)", padding: "12px 20px" }
+        }).showToast();
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("Đã copy link vào bộ nhớ tạm", "success");
+        }).catch(err => {
+            showToast("Không thể copy link", "error");
+        });
+    }
+
+    // Xử lý upload bằng AJAX với XMLHttpRequest (Direct Upload to Cloudinary)
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        
+        if (!file) return;
+
+        const btnUpload = document.getElementById('btnUpload');
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progressBar = document.getElementById('uploadProgressBar');
+        const progressText = document.getElementById('uploadPercentage');
+
+        // Reset UI
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Chuẩn bị...';
+        progressContainer.classList.remove('d-none');
+        progressBar.style.width = '0%';
+        progressText.innerText = '0%';
+        progressBar.classList.add('bg-primary');
+        progressBar.classList.remove('bg-success');
+
+        try {
+            // 1. Get Signature from backend
+            const folderPath = document.getElementById('realFolderPath').value;
+            const assetType = form.elements['assetType'].value;
+            
+            const sigResponse = await fetch(`/instructor/assets/cloudinary-signature?folderPath=${encodeURIComponent(folderPath)}&assetType=${encodeURIComponent(assetType)}&originalFilename=${encodeURIComponent(file.name)}`);
+            if (!sigResponse.ok) throw new Error("Không thể lấy chữ ký tải lên từ Server");
+            
+            const sigData = await sigResponse.json();
+            
+            // 2. Upload directly to Cloudinary
+            btnUpload.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang tải lên...';
+            
+            const cloudinaryFormData = new FormData();
+            cloudinaryFormData.append("file", file);
+            cloudinaryFormData.append("api_key", sigData.api_key);
+            cloudinaryFormData.append("timestamp", sigData.timestamp);
+            cloudinaryFormData.append("signature", sigData.signature);
+            cloudinaryFormData.append("folder", sigData.folder);
+            cloudinaryFormData.append("public_id", sigData.public_id);
+            
+            // Determine resource_type
+            let resourceType = "auto";
+            if (assetType === "VIDEO") resourceType = "video";
+            else if (assetType === "DOCUMENT" || assetType === "SLIDE") resourceType = "raw";
+
+            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${sigData.cloud_name}/${resourceType}/upload`;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', cloudinaryUrl, true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.innerText = percentComplete + '%';
+                    
+                    if (percentComplete === 100) {
+                        progressText.innerText = 'Đang lưu dữ liệu...';
+                        progressBar.classList.add('bg-success');
+                        progressBar.classList.remove('bg-primary');
+                    }
+                }
+            };
+
+            xhr.onload = async function() {
+                try {
+                    if (xhr.status === 200) {
+                        const uploadResult = JSON.parse(xhr.responseText);
+                        
+                        // 3. Save metadata to backend
+                        const metadataFormData = new FormData();
+                        metadataFormData.append("name", form.elements['name'].value || file.name);
+                        metadataFormData.append("assetType", assetType);
+                        metadataFormData.append("folderPath", folderPath);
+                        metadataFormData.append("visibility", form.elements['visibility'].value);
+                        if (form.elements['sharedEmails'] && form.elements['sharedEmails'].value) {
+                            metadataFormData.append("sharedEmails", form.elements['sharedEmails'].value);
+                        }
+                        metadataFormData.append("cloudinaryUrl", uploadResult.secure_url);
+                        metadataFormData.append("fileSizeBytes", uploadResult.bytes);
+                        
+                        const saveResponse = await fetch('/instructor/assets/upload', {
+                            method: 'POST',
+                            body: metadataFormData
+                        });
+                        
+                        if (saveResponse.ok) {
+                            showToast("Tải lên tài nguyên thành công!", "success");
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            const errText = await saveResponse.text();
+                            console.error("Backend Error:", errText);
+                            showToast("Lỗi khi lưu thông tin tài nguyên: " + saveResponse.status, "error");
+                            resetUploadUI();
+                        }
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        showToast("Lỗi Cloudinary: " + (error.error ? error.error.message : "Upload thất bại"), "error");
+                        resetUploadUI();
+                    }
+                } catch (e) {
+                    console.error("XHR OnLoad Error:", e);
+                    showToast("Lỗi kịch bản xử lý: " + e.message, "error");
+                    resetUploadUI();
+                }
+            };
+
+            xhr.onerror = function() {
+                showToast("Lỗi mạng khi tải lên Cloudinary", "error");
+                resetUploadUI();
+            };
+
+            xhr.timeout = 60000; // 60 seconds timeout
+            xhr.ontimeout = function () {
+                showToast("Quá thời gian tải lên (Timeout)!", "error");
+                resetUploadUI();
+            }
+
+            xhr.send(cloudinaryFormData);
+
+        } catch (error) {
+            console.error("Main Upload Error:", error);
+            showToast(error.message, "error");
+            resetUploadUI();
+        }
+    });
+
+    function resetUploadUI() {
+        const btnUpload = document.getElementById('btnUpload');
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        btnUpload.disabled = false;
+        btnUpload.innerHTML = '<i class="bi bi-cloud-upload me-2"></i>Tải lên ngay';
+        progressContainer.classList.add('d-none');
+    }
+
+    // Hiện thông báo Flash Attributes (Redirect)
+    document.addEventListener('DOMContentLoaded', function() {
+        const successMsg = /*[[${successMessage}]]*/ null;
+        const errorMsg = /*[[${errorMessage}]]*/ null;
+        if (successMsg) showToast(successMsg, 'success');
+        if (errorMsg) showToast(errorMsg, 'error');
+    });
+</script>
+</body>
+</html>
