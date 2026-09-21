@@ -111,7 +111,7 @@ CREATE TABLE courses (
     description TEXT,
     thumbnail_url TEXT,
     level VARCHAR(30) DEFAULT 'ALL_LEVELS',       -- 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'
-    status VARCHAR(30) DEFAULT 'DRAFT',           -- 'DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED'
+    status VARCHAR(30) DEFAULT 'DRAFT',           -- 'DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'
     category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
     created_by BIGINT NOT NULL REFERENCES users(id),
     objectives JSONB DEFAULT '[]'::jsonb,

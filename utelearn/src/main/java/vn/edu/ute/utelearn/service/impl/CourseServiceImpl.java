@@ -34,7 +34,7 @@ public class CourseServiceImpl implements CourseService {
             List<Predicate> predicates = new ArrayList<>();
             
             // Only fetch published courses
-            predicates.add(cb.equal(root.get("status"), "APPROVED"));
+            predicates.add(cb.equal(root.get("status"), "PUBLISHED"));
             
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(keyword)) {
                 String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword).toLowerCase();
