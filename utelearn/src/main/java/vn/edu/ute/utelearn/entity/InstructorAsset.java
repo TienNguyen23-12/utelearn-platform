@@ -21,6 +21,7 @@ public class InstructorAsset {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private User instructor;
 
     @Column(nullable = false, length = 255)
@@ -40,9 +41,12 @@ public class InstructorAsset {
     @Builder.Default
     private String folderPath = "/";
 
-    @Column(length = 30)
+    @Column(name = "visibility", length = 30)
     @Builder.Default
     private String visibility = "PRIVATE";
+
+    @Column(name = "shared_emails", columnDefinition = "TEXT")
+    private String sharedEmails;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

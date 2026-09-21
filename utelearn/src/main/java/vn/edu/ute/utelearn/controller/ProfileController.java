@@ -111,6 +111,11 @@ public class ProfileController {
             return "redirect:/login?error=unauthorized";
         }
 
+        if ("GOOGLE".equals(user.getAuthProvider())) {
+            redirectAttributes.addFlashAttribute("error", "Tài khoản đăng nhập bằng Google không thể đổi mật khẩu.");
+            return "redirect:/profile";
+        }
+
         if (!passwordEncoder.matches(passwordForm.getCurrentPassword(), user.getPasswordHash())) {
             bindingResult.rejectValue("currentPassword", "error.currentPassword", "Mật khẩu hiện tại không chính xác!");
         }
