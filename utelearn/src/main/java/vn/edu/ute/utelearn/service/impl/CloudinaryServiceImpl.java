@@ -33,7 +33,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             extension = fileName.substring(fileName.lastIndexOf("."));
             fileName = fileName.substring(0, fileName.lastIndexOf("."));
         }
-
+        
         String publicId = fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
         if ("raw".equalsIgnoreCase(resourceType)) {
             publicId += extension;
@@ -60,6 +60,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     public Map<String, Object> generateSignature(String folder, String resourceType, String originalFilename) {
         String baseFolder = properties.getCloudinary().getFolderBase();
         String fullPath = baseFolder + (folder.startsWith("/") ? folder : "/" + folder);
+        if (!fullPath.endsWith("/")) fullPath += "/";
 
         String fileName = originalFilename;
         String extension = "";
@@ -67,17 +68,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             extension = fileName.substring(fileName.lastIndexOf("."));
             fileName = fileName.substring(0, fileName.lastIndexOf("."));
         }
-
-        String publicId = fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
+        
+        // Remove spaces and special characters from fileName to avoid Cloudinary signature bugs
+        fileName = fileName.replaceAll("[^a-zA-Z0-9_-]", "_");
+        
+        String publicId = fullPath + fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
         if ("raw".equalsIgnoreCase(resourceType)) {
             publicId += extension;
         }
 
         long timestamp = System.currentTimeMillis() / 1000L;
-
+        
         Map<String, Object> paramsToSign = new java.util.HashMap<>();
         paramsToSign.put("timestamp", timestamp);
-        paramsToSign.put("folder", fullPath);
         paramsToSign.put("public_id", publicId);
         // Note: we don't sign resource_type, it's sent in the endpoint URL
 
@@ -86,11 +89,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("signature", signature);
         response.put("timestamp", timestamp);
-        response.put("folder", fullPath);
         response.put("public_id", publicId);
         response.put("api_key", cloudinary.config.apiKey);
         response.put("cloud_name", cloudinary.config.cloudName);
-
+        
         return response;
     }
 }
