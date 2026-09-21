@@ -125,6 +125,14 @@
         .course-card-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
         .course-title { font-weight: 700; font-size: 16px; color: #0f172a; margin-bottom: 10px; line-height: 1.4; }
         .course-title:hover { color: var(--primary-color); }
+        .course-headline {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+            text-align: justify;
+        }
         .skeleton { background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
@@ -345,7 +353,7 @@
                         <div class="course-card-body">
                             <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 small mb-2 d-inline-block" style="width:fit-content">${course.categoryName || 'Khác'}</span>
                             <a href="/courses/${course.slug}" class="text-decoration-none"><h3 class="course-title">${course.title}</h3></a>
-                            <div class="text-muted small mb-3 flex-grow-1">${course.headline || ''}</div>
+                            <div class="text-muted small mb-3 flex-grow-1 course-headline">${course.headline || ''}</div>
                             <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small mt-auto">
                                 <span><i class="bi bi-person me-1"></i>${course.instructorName}</span>
                                 <span class="badge bg-light text-dark">${course.level}</span>

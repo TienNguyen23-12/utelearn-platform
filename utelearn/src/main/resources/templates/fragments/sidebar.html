@@ -8,7 +8,7 @@
 <aside th:fragment="sidebar(activePage)" id="appSidebar" class="app-sidebar">
     <!-- Brand Logo & Platform Title -->
     <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
-        <a href="/dashboard" class="d-flex align-items-center gap-3 text-decoration-none">
+        <a href="/home" class="d-flex align-items-center gap-3 text-decoration-none">
             <span class="brand-logo-badge">
                 <i class="bi bi-mortarboard-fill"></i>
             </span>
@@ -33,7 +33,7 @@
                 <div class="fw-bold text-dark text-truncate" style="font-size: 13.5px;" th:text="${currentUser.fullName}">Quản trị viên</div>
                 <div class="text-muted text-truncate" style="font-size: 11px;" th:text="${currentUser.email}">admin@utelearn.edu.vn</div>
                 <div class="mt-1">
-                    <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill" style="font-size: 10px; font-weight: 700;" th:text="${r.code}">ADMIN</span>
+                    <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill" style="font-size: 10px; font-weight: 700;" th:text="${r.name}">ADMIN</span>
                 </div>
             </div>
         </div>
