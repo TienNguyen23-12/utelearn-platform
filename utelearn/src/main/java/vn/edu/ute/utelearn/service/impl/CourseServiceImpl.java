@@ -10,11 +10,14 @@ import vn.edu.ute.utelearn.dao.CourseRepository;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.service.CourseService;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
@@ -31,7 +34,7 @@ public class CourseServiceImpl implements CourseService {
             List<Predicate> predicates = new ArrayList<>();
             
             // Only fetch published courses
-            predicates.add(cb.equal(root.get("status"), "PUBLISHED"));
+            predicates.add(cb.equal(root.get("status"), "APPROVED"));
             
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(keyword)) {
                 String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword).toLowerCase();
