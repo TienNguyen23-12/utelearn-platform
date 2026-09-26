@@ -46,6 +46,13 @@ public class Lesson {
     @Column(name = "document_content", columnDefinition = "TEXT")
     private String documentContent;
 
+    @Column(name = "asset_url", columnDefinition = "TEXT")
+    private String assetUrl;
+
+    @Column(name = "is_public_for_cohorts")
+    @Builder.Default
+    private Boolean isPublicForCohorts = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

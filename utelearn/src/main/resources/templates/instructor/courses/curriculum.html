@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Giáo trình: ' + ${course.title} + ' - UTELearn Platform'">Giáo trình</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+     <style>
+        .curriculum-container {
+            width: 100%;
+        }
+        .section-card {
+            border: 1px solid #eaeaea;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .section-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .section-header {
+            background: #fcfcfc;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eaeaea;
+            cursor: pointer;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        .section-body {
+            padding: 0;
+        }
+        .lesson-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .lesson-item:last-child {
+            border-bottom: none;
+        }
+        .lesson-item:hover {
+            background: #fafafa;
+        }
+        .lesson-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .icon-video { background: #eef2ff; color: #4f46e5; }
+        .icon-doc { background: #ecfdf5; color: #10b981; }
+        .icon-quiz { background: #fef2f2; color: #ef4444; }
+        .icon-code { background: #fffbeb; color: #f59e0b; }
+        
+        .lesson-title {
+            font-weight: 500;
+            font-size: 15px;
+            color: #444;
+            margin: 0;
+            word-break: break-word;
+        }
+        .action-btns .btn {
+            padding: 4px 8px;
+            font-size: 13px;
+        }
+        .empty-state {
+            padding: 30px;
+            text-align: center;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('courses')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Khóa học & Lớp học')}"></header>
+
+    <main class="app-main-content curriculum-container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+            <div class="d-flex align-items-center">
+                <a th:href="@{/instructor/courses}" class="btn btn-icon btn-light rounded-circle me-3 border flex-shrink-0">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="fw-bold mb-1">Giáo trình Khóa học</h4>
+                    <p class="text-muted mb-0" th:text="${course.title}">Tên khóa học</p>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary text-nowrap" onclick="openSectionModal()">
+                    <i class="bi bi-plus-circle me-1"></i> Thêm Chương mới
+                </button>
+            </div>
+        </div>
+
+        <div id="curriculumList">
+            <!-- Sections will be rendered here via JS or initially from server -->
+            <div th:each="section, sStat : ${sections}" class="section-card" th:id="'section-' + ${section.id}">
+                <div class="section-header" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-list fs-5 me-2 text-muted" style="cursor: grab;"></i>
+                        <h5 th:text="'Chương ' + ${sStat.index + 1} + ': ' + ${section.title}">Chương 1: Introduction</h5>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-light border me-1" 
+                                th:data-id="${section.id}" 
+                                onclick="openLessonModal(this.getAttribute('data-id'), event)">
+                            <i class="bi bi-plus"></i> Bài học
+                        </button>
+                        <button class="btn btn-sm btn-light border me-1 text-primary" 
+                                th:data-id="${section.id}" 
+                                th:data-title="${section.title}" 
+                                onclick="openSectionModal(this.getAttribute('data-id'), this.getAttribute('data-title'), event)">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light border text-danger" 
+                                th:data-id="${section.id}" 
+                                onclick="deleteSection(this.getAttribute('data-id'), event)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div th:id="'collapseSection' + ${section.id}" class="collapse show">
+                    <div class="section-body" th:id="'lesson-list-' + ${section.id}">
+                        <div class="empty-state" style="display: none;">Chưa có bài học nào.</div>
+                        <!-- Lessons will be loaded here via JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${#lists.isEmpty(sections)}" class="text-center py-5">
+                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="Empty" width="120" class="mb-3 opacity-50">
+                <h5 class="text-muted">Chưa có chương nào trong giáo trình</h5>
+                <p class="text-muted">Bắt đầu bằng cách thêm một chương mới (Section).</p>
+                <button class="btn btn-outline-primary mt-2" onclick="openSectionModal()">Thêm Chương đầu tiên</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal Thêm/Sửa Section -->
+<div class="modal fade" id="sectionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sectionModalTitle">Thêm Chương mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="sectionForm">
+            <input type="hidden" id="sectionId">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Tên chương <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="sectionTitle" required placeholder="VD: Chương 1: Giới thiệu chung">
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="saveSection()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm/Sửa Lesson -->
+<div class="modal fade" id="lessonModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="lessonModalTitle">Thêm Bài học mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="lessonForm">
+            <input type="hidden" id="lessonId">
+            <input type="hidden" id="parentSectionId">
+            
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Tên bài học <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="lessonTitle" required placeholder="VD: 1.1 Cài đặt môi trường">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Loại bài học <span class="text-danger">*</span></label>
+                    <select class="form-select" id="lessonType" required onchange="toggleLessonFields()">
+                        <option value="VIDEO">Video</option>
+                        <option value="DOCUMENT">Tài liệu (Document)</option>
+                        <option value="QUIZ">Trắc nghiệm (Quiz)</option>
+                        <option value="CODE_PRACTICE">Lập trình (Code)</option>
+                        <option value="ANNOUNCEMENT">Thông báo (Announcement)</option>
+                    </select>
+                </div>
+
+                <!-- Video Fields -->
+                <div class="col-md-12" id="fieldVideoUrl">
+                    <label class="form-label fw-semibold">URL Video (Cloudinary, Youtube, ...)</label>
+                    <input type="url" class="form-control" id="videoUrl" placeholder="https://...">
+                </div>
+
+                <!-- Asset URL Field -->
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold">Tài liệu đính kèm (Từ kho tài nguyên số)</label>
+                    <div class="input-group">
+                        <input type="url" class="form-control" id="assetUrl" placeholder="https://...">
+                        <button class="btn btn-outline-secondary" type="button" title="Chọn từ kho" onclick="openAssetPicker()"><i class="bi bi-folder2-open"></i> Chọn</button>
+                    </div>
+                </div>
+
+                <!-- Content/Document Field -->
+                <div class="col-md-12" id="fieldDocumentContent">
+                    <label class="form-label fw-semibold">Văn bản / Nội dung bài học</label>
+                    <textarea class="form-control" id="documentContent" rows="4" placeholder="Viết nội dung bài học ở đây..."></textarea>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="isFreePreview">
+                        <label class="form-check-label fw-semibold" for="isFreePreview">Học thử miễn phí (Free Preview)</label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="isPublicForCohorts">
+                        <label class="form-check-label fw-semibold text-primary" for="isPublicForCohorts">Public cho lớp cụ thể (Cohort Public)</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="saveLesson()">Lưu Bài học</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal Chọn Tài Nguyên -->
+<div class="modal fade" id="assetPickerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Chọn từ Kho tài nguyên số</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <input type="text" class="form-control me-2" id="assetSearchInput" placeholder="Tìm kiếm tài liệu...">
+            <a href="/instructor/assets" target="_blank" class="btn btn-outline-primary text-nowrap"><i class="bi bi-box-arrow-up-right"></i> Quản lý kho</a>
+        </div>
+        <div class="row g-3" id="assetGrid" style="max-height: 400px; overflow-y: auto;">
+            <div class="text-center py-4"><span class="spinner-border text-primary"></span> Đang tải...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script th:inline="javascript">
+    const courseId = [[${course.id}]];
+    
+    // Modal instances
+    let sectionModal;
+    let lessonModal;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        sectionModal = new bootstrap.Modal(document.getElementById('sectionModal'));
+        lessonModal = new bootstrap.Modal(document.getElementById('lessonModal'));
+        
+        // Load lessons for each section on init
+        const sectionCards = document.querySelectorAll('.section-card');
+        sectionCards.forEach(card => {
+            if(card.id && card.id.startsWith('section-')) {
+                const sectionId = card.id.replace('section-', '');
+                loadLessons(sectionId);
+            }
+        });
+    });
+
+    function toggleLessonFields() {
+        const type = document.getElementById('lessonType').value;
+        const videoField = document.getElementById('fieldVideoUrl');
+        const docField = document.getElementById('fieldDocumentContent');
+        
+        if (type === 'VIDEO') {
+            videoField.style.display = 'block';
+        } else {
+            videoField.style.display = 'none';
+        }
+
+        if (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') {
+            docField.style.display = 'block';
+        } else {
+            docField.style.display = 'none';
+        }
+    }
+
+    // --- SECTION LOGIC ---
+    function openSectionModal(id = null, title = '', event = null) {
+        if (event) event.stopPropagation();
+        document.getElementById('sectionId').value = id || '';
+        document.getElementById('sectionTitle').value = title;
+        document.getElementById('sectionModalTitle').innerText = id ? 'Sửa Chương' : 'Thêm Chương mới';
+        sectionModal.show();
+    }
+
+    async function saveSection() {
+        const id = document.getElementById('sectionId').value;
+        const title = document.getElementById('sectionTitle').value;
+        if(!title) {
+            alert('Vui lòng nhập tên chương!'); return;
+        }
+
+        const url = id ? `/api/instructor/courses/sections/${id}` : `/api/instructor/courses/${courseId}/sections`;
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title: title})
+            });
+            if(res.ok) {
+                location.reload(); // Quick reload to update list
+            } else {
+                const errText = await res.text();
+                alert('Có lỗi xảy ra khi lưu Chương: ' + errText);
+            }
+        } catch(e) { console.error(e); alert('Lỗi: ' + e); }
+    }
+    
+    function deleteSection(id, event) {
+        event.stopPropagation();
+        showConfirmModal(event, async function() {
+            try {
+                const res = await fetch(`/api/instructor/courses/sections/${id}`, { method: 'DELETE' });
+                if(res.ok) location.reload();
+                else {
+                    const errText = await res.text();
+                    alert('Lỗi khi xóa: ' + errText);
+                }
+            } catch(e) { console.error(e); }
+        }, 'Bạn có chắc muốn xóa chương này (bao gồm tất cả bài học bên trong)?');
+    }
+
+
+    // --- LESSON LOGIC ---
+    function openLessonModal(sectionId, event) {
+        if(event) event.stopPropagation();
+        document.getElementById('lessonId').value = '';
+        document.getElementById('parentSectionId').value = sectionId;
+        document.getElementById('lessonTitle').value = '';
+        document.getElementById('lessonType').value = 'VIDEO';
+        document.getElementById('videoUrl').value = '';
+        document.getElementById('assetUrl').value = '';
+        document.getElementById('documentContent').value = '';
+        document.getElementById('isFreePreview').checked = false;
+        document.getElementById('isPublicForCohorts').checked = false;
+        toggleLessonFields();
+        document.getElementById('lessonModalTitle').innerText = 'Thêm Bài học mới';
+        lessonModal.show();
+    }
+
+    function editLesson(lesson, sectionId) {
+        document.getElementById('lessonId').value = lesson.id;
+        document.getElementById('parentSectionId').value = sectionId;
+        document.getElementById('lessonTitle').value = lesson.title;
+        document.getElementById('lessonType').value = lesson.lessonType;
+        document.getElementById('videoUrl').value = lesson.videoUrl || '';
+        document.getElementById('assetUrl').value = lesson.assetUrl || '';
+        document.getElementById('documentContent').value = lesson.documentContent || '';
+        document.getElementById('isFreePreview').checked = lesson.isFreePreview || false;
+        document.getElementById('isPublicForCohorts').checked = lesson.isPublicForCohorts || false;
+        toggleLessonFields();
+        document.getElementById('lessonModalTitle').innerText = 'Sửa Bài học';
+        lessonModal.show();
+    }
+    
+    async function loadLessons(sectionId) {
+        try {
+            const res = await fetch(`/api/instructor/courses/sections/${sectionId}/lessons`);
+            if(res.ok) {
+                const lessons = await res.json();
+                renderLessons(sectionId, lessons);
+            }
+        } catch(e) { console.error(e); }
+    }
+    
+    function renderLessons(sectionId, lessons) {
+        const container = document.getElementById(`lesson-list-${sectionId}`);
+        if(lessons.length === 0) {
+            container.innerHTML = '<div class="empty-state">Chưa có bài học nào.</div>';
+            return;
+        }
+        
+        let html = '';
+        lessons.forEach((l, idx) => {
+            let iconClass = 'bi-play-btn-fill';
+            let bgClass = 'icon-video';
+            if(l.lessonType === 'DOCUMENT') { iconClass = 'bi-file-earmark-text-fill'; bgClass = 'icon-doc'; }
+            else if(l.lessonType === 'QUIZ') { iconClass = 'bi-patch-question-fill'; bgClass = 'icon-quiz'; }
+            else if(l.lessonType === 'CODE_PRACTICE') { iconClass = 'bi-code-square'; bgClass = 'icon-code'; }
+            else if(l.lessonType === 'ANNOUNCEMENT') { iconClass = 'bi-megaphone-fill'; bgClass = 'icon-doc'; }
+            
+            html += `
+                <div class="lesson-item">
+                    <div class="d-flex align-items-center">
+                        <div class="lesson-icon ${bgClass}"><i class="bi ${iconClass}"></i></div>
+                        <div>
+                            <p class="lesson-title">${idx + 1}. ${l.title}</p>
+                            <small class="text-muted" style="font-size: 12px;">${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success text-white px-1">Free</span>' : ''}</small>
+                        </div>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn btn-light text-primary border me-1" data-lesson='${JSON.stringify(l).replace(/'/g, "&apos;")}' onclick="editLesson(JSON.parse(this.getAttribute('data-lesson')), ${sectionId})"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-light text-danger border" onclick="deleteLesson(${l.id}, ${sectionId}, event)"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    async function saveLesson() {
+        const id = document.getElementById('lessonId').value;
+        const sectionId = document.getElementById('parentSectionId').value;
+        const title = document.getElementById('lessonTitle').value;
+        const type = document.getElementById('lessonType').value;
+        if(!title) { alert('Nhập tên bài học!'); return; }
+
+        const payload = {
+            title: title,
+            lessonType: type,
+            videoUrl: document.getElementById('videoUrl').value,
+            assetUrl: document.getElementById('assetUrl').value,
+            documentContent: document.getElementById('documentContent').value,
+            isFreePreview: document.getElementById('isFreePreview').checked,
+            isPublicForCohorts: document.getElementById('isPublicForCohorts').checked
+        };
+
+        const url = id ? `/api/instructor/courses/lessons/${id}` : `/api/instructor/courses/sections/${sectionId}/lessons`;
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                lessonModal.hide();
+                loadLessons(sectionId); // reload that section's lessons
+            } else {
+                const errText = await res.text();
+                alert('Có lỗi xảy ra khi lưu bài học: ' + errText);
+            }
+        } catch(e) { console.error(e); alert('Lỗi: ' + e); }
+    }
+    
+    function deleteLesson(id, sectionId, event) {
+        if(event) event.stopPropagation();
+        showConfirmModal(event || window.event, async function() {
+            try {
+                const res = await fetch(`/api/instructor/courses/lessons/${id}`, { method: 'DELETE' });
+                if(res.ok) {
+                    loadLessons(sectionId);
+                }
+            } catch(e) { console.error(e); }
+        }, 'Xóa bài học này?');
+    }
+
+    // --- ASSET PICKER LOGIC ---
+    let assetPickerModal;
+    
+    // Tiện ích (util) debounce để giảm số lần gọi API khi gõ
+    function debounceSearch(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        assetPickerModal = new bootstrap.Modal(document.getElementById('assetPickerModal'));
+        
+        // Gắn sự kiện tìm kiếm tài nguyên với debounce
+        const searchInput = document.getElementById('assetSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounceSearch((e) => {
+                fetchAssets(e.target.value);
+            }, 400));
+        }
+    });
+
+    function openAssetPicker() {
+        document.getElementById('assetSearchInput').value = '';
+        assetPickerModal.show();
+        fetchAssets('');
+    }
+
+    async function fetchAssets(keyword) {
+        const grid = document.getElementById('assetGrid');
+        grid.innerHTML = '<div class="text-center py-4"><span class="spinner-border text-primary"></span> Đang tìm kiếm...</div>';
+        try {
+            const url = keyword ? `/api/instructor/courses/assets?keyword=${encodeURIComponent(keyword)}` : '/api/instructor/courses/assets';
+            const res = await fetch(url);
+            if (res.ok) {
+                const assets = await res.json();
+                renderAssets(assets);
+            } else {
+                grid.innerHTML = '<div class="text-center text-danger py-4">Lỗi tải danh sách tài nguyên</div>';
+            }
+        } catch (e) {
+            console.error(e);
+            grid.innerHTML = '<div class="text-center text-danger py-4">Lỗi kết nối máy chủ</div>';
+        }
+    }
+
+    function renderAssets(assets) {
+        const grid = document.getElementById('assetGrid');
+        if (assets.length === 0) {
+            grid.innerHTML = '<div class="text-center py-4 text-muted">Kho tài nguyên của bạn đang trống.<br>Vào mục "Kho tài nguyên số" để tải lên file mới.</div>';
+            return;
+        }
+        
+        let html = '';
+        assets.forEach(a => {
+            let icon = 'bi-file-earmark';
+            if (a.assetType === 'VIDEO') icon = 'bi-file-play text-primary';
+            else if (a.assetType === 'DOCUMENT') icon = 'bi-file-earmark-pdf text-danger';
+            else if (a.assetType === 'SLIDE') icon = 'bi-file-earmark-slides text-warning';
+            
+            html += `
+                <div class="col-md-4">
+                    <div class="card h-100 border text-center p-3" style="cursor:pointer;" onclick="selectAsset('${a.cloudinaryUrl}')">
+                        <div class="mb-2"><i class="bi ${icon}" style="font-size: 2rem;"></i></div>
+                        <div class="text-truncate" title="${a.name}" style="font-size: 0.9rem;">${a.name}</div>
+                        <small class="text-muted">${a.assetType}</small>
+                    </div>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function selectAsset(url) {
+        if (url) {
+            document.getElementById('assetUrl').value = url;
+        }
+        assetPickerModal.hide();
+    }
+</script>
+</body>
+</html>

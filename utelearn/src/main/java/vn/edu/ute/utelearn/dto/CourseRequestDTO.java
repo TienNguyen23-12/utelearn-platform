@@ -26,4 +26,6 @@ public class CourseRequestDTO {
 
     @NotNull(message = "Vui lòng chọn danh mục")
     private Long categoryId;
+
+    private String objectives;
 }

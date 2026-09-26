@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -71,6 +74,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public Course createCourse(vn.edu.ute.utelearn.dto.CourseRequestDTO request, Long instructorId) {
         vn.edu.ute.utelearn.entity.Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
@@ -91,19 +95,19 @@ public class CourseServiceImpl implements CourseService {
                 .category(category)
                 .createdBy(creator)
                 .status("DRAFT")
+                .objectives(parseObjectives(request.getObjectives()))
                 .build();
 
         return courseRepository.save(course);
     }
 
     @Override
+    @Transactional
     public Course updateCourse(Long courseId, vn.edu.ute.utelearn.dto.CourseRequestDTO request, Long instructorId) {
         Course course = getCourseById(courseId);
         
-        // Kiểm tra quyền (phải là người tạo hoặc Admin - logic Admin có thể kiểm tra ở Controller/RBAC)
         if (!course.getCreatedBy().getId().equals(instructorId)) {
-            // Optional: Kiểm tra admin roles nếu cần. Hiện tại controller đã chặn theo RBAC.
-            // Bỏ qua lỗi nếu là Admin, nhưng tạm thời cứ chặn nếu không phải owner
+            throw new RuntimeException("Bạn không có quyền sửa khóa học này");
         }
 
         vn.edu.ute.utelearn.entity.Category category = categoryRepository.findById(request.getCategoryId())
@@ -117,11 +121,28 @@ public class CourseServiceImpl implements CourseService {
         course.setThumbnailUrl(request.getThumbnailUrl());
         course.setLevel(request.getLevel());
         course.setCategory(category);
+        course.setObjectives(parseObjectives(request.getObjectives()));
 
         return courseRepository.save(course);
     }
 
+    private String parseObjectives(String objectivesStr) {
+        if (objectivesStr == null || objectivesStr.trim().isEmpty()) {
+            return "[]";
+        }
+        try {
+            List<String> list = Arrays.stream(objectivesStr.split("\n"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+            return new ObjectMapper().writeValueAsString(list);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
     @Override
+    @Transactional
     public void updateCourseStatus(Long courseId, String status) {
         Course course = getCourseById(courseId);
         course.setStatus(status);
@@ -129,8 +150,21 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    @Transactional
     public void deleteCourse(Long id) {
         Course course = getCourseById(id);
+        courseRepository.delete(course);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCourse(Long id, Long instructorId) {
+        Course course = getCourseById(id);
+        
+        if (!course.getCreatedBy().getId().equals(instructorId)) {
+            throw new RuntimeException("Bạn không có quyền xóa khóa học này");
+        }
+
         courseRepository.delete(course);
     }
 

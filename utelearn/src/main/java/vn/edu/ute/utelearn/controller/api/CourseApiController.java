@@ -24,6 +24,8 @@ public class CourseApiController {
 
     private final CourseService courseService;
     private final CategoryService categoryService;
+    private final vn.edu.ute.utelearn.service.SectionService sectionService;
+    private final vn.edu.ute.utelearn.service.LessonService lessonService;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -92,6 +94,32 @@ public class CourseApiController {
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
             map.put("instructorName", course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
+
+            List<Map<String, Object>> curriculum = new java.util.ArrayList<>();
+            List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(course.getId());
+            for (vn.edu.ute.utelearn.entity.Section s : sections) {
+                Map<String, Object> sectionMap = new HashMap<>();
+                Map<String, Object> sDto = new HashMap<>();
+                sDto.put("id", s.getId());
+                sDto.put("title", s.getTitle());
+                sectionMap.put("section", sDto);
+                
+                List<Map<String, Object>> lessonDtos = new java.util.ArrayList<>();
+                for (vn.edu.ute.utelearn.entity.Lesson l : lessonService.getLessonsBySectionId(s.getId())) {
+                    Map<String, Object> lDto = new HashMap<>();
+                    lDto.put("id", l.getId());
+                    lDto.put("title", l.getTitle());
+                    lDto.put("lessonType", l.getLessonType());
+                    lDto.put("isFreePreview", l.getIsFreePreview());
+                    lDto.put("assetUrl", l.getAssetUrl());
+                    lDto.put("videoUrl", l.getVideoUrl());
+                    lDto.put("documentContent", l.getDocumentContent());
+                    lessonDtos.add(lDto);
+                }
+                sectionMap.put("lessons", lessonDtos);
+                curriculum.add(sectionMap);
+            }
+            map.put("curriculum", curriculum);
 
             return ResponseEntity.ok(map);
         } catch (Exception e) {

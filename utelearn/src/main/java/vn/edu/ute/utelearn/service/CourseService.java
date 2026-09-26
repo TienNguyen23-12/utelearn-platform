@@ -12,5 +12,6 @@ public interface CourseService {
     Course updateCourse(Long courseId, vn.edu.ute.utelearn.dto.CourseRequestDTO request, Long instructorId);
     void updateCourseStatus(Long courseId, String status);
     void deleteCourse(Long id);
+    void deleteCourse(Long id, Long instructorId);
     Course getCourseById(Long id);
 }
