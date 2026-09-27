@@ -52,6 +52,12 @@ public class DataSeeder implements CommandLineRunner {
             }
 
             seedCategories();
+            
+            // Fix stuck courses from previous bug
+            int fixedCourses = jdbcTemplate.update("UPDATE courses SET status = 'PUBLISHED' WHERE status = 'APPROVED'");
+            if (fixedCourses > 0) {
+                log.info("[DataSeeder] Đã tự động sửa " + fixedCourses + " khóa học bị kẹt ở trạng thái APPROVED sang PUBLISHED.");
+            }
 
             log.info("[DataSeeder] Quá trình nạp dữ liệu mẫu hoàn tất thành công!");
         } catch (Exception e) {

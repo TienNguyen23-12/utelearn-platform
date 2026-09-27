@@ -58,7 +58,7 @@ public class ModerationServiceImpl implements ModerationService {
 
         if ("COURSE".equals(task.getItemType())) {
             Course course = courseRepository.findById(task.getItemId()).orElseThrow();
-            course.setStatus("APPROVED"); // Course is now approved
+            course.setStatus("PUBLISHED"); // Course is now published
             courseRepository.save(course);
         }
     }

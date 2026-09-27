@@ -257,7 +257,12 @@
                             else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
                             else if (lesson.lessonType === 'ANNOUNCEMENT') icon = 'bi-megaphone-fill text-danger';
                             
-                            let badge = lesson.isFreePreview ? '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;">Học thử</span>' : '';
+                            let badge = '';
+                            if (lesson.isLocked) {
+                                badge = '<span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 11px;"><i class="bi bi-lock-fill me-1"></i> Đã khóa</span>';
+                            } else if (lesson.isFreePreview) {
+                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;">Học thử</span>';
+                            }
                             
                             let contentHtml = '';
                             if (lesson.documentContent) {
@@ -296,7 +301,7 @@
                                     ${item.section.title}
                                 </button>
                             </h2>
-                            <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#curriculumAccordion">
+                            <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}">
                                 <div class="accordion-body p-0">
                                     <ul class="list-group list-group-flush">
                                         ${lessonsHtml}

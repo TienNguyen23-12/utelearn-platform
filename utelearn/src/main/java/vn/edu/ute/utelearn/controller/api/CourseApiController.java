@@ -26,6 +26,8 @@ public class CourseApiController {
     private final CategoryService categoryService;
     private final vn.edu.ute.utelearn.service.SectionService sectionService;
     private final vn.edu.ute.utelearn.service.LessonService lessonService;
+    private final vn.edu.ute.utelearn.service.AuthService authService;
+    private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -95,6 +97,21 @@ public class CourseApiController {
             map.put("instructorName", course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
 
+            // Kiểm tra quyền truy cập nội dung bài học
+            boolean hasAccess = false;
+            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            if (currentUserOpt.isPresent()) {
+                vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
+                boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN"));
+                boolean isModerator = user.getRoles().stream().anyMatch(r -> r.getCode().equals("MODERATOR"));
+                boolean isInstructor = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
+                boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+                
+                if (isAdmin || isModerator || isInstructor || isEnrolled) {
+                    hasAccess = true;
+                }
+            }
+
             List<Map<String, Object>> curriculum = new java.util.ArrayList<>();
             List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(course.getId());
             for (vn.edu.ute.utelearn.entity.Section s : sections) {
@@ -111,9 +128,18 @@ public class CourseApiController {
                     lDto.put("title", l.getTitle());
                     lDto.put("lessonType", l.getLessonType());
                     lDto.put("isFreePreview", l.getIsFreePreview());
-                    lDto.put("assetUrl", l.getAssetUrl());
-                    lDto.put("videoUrl", l.getVideoUrl());
-                    lDto.put("documentContent", l.getDocumentContent());
+                    
+                    if (hasAccess || (l.getIsFreePreview() != null && l.getIsFreePreview())) {
+                        lDto.put("assetUrl", l.getAssetUrl());
+                        lDto.put("videoUrl", l.getVideoUrl());
+                        lDto.put("documentContent", l.getDocumentContent());
+                    } else {
+                        lDto.put("assetUrl", null);
+                        lDto.put("videoUrl", null);
+                        lDto.put("documentContent", null);
+                        lDto.put("isLocked", true);
+                    }
+                    
                     lessonDtos.add(lDto);
                 }
                 sectionMap.put("lessons", lessonDtos);
