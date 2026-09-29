@@ -42,6 +42,7 @@
                     </li>
                     <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
                     <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                    <li><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
                     <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/admin/users"><i class="bi bi-people-fill me-2 text-info"></i>Quản lý Tài khoản</a></li>
                     <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/admin/roles"><i class="bi bi-shield-lock-fill me-2 text-warning"></i>Phân quyền Hệ thống</a></li>
                     <li><hr class="dropdown-divider"></li>

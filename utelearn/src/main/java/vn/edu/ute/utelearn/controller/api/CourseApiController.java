@@ -28,6 +28,7 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.service.LessonService lessonService;
     private final vn.edu.ute.utelearn.service.AuthService authService;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
+    private final vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -106,8 +107,9 @@ public class CourseApiController {
                 boolean isModerator = user.getRoles().stream().anyMatch(r -> r.getCode().equals("MODERATOR"));
                 boolean isInstructor = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
                 boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+                boolean isEnrolledDirect = enrollmentRepository.existsByUserAndCourse(user, course);
                 
-                if (isAdmin || isModerator || isInstructor || isEnrolled) {
+                if (isAdmin || isModerator || isInstructor || isEnrolled || isEnrolledDirect) {
                     hasAccess = true;
                 }
             }
