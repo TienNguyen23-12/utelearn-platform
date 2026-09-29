@@ -18,4 +18,7 @@ public interface ModerationTaskRepository extends JpaRepository<ModerationTask, 
     
     @EntityGraph(attributePaths = {"author", "cohort", "assignedTo", "escalatedBy"})
     java.util.Optional<ModerationTask> findById(Long id);
+
+    long countByStatus(String status);
+    long countByStatusAndCreatedAtBetween(String status, java.time.Instant start, java.time.Instant end);
 }

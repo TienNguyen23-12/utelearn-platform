@@ -108,6 +108,18 @@
         <div class="sidebar-heading">KIỂM DUYỆT & THỰC HÀNH</div>
         <ul class="nav flex-column mb-2">
             <li class="nav-item">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'moderator-attendance'} ? ' active' : ''" href="/moderator/attendance">
+                    <i class="bi bi-clock-history text-info"></i>
+                    <span>Điểm danh ca trực</span>
+                </a>
+            </li>
+            <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin-attendance'} ? ' active' : ''" href="/admin/attendance">
+                    <i class="bi bi-clipboard-data text-primary"></i>
+                    <span>Thống kê điểm danh</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link sidebar-item" th:classappend="${activePage == 'moderation'} ? ' active' : ''" href="/moderator/queue">
                     <i class="bi bi-check2-circle text-danger"></i>
                     <span>Hàng đợi kiểm duyệt</span>

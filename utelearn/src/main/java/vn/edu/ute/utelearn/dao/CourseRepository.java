@@ -17,4 +17,6 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
     Optional<Course> findById(Long id);
+
+    long countByCreatedAtBetween(java.time.Instant start, java.time.Instant end);
 }
