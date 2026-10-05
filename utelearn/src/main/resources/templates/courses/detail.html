@@ -181,6 +181,7 @@
                             </div>
                         </li>
                         <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
                         <li th:if="${@rbac.hasRole('ADMIN')}">
                             <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/dashboard">
                                 <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
@@ -218,6 +219,9 @@
 
 <script th:inline="javascript">
     const slug = /*[[${courseSlug}]]*/ 'default-slug';
+    const isEnrolled = /*[[${isEnrolled != null ? isEnrolled : false}]]*/ false;
+    const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
+    const canViewContent = isEnrolled || hasAccessRole;
 
     document.addEventListener("DOMContentLoaded", async () => {
         try {
@@ -240,6 +244,145 @@
                 } catch(e) {}
             }
 
+            let introHtml = `
+                ${objectivesHtml}
+                <h5 class="fw-bold mb-3">Mô tả khóa học</h5>
+                <div class="text-muted" style="line-height: 1.7;">
+                    ${course.description || 'Chưa có mô tả chi tiết.'}
+                </div>
+            `;
+
+            let curriculumHtml = '';
+            if (course.curriculum && course.curriculum.length > 0) {
+                curriculumHtml = `
+                    <h5 class="fw-bold mt-5 mb-3">Nội dung khóa học</h5>
+                    <div class="accordion mb-4" id="curriculumAccordion">
+                `;
+                course.curriculum.forEach((item, index) => {
+                    let lessonsHtml = '';
+                    if (item.lessons && item.lessons.length > 0) {
+                        item.lessons.forEach(lesson => {
+                            let icon = 'bi-file-earmark-text';
+                            if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
+                            else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
+                            else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
+                            else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
+                            else if (lesson.lessonType === 'ANNOUNCEMENT') icon = 'bi-megaphone-fill text-danger';
+                            
+                            let badge = '';
+                            if (lesson.isLocked) {
+                                badge = '<span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 11px;"><i class="bi bi-lock-fill me-1"></i> Đã khóa</span>';
+                            } else if (lesson.isFreePreview) {
+                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;">Học thử</span>';
+                            }
+                            
+                            let contentHtml = '';
+                            let actionsHtml = '';
+                            
+                            if (canViewContent || lesson.isFreePreview) {
+                                if (lesson.documentContent) {
+                                    contentHtml += `<div class="mt-2 text-dark small bg-white border p-3 rounded shadow-sm" style="white-space: pre-wrap;">${lesson.documentContent}</div>`;
+                                }
+                                if (lesson.videoUrl) {
+                                    actionsHtml += `<a href="${lesson.videoUrl}" target="_blank" class="btn btn-sm btn-primary me-2"><i class="bi bi-play-circle me-1"></i>Xem Video</a>`;
+                                }
+                                if (lesson.assetUrl) {
+                                    actionsHtml += `<a href="${lesson.assetUrl}" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Tài liệu đính kèm</a>`;
+                                }
+                            } else {
+                                actionsHtml += `<span class="small text-muted fst-italic"><i class="bi bi-lock-fill me-1"></i>Vui lòng tham gia khóa học để xem nội dung</span>`;
+                            }
+
+                            if (actionsHtml) {
+                                contentHtml += `<div class="mt-2">${actionsHtml}</div>`;
+                            }
+                            
+                            lessonsHtml += `
+                                <li class="list-group-item p-3 border-0 border-bottom bg-transparent">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi ${icon} fs-5 me-3"></i>
+                                        <span class="fw-medium">${lesson.title}</span>
+                                        ${badge}
+                                    </div>
+                                    ${contentHtml ? `<div class="ms-5 mt-2">${contentHtml}</div>` : ''}
+                                </li>
+                            `;
+                        });
+                    } else {
+                        lessonsHtml = '<li class="list-group-item text-muted small p-3 text-center border-0 border-bottom">Chương này chưa có bài học nào.</li>';
+                    }
+
+                    curriculumHtml += `
+                        <div class="accordion-item border-0 rounded-3 mb-2 shadow-sm overflow-hidden">
+                            <h2 class="accordion-header" id="heading${index}">
+                                <button class="accordion-button bg-light fw-bold ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                                    ${item.section.title}
+                                </button>
+                            </h2>
+                            <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}">
+                                <div class="accordion-body p-0">
+                                    <ul class="list-group list-group-flush">
+                                        ${lessonsHtml}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                curriculumHtml += `</div>`;
+            }
+
+            let enrollFormHtml = '';
+            if (isEnrolled) {
+                enrollFormHtml = `<a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3">Vào học ngay</a>`;
+            } else {
+                enrollFormHtml = `
+                    <form action="/courses/${slug}/enroll" method="post">
+                        <button type="submit" class="btn btn-gradient w-100 rounded-pill mb-3">Tham gia ngay</button>
+                    </form>
+                `;
+            }
+
+            let mainLayoutHtml = '';
+            if (hasAccessRole) {
+                // Approval layout: 2/3 curriculum on left, 1/3 intro on right
+                mainLayoutHtml = `
+                    <div class="col-lg-8">
+                        <div class="content-card">
+                            ${curriculumHtml}
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mt-4 mt-lg-0" style="margin-top: -120px !important;">
+                        <div class="enroll-card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
+                            <img src="${img}" class="enroll-img w-100" style="height: 220px; object-fit: cover;" alt="Course Image">
+                        </div>
+                        <div class="content-card p-4">
+                            ${introHtml}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Standard Student layout
+                mainLayoutHtml = `
+                    <div class="col-lg-8">
+                        <div class="content-card">
+                            ${introHtml}
+                            ${curriculumHtml}
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mt-4 mt-lg-0" style="margin-top: -120px !important;">
+                        <div class="enroll-card">
+                            <img src="${img}" class="enroll-img" alt="Course Image">
+                            <div class="p-4">
+                                <h4 class="fw-bold text-center mb-3">Miễn phí</h4>
+                                ${enrollFormHtml}
+                                <div class="text-center small text-muted">${isEnrolled ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             const html = `
             <div class="hero-banner">
                 <div class="container">
@@ -259,25 +402,7 @@
 
             <div class="container mb-5">
                 <div class="row">
-                    <div class="col-lg-8">
-                        <div class="content-card">
-                            ${objectivesHtml}
-                            <h5 class="fw-bold mb-3">Mô tả khóa học</h5>
-                            <div class="text-muted" style="line-height: 1.7;">
-                                ${course.description || 'Chưa có mô tả chi tiết.'}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 mt-4 mt-lg-0" style="margin-top: -120px !important;">
-                        <div class="enroll-card">
-                            <img src="${img}" class="enroll-img" alt="Course Image">
-                            <div class="p-4">
-                                <h4 class="fw-bold text-center mb-3">Miễn phí</h4>
-                                <button class="btn btn-gradient w-100 rounded-pill mb-3">Tham gia ngay</button>
-                                <div class="text-center small text-muted">Bắt đầu học ngay hôm nay!</div>
-                            </div>
-                        </div>
-                    </div>
+                    ${mainLayoutHtml}
                 </div>
             </div>
             `;
@@ -295,5 +420,6 @@
         }
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

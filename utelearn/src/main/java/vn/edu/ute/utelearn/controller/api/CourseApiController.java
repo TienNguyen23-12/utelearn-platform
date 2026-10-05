@@ -24,6 +24,11 @@ public class CourseApiController {
 
     private final CourseService courseService;
     private final CategoryService categoryService;
+    private final vn.edu.ute.utelearn.service.SectionService sectionService;
+    private final vn.edu.ute.utelearn.service.LessonService lessonService;
+    private final vn.edu.ute.utelearn.service.AuthService authService;
+    private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
+    private final vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -92,6 +97,57 @@ public class CourseApiController {
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
             map.put("instructorName", course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
+
+            // Kiểm tra quyền truy cập nội dung bài học
+            boolean hasAccess = false;
+            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            if (currentUserOpt.isPresent()) {
+                vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
+                boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN"));
+                boolean isModerator = user.getRoles().stream().anyMatch(r -> r.getCode().equals("MODERATOR"));
+                boolean isInstructor = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
+                boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+                boolean isEnrolledDirect = enrollmentRepository.existsByUserAndCourse(user, course);
+                
+                if (isAdmin || isModerator || isInstructor || isEnrolled || isEnrolledDirect) {
+                    hasAccess = true;
+                }
+            }
+
+            List<Map<String, Object>> curriculum = new java.util.ArrayList<>();
+            List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(course.getId());
+            for (vn.edu.ute.utelearn.entity.Section s : sections) {
+                Map<String, Object> sectionMap = new HashMap<>();
+                Map<String, Object> sDto = new HashMap<>();
+                sDto.put("id", s.getId());
+                sDto.put("title", s.getTitle());
+                sectionMap.put("section", sDto);
+                
+                List<Map<String, Object>> lessonDtos = new java.util.ArrayList<>();
+                for (vn.edu.ute.utelearn.entity.Lesson l : lessonService.getLessonsBySectionId(s.getId())) {
+                    Map<String, Object> lDto = new HashMap<>();
+                    lDto.put("id", l.getId());
+                    lDto.put("title", l.getTitle());
+                    lDto.put("lessonType", l.getLessonType());
+                    lDto.put("isFreePreview", l.getIsFreePreview());
+                    
+                    if (hasAccess || (l.getIsFreePreview() != null && l.getIsFreePreview())) {
+                        lDto.put("assetUrl", l.getAssetUrl());
+                        lDto.put("videoUrl", l.getVideoUrl());
+                        lDto.put("documentContent", l.getDocumentContent());
+                    } else {
+                        lDto.put("assetUrl", null);
+                        lDto.put("videoUrl", null);
+                        lDto.put("documentContent", null);
+                        lDto.put("isLocked", true);
+                    }
+                    
+                    lessonDtos.add(lDto);
+                }
+                sectionMap.put("lessons", lessonDtos);
+                curriculum.add(sectionMap);
+            }
+            map.put("curriculum", curriculum);
 
             return ResponseEntity.ok(map);
         } catch (Exception e) {

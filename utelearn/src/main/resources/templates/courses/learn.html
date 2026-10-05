@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học tập - UTELearn</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Plyr CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <!-- Admin Master Layout CSS -->
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    
+    <style>
+        .learn-wrapper {
+            display: flex;
+            height: calc(100vh - 60px); /* Height minus navbar */
+            overflow: hidden;
+            background-color: #f8fafc;
+        }
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #fff;
+        }
+        .curriculum-sidebar {
+            width: 350px;
+            background: #f8fafc;
+            border-left: 1px solid #e2e8f0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: #e0e7ff;
+            color: #1e40af;
+        }
+        .lesson-item {
+            cursor: pointer;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .lesson-item:hover {
+            background: #e2e8f0;
+        }
+        .lesson-item.active {
+            background: #dbeafe;
+            border-left: 4px solid #2563eb;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+            margin-bottom: 20px;
+        }
+        .video-container iframe, .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        @media (max-width: 991.98px) {
+            .learn-wrapper {
+                flex-direction: column;
+                height: auto;
+                overflow: auto;
+            }
+            .curriculum-sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid #e2e8f0;
+            }
+        }
+
+        /* Overrides to hide Master Sidebar and make full width */
+        .app-content-wrapper {
+            margin-left: 0 !important;
+        }
+        /* Fix dropdown z-index issue */
+        .app-header {
+            z-index: 1050 !important;
+        }
+        .app-header button[onclick="toggleSidebar()"] {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Master Content Wrapper -->
+<div class="app-content-wrapper">
+    <!-- Top Navbar Fragment -->
+    <header th:replace="~{fragments/navbar :: navbar('Đang tải khóa học...')}"></header>
+
+    <!-- Floating button to reopen sidebar -->
+    <button id="openSidebarBtn" class="btn btn-light rounded-start shadow border border-end-0" style="position: fixed; right: 0; top: 90px; z-index: 1040; display: none; padding: 10px 15px;" title="Mở nội dung khóa học">
+        <i class="bi bi-list fs-5"></i>
+    </button>
+
+    <!-- Main Content Area (Full width/height for learning) -->
+    <main class="app-main-content p-0 m-0">
+        <div class="learn-wrapper">
+            <!-- Left Content Area -->
+            <div class="content-area" id="mainContent">
+                <!-- Content will be rendered here via JS -->
+                <div class="text-center py-5 mt-5">
+                    <h4 class="text-muted">Vui lòng chọn bài học từ danh sách bên phải.</h4>
+                </div>
+            </div>
+            
+            <!-- Right Curriculum Sidebar -->
+            <div class="curriculum-sidebar shadow-sm" id="curriculumSidebar">
+                <div class="p-3 border-bottom bg-white sticky-top d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-light border-0 d-flex align-items-center justify-content-center text-dark" style="width: 32px; height: 32px;" id="closeSidebarBtn" title="Đóng nội dung khóa học">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <h6 class="fw-bold mb-0">Nội dung khóa học</h6>
+                    </div>
+                    <a th:href="@{'/courses/' + ${courseSlug}}" class="btn btn-sm btn-light py-1 px-2 border small">
+                        <i class="bi bi-info-circle me-1"></i>Chi tiết
+                    </a>
+                </div>
+                <div class="accordion accordion-flush" id="curriculumAccordion">
+                    <!-- Sidebar content rendered via JS -->
+                    <div class="text-center py-4 text-muted small">Đang tải dữ liệu...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Admin Custom JS -->
+<script th:src="@{/js/admin-layout.js}"></script>
+<!-- Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+<script th:inline="javascript">
+    const slug = /*[[${courseSlug}]]*/ '';
+    let courseData = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            // Close sidebar logic
+            const closeBtn = document.getElementById('closeSidebarBtn');
+            const openBtn = document.getElementById('openSidebarBtn');
+            const sidebar = document.getElementById('curriculumSidebar');
+            
+            if (closeBtn && openBtn && sidebar) {
+                closeBtn.onclick = function() {
+                    sidebar.style.display = 'none';
+                    openBtn.style.display = 'block';
+                };
+                
+                openBtn.onclick = function() {
+                    sidebar.style.display = 'flex';
+                    openBtn.style.display = 'none';
+                };
+            }
+
+            const res = await fetch('/api/courses/' + slug);
+            if (!res.ok) throw new Error("Course not found");
+            courseData = await res.json();
+            
+            // Update Master Navbar title
+            const navbarTitleEl = document.querySelector('.app-header h5');
+            if(navbarTitleEl) {
+                navbarTitleEl.textContent = courseData.title;
+            }
+            document.title = courseData.title + " - UTELearn";
+
+            renderSidebar();
+        } catch(e) {
+            console.error(e);
+            alert("Lỗi tải dữ liệu khóa học.");
+        }
+    });
+
+    function renderSidebar() {
+        const container = document.getElementById('curriculumAccordion');
+        if (!courseData.curriculum || courseData.curriculum.length === 0) {
+            container.innerHTML = '<div class="p-3 text-muted">Chưa có nội dung.</div>';
+            return;
+        }
+
+        let html = '';
+        courseData.curriculum.forEach((section, index) => {
+            let lessonsHtml = '';
+            if (section.lessons && section.lessons.length > 0) {
+                section.lessons.forEach(lesson => {
+                    let icon = 'bi-file-earmark-text';
+                    if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
+                    else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
+                    else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
+                    
+                    lessonsHtml += `
+                        <div class="lesson-item" id="lesson-item-${lesson.id}" onclick="loadLesson(${lesson.id})">
+                            <i class="bi ${icon} me-3 fs-5"></i>
+                            <div class="small fw-medium">${lesson.title}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                lessonsHtml = '<div class="p-2 small text-muted text-center">Trống</div>';
+            }
+
+            html += `
+                <div class="accordion-item border-0">
+                    <h2 class="accordion-header" id="heading${index}">
+                        <button class="accordion-button bg-transparent fw-bold ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                            ${section.section.title}
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}">
+                        <div class="accordion-body p-0">
+                            ${lessonsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        
+        // Auto-load first lesson if available
+        if (courseData.curriculum[0] && courseData.curriculum[0].lessons && courseData.curriculum[0].lessons.length > 0) {
+            loadLesson(courseData.curriculum[0].lessons[0].id);
+        }
+    }
+
+    let player = null;
+
+    function loadLesson(lessonId) {
+        // Highlight active lesson in sidebar
+        document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.getElementById('lesson-item-' + lessonId);
+        if(activeItem) activeItem.classList.add('active');
+
+        // Find lesson in courseData
+        let foundLesson = null;
+        for (const section of courseData.curriculum) {
+            if (section.lessons) {
+                foundLesson = section.lessons.find(l => l.id === lessonId);
+                if (foundLesson) break;
+            }
+        }
+
+        if (!foundLesson) return;
+
+        const mainContent = document.getElementById('mainContent');
+        
+        // Destroy existing player if it exists
+        if (player) {
+            player.destroy();
+            player = null;
+        }
+        
+        // Resolve video URL: if it's a VIDEO lesson but videoUrl is empty, it might be stored in assetUrl (from asset picker)
+        let url = foundLesson.videoUrl;
+        let attachedAsset = foundLesson.assetUrl;
+        if (foundLesson.lessonType === 'VIDEO' && !url && attachedAsset) {
+            url = attachedAsset;
+            attachedAsset = null; // Consume the asset as the video
+        }
+        
+        let mediaHtml = '';
+        let isVideo = false;
+        
+        if (foundLesson.lessonType === 'VIDEO' && url) {
+            isVideo = true;
+            
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                // Determine Youtube ID
+                let videoId = '';
+                if (url.includes('v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                } else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                } else if (url.includes('/embed/')) {
+                    videoId = url.split('/embed/')[1].split('?')[0];
+                } else if (url.includes('/shorts/')) {
+                    videoId = url.split('/shorts/')[1].split('?')[0];
+                }
+                
+                mediaHtml = `
+                    <div class="plyr__video-embed" id="player">
+                        <iframe
+                            src="https://www.youtube.com/embed/${videoId}?origin=https://plyr.io&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
+                            allowfullscreen
+                            allowtransparency
+                            allow="autoplay"
+                        ></iframe>
+                    </div>
+                `;
+            } else if (url.includes('vimeo.com')) {
+                let videoId = url.split('vimeo.com/')[1].split('?')[0];
+                mediaHtml = `
+                    <div class="plyr__video-embed" id="player">
+                        <iframe
+                            src="https://player.vimeo.com/video/${videoId}?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
+                            allowfullscreen
+                            allowtransparency
+                            allow="autoplay"
+                        ></iframe>
+                    </div>
+                `;
+            } else if (url.includes('drive.google.com')) {
+                // Google Drive preview
+                isVideo = false; 
+                mediaHtml = `
+                    <div class="video-container shadow">
+                        <iframe src="${url}" frameborder="0" allowfullscreen style="width: 100%; height: 500px; border-radius: 12px;"></iframe>
+                    </div>
+                `;
+            } else {
+                // Treat as direct HTML5 video (e.g. uploaded internal assets, .mp4, etc.)
+                mediaHtml = `
+                    <video id="player" playsinline controls data-poster="${courseData.thumbnailUrl || ''}">
+                        <source src="${url}" type="video/mp4" />
+                    </video>
+                `;
+            }
+        }
+
+        let docHtml = '';
+        if (foundLesson.documentContent) {
+            docHtml = `<div class="card border-0 shadow-sm mt-4 p-4" style="line-height: 1.8; font-size: 15px; color: #334155;"><div style="white-space: pre-wrap;">${foundLesson.documentContent}</div></div>`;
+        }
+        
+        let pdfViewerHtml = '';
+        if (attachedAsset) {
+            let assetUrlLower = attachedAsset.toLowerCase();
+            if (assetUrlLower.endsWith('.pdf')) {
+                // Render PDF directly using iframe
+                pdfViewerHtml = `
+                    <div class="mt-4 shadow-sm border rounded overflow-hidden" style="height: 700px;">
+                        <iframe src="${attachedAsset}" width="100%" height="100%" frameborder="0"></iframe>
+                    </div>
+                `;
+            } else if (assetUrlLower.endsWith('.doc') || assetUrlLower.endsWith('.docx') || 
+                       assetUrlLower.endsWith('.xls') || assetUrlLower.endsWith('.xlsx') || 
+                       assetUrlLower.endsWith('.ppt') || assetUrlLower.endsWith('.pptx')) {
+                
+                // Microsoft Office Viewer works best for Office files
+                let encodedUrl = encodeURIComponent(attachedAsset);
+                let officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+                
+                pdfViewerHtml = `
+                    <div class="mt-4 shadow-sm border rounded overflow-hidden" style="height: 700px; background: #f3f4f6;">
+                        <iframe src="${officeViewerUrl}" width="100%" height="100%" frameborder="0"></iframe>
+                    </div>
+                `;
+            } else {
+                // Other assets just show download button
+                docHtml += `<div class="mt-4"><a href="${attachedAsset}" class="btn btn-outline-primary rounded-pill px-4 shadow-sm" target="_blank"><i class="bi bi-download me-2"></i>Tải tài nguyên đính kèm</a></div>`;
+            }
+        }
+
+        mainContent.innerHTML = `
+            <div style="max-width: 1000px; margin: 0 auto; padding-bottom: 50px;">
+                <h3 class="fw-bold mb-4 text-dark">${foundLesson.title}</h3>
+                ${mediaHtml}
+                ${docHtml}
+                ${pdfViewerHtml}
+            </div>
+        `;
+        
+        // Initialize Plyr if it's a video
+        if (isVideo) {
+            player = new Plyr('#player', {
+                captions: { active: true, update: true, language: 'en' },
+                speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] }
+            });
+        }
+    }
+</script>
+</body>
+</html>

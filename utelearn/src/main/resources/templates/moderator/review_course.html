@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duyệt Khóa học - UTELearn Platform</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar('moderation')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Duyệt nội dung')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <a th:href="@{/moderator/queue}" class="btn btn-icon btn-light rounded-circle me-3 border">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h3 class="fw-bold mb-1">Kiểm duyệt Khóa học</h3>
+                    <p class="text-muted mb-0">Task #<span th:text="${task.id}"></span> - Tác giả: <span th:text="${task.author?.fullName}"></span></p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-danger" onclick="openRejectModal()"><i class="bi bi-x-circle me-1"></i> Từ chối</button>
+                <button class="btn btn-outline-warning" onclick="openEscalateModal()"><i class="bi bi-arrow-up-circle me-1"></i> Chuyển Admin</button>
+                <button class="btn btn-success" onclick="openApproveModal()"><i class="bi bi-check-circle me-1"></i> Phê duyệt</button>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-4">Thông tin Khóa học</h5>
+                    <img th:if="${course.thumbnailUrl}" th:src="${course.thumbnailUrl}" class="img-fluid rounded mb-3" alt="Thumbnail">
+                    <h6 class="fw-bold" th:text="${course.title}">Tên khóa học</h6>
+                    <p class="text-muted small mb-2" th:text="${course.headline}">Mô tả ngắn</p>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Cấp độ</span>
+                        <span class="fw-medium" th:text="${course.level}">Beginner</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Danh mục</span>
+                        <span class="fw-medium" th:text="${course.category?.name}">Category</span>
+                    </div>
+                    
+                    <hr>
+                    <a th:href="@{/courses/{slug}(slug=${course.slug})}" target="_blank" class="btn btn-primary w-100 rounded-3 shadow-sm mt-2">
+                        <i class="bi bi-box-arrow-up-right me-2"></i> Xem Demo Khóa Học
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-lg-8">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-4">Mô tả chi tiết</h5>
+                    <div class="bg-light p-3 rounded-3 mb-4" th:utext="${course.description}">
+                    </div>
+                    
+                    <h5 class="fw-bold mb-4">Kiến thức đạt được</h5>
+                    <div class="bg-light p-3 rounded-3 mb-4" th:utext="${course.objectives}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Phê duyệt Khóa học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Khóa học này sẽ được xuất bản lên hệ thống.</p>
+                <div class="mb-3">
+                    <label class="form-label">Phản hồi cho Giảng viên (Tùy chọn)</label>
+                    <textarea class="form-control" id="approveFeedback" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" onclick="submitAction('approve')">Phê duyệt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-danger">Từ chối Khóa học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Khóa học sẽ bị trả lại cho Giảng viên. Vui lòng nêu rõ lý do từ chối.</p>
+                <div class="mb-3">
+                    <label class="form-label">Lý do từ chối <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="rejectFeedback" rows="3" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="submitAction('reject')">Từ chối</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Escalate Modal -->
+<div class="modal fade" id="escalateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-warning">Chuyển cấp lên Admin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Khóa học sẽ được chuyển lên Quản trị viên (Admin) để quyết định.</p>
+                <div class="mb-3">
+                    <label class="form-label">Lý do chuyển cấp <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="escalateReason" rows="3" required placeholder="VD: Khóa học có nội dung nhạy cảm..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning" onclick="submitAction('escalate')">Chuyển cấp</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script th:inline="javascript">
+    const taskId = /*[[${task.id}]]*/ 0;
+    
+    const approveModal = new bootstrap.Modal(document.getElementById('approveModal'));
+    const rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    const escalateModal = new bootstrap.Modal(document.getElementById('escalateModal'));
+
+    function openApproveModal() { approveModal.show(); }
+    function openRejectModal() { rejectModal.show(); }
+    function openEscalateModal() { escalateModal.show(); }
+
+    async function submitAction(action) {
+        let payload = {};
+        
+        if (action === 'approve') {
+            payload.feedback = document.getElementById('approveFeedback').value;
+        } else if (action === 'reject') {
+            payload.feedback = document.getElementById('rejectFeedback').value;
+            if(!payload.feedback) { alert("Vui lòng nhập lý do từ chối"); return; }
+        } else if (action === 'escalate') {
+            payload.reason = document.getElementById('escalateReason').value;
+            if(!payload.reason) { alert("Vui lòng nhập lý do chuyển cấp"); return; }
+        }
+
+        try {
+            const res = await fetch(`/api/moderator/tasks/${taskId}/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                Toastify({ text: "Đã xử lý thành công!", style: { background: "#00b050" } }).showToast();
+                setTimeout(() => window.location.href = '/moderator/queue', 1000);
+            } else {
+                alert("Có lỗi xảy ra khi xử lý.");
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Lỗi kết nối");
+        }
+    }
+</script>
+</body>
+</html>
