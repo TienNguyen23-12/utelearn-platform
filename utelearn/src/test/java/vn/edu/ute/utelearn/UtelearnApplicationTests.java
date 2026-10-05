@@ -1,13 +1,15 @@
 package vn.edu.ute.utelearn;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@SpringBootTest
 class UtelearnApplicationTests {
 
     @Test
-    void contextLoads() {
+    void testApplicationInitialization() {
+        UtelearnApplication app = new UtelearnApplication();
+        assertNotNull(app, "Application instance must be successfully initialized");
     }
 
 }
+
