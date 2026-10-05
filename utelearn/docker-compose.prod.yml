@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: ./utelearn
+      context: .
       dockerfile: Dockerfile
     container_name: utelearn-app-prod
     restart: always
