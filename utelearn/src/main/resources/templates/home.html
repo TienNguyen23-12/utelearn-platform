@@ -196,7 +196,7 @@
                     <a class="nav-link text-primary active" href="/home">Trang chủ</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#cohorts">Đợt khóa học</a>
+                    <a class="nav-link" href="/cohorts">Đợt khóa học</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/courses">Danh mục</a>
@@ -277,7 +277,7 @@
                     Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến và rèn luyện tư duy thuật toán đỉnh cao trên hệ thống chấm tự động Online Judge.
                 </p>
                 <div class="d-flex flex-wrap align-items-center gap-3">
-                    <a href="#cohorts" class="btn btn-gradient">
+                    <a href="/cohorts" class="btn btn-gradient">
                         <i class="bi bi-rocket-takeoff-fill"></i>
                         <span>Khám phá các đợt học</span>
                     </a>
@@ -371,34 +371,38 @@
     </div>
 
     <div class="row g-4">
-        <!-- Loop through sample cohort courses -->
-        <div th:each="course : ${cohortCourses}" class="col-lg-3 col-md-6">
+        <div class="col-12" th:if="${latestCohorts == null || latestCohorts.empty}">
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1"></i>
+                <p>Chưa có lớp học nào nổi bật lúc này.</p>
+            </div>
+        </div>
+        <div th:each="cohort : ${latestCohorts}" class="col-lg-3 col-md-6">
             <div class="course-card">
                 <div class="course-image-wrapper">
-                    <img th:src="${course.image}" th:alt="${course.title}">
-                    <span class="cohort-badge" th:text="${course.cohortName}">Đợt K24 - Kỳ Thu</span>
+                    <img th:src="${cohort.course != null && cohort.course.thumbnailUrl != null ? cohort.course.thumbnailUrl : 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80'}" th:alt="${cohort.course != null ? cohort.course.title : ''}">
+                    <span class="cohort-badge" th:text="${cohort.name}">Đợt K24</span>
                 </div>
                 <div class="p-4 d-flex flex-column flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small" th:text="${course.category}">Web</span>
-                        <span class="text-warning small fw-bold">
-                            <i class="bi bi-star-fill"></i> <span th:text="${course.rating}">4.9</span>
-                        </span>
+                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small" th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Khác'}">Danh mục</span>
+                        <span th:if="${cohort.status == 'UPCOMING'}" class="badge bg-secondary-subtle text-secondary ms-2 border border-secondary-subtle">Sắp mở</span>
+                        <span th:if="${cohort.status == 'ENROLLING'}" class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Đang ghi danh</span>
                     </div>
 
-                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${course.title}">Tiêu đề khóa học</h6>
+                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.course != null ? cohort.course.title : 'N/A'}">Tiêu đề khóa học</h6>
 
                     <div class="text-muted small mb-3">
-                        <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${course.instructor}">Giảng viên</span>
+                        <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                        <span><i class="bi bi-clock me-1"></i><span th:text="${course.duration}">12 Tuần</span></span>
-                        <span><i class="bi bi-journal-text me-1"></i><span th:text="${course.lessons}">45 bài</span></span>
+                        <span><i class="bi bi-people-fill me-1"></i><span th:text="${cohort.currentEnrolled + '/' + cohort.maxCapacity}">0/50</span></span>
+                        <span><i class="bi bi-tag-fill me-1"></i>Mã: <span th:text="${cohort.code}"></span></span>
                     </div>
 
-                    <a th:href="@{/register}" class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
-                        <span>Xem chi tiết đợt</span>
+                    <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug : '#'}" class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
+                        <span>Xem chi tiết khóa</span>
                     </a>
                 </div>
             </div>

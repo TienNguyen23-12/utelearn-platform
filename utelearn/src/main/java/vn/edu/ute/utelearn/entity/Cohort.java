@@ -60,4 +60,20 @@ public class Cohort {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    @Transient
+    public String getFormattedEnrollmentStart() {
+        if (enrollmentStart == null) return "Chưa thiết lập";
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(enrollmentStart);
+    }
+
+    @Transient
+    public String getFormattedEnrollmentEnd() {
+        if (enrollmentEnd == null) return "Chưa thiết lập";
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(enrollmentEnd);
+    }
 }

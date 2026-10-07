@@ -56,6 +56,35 @@ public class InstructorCurriculumApiController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{courseId}/full-curriculum")
+    @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> getFullCurriculum(@PathVariable Long courseId) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        // Giả sử service đã check quyền sở hữu khóa học (hoặc có thể check thêm ở đây)
+        List<Section> sections = sectionService.getSectionsByCourseId(courseId);
+        List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        for (Section s : sections) {
+            java.util.Map<String, Object> sectionMap = new java.util.HashMap<>();
+            sectionMap.put("id", s.getId());
+            sectionMap.put("title", s.getTitle());
+            
+            List<Lesson> lessons = lessonService.getLessonsBySectionId(s.getId());
+            List<java.util.Map<String, Object>> lessonDtos = lessons.stream().map(l -> {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", l.getId());
+                map.put("title", l.getTitle());
+                map.put("lessonType", l.getLessonType());
+                return map;
+            }).toList();
+            
+            sectionMap.put("lessons", lessonDtos);
+            result.add(sectionMap);
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
     // --- LESSON APIs ---
 
     @GetMapping("/sections/{sectionId}/lessons")

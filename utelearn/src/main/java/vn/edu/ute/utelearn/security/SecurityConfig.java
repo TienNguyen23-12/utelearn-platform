@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/",
                                 "/home",
                                 "/courses/**",
+                                "/cohorts",
                                 "/login",
                                 "/register",
                                 "/forgot-password",
@@ -61,7 +62,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/api/courses/**")
+                                "/api/courses/**",
+                                "/api/cohorts/**")
                         .permitAll()
 
                         // CHỈ ADMIN MỚI ĐƯỢC VÀO TRANG QUẢN TRỊ

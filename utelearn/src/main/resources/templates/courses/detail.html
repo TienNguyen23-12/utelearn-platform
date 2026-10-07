@@ -332,14 +332,16 @@
                 curriculumHtml += `</div>`;
             }
 
+            const availableCohorts = /*[[${availableCohorts}]]*/ [];
+
             let enrollFormHtml = '';
             if (isEnrolled) {
                 enrollFormHtml = `<a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3">Vào học ngay</a>`;
             } else {
                 enrollFormHtml = `
-                    <form action="/courses/${slug}/enroll" method="post">
-                        <button type="submit" class="btn btn-gradient w-100 rounded-pill mb-3">Tham gia ngay</button>
-                    </form>
+                    <a href="/cohorts?q=${encodeURIComponent(course.title)}" class="btn btn-gradient w-100 rounded-pill mb-3">
+                        <i class="bi bi-search me-2"></i>Tìm lớp học đang mở
+                    </a>
                 `;
             }
 
@@ -374,9 +376,8 @@
                         <div class="enroll-card">
                             <img src="${img}" class="enroll-img" alt="Course Image">
                             <div class="p-4">
-                                <h4 class="fw-bold text-center mb-3">Miễn phí</h4>
                                 ${enrollFormHtml}
-                                <div class="text-center small text-muted">${isEnrolled ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}</div>
+                                <div class="text-center small text-muted mt-3">${isEnrolled ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}</div>
                             </div>
                         </div>
                     </div>

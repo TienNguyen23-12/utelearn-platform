@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.dao.UserRepository;
-import vn.edu.ute.utelearn.dao.EnrollmentRepository;
+import vn.edu.ute.utelearn.dao.CohortMemberRepository;
 import vn.edu.ute.utelearn.dto.ChangePasswordRequestDTO;
 import vn.edu.ute.utelearn.dto.ProfileUpdateRequestDTO;
 import vn.edu.ute.utelearn.entity.User;
@@ -28,7 +28,7 @@ public class ProfileController {
 
     private final AuthService authService;
     private final UserRepository userRepository;
-    private final EnrollmentRepository enrollmentRepository;
+    private final CohortMemberRepository cohortMemberRepository;
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping
@@ -65,7 +65,7 @@ public class ProfileController {
             model.addAttribute("passwordSuccessMessage", "Đổi mật khẩu tài khoản thành công!");
         }
 
-        model.addAttribute("myCourses", enrollmentRepository.findByUserOrderByEnrolledAtDesc(user));
+        model.addAttribute("myCourses", cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user));
 
         return "profile/index";
     }

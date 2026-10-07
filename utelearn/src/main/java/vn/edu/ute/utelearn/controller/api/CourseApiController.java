@@ -28,7 +28,6 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.service.LessonService lessonService;
     private final vn.edu.ute.utelearn.service.AuthService authService;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
-    private final vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -36,11 +35,10 @@ public class CourseApiController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String level,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size
-    ) {
+            @RequestParam(defaultValue = "12") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Course> coursePage = courseService.getPublishedCourses(q, category, level, pageable);
-        
+
         List<Map<String, Object>> courses = coursePage.getContent().stream().map(course -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", course.getId());
@@ -51,7 +49,8 @@ public class CourseApiController {
             map.put("level", course.getLevel());
             map.put("categoryName", course.getCategory() != null ? course.getCategory().getName() : null);
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
-            map.put("instructorName", course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
+            map.put("instructorName",
+                    course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             return map;
         }).collect(Collectors.toList());
 
@@ -74,7 +73,7 @@ public class CourseApiController {
             map.put("slug", cat.getSlug());
             return map;
         }).collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(result);
     }
 
@@ -82,7 +81,7 @@ public class CourseApiController {
     public ResponseEntity<Map<String, Object>> getCourseDetail(@PathVariable String slug) {
         try {
             Course course = courseService.getCourseBySlug(slug);
-            
+
             Map<String, Object> map = new HashMap<>();
             map.put("id", course.getId());
             map.put("title", course.getTitle());
@@ -95,21 +94,24 @@ public class CourseApiController {
             map.put("requirements", course.getRequirements());
             map.put("categoryName", course.getCategory() != null ? course.getCategory().getName() : null);
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
-            map.put("instructorName", course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
+            map.put("instructorName",
+                    course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
 
             // Kiểm tra quyền truy cập nội dung bài học
             boolean hasAccess = false;
-            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService
+                    .getCurrentAuthenticatedUser();
             if (currentUserOpt.isPresent()) {
                 vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
                 boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN"));
                 boolean isModerator = user.getRoles().stream().anyMatch(r -> r.getCode().equals("MODERATOR"));
-                boolean isInstructor = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
-                boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
-                boolean isEnrolledDirect = enrollmentRepository.existsByUserAndCourse(user, course);
-                
-                if (isAdmin || isModerator || isInstructor || isEnrolled || isEnrolledDirect) {
+                boolean isInstructor = course.getCreatedBy() != null
+                        && course.getCreatedBy().getId().equals(user.getId());
+                boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(),
+                        user.getId());
+
+                if (isAdmin || isModerator || isInstructor || isEnrolled) {
                     hasAccess = true;
                 }
             }
@@ -122,7 +124,7 @@ public class CourseApiController {
                 sDto.put("id", s.getId());
                 sDto.put("title", s.getTitle());
                 sectionMap.put("section", sDto);
-                
+
                 List<Map<String, Object>> lessonDtos = new java.util.ArrayList<>();
                 for (vn.edu.ute.utelearn.entity.Lesson l : lessonService.getLessonsBySectionId(s.getId())) {
                     Map<String, Object> lDto = new HashMap<>();
@@ -130,7 +132,7 @@ public class CourseApiController {
                     lDto.put("title", l.getTitle());
                     lDto.put("lessonType", l.getLessonType());
                     lDto.put("isFreePreview", l.getIsFreePreview());
-                    
+
                     if (hasAccess || (l.getIsFreePreview() != null && l.getIsFreePreview())) {
                         lDto.put("assetUrl", l.getAssetUrl());
                         lDto.put("videoUrl", l.getVideoUrl());
@@ -141,7 +143,7 @@ public class CourseApiController {
                         lDto.put("documentContent", null);
                         lDto.put("isLocked", true);
                     }
-                    
+
                     lessonDtos.add(lDto);
                 }
                 sectionMap.put("lessons", lessonDtos);

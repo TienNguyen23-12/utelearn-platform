@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "cohort_members", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"cohort_id", "user_id"})
+        @UniqueConstraint(columnNames = { "cohort_id", "user_id" })
 })
 @Getter
 @Setter
