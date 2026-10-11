@@ -1,0 +1,58 @@
+#!/bin/sh
+# ------------------------------------------------------------------------------
+# Enterprise Pre-Commit Quality Gate
+# Standard: Strict Build, Configuration & Unit Test Verification
+# ------------------------------------------------------------------------------
+
+echo "================================================================================"
+echo "[INFO] Running Enterprise Pre-Commit Verification Pipeline"
+echo "================================================================================"
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+APP_DIR="$ROOT_DIR/utelearn"
+
+if [ ! -d "$APP_DIR" ]; then
+    echo "[ERROR] Application directory 'utelearn' not found at: $APP_DIR"
+    exit 1
+fi
+
+cd "$APP_DIR" || exit 1
+
+# STAGE 1: Code Compilation & Syntax Verification
+echo "[STAGE 1/3] Verifying source code compilation and syntax..."
+if ! ./mvnw test-compile -q; then
+    echo "--------------------------------------------------------------------------------"
+    echo "[ERROR] Source code compilation failed."
+    echo "[ERROR] Commit rejected. Resolve compiler and syntax errors before committing."
+    echo "--------------------------------------------------------------------------------"
+    exit 1
+fi
+echo "[SUCCESS] Source code compilation verified successfully."
+
+# STAGE 2: Database Configuration & Schema Verification
+echo "[STAGE 2/3] Verifying database configuration and connection parameters..."
+if [ -f "$APP_DIR/.env" ]; then
+    if grep -q "DB_HOST=" "$APP_DIR/.env" && grep -q "DB_PORT=" "$APP_DIR/.env" && grep -q "DB_NAME=" "$APP_DIR/.env"; then
+        echo "[SUCCESS] Database environment parameters validated (.env)."
+    else
+        echo "[WARNING] Database environment parameters missing in .env. Checking system environment..."
+    fi
+else
+    echo "[INFO] Using default Spring Boot application datasource configuration."
+fi
+
+# STAGE 3: Automated Unit Testing
+echo "[STAGE 3/3] Running automated unit test suite..."
+if ! ./mvnw test -q; then
+    echo "--------------------------------------------------------------------------------"
+    echo "[ERROR] Automated unit tests failed."
+    echo "[ERROR] Commit rejected. Fix failing tests before committing."
+    echo "--------------------------------------------------------------------------------"
+    exit 1
+fi
+echo "[SUCCESS] All automated unit tests passed."
+
+echo "================================================================================"
+echo "[SUCCESS] All pre-commit quality gates passed. Proceeding with commit."
+echo "================================================================================"
+exit 0

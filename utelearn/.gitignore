@@ -38,3 +38,7 @@ build/
 application-secret.properties
 application-local.properties
 application-local.yml
+
+### Antigravity AI Customizations & Skills ###
+.agents/
+DEV_LOG.md
