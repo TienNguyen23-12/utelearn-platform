@@ -44,11 +44,8 @@
      - **Mua lẻ 1 hoặc nhiều Cohort:** Tick chọn các Cohort muốn mua -> Tính tổng tiền = `Sum(Cohort.price)`.
      - **Nâng cấp (Upgrade) lên Full Course:** Nếu học viên đã mua lẻ một số Cohort trước đó, tự động tính số tiền bù chênh lệch = `Giá Full Course - Tổng tiền đã thanh toán cho các Cohort trước`.
 
-#### 1.3. Xử lý điều hướng mục Online Judge trên Sidebar để tránh lỗi 404 (`UC-26` -> `UC-29`)
-- **Hiện trạng trong code:**
-  - Phân hệ **Online Judge (OJ)** đã chuyển sang **Định hướng phát triển**, nhưng trên `fragments/sidebar.html` (dòng 158: `/oj/problems`) và `system-menus.json` vẫn còn link `/oj/problems` -> Bấm vào sẽ bị lỗi `404`.
-- **Cần xử lý ngay:**
-  - Tạo trang giao diện giới thiệu tại `/oj/problems` (hiển thị thông báo *"Phân hệ Online Judge Microservice Sandbox – Định hướng phát triển Giai đoạn 2"* kèm giao diện preview chuyên nghiệp) hoặc gắn nhãn `Coming Soon` trên Sidebar.
+#### 1.3. Xử lý điều hướng mục Online Judge trên Sidebar để tránh lỗi 404 (`UC-26` -> `UC-29`) [ĐÃ HOÀN THÀNH - DONE]
+- **Hiện trạng:** Đã tạo `OjController.java`, giao diện `templates/oj/problems.html` (Roadmap Phase 2), bổ sung route vào `SecurityConfig`, và gắn badge `Coming Soon` tại `fragments/sidebar.html` & `system-menus.json`. An toàn 100% khi demo/bảo vệ đồ án.
 
 ---
 

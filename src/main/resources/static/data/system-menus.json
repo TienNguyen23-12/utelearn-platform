@@ -40,8 +40,8 @@
     "title": "Luyện code Online Judge",
     "icon": "bi-code-slash",
     "url": "/oj/problems",
-    "badge": "Chấm tự động",
-    "badgeClass": "bg-success",
+    "badge": "Coming Soon",
+    "badgeClass": "bg-warning text-dark",
     "allowedRoles": ["ADMIN", "INSTRUCTOR", "STUDENT"]
   },
   {
