@@ -1,12 +1,9 @@
-// UTELearn Admin Portal Layout Scripts
 function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    
-    // Toggle class on body for desktop behavior
+
     document.body.classList.toggle('sidebar-collapsed');
-    
-    // Toggle class for mobile behavior
+
     if (sidebar) {
         sidebar.classList.toggle('show');
     }
@@ -15,10 +12,9 @@ function toggleSidebar() {
     }
 }
 
-// Global Confirm Modal
 function showConfirmModal(event, element, message) {
     event.preventDefault();
-    
+
     let confirmModalEl = document.getElementById('globalConfirmModal');
     if (!confirmModalEl) {
         const modalHtml = `
@@ -44,15 +40,15 @@ function showConfirmModal(event, element, message) {
     }
 
     document.getElementById('globalConfirmMessage').innerText = message;
-    
+
     const confirmBtn = document.getElementById('globalConfirmBtn');
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    
+
     newConfirmBtn.addEventListener('click', function() {
         const modalInstance = bootstrap.Modal.getInstance(confirmModalEl);
         modalInstance.hide();
-        
+
         if (typeof element === 'function') {
             element();
         } else if (element && element.tagName === 'FORM') {
@@ -64,6 +60,45 @@ function showConfirmModal(event, element, message) {
 
     const modal = new bootstrap.Modal(confirmModalEl);
     modal.show();
-    
+
     return false;
+}
+
+function showToast(message, type) {
+    if (typeof Toastify === 'undefined') {
+        return;
+    }
+
+    let iconHtml = '';
+    if (type === 'success') {
+        iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+    } else if (type === 'warning') {
+        iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+    } else {
+        iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+    }
+
+    let toast = Toastify({
+        text: `<div style="display: flex; align-items: center; gap: 10px;">
+                ${iconHtml}
+                <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
+               </div>`,
+        escapeMarkup: false,
+        duration: 3000,
+        close: false,
+        gravity: "top",
+        position: "right",
+        style: {
+            background: "white",
+            borderRadius: "30px",
+            boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+            padding: "10px 20px 10px 12px",
+            border: "1px solid #f0f0f0",
+            cursor: "pointer"
+        },
+        onClick: function() {
+            toast.hideToast();
+        }
+    });
+    toast.showToast();
 }

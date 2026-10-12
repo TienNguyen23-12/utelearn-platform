@@ -1,4 +1,4 @@
-package vn.edu.ute.utelearn.controller;
+package vn.edu.ute.utelearn.controller.api;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package vn.edu.ute.utelearn.controller;
+package vn.edu.ute.utelearn.controller.api;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import vn.edu.ute.utelearn.dto.LessonRequestDTO;
 import vn.edu.ute.utelearn.dto.SectionRequestDTO;
 import vn.edu.ute.utelearn.entity.Lesson;
-import vn.edu.ute.utelearn.entity.Section;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.entity.InstructorAsset;
 import vn.edu.ute.utelearn.service.AuthService;
@@ -29,8 +28,6 @@ public class InstructorCurriculumApiController {
     private final LessonService lessonService;
     private final AuthService authService;
     private final InstructorAssetService assetService;
-
-    // --- SECTION APIs ---
 
     @PostMapping("/{courseId}/sections")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
@@ -56,13 +53,10 @@ public class InstructorCurriculumApiController {
         return ResponseEntity.ok().build();
     }
 
-    // --- LESSON APIs ---
-
     @GetMapping("/sections/{sectionId}/lessons")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> getLessons(@PathVariable Long sectionId) {
         List<Lesson> lessons = lessonService.getLessonsBySectionId(sectionId);
-        // Map to prevent serialization issues
         List<java.util.Map<String, Object>> result = lessons.stream().map(l -> {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", l.getId());
@@ -102,8 +96,6 @@ public class InstructorCurriculumApiController {
         return ResponseEntity.ok().build();
     }
 
-    // --- ASSET PICKER API ---
-
     @GetMapping("/assets")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> getInstructorAssets(
@@ -113,7 +105,7 @@ public class InstructorCurriculumApiController {
         Page<InstructorAsset> assets = assetService.getAssetsByInstructor(
                 currentUser, keyword, null, PageRequest.of(page, 50)
         );
-        
+
         List<java.util.Map<String, Object>> result = assets.stream().map(a -> {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", a.getId());
@@ -123,7 +115,7 @@ public class InstructorCurriculumApiController {
             map.put("createdAt", a.getCreatedAt());
             return map;
         }).toList();
-        
+
         return ResponseEntity.ok(result);
     }
 }
