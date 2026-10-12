@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 
 @Data
 @NoArgsConstructor
@@ -20,7 +21,10 @@ public class RegisterRequestDTO {
     private String email;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, max = 50, message = "Mật khẩu phải từ 6 đến 50 ký tự")
+    @Pattern(
+        regexp = ValidationUtils.PASSWORD_REGEX,
+        message = "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt"
+    )
     private String password;
 
     @NotBlank(message = "Vui lòng xác nhận lại mật khẩu")

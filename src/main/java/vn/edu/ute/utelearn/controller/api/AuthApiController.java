@@ -13,6 +13,7 @@ import vn.edu.ute.utelearn.dto.RegisterRequestDTO;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.dto.ForgotPasswordRequestDTO;
 import vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,14 +55,22 @@ public class AuthApiController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequestDTO requestDTO, BindingResult bindingResult) {
         Map<String, Object> res = new HashMap<>();
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldError() != null
+                    ? bindingResult.getFieldError().getDefaultMessage()
+                    : "Vui lòng nhập đầy đủ thông tin hợp lệ.";
+            res.put("success", false);
+            res.put("message", errorMessage);
+            return ResponseEntity.badRequest().body(res);
+        }
         if (!requestDTO.isPasswordMatching()) {
             res.put("success", false);
             res.put("message", "Mật khẩu xác nhận không khớp!");
             return ResponseEntity.badRequest().body(res);
         }
-        if (bindingResult.hasErrors()) {
+        if (!ValidationUtils.isStrongPassword(requestDTO.getPassword())) {
             res.put("success", false);
-            res.put("message", "Vui lòng nhập đầy đủ thông tin hợp lệ.");
+            res.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
             return ResponseEntity.badRequest().body(res);
         }
 
@@ -111,14 +120,22 @@ public class AuthApiController {
     @PostMapping("/reset-password")
     public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO requestDTO, BindingResult bindingResult) {
         Map<String, Object> res = new HashMap<>();
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldError() != null
+                    ? bindingResult.getFieldError().getDefaultMessage()
+                    : "Vui lòng kiểm tra lại thông tin.";
+            res.put("success", false);
+            res.put("message", errorMessage);
+            return ResponseEntity.badRequest().body(res);
+        }
         if (!requestDTO.isPasswordMatching()) {
             res.put("success", false);
             res.put("message", "Mật khẩu xác nhận không khớp!");
             return ResponseEntity.badRequest().body(res);
         }
-        if (bindingResult.hasErrors()) {
+        if (!ValidationUtils.isStrongPassword(requestDTO.getNewPassword())) {
             res.put("success", false);
-            res.put("message", "Vui lòng kiểm tra lại thông tin.");
+            res.put("message", "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
             return ResponseEntity.badRequest().body(res);
         }
         try {
