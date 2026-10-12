@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Judge Sandbox - Định hướng phát triển - UTELearn LMS</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+
+    <style>
+        .oj-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #042f2e 100%);
+            border-radius: 20px;
+            padding: 36px 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.4);
+            margin-bottom: 24px;
+        }
+        .oj-banner::after {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, rgba(13, 148, 136, 0) 70%);
+            border-radius: 50%;
+        }
+        .oj-feature-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.25s ease;
+            height: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .oj-feature-card:hover {
+            transform: translateY(-4px);
+            border-color: #0d9488;
+            box-shadow: 0 12px 24px -8px rgba(13, 148, 136, 0.15);
+        }
+        .oj-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .code-mock-box {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+        .code-mock-header {
+            background: #0f172a;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1e293b;
+        }
+        .code-mock-body {
+            padding: 20px 22px;
+            color: #e2e8f0;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+        .editor-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('oj')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Online Judge (OJ) Sandbox')}"></header>
+
+    <main class="app-main-content">
+        <div class="oj-banner text-white">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge bg-teal-subtle text-white px-3 py-1 rounded-pill fw-bold" style="background-color: rgba(13, 148, 136, 0.3); border: 1px solid #0d9488;">
+                            <i class="bi bi-rocket-takeoff-fill me-1 text-info"></i>ĐỊNH HƯỚNG PHÁT TRIỂN • GIAI ĐOẠN 2
+                        </span>
+                        <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold">
+                            <i class="bi bi-clock-history me-1"></i>Coming Soon
+                        </span>
+                    </div>
+                    <h2 class="fw-extrabold text-white mb-2">Phân hệ Chấm Code Tự Động (Online Judge Sandbox)</h2>
+                    <p class="text-white text-opacity-75 mb-4" style="max-width: 660px; font-size: 14.5px;">
+                        Để đảm bảo an toàn tuyệt đối cho máy chủ chính, phân hệ Online Judge được thiết kế theo kiến trúc Microservice độc lập. Hệ thống sẽ tích hợp Docker Container Sandbox để cô lập tiến trình chấm bài tự động trong Giai đoạn 2 của đồ án.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/home" class="btn btn-outline-light rounded-pill px-4 py-2">
+                            <i class="bi bi-book-half me-2"></i>Xem Khóa học & Đợt học
+                        </a>
+                        <a href="/dashboard" class="btn btn-light rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-speedometer2 me-2"></i>Bảng điều khiển
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
+                    <div class="d-inline-block p-4 rounded-4" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <i class="bi bi-terminal-split text-info" style="font-size: 56px;"></i>
+                        <div class="text-white fw-bold mt-2">Zero 404 Safety Guard</div>
+                        <div class="text-white text-opacity-50 small">Demo Safe Mode Active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-xl-3">
+                <div class="oj-feature-card">
+                    <div class="oj-icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Docker Container Sandbox</h6>
+                    <p class="text-muted small mb-0">
+                        Thực thi mã nguồn trong môi trường Container biệt lập, kiểm soát nghiêm ngặt tài nguyên CPU và bộ nhớ RAM.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="oj-feature-card">
+                    <div class="oj-icon-box bg-success-subtle text-success">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Chấm Điểm Đa Ngôn Ngữ</h6>
+                    <p class="text-muted small mb-0">
+                        Hỗ trợ C++, Java 21, Python 3 và Go với phản hồi kết quả tự động: Accepted (AC), Time Limit (TLE), Wrong Answer (WA).
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="oj-feature-card">
+                    <div class="oj-icon-box bg-warning-subtle text-warning">
+                        <i class="bi bi-layers-half"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Gắn Liền Khóa Học & Cohort</h6>
+                    <p class="text-muted small mb-0">
+                        Giảng viên có thể gán các bài tập thuật toán vào từng bài học hoặc bài kiểm tra định kỳ của từng đợt học sinh viên.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="oj-feature-card">
+                    <div class="oj-icon-box bg-info-subtle text-info">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-2">Bảng Xếp Hạng Thời Gian Thực</h6>
+                    <p class="text-muted small mb-0">
+                        Tôn vinh học viên xuất sắc dựa trên thời gian chạy tối ưu, số lượt nộp và thuật toán đạt điểm tối đa.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-semibold">
+                            Bài toán mẫu
+                        </span>
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill">
+                            ID: #OJ-101
+                        </span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-3">Tìm Hai Số Có Tổng Bằng Target (Two Sum)</h5>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-light text-dark border">Cấu trúc Dữ liệu</span>
+                        <span class="badge bg-light text-dark border">Hash Table</span>
+                        <span class="badge bg-light text-dark border">Thời gian: 1.0s</span>
+                        <span class="badge bg-light text-dark border">Bộ nhớ: 256 MB</span>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Cho một mảng số nguyên <code>nums</code> và một số nguyên <code>target</code>, hãy tìm chỉ số của hai số sao cho tổng của chúng đúng bằng <code>target</code>.
+                    </p>
+                    <div class="p-3 bg-light rounded-3 small mb-3">
+                        <div class="fw-bold text-dark mb-1">Ví dụ 1:</div>
+                        <div><strong>Input:</strong> nums = [2, 7, 11, 15], target = 9</div>
+                        <div><strong>Output:</strong> [0, 1]</div>
+                        <div class="text-muted mt-1"><strong>Giải thích:</strong> Vì nums[0] + nums[1] == 9, kết quả trả về [0, 1].</div>
+                    </div>
+                    <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Trạng thái module:</span>
+                        <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill">Sẵn sàng tích hợp</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="code-mock-box">
+                    <div class="code-mock-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="editor-dot bg-danger"></span>
+                            <span class="editor-dot bg-warning"></span>
+                            <span class="editor-dot bg-success"></span>
+                            <span class="text-white-50 ms-2 small">Solution.java</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-dark text-info border border-secondary small">OpenJDK 21</span>
+                            <span class="badge bg-dark text-warning border border-secondary small">Phase 2 Sandbox</span>
+                        </div>
+                    </div>
+                    <div class="code-mock-body">
+<pre class="m-0 text-light"><code><span class="text-danger">import</span> java.util.HashMap;
+<span class="text-danger">import</span> java.util.Map;
+
+<span class="text-primary">public class</span> <span class="text-warning">Solution</span> {
+    <span class="text-primary">public int</span>[] <span class="text-info">twoSum</span>(<span class="text-primary">int</span>[] nums, <span class="text-primary">int</span> target) {
+        Map&lt;Integer, Integer&gt; map = <span class="text-primary">new</span> HashMap&lt;&gt;();
+        <span class="text-primary">for</span> (<span class="text-primary">int</span> i = 0; i &lt; nums.length; i++) {
+            <span class="text-primary">int</span> complement = target - nums[i];
+            <span class="text-primary">if</span> (map.containsKey(complement)) {
+                <span class="text-primary">return new int</span>[] { map.get(complement), i };
+            }
+            map.put(nums[i], i);
+        }
+        <span class="text-primary">throw new</span> IllegalArgumentException(<span class="text-success">"No solution found"</span>);
+    }
+}</code></pre>
+                    </div>
+                    <div class="p-3 bg-dark bg-opacity-50 border-top border-secondary d-flex justify-content-between align-items-center">
+                        <span class="text-white-50 small">
+                            <i class="bi bi-shield-check text-teal me-1" style="color: #0d9488;"></i>
+                            Sandbox Container Ready
+                        </span>
+                        <button class="btn btn-sm btn-secondary rounded-pill px-3" disabled>
+                            <i class="bi bi-play-circle me-1"></i>Chạy thử nghiệm (Phase 2)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+</body>
+</html>

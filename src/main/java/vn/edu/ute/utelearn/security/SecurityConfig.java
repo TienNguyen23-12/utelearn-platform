@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/api/courses/**")
+                                "/api/courses/**",
+                                "/oj/**")
                         .permitAll()
 
                         // CHỈ ADMIN MỚI ĐƯỢC VÀO TRANG QUẢN TRỊ
