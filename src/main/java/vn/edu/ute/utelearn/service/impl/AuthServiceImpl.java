@@ -26,6 +26,7 @@ import vn.edu.ute.utelearn.security.JwtTokenProvider;
 import vn.edu.ute.utelearn.dao.PasswordResetTokenRepository;
 import vn.edu.ute.utelearn.entity.PasswordResetToken;
 import vn.edu.ute.utelearn.service.EmailService;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -52,6 +53,10 @@ public class AuthServiceImpl implements AuthService {
 
         if (!requestDTO.isPasswordMatching()) {
             throw new IllegalArgumentException("Mật khẩu xác nhận không khớp!");
+        }
+
+        if (!ValidationUtils.isStrongPassword(requestDTO.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
         }
 
         String email = requestDTO.getEmail().trim().toLowerCase();
@@ -221,6 +226,10 @@ public class AuthServiceImpl implements AuthService {
         if (resetToken.isExpired()) {
             passwordResetTokenRepository.delete(resetToken);
             throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn!");
+        }
+
+        if (!ValidationUtils.isStrongPassword(newPassword)) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
         }
 
         User user = resetToken.getUser();

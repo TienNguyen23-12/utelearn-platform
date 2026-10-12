@@ -19,6 +19,7 @@ import vn.edu.ute.utelearn.dto.LoginRequestDTO;
 import vn.edu.ute.utelearn.dto.RegisterRequestDTO;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 
 @Slf4j
 @Controller
@@ -123,6 +124,10 @@ public class AuthController {
             bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không trùng khớp!");
         }
 
+        if (registerForm.getPassword() != null && !ValidationUtils.isStrongPassword(registerForm.getPassword())) {
+            bindingResult.rejectValue("password", "error.password", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
+        }
+
         if (bindingResult.hasErrors()) {
             return "auth/register";
         }
@@ -198,6 +203,9 @@ public class AuthController {
     ) {
         if (!requestDTO.isPasswordMatching()) {
             bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "Mật khẩu xác nhận không trùng khớp!");
+        }
+        if (requestDTO.getNewPassword() != null && !ValidationUtils.isStrongPassword(requestDTO.getNewPassword())) {
+            bindingResult.rejectValue("newPassword", "error.newPassword", "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
         }
         if (bindingResult.hasErrors()) {
             return "auth/reset-password";

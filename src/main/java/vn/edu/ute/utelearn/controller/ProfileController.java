@@ -19,6 +19,7 @@ import vn.edu.ute.utelearn.dto.ChangePasswordRequestDTO;
 import vn.edu.ute.utelearn.dto.ProfileUpdateRequestDTO;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 
 @Slf4j
 @Controller
@@ -126,6 +127,10 @@ public class ProfileController {
 
         if (!passwordForm.isPasswordMatching()) {
             bindingResult.rejectValue("confirmNewPassword", "error.confirmNewPassword", "Mật khẩu mới xác nhận không khớp!");
+        }
+
+        if (passwordForm.getNewPassword() != null && !ValidationUtils.isStrongPassword(passwordForm.getNewPassword())) {
+            bindingResult.rejectValue("newPassword", "error.newPassword", "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
         }
 
         if (bindingResult.hasErrors()) {
