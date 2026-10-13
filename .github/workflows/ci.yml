@@ -20,13 +20,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: 'utelearn/pom.xml'
+          cache-dependency-path: 'pom.xml'
 
       - name: Grant execute permission for Maven Wrapper
-        run: chmod +x utelearn/mvnw
+        run: chmod +x mvnw
 
       - name: Compile Java classes
-        working-directory: ./utelearn
         run: ./mvnw clean compile
 
   unit-tests:
@@ -43,13 +42,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: 'utelearn/pom.xml'
+          cache-dependency-path: 'pom.xml'
 
       - name: Grant execute permission for Maven Wrapper
-        run: chmod +x utelearn/mvnw
+        run: chmod +x mvnw
 
       - name: Run Unit Tests
-        working-directory: ./utelearn
         run: ./mvnw test
 
   package-jar:
@@ -66,20 +64,19 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          cache-dependency-path: 'utelearn/pom.xml'
+          cache-dependency-path: 'pom.xml'
 
       - name: Grant execute permission for Maven Wrapper
-        run: chmod +x utelearn/mvnw
+        run: chmod +x mvnw
 
       - name: Package JAR file
-        working-directory: ./utelearn
         run: ./mvnw package -DskipTests
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: utelearn-app-jar
-          path: utelearn/target/*.jar
+          path: target/*.jar
           retention-days: 7
 
   docker-check:
@@ -96,7 +93,7 @@ jobs:
       - name: Build Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./utelearn
-          file: ./utelearn/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: false
           tags: utelearn:ci-verify
