@@ -39,7 +39,6 @@ public class InstructorCohortController {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
 
-        // Sanitize input
         String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword);
         String safeStatus = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(status);
 

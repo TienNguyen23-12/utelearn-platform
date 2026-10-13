@@ -98,7 +98,6 @@ public class CourseApiController {
                     course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
 
-            // Kiểm tra quyền truy cập nội dung bài học
             boolean hasAccess = false;
             java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService
                     .getCurrentAuthenticatedUser();

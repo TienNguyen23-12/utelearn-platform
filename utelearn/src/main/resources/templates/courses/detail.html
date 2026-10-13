@@ -134,81 +134,7 @@
 </head>
 <body>
 
-<!-- Navbar (Same as index.html) -->
-<nav class="site-navbar navbar navbar-expand-lg py-3">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="/home">
-            <span class="brand-logo-badge"><i class="bi bi-mortarboard-fill"></i></span>
-            <span class="brand-title">UTE<span>Learn</span></span>
-        </a>
-        <div class="collapse navbar-collapse" id="siteNav">
-            <ul class="navbar-nav me-auto ms-lg-4 mb-2 mb-lg-0 gap-1">
-                <li class="nav-item">
-                    <a class="nav-link" href="/home">Trang chủ</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/home#cohorts">Đợt khóa học</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-primary active" href="/courses">Danh mục</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/home#oj"><i class="bi bi-code-square me-1"></i>Luyện thi OJ</a>
-                </li>
-            </ul>
-
-            <!-- Right Side Auth / User Section -->
-            <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <!-- ĐÃ ĐĂNG NHẬP -->
-                <div th:if="${currentUser != null}" class="dropdown">
-                    <button class="btn btn-light d-flex align-items-center gap-2 border py-2 px-3 rounded-pill" type="button" data-bs-toggle="dropdown">
-                        <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden" style="width: 34px; height: 34px;">
-                            <img th:src="${currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
-                        </div>
-                        <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder" style="width: 34px; height: 34px; font-size: 13px;" th:text="${#strings.substring(currentUser.fullName, 0, 1)}">U</div>
-                        <div class="text-start pe-1">
-                            <div class="fw-bold text-dark lh-1" style="font-size: 13.5px;" th:text="${currentUser.fullName}">Người dùng</div>
-                            <small class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">user@utelearn.edu.vn</small>
-                        </div>
-                        <i class="bi bi-chevron-down text-muted" style="font-size: 11px;"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 250px;">
-                        <li class="px-3 py-2 border-bottom">
-                            <div class="fw-bold text-dark small" th:text="${currentUser.fullName}">Tên học viên</div>
-                            <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">user@utelearn.edu.vn</div>
-                            <div class="mt-1">
-                                <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1" style="font-size: 10px;" th:text="${r.name}">Học viên</span>
-                            </div>
-                        </li>
-                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
-                        <li th:if="${@rbac.hasRole('ADMIN')}">
-                            <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/dashboard">
-                                <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item py-2 small rounded-3 text-danger" href="/logout">
-                                <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- CHƯA ĐĂNG NHẬP -->
-                <div th:unless="${currentUser != null}" class="d-flex align-items-center gap-2">
-                    <a href="/login" class="btn btn-light rounded-pill px-3 py-2 fw-semibold text-dark border">
-                        <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
-                    </a>
-                    <a href="/register" class="btn btn-gradient rounded-pill px-4 py-2">
-                        <span>Đăng ký ngay</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</nav>
+<nav th:replace="~{fragments/navbar :: siteNavbar('courses')}"></nav>
 
 <div id="appContainer">
     <div class="text-center py-5 my-5 text-muted">
@@ -220,6 +146,10 @@
 <script th:inline="javascript">
     const slug = /*[[${courseSlug}]]*/ 'default-slug';
     const isEnrolled = /*[[${isEnrolled != null ? isEnrolled : false}]]*/ false;
+    const isAllEnrolled = /*[[${isAllEnrolled != null ? isAllEnrolled : false}]]*/ false;
+    const fullCoursePrice = /*[[${fullCoursePrice != null ? fullCoursePrice : 0}]]*/ 0;
+    const remainingCoursePrice = /*[[${remainingCoursePrice != null ? remainingCoursePrice : 0}]]*/ 0;
+    const unenrolledCount = /*[[${unenrolledCount != null ? unenrolledCount : 0}]]*/ 0;
     const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
     const canViewContent = isEnrolled || hasAccessRole;
 
@@ -335,19 +265,105 @@
             const availableCohorts = /*[[${availableCohorts}]]*/ [];
 
             let enrollFormHtml = '';
-            if (isEnrolled) {
-                enrollFormHtml = `<a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3">Vào học ngay</a>`;
+            if (availableCohorts && availableCohorts.length > 0) {
+                let fullCourseSection = '';
+                if (!isAllEnrolled) {
+                    const priceFormatted = remainingCoursePrice > 0 ? new Intl.NumberFormat('vi-VN').format(remainingCoursePrice) + ' VNĐ' : 'Miễn phí';
+                    const fullBtnText = isEnrolled 
+                        ? `Đăng ký ${unenrolledCount} module còn lại (${priceFormatted})` 
+                        : `Đăng ký trọn gói khóa học (${priceFormatted})`;
+                    
+                    fullCourseSection = `
+                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-primary small"><i class="bi bi-stars me-1"></i>Gói trọn bộ khóa học</span>
+                                <span class="badge bg-primary text-white" style="font-size: 10px;">Full Course</span>
+                            </div>
+                            <div class="text-muted small mb-2" style="font-size: 12px;">Truy cập tất cả các module và đợt học của khóa</div>
+                            <form action="/courses/${slug}/enroll-all" method="post">
+                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm">
+                                    <i class="bi bi-bag-check-fill me-1"></i>${fullBtnText}
+                                </button>
+                            </form>
+                        </div>
+                    `;
+                }
+
+                let quickLearnBtn = '';
+                if (isEnrolled) {
+                    quickLearnBtn = `<a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3"><i class="bi bi-play-circle-fill me-1"></i>Vào học các module đã mở</a>`;
+                }
+
+                let cohortsListHtml = '';
+                availableCohorts.forEach(c => {
+                    const priceText = c.price > 0 ? new Intl.NumberFormat('vi-VN').format(c.price) + ' VNĐ' : 'Miễn phí';
+                    const isFull = c.currentEnrolled >= c.maxCapacity;
+                    
+                    let actionButtonHtml = '';
+                    if (c.isEnrolled) {
+                        actionButtonHtml = `
+                            <a href="/courses/${slug}/learn" class="btn btn-outline-success btn-sm w-100 rounded-pill fw-semibold">
+                                <i class="bi bi-check-circle-fill me-1"></i>Đã tham gia - Vào học
+                            </a>
+                        `;
+                    } else if (isFull) {
+                        actionButtonHtml = `
+                            <button type="button" class="btn btn-secondary btn-sm w-100 rounded-pill fw-semibold" disabled>
+                                Đã đủ sĩ số
+                            </button>
+                        `;
+                    } else {
+                        actionButtonHtml = `
+                            <form action="/courses/${slug}/enroll/${c.id}" method="post">
+                                <button type="submit" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-semibold">
+                                    <i class="bi bi-plus-circle me-1"></i>Ghi danh module này
+                                </button>
+                            </form>
+                        `;
+                    }
+
+                    cohortsListHtml += `
+                        <div class="border rounded-3 p-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">${c.name}</span>
+                                <span class="badge ${c.isEnrolled ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'}" style="font-size: 10px;">${c.code}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-muted small mb-2" style="font-size: 12px;">
+                                <span><i class="bi bi-people me-1"></i>${c.currentEnrolled}/${c.maxCapacity}</span>
+                                <span class="fw-semibold ${c.isEnrolled ? 'text-success' : 'text-primary'}">${c.isEnrolled ? 'Đã sở hữu' : priceText}</span>
+                            </div>
+                            ${actionButtonHtml}
+                        </div>
+                    `;
+                });
+
+                enrollFormHtml = `
+                    ${quickLearnBtn}
+                    ${fullCourseSection}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-0">Các module / đợt học lẻ</label>
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">${availableCohorts.length} module</span>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            ${cohortsListHtml}
+                        </div>
+                    </div>
+                `;
             } else {
                 enrollFormHtml = `
-                    <a href="/cohorts?q=${encodeURIComponent(course.title)}" class="btn btn-gradient w-100 rounded-pill mb-3">
-                        <i class="bi bi-search me-2"></i>Tìm lớp học đang mở
+                    <div class="alert alert-light border small text-muted text-center mb-3">
+                        <i class="bi bi-calendar-x fs-5 d-block mb-1 text-secondary"></i>
+                        Hiện chưa có đợt học nào đang mở đăng ký cho khóa học này.
+                    </div>
+                    <a href="/cohorts" class="btn btn-outline-primary w-100 rounded-pill small">
+                        Duyệt các đợt học khác
                     </a>
                 `;
             }
 
             let mainLayoutHtml = '';
             if (hasAccessRole) {
-                // Approval layout: 2/3 curriculum on left, 1/3 intro on right
                 mainLayoutHtml = `
                     <div class="col-lg-8">
                         <div class="content-card">
@@ -364,7 +380,6 @@
                     </div>
                 `;
             } else {
-                // Standard Student layout
                 mainLayoutHtml = `
                     <div class="col-lg-8">
                         <div class="content-card">

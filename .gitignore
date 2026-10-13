@@ -5,3 +5,6 @@ UTELearn_PostgreSQL_Schema.sql
 .env
 .env.*
 application-secret.properties
+.agents/
+dev-logs/
+DEV_LOG.md
