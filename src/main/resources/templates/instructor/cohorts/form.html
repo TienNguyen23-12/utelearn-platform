@@ -146,7 +146,6 @@
         const courseSelect = document.getElementById('courseId');
         const scheduleContainer = document.getElementById('curriculum-schedules');
         
-        // Cố gắng trigger load nếu đang ở trạng thái sửa hoặc đã chọn sẵn
         if (courseSelect.value) {
             loadCurriculum(courseSelect.value);
         }
@@ -240,18 +239,15 @@
         }
     });
 
-    // Tiện ích: Set tất cả unlock_at về thời điểm hiện tại (Dành cho Lớp học tự do / Udemy style)
     function setAllUnlockAtNow() {
         const inputs = document.querySelectorAll('.unlock-at-input');
         if (inputs.length === 0) return;
         
-        // Format YYYY-MM-DDThh:mm
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         const nowStr = now.toISOString().slice(0,16);
         
         inputs.forEach(input => {
-            // Flatpickr instance is attached to the input element as _flatpickr
             if (input._flatpickr) {
                 input._flatpickr.setDate(nowStr);
             } else {
