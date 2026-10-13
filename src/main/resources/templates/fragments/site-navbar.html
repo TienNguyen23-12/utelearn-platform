@@ -24,10 +24,10 @@
                     <a class="nav-link" th:classappend="${activePage == 'home'} ? ' text-primary active' : ''" href="/home">Trang chủ</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="${activePage == 'home'} ? '#cohorts' : '/home#cohorts'">Đợt khóa học</a>
+                    <a class="nav-link" th:classappend="${activePage == 'courses'} ? ' text-primary active' : ''" href="/courses">Khóa học</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:classappend="${activePage == 'courses'} ? ' text-primary active' : ''" href="/courses">Danh mục</a>
+                    <a class="nav-link" th:classappend="${activePage == 'cohorts'} ? ' text-primary active' : ''" href="/cohorts">Module & Chuyên đề</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link d-inline-flex align-items-center gap-1" href="javascript:void(0)" onclick="notifyOjPhase2(event)" role="button">

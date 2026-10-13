@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Lớp học - UTELearn Platform</title>
+    <title>Quản lý Module & Chuyên đề - UTELearn Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
@@ -21,17 +21,17 @@
     <aside th:replace="~{fragments/sidebar :: sidebar('cohorts')}"></aside>
 
     <div class="app-content-wrapper">
-        <header th:replace="~{fragments/navbar :: navbar('Lớp học')}"></header>
+        <header th:replace="~{fragments/navbar :: navbar('Module & Chuyên đề')}"></header>
 
         <main class="app-main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h4 class="fw-bold mb-1">Quản lý Lớp học</h4>
-                    <p class="text-muted mb-0">Danh sách các lớp học (cohorts) do bạn quản lý</p>
+                    <h4 class="fw-bold mb-1">Quản lý Module & Chuyên đề</h4>
+                    <p class="text-muted mb-0">Danh sách các module/chặng học con do bạn quản lý</p>
                 </div>
                 <div>
                     <a th:href="@{/instructor/cohorts/create}" class="btn btn-primary rounded-pill px-4">
-                        <i class="bi bi-plus-lg me-1"></i> Tạo lớp học mới
+                        <i class="bi bi-plus-lg me-1"></i> Tạo module mới
                     </a>
                 </div>
             </div>
@@ -41,7 +41,7 @@
                     <div class="col-md-5">
                         <label for="keyword" class="form-label text-muted small mb-1">Tìm kiếm</label>
                         <input type="text" class="form-control" id="keyword" name="keyword" th:value="${keyword}"
-                            placeholder="Mã lớp, tên lớp...">
+                            placeholder="Mã module, tên module...">
                     </div>
                     <div class="col-md-3">
                         <label for="status" class="form-label text-muted small mb-1">Trạng thái</label>
@@ -66,22 +66,22 @@
                     <table class="table align-middle">
                         <thead>
                             <tr>
-                                <th>Mã Lớp</th>
-                                <th>Tên Lớp</th>
+                                <th>Mã Module</th>
+                                <th>Tên Module</th>
                                 <th>Khóa học gốc</th>
-                                <th>Ghi danh</th>
+                                <th>Hạn ghi danh</th>
                                 <th>Trạng thái</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:if="${cohorts == null || cohorts.empty}">
-                                <td colspan="6" class="text-center text-muted py-4">Chưa có lớp học nào được tạo.</td>
+                                <td colspan="6" class="text-center text-muted py-4">Chưa có module nào được tạo.</td>
                             </tr>
                             <tr th:each="cohort : ${cohorts}">
                                 <td th:text="${cohort.code}">CODE</td>
                                 <td>
-                                    <div class="fw-bold text-dark" th:text="${cohort.name}">Tên lớp</div>
+                                    <div class="fw-bold text-dark" th:text="${cohort.name}">Tên module</div>
                                     <small class="text-muted"><i class="bi bi-people-fill"></i> <span
                                             th:text="${cohort.currentEnrolled}">0</span>/<span
                                             th:text="${cohort.maxCapacity}">50</span> học viên</small>
@@ -108,7 +108,7 @@
                                 <td class="text-center">
                                     <a th:href="@{/instructor/cohorts/{id}/schedule(id=${cohort.id})}"
                                         class="btn btn-sm btn-outline-info rounded-pill px-3">
-                                        <i class="bi bi-calendar-event me-1"></i> Lịch học
+                                        <i class="bi bi-calendar-event me-1"></i> Lộ trình
                                     </a>
                                     <a th:href="@{/instructor/cohorts/{id}/edit(id=${cohort.id})}"
                                         class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-1">

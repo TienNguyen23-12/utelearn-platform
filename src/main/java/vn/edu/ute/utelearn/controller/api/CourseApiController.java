@@ -28,6 +28,8 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.service.LessonService lessonService;
     private final vn.edu.ute.utelearn.service.AuthService authService;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
+    private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
+    private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -47,6 +49,7 @@ public class CourseApiController {
             map.put("headline", course.getHeadline());
             map.put("thumbnailUrl", course.getThumbnailUrl());
             map.put("level", course.getLevel());
+            map.put("price", course.getPrice());
             map.put("categoryName", course.getCategory() != null ? course.getCategory().getName() : null);
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
             map.put("instructorName",
@@ -98,21 +101,16 @@ public class CourseApiController {
                     course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("instructorAvatar", course.getCreatedBy() != null ? course.getCreatedBy().getAvatarUrl() : null);
 
-            boolean hasAccess = false;
-            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService
-                    .getCurrentAuthenticatedUser();
+            boolean isPrivileged = false;
+            java.util.Set<Long> unlockedLessonIds = java.util.Collections.emptySet();
+            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
             if (currentUserOpt.isPresent()) {
                 vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
                 boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN"));
                 boolean isModerator = user.getRoles().stream().anyMatch(r -> r.getCode().equals("MODERATOR"));
-                boolean isInstructor = course.getCreatedBy() != null
-                        && course.getCreatedBy().getId().equals(user.getId());
-                boolean isEnrolled = cohortMemberRepository.existsByCohort_Course_IdAndUser_Id(course.getId(),
-                        user.getId());
-
-                if (isAdmin || isModerator || isInstructor || isEnrolled) {
-                    hasAccess = true;
-                }
+                boolean isInstructor = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
+                isPrivileged = isAdmin || isModerator || isInstructor;
+                unlockedLessonIds = cohortScheduleRepository.findUnlockedLessonIdsByUserIdAndCourseId(user.getId(), course.getId());
             }
 
             List<Map<String, Object>> curriculum = new java.util.ArrayList<>();
@@ -132,7 +130,8 @@ public class CourseApiController {
                     lDto.put("lessonType", l.getLessonType());
                     lDto.put("isFreePreview", l.getIsFreePreview());
 
-                    if (hasAccess || (l.getIsFreePreview() != null && l.getIsFreePreview())) {
+                    boolean canAccess = isPrivileged || (l.getIsFreePreview() != null && l.getIsFreePreview()) || unlockedLessonIds.contains(l.getId());
+                    if (canAccess) {
                         lDto.put("assetUrl", l.getAssetUrl());
                         lDto.put("videoUrl", l.getVideoUrl());
                         lDto.put("documentContent", l.getDocumentContent());
@@ -149,6 +148,19 @@ public class CourseApiController {
                 curriculum.add(sectionMap);
             }
             map.put("curriculum", curriculum);
+
+            List<vn.edu.ute.utelearn.entity.Cohort> courseModules = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
+            List<Map<String, Object>> moduleDtos = new java.util.ArrayList<>();
+            for (vn.edu.ute.utelearn.entity.Cohort cm : courseModules) {
+                Map<String, Object> mDto = new HashMap<>();
+                mDto.put("id", cm.getId());
+                mDto.put("code", cm.getCode());
+                mDto.put("name", cm.getName());
+                mDto.put("price", cm.getPrice());
+                mDto.put("lessonIds", cohortScheduleRepository.findLessonIdsByCohortId(cm.getId()));
+                moduleDtos.add(mDto);
+            }
+            map.put("modules", moduleDtos);
 
             return ResponseEntity.ok(map);
         } catch (Exception e) {

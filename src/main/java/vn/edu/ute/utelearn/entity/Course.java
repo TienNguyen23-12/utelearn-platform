@@ -45,6 +45,9 @@ public class Course {
     @Builder.Default
     private String status = "DRAFT";
 
+    @Column(precision = 12, scale = 2)
+    private java.math.BigDecimal price;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;

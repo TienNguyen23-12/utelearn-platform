@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đợt khóa học - UTELearn</title>
+    <title>Module & Chuyên đề - UTELearn</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,10 +175,10 @@
                 <span
                     class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold"
                     style="font-size: 11px;">
-                    CÁC ĐỢT TUYỂN SINH MỚI NHẤT
+                    HỌC PHẦN & CHUYÊN ĐỀ ĐỘC LẬP
                 </span>
-                <h2 class="fw-bold text-dark mb-0">Lớp học Đang mở</h2>
-                <p class="text-muted mt-2 mb-0">Tìm và tham gia các lớp học được hướng dẫn trực tiếp bởi Giảng viên.</p>
+                <h2 class="fw-bold text-dark mb-0">Khám phá các Module học tập</h2>
+                <p class="text-muted mt-2 mb-0">Lựa chọn từng module chuyên môn để bổ trợ kỹ năng hoặc tích lũy hoàn thành trọn bộ lộ trình khóa học.</p>
             </div>
             <div class="d-flex gap-2 mt-3 mt-md-0" style="max-width: 500px; width: 100%;">
                 <select class="form-select form-select-sm border rounded-pill px-3" id="cohortCategoryFilter"
@@ -188,7 +188,7 @@
                 </select>
                 <div class="input-group input-group-sm">
                     <input type="text" id="cohortSearchInput" class="form-control border rounded-start-pill ps-3"
-                        placeholder="Tìm tên lớp, mã lớp...">
+                        placeholder="Tìm tên module, mã chuyên đề...">
                     <button class="btn btn-primary rounded-end-pill px-3" onclick="loadCohorts()"><i
                             class="bi bi-search"></i></button>
                 </div>
@@ -198,7 +198,7 @@
         <div class="row g-4" id="cohortsGrid">
             <div class="col-12 text-center text-muted py-5">
                 <div class="spinner-border text-primary"></div>
-                <p class="mt-2">Đang tải danh sách lớp học...</p>
+                <p class="mt-2">Đang tải danh sách module...</p>
             </div>
         </div>
     </section>
@@ -225,7 +225,7 @@
         async function loadCohorts() {
             try {
                 const grid = document.getElementById('cohortsGrid');
-                grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách lớp học...</p></div>';
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách module...</p></div>';
 
                 const q = document.getElementById('cohortSearchInput').value;
                 const category = document.getElementById('cohortCategoryFilter').value;
@@ -239,43 +239,45 @@
                 const data = await res.json();
 
                 if (!data.content || data.content.length === 0) {
-                    grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p>Không tìm thấy lớp học nào phù hợp.</p></div>';
+                    grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p>Không tìm thấy module nào phù hợp.</p></div>';
                     return;
                 }
 
                 let html = '';
                 data.content.forEach(cohort => {
                     const img = cohort.thumbnailUrl || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80';
-                    const statusBadge = cohort.status === 'UPCOMING' ? '<span class="badge bg-secondary-subtle text-secondary ms-2 border border-secondary-subtle">Sắp mở</span>' : '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Đang ghi danh</span>';
+                    const priceFormatted = cohort.price > 0 ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí';
 
                     html += `
                 <div class="col-lg-3 col-md-6">
                     <div class="course-card">
                         <div class="course-image-wrapper">
-                            <img src="${img}" alt="${cohort.courseTitle}">
-                            <span class="cohort-badge">${cohort.name}</span>
+                            <img src="${img}" alt="${cohort.name}">
+                            <span class="cohort-badge"><i class="bi bi-puzzle me-1"></i>${cohort.name}</span>
                         </div>
                         <div class="p-4 d-flex flex-column flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${cohort.categoryName || 'Khác'}</span>
-                                ${statusBadge}
+                                <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${cohort.categoryName || 'Chuyên đề'}</span>
+                                <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học lẻ</span>
                             </div>
+                            <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-journal-bookmark me-1 text-primary"></i>Thuộc khóa học:</div>
                             <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">${cohort.courseTitle}</h6>
                             <div class="text-muted small mb-3">
                                 <i class="bi bi-person-fill text-secondary me-1"></i><span>${cohort.instructorName}</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                                <span><i class="bi bi-people-fill me-1"></i>${cohort.currentEnrolled}/${cohort.maxCapacity}</span>
+                                <span><i class="bi bi-people-fill me-1"></i>${cohort.currentEnrolled} học viên</span>
                                 <span><i class="bi bi-tag-fill me-1"></i>Mã: ${cohort.code}</span>
                             </div>
                             <div class="mt-2 text-center">
-                                <span class="fw-bold text-success">${cohort.price > 0 ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí'}</span>
+                                <small class="text-muted d-block" style="font-size: 11px;">Học phí mua lẻ module:</small>
+                                <span class="fw-bold text-success fs-6">${priceFormatted}</span>
                             </div>
                             <form action="/courses/${cohort.courseSlug}/enroll/${cohort.id}" method="post" class="mt-3 w-100">
-                                <button type="submit" class="btn btn-gradient rounded-pill w-100 fw-semibold">Ghi danh</button>
+                                <button type="submit" class="btn btn-gradient rounded-pill w-100 fw-semibold"><i class="bi bi-cart-plus me-1"></i>Đăng ký module này</button>
                             </form>
                             <a href="/courses/${cohort.courseSlug}" class="btn btn-outline-primary rounded-pill w-100 mt-2 fw-semibold">
-                                <span>Xem khóa học</span>
+                                <span>Xem trọn bộ khóa học</span>
                             </a>
                         </div>
                     </div>
@@ -285,7 +287,7 @@
                 grid.innerHTML = html;
             } catch (error) {
                 console.error(error);
-                document.getElementById('cohortsGrid').innerHTML = '<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><p>Có lỗi xảy ra khi tải danh sách lớp học.</p></div>';
+                document.getElementById('cohortsGrid').innerHTML = '<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><p>Có lỗi xảy ra khi tải danh sách module.</p></div>';
             }
         }
     </script>

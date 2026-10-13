@@ -19,6 +19,7 @@ import vn.edu.ute.utelearn.service.CourseService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 @Controller
 @RequestMapping("/instructor/cohorts")
@@ -28,6 +29,7 @@ public class InstructorCohortController {
     private final CohortService cohortService;
     private final CourseService courseService;
     private final AuthService authService;
+    private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
 
     @GetMapping
     public String listCohorts(
@@ -164,13 +166,77 @@ public class InstructorCohortController {
     }
 
     @GetMapping("/{id}/schedule")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public String manageSchedule(
             @PathVariable Long id,
             Model model) {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
         Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
+        List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(id);
+        model.addAttribute("currentUser", currentUser);
         model.addAttribute("cohort", cohort);
+        model.addAttribute("schedules", schedules);
         return "instructor/cohorts/schedule";
+    }
+
+    @PostMapping("/{id}/schedule")
+    public String updateSchedule(
+            @PathVariable Long id,
+            @RequestParam(required = false) java.util.List<Long> scheduleIds,
+            @RequestParam(required = false) java.util.List<String> unlockAts,
+            @RequestParam(required = false) java.util.List<String> deadlineAts,
+            @RequestParam(required = false) java.util.List<String> showScoreTypes,
+            RedirectAttributes redirectAttributes) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
+
+        if (scheduleIds != null && !scheduleIds.isEmpty()) {
+            for (int i = 0; i < scheduleIds.size(); i++) {
+                Long sId = scheduleIds.get(i);
+                final int idx = i;
+                cohortScheduleRepository.findById(sId).ifPresent(cs -> {
+                    if (cs.getCohort().getId().equals(cohort.getId())) {
+                        if (unlockAts != null && idx < unlockAts.size() && unlockAts.get(idx) != null && !unlockAts.get(idx).isBlank()) {
+                            try {
+                                cs.setUnlockAt(java.time.LocalDateTime.parse(unlockAts.get(idx)).atZone(ZoneId.systemDefault()).toInstant());
+                            } catch (Exception ignored) {}
+                        }
+                        if (deadlineAts != null && idx < deadlineAts.size() && deadlineAts.get(idx) != null && !deadlineAts.get(idx).isBlank()) {
+                            try {
+                                cs.setDeadlineAt(java.time.LocalDateTime.parse(deadlineAts.get(idx)).atZone(ZoneId.systemDefault()).toInstant());
+                            } catch (Exception ignored) {}
+                        } else if (deadlineAts != null && idx < deadlineAts.size()) {
+                            cs.setDeadlineAt(null);
+                        }
+                        if (showScoreTypes != null && idx < showScoreTypes.size() && showScoreTypes.get(idx) != null) {
+                            cs.setShowScoreType(showScoreTypes.get(idx));
+                        }
+                        cohortScheduleRepository.save(cs);
+                    }
+                });
+            }
+        }
+
+        redirectAttributes.addFlashAttribute("successMessage", "Cập nhật lộ trình module thành công!");
+        return "redirect:/instructor/cohorts/" + id + "/schedule";
+    }
+
+    @PostMapping("/{id}/schedule/{scheduleId}/delete")
+    public String deleteScheduleItem(
+            @PathVariable Long id,
+            @PathVariable Long scheduleId,
+            RedirectAttributes redirectAttributes) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
+        cohortScheduleRepository.findById(scheduleId).ifPresent(cs -> {
+            if (cs.getCohort().getId().equals(cohort.getId())) {
+                cohortScheduleRepository.delete(cs);
+            }
+        });
+        redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ bài học khỏi module!");
+        return "redirect:/instructor/cohorts/" + id + "/schedule";
     }
 }

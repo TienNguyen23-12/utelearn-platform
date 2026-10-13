@@ -1,6 +1,7 @@
 package vn.edu.ute.utelearn.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,17 +11,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.dao.CohortMemberRepository;
 import vn.edu.ute.utelearn.dao.CohortRepository;
+import vn.edu.ute.utelearn.dao.CohortScheduleRepository;
 import vn.edu.ute.utelearn.dao.CourseRepository;
+import vn.edu.ute.utelearn.dao.LessonRepository;
 import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.CohortMember;
+import vn.edu.ute.utelearn.entity.CohortSchedule;
 import vn.edu.ute.utelearn.entity.Course;
+import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
+@Slf4j
 @Controller
+@Transactional
 @RequestMapping("/checkout")
 @RequiredArgsConstructor
 public class CheckoutController {
@@ -29,6 +38,8 @@ public class CheckoutController {
     private final CohortMemberRepository cohortMemberRepository;
     private final CourseRepository courseRepository;
     private final AuthService authService;
+    private final CohortScheduleRepository cohortScheduleRepository;
+    private final LessonRepository lessonRepository;
 
     @GetMapping("/{cohortId}")
     public String showCheckoutPage(@PathVariable Long cohortId, Model model, RedirectAttributes redirectAttributes) {
@@ -39,13 +50,13 @@ public class CheckoutController {
 
         Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
         if (cohort == null) {
-            redirectAttributes.addFlashAttribute("error", "Lớp học không tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Module không tồn tại.");
             return "redirect:/courses";
         }
 
         User user = currentUserOpt.get();
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh lớp học này.");
+            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
             return "redirect:/courses/" + cohort.getCourse().getSlug();
         }
 
@@ -54,6 +65,8 @@ public class CheckoutController {
         }
 
         Course course = courseRepository.findById(cohort.getCourse().getId()).orElse(null);
+
+        log.info("[CheckoutController] Hiển thị trang checkout cho module id: {}, user: {}", cohortId, user.getEmail());
 
         model.addAttribute("isFullCourse", false);
         model.addAttribute("cohort", cohort);
@@ -72,25 +85,25 @@ public class CheckoutController {
 
         Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
         if (cohort == null) {
-            redirectAttributes.addFlashAttribute("error", "Lớp học không tồn tại.");
+            redirectAttributes.addFlashAttribute("error", "Module không tồn tại.");
             return "redirect:/courses";
         }
 
         Course course = courseRepository.findById(cohort.getCourse().getId()).orElse(null);
         if (course == null) {
-            redirectAttributes.addFlashAttribute("error", "Lớp học không hợp lệ.");
+            redirectAttributes.addFlashAttribute("error", "Module không hợp lệ.");
             return "redirect:/courses";
         }
 
         User user = currentUserOpt.get();
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh lớp học này.");
+            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
             return "redirect:/courses/" + course.getSlug();
         }
 
         if (List.of("ENROLLING", "UPCOMING").contains(cohort.getStatus())) {
             if (cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
-                redirectAttributes.addFlashAttribute("error", "Lớp học đã đủ số lượng học viên.");
+                redirectAttributes.addFlashAttribute("error", "Module đã đủ số lượng học viên.");
                 return "redirect:/courses/" + course.getSlug();
             }
 
@@ -103,12 +116,43 @@ public class CheckoutController {
             cohort.setCurrentEnrolled(cohort.getCurrentEnrolled() + 1);
             cohortRepository.save(cohort);
 
-            redirectAttributes.addFlashAttribute("success", "Thanh toán thành công! Bạn đã tham gia lớp học.");
+            log.info("[CheckoutController] Thanh toán thành công module id: {}, user: {}", cohortId, user.getEmail());
+            redirectAttributes.addFlashAttribute("success", "Thanh toán thành công! Bạn đã tham gia module.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "Lớp học này hiện không mở đăng ký.");
+            redirectAttributes.addFlashAttribute("error", "Module này hiện không mở đăng ký.");
         }
 
         return "redirect:/courses/" + course.getSlug() + "/learn";
+    }
+
+    private List<Cohort> getOrCreateAvailableCohorts(Course course) {
+        List<Cohort> cohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
+                List.of("ENROLLING", "UPCOMING"));
+        if (cohorts.isEmpty()) {
+            Cohort defaultCohort = Cohort.builder()
+                    .course(course)
+                    .name("Toàn bộ khóa học: " + course.getTitle())
+                    .code(course.getCode() + "-ALL")
+                    .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
+                    .status("ENROLLING")
+                    .maxCapacity(1000)
+                    .currentEnrolled(0)
+                    .enrollmentStart(Instant.now())
+                    .studyStart(Instant.now())
+                    .build();
+            defaultCohort = cohortRepository.save(defaultCohort);
+            List<Lesson> lessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+            for (Lesson l : lessons) {
+                CohortSchedule cs = CohortSchedule.builder()
+                        .cohort(defaultCohort)
+                        .lesson(l)
+                        .unlockAt(Instant.now())
+                        .build();
+                cohortScheduleRepository.save(cs);
+            }
+            return List.of(defaultCohort);
+        }
+        return cohorts;
     }
 
     @GetMapping("/course/{slug}")
@@ -125,12 +169,7 @@ public class CheckoutController {
         }
 
         User user = currentUserOpt.get();
-        List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
-                List.of("ENROLLING", "UPCOMING"));
-        if (availableCohorts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Khóa học chưa mở đợt học nào.");
-            return "redirect:/courses/" + slug;
-        }
+        List<Cohort> availableCohorts = getOrCreateAvailableCohorts(course);
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         java.util.Set<Long> enrolledCohortIds = userMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
@@ -140,19 +179,36 @@ public class CheckoutController {
                 .collect(java.util.stream.Collectors.toList());
 
         if (unenrolledCohorts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các đợt học của khóa học này.");
+            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
             return "redirect:/courses/" + slug + "/learn";
         }
 
-        java.math.BigDecimal totalPrice = unenrolledCohorts.stream()
+        java.math.BigDecimal sumOfCohorts = unenrolledCohorts.stream()
                 .map(Cohort::getPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        java.math.BigDecimal totalPrice = (unenrolledCohorts.size() == availableCohorts.size() 
+                && course.getPrice() != null 
+                && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0)
+                ? course.getPrice()
+                : (course.getPrice() != null && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0 
+                    ? sumOfCohorts.min(course.getPrice()) 
+                    : sumOfCohorts);
+
+        java.math.BigDecimal discountAmount = (sumOfCohorts.compareTo(totalPrice) > 0)
+                ? sumOfCohorts.subtract(totalPrice)
+                : java.math.BigDecimal.ZERO;
+
+        log.info("[CheckoutController] Checkout trọn gói course: {}, user: {}, sum: {}, total: {}, discount: {}",
+                slug, user.getEmail(), sumOfCohorts, totalPrice, discountAmount);
 
         model.addAttribute("isFullCourse", true);
         model.addAttribute("course", course);
         model.addAttribute("unenrolledCohorts", unenrolledCohorts);
         model.addAttribute("totalPrice", totalPrice);
+        model.addAttribute("sumOfCohorts", sumOfCohorts);
+        model.addAttribute("discountAmount", discountAmount);
         model.addAttribute("currentUser", user);
         return "checkout/index";
     }
@@ -171,8 +227,7 @@ public class CheckoutController {
         }
 
         User user = currentUserOpt.get();
-        List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
-                List.of("ENROLLING", "UPCOMING"));
+        List<Cohort> availableCohorts = getOrCreateAvailableCohorts(course);
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         java.util.Set<Long> enrolledCohortIds = userMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
@@ -182,7 +237,7 @@ public class CheckoutController {
                 .collect(java.util.stream.Collectors.toList());
 
         if (unenrolledCohorts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các đợt học của khóa học này.");
+            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
             return "redirect:/courses/" + slug + "/learn";
         }
 
@@ -200,10 +255,13 @@ public class CheckoutController {
             }
         }
 
+        log.info("[CheckoutController] Hoàn tất thanh toán trọn gói course: {}, user: {}, số module đã đăng ký: {}",
+                slug, user.getEmail(), enrolledCount);
+
         if (enrolledCount > 0) {
-            redirectAttributes.addFlashAttribute("success", "Thanh toán trọn gói thành công! Bạn đã tham gia " + enrolledCount + " đợt học của khóa học.");
+            redirectAttributes.addFlashAttribute("success", "Thanh toán trọn gói thành công! Bạn đã tham gia " + enrolledCount + " module của khóa học.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "Các đợt học đều đã đủ số lượng học viên.");
+            redirectAttributes.addFlashAttribute("error", "Các module đều đã đủ số lượng học viên.");
         }
 
         return "redirect:/courses/" + slug + "/learn";

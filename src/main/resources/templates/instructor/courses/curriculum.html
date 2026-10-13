@@ -118,8 +118,11 @@
                     <p class="text-muted mb-0" th:text="${course.title}">Tên khóa học</p>
                 </div>
             </div>
-            <div>
-                <button class="btn btn-primary text-nowrap" onclick="openSectionModal()">
+            <div class="d-flex gap-2">
+                <a th:href="@{'/instructor/courses/' + ${course.id} + '/modules'}" class="btn btn-outline-primary rounded-pill text-nowrap px-3">
+                    <i class="bi bi-collection me-1"></i> Quản lý Module
+                </a>
+                <button class="btn btn-primary rounded-pill text-nowrap px-4" onclick="openSectionModal()">
                     <i class="bi bi-plus-circle me-1"></i> Thêm Chương mới
                 </button>
             </div>
@@ -246,11 +249,21 @@
                     <textarea class="form-control" id="documentContent" rows="4" placeholder="Viết nội dung bài học ở đây..."></textarea>
                 </div>
                 
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold">Phân bổ vào Module / Chuyên đề <span class="badge bg-primary-subtle text-primary ms-1">Tự động đồng bộ</span></label>
+                    <select class="form-select" id="lessonCohortId">
+                        <option value="">-- Bài học chung (Chưa phân vào module) --</option>
+                        <option th:each="m : ${modules}" th:value="${m.id}" th:text="${m.name + ' (' + m.code + ')'}"></option>
+                    </select>
+                    <div class="form-text small text-muted">Hệ thống sẽ tự động gán bài học này vào module được chọn mà không cần qua trang module cấu hình thủ công.</div>
+                </div>
+
                 <div class="col-md-6">
                     <div class="form-check form-switch mt-2">
                         <input class="form-check-input" type="checkbox" id="isFreePreview">
-                        <label class="form-check-label fw-semibold" for="isFreePreview">Học thử miễn phí (Free Preview)</label>
+                        <label class="form-check-label fw-semibold" for="isFreePreview">Cho phép học thử miễn phí (Free Preview)</label>
                     </div>
+                    <div class="form-text small text-muted" style="font-size: 11px;">Khi bật, học viên chưa mua module vẫn có thể xem trước nội dung/video bài học này.</div>
                 </div>
                 
                 <div class="col-md-6">
@@ -395,6 +408,7 @@
         document.getElementById('documentContent').value = '';
         document.getElementById('isFreePreview').checked = false;
         document.getElementById('isPublicForCohorts').checked = false;
+        document.getElementById('lessonCohortId').value = '';
         toggleLessonFields();
         document.getElementById('lessonModalTitle').innerText = 'Thêm Bài học mới';
         lessonModal.show();
@@ -410,6 +424,7 @@
         document.getElementById('documentContent').value = lesson.documentContent || '';
         document.getElementById('isFreePreview').checked = lesson.isFreePreview || false;
         document.getElementById('isPublicForCohorts').checked = lesson.isPublicForCohorts || false;
+        document.getElementById('lessonCohortId').value = lesson.cohortId ? lesson.cohortId : '';
         toggleLessonFields();
         document.getElementById('lessonModalTitle').innerText = 'Sửa Bài học';
         lessonModal.show();
@@ -441,13 +456,18 @@
             else if(l.lessonType === 'CODE_PRACTICE') { iconClass = 'bi-code-square'; bgClass = 'icon-code'; }
             else if(l.lessonType === 'ANNOUNCEMENT') { iconClass = 'bi-megaphone-fill'; bgClass = 'icon-doc'; }
             
+            let moduleBadge = '';
+            if (l.cohortCode) {
+                moduleBadge = `<span class="badge bg-light text-primary border border-primary-subtle me-2" style="font-size: 11px;"><i class="bi bi-collection me-1"></i>${l.cohortCode}</span>`;
+            }
+
             html += `
                 <div class="lesson-item">
                     <div class="d-flex align-items-center">
                         <div class="lesson-icon ${bgClass}"><i class="bi ${iconClass}"></i></div>
                         <div>
-                            <p class="lesson-title">${idx + 1}. ${l.title}</p>
-                            <small class="text-muted" style="font-size: 12px;">${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success text-white px-1">Free</span>' : ''}</small>
+                            <p class="lesson-title">${moduleBadge}${idx + 1}. ${l.title}</p>
+                            <small class="text-muted" style="font-size: 12px;">${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success-subtle text-success border border-success-subtle px-1"><i class="bi bi-play-circle me-1"></i>Học thử</span>' : ''}</small>
                         </div>
                     </div>
                     <div class="action-btns">
@@ -467,6 +487,7 @@
         const type = document.getElementById('lessonType').value;
         if(!title) { alert('Nhập tên bài học!'); return; }
 
+        const cohortIdVal = document.getElementById('lessonCohortId').value;
         const payload = {
             title: title,
             lessonType: type,
@@ -474,7 +495,8 @@
             assetUrl: document.getElementById('assetUrl').value,
             documentContent: document.getElementById('documentContent').value,
             isFreePreview: document.getElementById('isFreePreview').checked,
-            isPublicForCohorts: document.getElementById('isPublicForCohorts').checked
+            isPublicForCohorts: document.getElementById('isPublicForCohorts').checked,
+            cohortId: cohortIdVal ? parseInt(cohortIdVal) : null
         };
 
         const url = id ? `/api/instructor/courses/lessons/${id}` : `/api/instructor/courses/sections/${sectionId}/lessons`;

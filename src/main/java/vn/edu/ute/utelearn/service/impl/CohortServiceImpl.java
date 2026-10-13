@@ -126,8 +126,13 @@ public class CohortServiceImpl implements CohortService {
         cohort.setStatus(dto.getStatus());
 
         Cohort savedCohort = cohortRepository.save(cohort);
-        cohortScheduleRepository.deleteByCohortId(savedCohort.getId());
-        saveSchedules(savedCohort, dto.getSchedules());
+        if (dto.getSchedules() != null && !dto.getSchedules().isEmpty()) {
+            boolean hasValidSchedule = dto.getSchedules().stream().anyMatch(s -> s.getUnlockAt() != null);
+            if (hasValidSchedule) {
+                cohortScheduleRepository.deleteByCohortId(savedCohort.getId());
+                saveSchedules(savedCohort, dto.getSchedules());
+            }
+        }
         return savedCohort;
     }
 

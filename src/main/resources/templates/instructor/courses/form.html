@@ -56,7 +56,7 @@
                         <textarea class="form-control" id="objectives" name="objectives" rows="5" placeholder="Hiểu biết về...&#10;Làm được..." th:text="${courseObjectives != null ? courseObjectives : ''}"></textarea>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Danh mục <span class="text-danger">*</span></label>
                         <select class="form-select" id="categoryId" name="categoryId" required>
                             <option value="">-- Chọn danh mục --</option>
@@ -64,7 +64,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Cấp độ <span class="text-danger">*</span></label>
                         <select class="form-select" id="level" name="level" required>
                             <option value="ALL_LEVELS" th:selected="${course == null || course.level == 'ALL_LEVELS'}">Mọi cấp độ</option>
@@ -72,6 +72,12 @@
                             <option value="INTERMEDIATE" th:selected="${course != null && course.level == 'INTERMEDIATE'}">Trung bình</option>
                             <option value="ADVANCED" th:selected="${course != null && course.level == 'ADVANCED'}">Nâng cao</option>
                         </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Giá trọn gói ưu đãi (VNĐ)</label>
+                        <input type="number" class="form-control" id="price" name="price" min="0" step="1000" th:value="${course != null ? course.price : ''}" placeholder="VD: 699000">
+                        <small class="text-muted" style="font-size: 11px;">Giá mua combo toàn bộ lộ trình (rẻ hơn tổng module lẻ)</small>
                     </div>
 
                     <div class="col-md-12">

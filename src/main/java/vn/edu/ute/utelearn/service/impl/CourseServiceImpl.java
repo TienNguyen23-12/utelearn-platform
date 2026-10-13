@@ -96,6 +96,7 @@ public class CourseServiceImpl implements CourseService {
                 .createdBy(creator)
                 .status("DRAFT")
                 .objectives(parseObjectives(request.getObjectives()))
+                .price(request.getPrice())
                 .build();
 
         return courseRepository.save(course);
@@ -115,13 +116,13 @@ public class CourseServiceImpl implements CourseService {
 
         course.setCode(request.getCode());
         course.setTitle(request.getTitle());
-        // course.setSlug(generateSlug(request.getTitle())); // Cập nhật slug hay không tùy logic, thường không nên đổi slug
         course.setHeadline(request.getHeadline());
         course.setDescription(request.getDescription());
         course.setThumbnailUrl(request.getThumbnailUrl());
         course.setLevel(request.getLevel());
         course.setCategory(category);
         course.setObjectives(parseObjectives(request.getObjectives()));
+        course.setPrice(request.getPrice());
 
         return courseRepository.save(course);
     }

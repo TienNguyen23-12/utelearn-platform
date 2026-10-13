@@ -1,6 +1,7 @@
 package vn.edu.ute.utelearn.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,14 +13,21 @@ import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CourseService;
 import vn.edu.ute.utelearn.dao.CohortMemberRepository;
 import vn.edu.ute.utelearn.dao.CohortRepository;
+import vn.edu.ute.utelearn.dao.CohortScheduleRepository;
+import vn.edu.ute.utelearn.dao.LessonRepository;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.CohortMember;
+import vn.edu.ute.utelearn.entity.CohortSchedule;
+import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.User;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.List;
 
+@Slf4j
 @Controller
+@Transactional
 @RequestMapping("/courses")
 @RequiredArgsConstructor
 public class CourseController {
@@ -28,6 +36,8 @@ public class CourseController {
     private final CourseService courseService;
     private final CohortMemberRepository cohortMemberRepository;
     private final CohortRepository cohortRepository;
+    private final CohortScheduleRepository cohortScheduleRepository;
+    private final LessonRepository lessonRepository;
 
     @GetMapping
     public String showCourseList(Model model) {
@@ -90,15 +100,29 @@ public class CourseController {
         }).collect(java.util.stream.Collectors.toList());
 
         boolean isAllEnrolled = !availableCohorts.isEmpty() && availableCohorts.stream().allMatch(c -> finalEnrolledCohortIds.contains(c.getId()));
-        java.math.BigDecimal fullCoursePrice = availableCohorts.stream()
+        java.math.BigDecimal sumOfCohorts = availableCohorts.stream()
                 .map(Cohort::getPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-        java.math.BigDecimal remainingCoursePrice = availableCohorts.stream()
+
+        java.math.BigDecimal fullCoursePrice = (course.getPrice() != null && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0)
+                ? course.getPrice()
+                : sumOfCohorts;
+
+        java.math.BigDecimal remainingCohortSum = availableCohorts.stream()
                 .filter(c -> !finalEnrolledCohortIds.contains(c.getId()))
                 .map(Cohort::getPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        java.math.BigDecimal remainingCoursePrice = isEnrolled 
+                ? remainingCohortSum.min(fullCoursePrice)
+                : fullCoursePrice;
+
+        java.math.BigDecimal discountAmount = (sumOfCohorts.compareTo(fullCoursePrice) > 0)
+                ? sumOfCohorts.subtract(fullCoursePrice)
+                : java.math.BigDecimal.ZERO;
+
         long unenrolledCount = availableCohorts.stream().filter(c -> !finalEnrolledCohortIds.contains(c.getId())).count();
 
         model.addAttribute("availableCohorts", cohortList);
@@ -106,6 +130,8 @@ public class CourseController {
         model.addAttribute("isEnrolled", isEnrolled);
         model.addAttribute("isAllEnrolled", isAllEnrolled);
         model.addAttribute("fullCoursePrice", fullCoursePrice);
+        model.addAttribute("sumOfCohorts", sumOfCohorts);
+        model.addAttribute("discountAmount", discountAmount);
         model.addAttribute("remainingCoursePrice", remainingCoursePrice);
         model.addAttribute("unenrolledCount", unenrolledCount);
         model.addAttribute("hasAccessRole", hasAccessRole);
@@ -189,8 +215,28 @@ public class CourseController {
                 List.of("ENROLLING", "UPCOMING"));
 
         if (availableCohorts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Khóa học hiện chưa có đợt học nào mở đăng ký.");
-            return "redirect:/courses/" + slug;
+            Cohort defaultCohort = Cohort.builder()
+                    .course(course)
+                    .name("Toàn bộ khóa học: " + course.getTitle())
+                    .code(course.getCode() + "-ALL")
+                    .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
+                    .status("ENROLLING")
+                    .maxCapacity(1000)
+                    .currentEnrolled(0)
+                    .enrollmentStart(java.time.Instant.now())
+                    .studyStart(java.time.Instant.now())
+                    .build();
+            defaultCohort = cohortRepository.save(defaultCohort);
+            List<Lesson> lessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+            for (Lesson l : lessons) {
+                CohortSchedule cs = CohortSchedule.builder()
+                        .cohort(defaultCohort)
+                        .lesson(l)
+                        .unlockAt(java.time.Instant.now())
+                        .build();
+                cohortScheduleRepository.save(cs);
+            }
+            availableCohorts = List.of(defaultCohort);
         }
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
@@ -201,14 +247,22 @@ public class CourseController {
                 .collect(java.util.stream.Collectors.toList());
 
         if (unenrolledCohorts.isEmpty()) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các đợt học của khóa học này.");
+            redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
             return "redirect:/courses/" + slug + "/learn";
         }
 
-        java.math.BigDecimal totalPrice = unenrolledCohorts.stream()
+        java.math.BigDecimal sumOfUnenrolled = unenrolledCohorts.stream()
                 .map(Cohort::getPrice)
                 .filter(java.util.Objects::nonNull)
                 .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+        java.math.BigDecimal totalPrice = (unenrolledCohorts.size() == availableCohorts.size() 
+                && course.getPrice() != null 
+                && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0)
+                ? course.getPrice()
+                : (course.getPrice() != null && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0
+                    ? sumOfUnenrolled.min(course.getPrice())
+                    : sumOfUnenrolled);
 
         if (totalPrice.compareTo(java.math.BigDecimal.ZERO) > 0) {
             return "redirect:/checkout/course/" + slug;
@@ -226,7 +280,8 @@ public class CourseController {
             }
         }
 
-        redirectAttributes.addFlashAttribute("success", "Đã ghi danh toàn bộ các đợt học của khóa học!");
+        log.info("[CourseController] Đăng ký miễn phí trọn gói course: {}, user: {}", slug, user.getEmail());
+        redirectAttributes.addFlashAttribute("success", "Đã đăng ký toàn bộ khóa học thành công!");
         return "redirect:/courses/" + slug + "/learn";
     }
 

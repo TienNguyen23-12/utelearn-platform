@@ -36,7 +36,7 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
            "AND (cr.category.slug = :categorySlug OR :categorySlug = '')")
     Page<Cohort> searchPublicCohorts(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, Pageable pageable);
 
-    @Query("SELECT c FROM Cohort c WHERE c.course.createdBy.id = :instructorId AND c.id = :id")
+    @Query("SELECT c FROM Cohort c JOIN FETCH c.course cr WHERE cr.createdBy.id = :instructorId AND c.id = :id")
     Optional<Cohort> findByIdAndInstructorId(@Param("id") Long id, @Param("instructorId") Long instructorId);
     
     boolean existsByCode(String code);
@@ -46,4 +46,6 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     java.util.Optional<Cohort> findFirstByCourseIdAndStatusIn(Long courseId, java.util.List<String> statuses);
 
     java.util.List<Cohort> findByCourseIdAndStatusIn(Long courseId, java.util.List<String> statuses);
+
+    java.util.List<Cohort> findByCourseIdOrderByCreatedAtAsc(Long courseId);
 }

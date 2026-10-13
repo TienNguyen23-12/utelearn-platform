@@ -28,6 +28,7 @@ public class InstructorCurriculumApiController {
     private final LessonService lessonService;
     private final AuthService authService;
     private final InstructorAssetService assetService;
+    private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
 
     @PostMapping("/{courseId}/sections")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
@@ -71,6 +72,18 @@ public class InstructorCurriculumApiController {
                 map.put("id", l.getId());
                 map.put("title", l.getTitle());
                 map.put("lessonType", l.getLessonType());
+                map.put("isFreePreview", l.getIsFreePreview());
+                List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(l.getId());
+                if (!schedules.isEmpty()) {
+                    vn.edu.ute.utelearn.entity.Cohort c = schedules.get(0).getCohort();
+                    map.put("cohortId", c.getId());
+                    map.put("cohortCode", c.getCode());
+                    map.put("cohortName", c.getName());
+                } else {
+                    map.put("cohortId", null);
+                    map.put("cohortCode", null);
+                    map.put("cohortName", null);
+                }
                 return map;
             }).toList();
             
@@ -94,6 +107,17 @@ public class InstructorCurriculumApiController {
             map.put("assetUrl", l.getAssetUrl());
             map.put("documentContent", l.getDocumentContent());
             map.put("isPublicForCohorts", l.getIsPublicForCohorts());
+            List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(l.getId());
+            if (!schedules.isEmpty()) {
+                vn.edu.ute.utelearn.entity.Cohort c = schedules.get(0).getCohort();
+                map.put("cohortId", c.getId());
+                map.put("cohortCode", c.getCode());
+                map.put("cohortName", c.getName());
+            } else {
+                map.put("cohortId", null);
+                map.put("cohortCode", null);
+                map.put("cohortName", null);
+            }
             return map;
         }).toList();
         return ResponseEntity.ok(result);

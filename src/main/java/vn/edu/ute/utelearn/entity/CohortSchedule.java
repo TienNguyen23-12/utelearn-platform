@@ -47,4 +47,18 @@ public class CohortSchedule {
 
     @Column(name = "review_available_at")
     private Instant reviewAvailableAt;
+
+    public String getFormattedUnlockAt() {
+        if (unlockAt == null) return "";
+        return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(unlockAt);
+    }
+
+    public String getFormattedDeadlineAt() {
+        if (deadlineAt == null) return "";
+        return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(deadlineAt);
+    }
 }

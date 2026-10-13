@@ -192,6 +192,20 @@
         }
     });
 
+    function getLessonModuleMap() {
+        const lessonModuleMap = {};
+        if (courseData && courseData.modules && courseData.modules.length > 0) {
+            courseData.modules.forEach(m => {
+                if (m.lessonIds && Array.isArray(m.lessonIds)) {
+                    m.lessonIds.forEach(id => {
+                        lessonModuleMap[id] = m;
+                    });
+                }
+            });
+        }
+        return lessonModuleMap;
+    }
+
     function renderSidebar() {
         const container = document.getElementById('curriculumAccordion');
         if (!courseData.curriculum || courseData.curriculum.length === 0) {
@@ -199,6 +213,7 @@
             return;
         }
 
+        const lessonModuleMap = getLessonModuleMap();
         let html = '';
         courseData.curriculum.forEach((section, index) => {
             let lessonsHtml = '';
@@ -209,10 +224,20 @@
                     else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
                     else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
                     
+                    const assignedMod = lessonModuleMap[lesson.id];
+                    let lockBadge = '';
+                    if (lesson.isLocked) {
+                        icon = 'bi-lock-fill text-secondary';
+                        lockBadge = `<span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 10px;"><i class="bi bi-lock-fill me-1"></i>${assignedMod ? assignedMod.code : 'Khóa'}</span>`;
+                    } else if (assignedMod) {
+                        lockBadge = `<span class="badge bg-light text-primary border border-primary-subtle ms-auto" style="font-size: 10px;">${assignedMod.code}</span>`;
+                    }
+                    
                     lessonsHtml += `
-                        <div class="lesson-item" id="lesson-item-${lesson.id}" onclick="loadLesson(${lesson.id})">
+                        <div class="lesson-item d-flex align-items-center" id="lesson-item-${lesson.id}" onclick="loadLesson(${lesson.id})">
                             <i class="bi ${icon} me-3 fs-5"></i>
-                            <div class="small fw-medium">${lesson.title}</div>
+                            <div class="small fw-medium text-truncate me-2">${lesson.title}</div>
+                            ${lockBadge}
                         </div>
                     `;
                 });
@@ -237,8 +262,19 @@
         });
         container.innerHTML = html;
         
-        // Auto-load first lesson if available
-        if (courseData.curriculum[0] && courseData.curriculum[0].lessons && courseData.curriculum[0].lessons.length > 0) {
+        let firstPlayableLessonId = null;
+        for (const sec of courseData.curriculum) {
+            if (sec.lessons) {
+                const found = sec.lessons.find(l => !l.isLocked);
+                if (found) {
+                    firstPlayableLessonId = found.id;
+                    break;
+                }
+            }
+        }
+        if (firstPlayableLessonId) {
+            loadLesson(firstPlayableLessonId);
+        } else if (courseData.curriculum[0] && courseData.curriculum[0].lessons && courseData.curriculum[0].lessons.length > 0) {
             loadLesson(courseData.curriculum[0].lessons[0].id);
         }
     }
@@ -246,12 +282,10 @@
     let player = null;
 
     function loadLesson(lessonId) {
-        // Highlight active lesson in sidebar
         document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
         const activeItem = document.getElementById('lesson-item-' + lessonId);
         if(activeItem) activeItem.classList.add('active');
 
-        // Find lesson in courseData
         let foundLesson = null;
         for (const section of courseData.curriculum) {
             if (section.lessons) {
@@ -264,10 +298,33 @@
 
         const mainContent = document.getElementById('mainContent');
         
-        // Destroy existing player if it exists
         if (player) {
             player.destroy();
             player = null;
+        }
+
+        if (foundLesson.isLocked) {
+            const lessonModuleMap = getLessonModuleMap();
+            const assignedMod = lessonModuleMap[lessonId];
+            const modTitle = assignedMod ? assignedMod.name : 'Module chuyên đề';
+            const modCode = assignedMod ? assignedMod.code : '';
+            mainContent.innerHTML = `
+                <div class="text-center py-5 my-5" style="max-width: 600px; margin: 0 auto;">
+                    <div class="card border-0 shadow-sm rounded-4 p-5">
+                        <div class="mb-3 text-secondary">
+                            <i class="bi bi-lock-fill display-3"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Bài học chưa được mở khóa</h4>
+                        <p class="text-muted mb-4">Bài học này thuộc <strong>${modTitle}</strong> (${modCode}). Bạn cần đăng ký module này để truy cập nội dung bài học.</p>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="/courses/${slug}" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-cart-plus me-1"></i>Xem và đăng ký module
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
         }
         
         // Resolve video URL: if it's a VIDEO lesson but videoUrl is empty, it might be stored in assetUrl (from asset picker)

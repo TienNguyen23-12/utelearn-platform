@@ -26,4 +26,6 @@ public class LessonRequestDTO {
     private String assetUrl;
 
     private Boolean isPublicForCohorts = false;
+
+    private Long cohortId;
 }

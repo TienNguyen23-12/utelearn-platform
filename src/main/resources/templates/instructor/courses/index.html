@@ -43,13 +43,14 @@
                         <th>Khóa học</th>
                         <th>Danh mục</th>
                         <th>Cấp độ</th>
+                        <th>Giá trọn gói</th>
                         <th>Trạng thái</th>
                         <th class="text-center">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:if="${courses == null || courses.empty}">
-                        <td colspan="6" class="text-center text-muted py-4">Chưa có khóa học nào được tạo.</td>
+                        <td colspan="7" class="text-center text-muted py-4">Chưa có khóa học nào được tạo.</td>
                     </tr>
                     <tr th:each="course : ${courses}">
                         <td th:text="${course.code}">CS101</td>
@@ -75,6 +76,10 @@
                             <span th:if="${course.level == 'ALL_LEVELS'}" class="badge bg-info-subtle text-info border">Mọi cấp độ</span>
                         </td>
                         <td>
+                            <span class="fw-bold text-success" th:if="${course.price != null && course.price > 0}" th:text="${#numbers.formatDecimal(course.price, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            <span class="badge bg-light text-muted border" th:unless="${course.price != null && course.price > 0}">Theo module</span>
+                        </td>
+                        <td>
                             <span th:if="${course.status == 'DRAFT'}" class="badge bg-secondary">Nháp</span>
                             <span th:if="${course.status == 'PENDING_REVIEW'}" class="badge bg-warning text-dark">Chờ duyệt</span>
                             <span th:if="${course.status == 'PUBLISHED'}" class="badge bg-success">Đã xuất bản</span>
@@ -82,6 +87,9 @@
                         <td class="text-center">
                             <a th:if="${@rbac.hasPermission('COURSE_CREATE')}" th:href="@{/instructor/courses/{id}/curriculum(id=${course.id})}" class="btn btn-sm btn-outline-info rounded-pill px-3">
                                 <i class="bi bi-journal-text me-1"></i> Giáo trình
+                            </a>
+                            <a th:if="${@rbac.hasPermission('COURSE_CREATE')}" th:href="@{/instructor/courses/{id}/modules(id=${course.id})}" class="btn btn-sm btn-outline-success rounded-pill px-3 ms-1">
+                                <i class="bi bi-collection me-1"></i> Module
                             </a>
                             <a th:if="${@rbac.hasPermission('COURSE_CREATE')}" th:href="@{/instructor/courses/{id}/edit(id=${course.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-1">
                                 <i class="bi bi-pencil-square me-1"></i> Sửa

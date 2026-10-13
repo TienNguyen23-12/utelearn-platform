@@ -19,6 +19,8 @@ public class LessonServiceImpl implements LessonService {
 
     private final LessonRepository lessonRepository;
     private final SectionService sectionService;
+    private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
+    private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
 
     @Override
     public List<Lesson> getLessonsBySectionId(Long sectionId) {
@@ -53,7 +55,22 @@ public class LessonServiceImpl implements LessonService {
                 .orderIndex(request.getOrderIndex() != null ? request.getOrderIndex() : 1)
                 .build();
 
-        return lessonRepository.save(lesson);
+        Lesson savedLesson = lessonRepository.save(lesson);
+
+        if (request.getCohortId() != null) {
+            cohortRepository.findById(request.getCohortId()).ifPresent(cohort -> {
+                if (cohort.getCourse().getId().equals(section.getCourse().getId())) {
+                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                            .cohort(cohort)
+                            .lesson(savedLesson)
+                            .unlockAt(java.time.Instant.now())
+                            .build();
+                    cohortScheduleRepository.save(schedule);
+                }
+            });
+        }
+
+        return savedLesson;
     }
 
     @Override
@@ -84,7 +101,23 @@ public class LessonServiceImpl implements LessonService {
             lesson.setOrderIndex(request.getOrderIndex());
         }
 
-        return lessonRepository.save(lesson);
+        Lesson savedLesson = lessonRepository.save(lesson);
+
+        cohortScheduleRepository.deleteByLessonId(lesson.getId());
+        if (request.getCohortId() != null) {
+            cohortRepository.findById(request.getCohortId()).ifPresent(cohort -> {
+                if (cohort.getCourse().getId().equals(lesson.getSection().getCourse().getId())) {
+                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                            .cohort(cohort)
+                            .lesson(savedLesson)
+                            .unlockAt(java.time.Instant.now())
+                            .build();
+                    cohortScheduleRepository.save(schedule);
+                }
+            });
+        }
+
+        return savedLesson;
     }
 
     @Override
@@ -96,6 +129,7 @@ public class LessonServiceImpl implements LessonService {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
         }
 
+        cohortScheduleRepository.deleteByLessonId(lessonId);
         lessonRepository.delete(lesson);
     }
 }
