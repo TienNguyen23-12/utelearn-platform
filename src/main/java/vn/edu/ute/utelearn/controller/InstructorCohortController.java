@@ -30,6 +30,8 @@ public class InstructorCohortController {
     private final CourseService courseService;
     private final AuthService authService;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
+    private final vn.edu.ute.utelearn.service.SectionService sectionService;
 
     @GetMapping
     public String listCohorts(
@@ -110,10 +112,11 @@ public class InstructorCohortController {
             CohortRequestDTO dto = new CohortRequestDTO();
             dto.setCode(cohort.getCode());
             dto.setName(cohort.getName());
-            dto.setCourseId(cohort.getCourse().getId());
+            dto.setCourseId(cohort.getCourse() != null ? cohort.getCourse().getId() : null);
             dto.setMaxCapacity(cohort.getMaxCapacity());
             dto.setPrice(cohort.getPrice());
             dto.setStatus(cohort.getStatus());
+            dto.setVisibility(cohort.getVisibility());
 
             if (cohort.getEnrollmentStart() != null)
                 dto.setEnrollmentStart(LocalDateTime.ofInstant(cohort.getEnrollmentStart(), ZoneId.systemDefault()));
@@ -123,9 +126,13 @@ public class InstructorCohortController {
                 dto.setStudyStart(LocalDateTime.ofInstant(cohort.getStudyStart(), ZoneId.systemDefault()));
             if (cohort.getStudyEnd() != null)
                 dto.setStudyEnd(LocalDateTime.ofInstant(cohort.getStudyEnd(), ZoneId.systemDefault()));
+            dto.setDescription(cohort.getDescription());
+            dto.setObjectives(cohort.getObjectives());
+            dto.setThumbnailUrl(cohort.getThumbnailUrl());
 
             model.addAttribute("cohortDto", dto);
             model.addAttribute("cohortId", id);
+            model.addAttribute("cohort", cohort);
 
             Page<Course> courses = courseService.getCoursesByInstructor(currentUser.getId(), PageRequest.of(0, 100));
             model.addAttribute("courses", courses.getContent());
@@ -238,5 +245,23 @@ public class InstructorCohortController {
         });
         redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ bài học khỏi module!");
         return "redirect:/instructor/cohorts/" + id + "/schedule";
+    }
+
+    @GetMapping("/{id}/curriculum")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public String showCohortCurriculum(@PathVariable Long id, Model model) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        Cohort cohort = cohortRepository.findById(id).orElseThrow(() -> new RuntimeException("Module not found"));
+        boolean isOwner = (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(currentUser.getId()))
+                || currentUser.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()));
+        if (!isOwner) {
+            return "redirect:/instructor/cohorts";
+        }
+        List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCohortId(id);
+        model.addAttribute("course", cohort.getCourse());
+        model.addAttribute("module", cohort);
+        model.addAttribute("sections", sections);
+        return "instructor/courses/module-curriculum";
     }
 }

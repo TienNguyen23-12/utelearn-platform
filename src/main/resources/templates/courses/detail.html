@@ -161,7 +161,7 @@
             if (!res.ok) throw new Error("Khóa học không tồn tại");
             const course = await res.json();
             
-            const img = course.thumbnailUrl || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80';
+            const img = course.thumbnailUrl || '/images/courses/default-cover.png';
             let objectivesHtml = '';
             if (course.objectives && course.objectives !== '[]') {
                 try {
@@ -229,71 +229,66 @@
                         });
                     }
 
-                    let lessonsListHtml = '';
-                    if (modLessons.length > 0) {
-                        modLessons.forEach((lesson, lIdx) => {
-                            let icon = 'bi-file-earmark-text';
-                            if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
-                            else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
-                            else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
-                            else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
-                            else if (lesson.lessonType === 'ANNOUNCEMENT') icon = 'bi-megaphone-fill text-danger';
-
-                            const canAccessLesson = isModEnrolled || lesson.isFreePreview;
-
-                            let badge = '';
-                            if (lesson.isFreePreview) {
-                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;"><i class="bi bi-play-circle me-1"></i>Học thử</span>';
-                            } else if (isModEnrolled) {
-                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;"><i class="bi bi-check-circle-fill me-1"></i>Đã mở</span>';
+                    let objectivesListHtml = '';
+                    let objectivesArr = [];
+                    if (mod.objectives && mod.objectives.trim().length > 0 && mod.objectives !== '[]') {
+                        try {
+                            if (mod.objectives.trim().startsWith('[')) {
+                                objectivesArr = JSON.parse(mod.objectives);
                             } else {
-                                badge = '<span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 11px;"><i class="bi bi-lock-fill me-1"></i>Đã khóa</span>';
+                                objectivesArr = mod.objectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
                             }
+                        } catch (e) {
+                            objectivesArr = mod.objectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                        }
+                    }
 
-                            let contentHtml = '';
-                            let actionsHtml = '';
-                            if (canAccessLesson) {
-                                if (lesson.documentContent) {
-                                    contentHtml += `<div class="mt-2 text-dark small bg-white border p-3 rounded shadow-sm" style="white-space: pre-wrap;">${lesson.documentContent}</div>`;
-                                }
-                                if (lesson.videoUrl) {
-                                    actionsHtml += `<a href="${lesson.videoUrl}" target="_blank" class="btn btn-sm btn-primary me-2"><i class="bi bi-play-circle me-1"></i>Xem Video</a>`;
-                                }
-                                if (lesson.assetUrl) {
-                                    actionsHtml += `<a href="${lesson.assetUrl}" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-download me-1"></i>Tài liệu đính kèm</a>`;
-                                }
-                            } else {
-                                actionsHtml += `<span class="small text-muted fst-italic"><i class="bi bi-lock-fill me-1"></i>Vui lòng ghi danh module này để truy cập toàn bộ bài giảng và tài liệu.</span>`;
-                            }
-
-                            if (actionsHtml) {
-                                contentHtml += `<div class="mt-2">${actionsHtml}</div>`;
-                            }
-
-                            lessonsListHtml += `
-                                <li class="list-group-item p-3 border-0 border-bottom bg-transparent">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi ${icon} fs-5 me-2"></i>
-                                        <span class="fw-medium">${lesson.title}</span>
-                                        ${badge}
-                                    </div>
-                                    ${contentHtml ? `<div class="ms-4 mt-2">${contentHtml}</div>` : ''}
-                                </li>
-                            `;
-                        });
+                    if (objectivesArr && objectivesArr.length > 0) {
+                        objectivesListHtml = `
+                            <div class="mb-3">
+                                <div class="fw-semibold text-dark small mb-2"><i class="bi bi-bullseye text-primary me-2"></i>Mục tiêu học phần:</div>
+                                <div class="d-flex flex-column gap-2">
+                                    ${objectivesArr.map(item => `
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                                            <span class="text-secondary small lh-base">${item}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
                     } else {
-                        lessonsListHtml = '<li class="list-group-item text-muted small p-3 text-center border-0">Chưa có bài học nào trong module này.</li>';
+                        objectivesListHtml = `
+                            <div class="mb-3">
+                                <div class="fw-semibold text-dark small mb-2"><i class="bi bi-bullseye text-primary me-2"></i>Mục tiêu học phần:</div>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                                        <span class="text-secondary small lh-base">Hoàn thành các kiến thức trọng tâm và kỹ năng thực hành cốt lõi của ${mod.name}.</span>
+                                    </div>
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                                        <span class="text-secondary small lh-base">Vận dụng lý thuyết vào bài tập dự án thực chiến và kiểm tra đánh giá năng lực.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    let descHtml = '';
+                    if (mod.description && mod.description.trim().length > 0) {
+                        descHtml = `<p class="text-muted small mb-3 lh-base">${mod.description}</p>`;
                     }
 
                     let modActionHtml = '';
                     if (isModEnrolled) {
-                        modActionHtml = `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu</span>`;
+                        modActionHtml = `<a href="/courses/${slug}/modules/${mod.id}/learn" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold"><i class="bi bi-play-circle-fill me-1"></i>Vào học ngay</a>`;
                     } else if (isFull) {
                         modActionHtml = `<span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">Đã đủ sĩ số</span>`;
                     } else {
                         modActionHtml = `
                             <form action="/courses/${slug}/enroll/${mod.id}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
                                     <i class="bi bi-plus-circle me-1"></i>Ghi danh module (${priceFormatted})
                                 </button>
                             </form>
@@ -318,24 +313,87 @@
                                 </button>
                             </h2>
                             <div id="modCollapse${mIdx}" class="accordion-collapse collapse ${mIdx === 0 ? 'show' : ''}">
-                                <div class="accordion-body p-0">
-                                    <div class="p-3 bg-light bg-opacity-50 border-bottom d-flex justify-content-between align-items-center">
-                                        <small class="text-muted"><i class="bi bi-check2-circle me-1 text-success"></i>Chặng học phần ${mIdx + 1} của khóa học</small>
-                                        <div>${modActionHtml}</div>
+                                <div class="accordion-body p-4 bg-white border-top">
+                                    ${descHtml}
+                                    ${objectivesListHtml}
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top mt-3">
+                                        <div class="d-flex align-items-center gap-2 text-muted small">
+                                            <i class="bi bi-journal-text text-primary"></i>
+                                            <span>Chuyên đề gồm <strong>${modLessons.length}</strong> bài học</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <a href="/courses/${slug}/modules/${mod.id}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết Module
+                                            </a>
+                                            ${modActionHtml}
+                                        </div>
                                     </div>
-                                    <ul class="list-group list-group-flush">
-                                        ${lessonsListHtml}
-                                    </ul>
                                 </div>
                             </div>
                         </div>
                     `;
                 });
 
-                const unassignedLessons = allLessons.filter(l => !assignedLessonIds.has(l.id));
-                if (unassignedLessons.length > 0) {
+                const standaloneSections = (course.curriculum || []).filter(sec => sec.section && !sec.section.cohortId && sec.lessons && sec.lessons.length > 0);
+                if (standaloneSections.length > 0) {
+                    standaloneSections.forEach((sec, sIdx) => {
+                        let secLessonsHtml = '';
+                        sec.lessons.forEach(lesson => {
+                            assignedLessonIds.add(lesson.id);
+                            let icon = 'bi-file-earmark-text';
+                            if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
+                            else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
+                            else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
+                            else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
+
+                            secLessonsHtml += `
+                                <li class="list-group-item p-3 border-0 border-bottom bg-transparent d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi ${icon} fs-5 me-2"></i>
+                                        <span class="fw-medium text-dark">${lesson.title}</span>
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">
+                                        <i class="bi bi-stars me-1"></i>Độc quyền khóa học
+                                    </span>
+                                </li>
+                            `;
+                        });
+
+                        modulesAccordionHtml += `
+                            <div class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
+                                <h2 class="accordion-header" id="headingStandalone${sIdx}">
+                                    <button class="accordion-button bg-light collapsed py-3 px-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStandalone${sIdx}">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-3 gap-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-primary text-white" style="font-size: 11px;">Chương riêng</span>
+                                                <span class="fw-bold text-dark fs-6">${sec.section.title}</span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">${sec.lessons.length} bài học</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="collapseStandalone${sIdx}" class="accordion-collapse collapse">
+                                    <div class="accordion-body p-0">
+                                        <ul class="list-group list-group-flush">
+                                            ${secLessonsHtml}
+                                        </ul>
+                                        <div class="p-3 bg-light border-top text-muted small d-flex align-items-center">
+                                            <i class="bi bi-info-circle text-primary me-2"></i>
+                                            <span>Nội dung bài học độc quyền dành riêng cho học viên đăng ký trọn bộ khóa học này.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                const remainingUnassigned = allLessons.filter(l => !assignedLessonIds.has(l.id));
+                if (remainingUnassigned.length > 0) {
                     let unassignedHtml = '';
-                    unassignedLessons.forEach(lesson => {
+                    remainingUnassigned.forEach(lesson => {
                         let icon = 'bi-file-earmark-text';
                         if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
                         else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
@@ -573,6 +631,11 @@
                 </div>
             `;
 
+            let levelText = 'Tất cả cấp độ';
+            if (course.level === 'BEGINNER') levelText = 'Người mới bắt đầu';
+            else if (course.level === 'INTERMEDIATE') levelText = 'Trung bình';
+            else if (course.level === 'ADVANCED') levelText = 'Nâng cao';
+
             const html = `
             <div class="hero-banner">
                 <div class="container">
@@ -583,7 +646,7 @@
                             <p class="lead opacity-75 fs-6">${course.headline || ''}</p>
                             <div class="d-flex align-items-center gap-4 mt-4 small opacity-75">
                                 <span><i class="bi bi-person-fill me-1"></i> Giảng viên: ${course.instructorName}</span>
-                                <span><i class="bi bi-bar-chart-fill me-1"></i> Cấp độ: ${course.level}</span>
+                                <span><i class="bi bi-bar-chart-fill me-1"></i> Cấp độ: ${levelText}</span>
                             </div>
                         </div>
                     </div>

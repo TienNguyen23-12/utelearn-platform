@@ -71,4 +71,12 @@ public class Course {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Transient
+    public String getEffectiveThumbnailUrl() {
+        if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
+            return thumbnailUrl;
+        }
+        return "/images/courses/default-cover.png";
+    }
 }

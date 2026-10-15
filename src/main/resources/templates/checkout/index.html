@@ -30,12 +30,12 @@
                 <div class="card-body p-4">
                     <div class="row align-items-center mb-4">
                         <div class="col-md-3">
-                            <img th:src="${course.thumbnailUrl != null ? course.thumbnailUrl : 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80'}" class="img-fluid rounded-3" alt="Course Thumbnail">
+                            <img th:src="${!isFullCourse && cohort != null && cohort.thumbnailUrl != null && !cohort.thumbnailUrl.isBlank() ? cohort.thumbnailUrl : (course != null && course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png')}" class="img-fluid rounded-3" alt="Course Thumbnail">
                         </div>
                         <div class="col-md-9 mt-3 mt-md-0">
                             <span th:if="${isFullCourse}" class="badge bg-success-subtle text-success border border-success-subtle mb-2">Gói trọn bộ khóa học</span>
                             <span th:unless="${isFullCourse}" class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2">Module: <span th:text="${cohort.code}"></span></span>
-                            <h5 class="fw-bold mb-1" th:text="${course.title}">Tên khóa học</h5>
+                            <h5 class="fw-bold mb-1" th:text="${course != null ? course.title : cohort.name}">Tên khóa học</h5>
                             <p th:if="${!isFullCourse}" class="text-muted small mb-0" th:text="${cohort.name}">Tên module</p>
                             <p th:if="${isFullCourse}" class="text-muted small mb-0">Đăng ký trọn gói toàn bộ module & chuyên đề thành phần còn lại</p>
                         </div>
@@ -91,7 +91,7 @@
                             <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold">
                                 Xác nhận thanh toán module <i class="bi bi-arrow-right-circle ms-1"></i>
                             </button>
-                            <a th:href="@{'/courses/' + ${course.slug}}" class="btn btn-light rounded-pill">Quay lại</a>
+                            <a th:href="@{${course != null ? '/courses/' + course.slug : '/cohorts'}}" class="btn btn-light rounded-pill">Quay lại</a>
                         </div>
                     </form>
                 </div>

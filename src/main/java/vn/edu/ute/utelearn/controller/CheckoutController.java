@@ -57,14 +57,14 @@ public class CheckoutController {
         User user = currentUserOpt.get();
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
-            return "redirect:/courses/" + cohort.getCourse().getSlug();
+            return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
         }
 
         if (cohort.getPrice() == null || cohort.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            return "redirect:/courses/" + cohort.getCourse().getSlug();
+            return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
         }
 
-        Course course = courseRepository.findById(cohort.getCourse().getId()).orElse(null);
+        Course course = cohort.getCourse() != null ? courseRepository.findById(cohort.getCourse().getId()).orElse(null) : null;
 
         log.info("[CheckoutController] Hiển thị trang checkout cho module id: {}, user: {}", cohortId, user.getEmail());
 
@@ -89,22 +89,18 @@ public class CheckoutController {
             return "redirect:/courses";
         }
 
-        Course course = courseRepository.findById(cohort.getCourse().getId()).orElse(null);
-        if (course == null) {
-            redirectAttributes.addFlashAttribute("error", "Module không hợp lệ.");
-            return "redirect:/courses";
-        }
+        Course course = cohort.getCourse() != null ? courseRepository.findById(cohort.getCourse().getId()).orElse(null) : null;
 
         User user = currentUserOpt.get();
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
-            return "redirect:/courses/" + course.getSlug();
+            return course != null ? "redirect:/courses/" + course.getSlug() : "redirect:/cohorts";
         }
 
         if (List.of("ENROLLING", "UPCOMING").contains(cohort.getStatus())) {
             if (cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
                 redirectAttributes.addFlashAttribute("error", "Module đã đủ số lượng học viên.");
-                return "redirect:/courses/" + course.getSlug();
+                return course != null ? "redirect:/courses/" + course.getSlug() : "redirect:/cohorts";
             }
 
             CohortMember cohortMember = CohortMember.builder()
@@ -113,7 +109,7 @@ public class CheckoutController {
                     .build();
             cohortMemberRepository.save(cohortMember);
 
-            cohort.setCurrentEnrolled(cohort.getCurrentEnrolled() + 1);
+            cohort.setCurrentEnrolled((int) cohortMemberRepository.countByCohort_Id(cohort.getId()));
             cohortRepository.save(cohort);
 
             log.info("[CheckoutController] Thanh toán thành công module id: {}, user: {}", cohortId, user.getEmail());
@@ -122,7 +118,10 @@ public class CheckoutController {
             redirectAttributes.addFlashAttribute("error", "Module này hiện không mở đăng ký.");
         }
 
-        return "redirect:/courses/" + course.getSlug() + "/learn";
+        if (course != null) {
+            return "redirect:/courses/" + course.getSlug() + "/modules/" + cohort.getId() + "/learn";
+        }
+        return "redirect:/cohorts/" + cohort.getId() + "/learn";
     }
 
     private List<Cohort> getOrCreateAvailableCohorts(Course course) {
@@ -180,7 +179,8 @@ public class CheckoutController {
 
         if (unenrolledCohorts.isEmpty()) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
-            return "redirect:/courses/" + slug + "/learn";
+            Long firstModId = availableCohorts.get(0).getId();
+            return "redirect:/courses/" + slug + "/modules/" + firstModId + "/learn";
         }
 
         java.math.BigDecimal sumOfCohorts = unenrolledCohorts.stream()
@@ -238,7 +238,8 @@ public class CheckoutController {
 
         if (unenrolledCohorts.isEmpty()) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
-            return "redirect:/courses/" + slug + "/learn";
+            Long firstModId = availableCohorts.get(0).getId();
+            return "redirect:/courses/" + slug + "/modules/" + firstModId + "/learn";
         }
 
         int enrolledCount = 0;
@@ -249,7 +250,7 @@ public class CheckoutController {
                         .cohort(c)
                         .build();
                 cohortMemberRepository.save(member);
-                c.setCurrentEnrolled(c.getCurrentEnrolled() + 1);
+                c.setCurrentEnrolled((int) cohortMemberRepository.countByCohort_Id(c.getId()));
                 cohortRepository.save(c);
                 enrolledCount++;
             }
@@ -264,6 +265,7 @@ public class CheckoutController {
             redirectAttributes.addFlashAttribute("error", "Các module đều đã đủ số lượng học viên.");
         }
 
-        return "redirect:/courses/" + slug + "/learn";
+        Long targetId = unenrolledCohorts.get(0).getId();
+        return "redirect:/courses/" + slug + "/modules/" + targetId + "/learn";
     }
 }

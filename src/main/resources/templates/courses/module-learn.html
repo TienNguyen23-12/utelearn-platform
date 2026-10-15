@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${module != null ? module.code + ' - ' + module.name + ' | UTELearn' : 'Học tập Module | UTELearn'}">Học tập Module | UTELearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            --header-height: 64px;
+            --sidebar-width: 380px;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .learn-header {
+            width: 100%;
+            height: var(--header-height);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        .btn-circle-back {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f1f5f9;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .btn-circle-back:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            transform: scale(1.05);
+        }
+
+        .brand-logo-mini {
+            width: 34px;
+            height: 34px;
+            font-size: 16px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .brand-title-mini {
+            font-size: 16px;
+            letter-spacing: -0.3px;
+        }
+
+        .module-header-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #0f172a;
+            max-width: 420px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .learn-workspace {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+            overflow: hidden;
+            position: relative;
+        }
+
+        .learn-main-viewport {
+            flex: 1;
+            overflow-y: auto;
+            background: #ffffff;
+            padding: 24px 32px 60px 32px;
+            scroll-behavior: smooth;
+        }
+
+        .learn-content-inner {
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+
+        .cinema-player-wrapper {
+            background: #090d16;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .plyr--video {
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: #090d16;
+        }
+
+        .video-container iframe,
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .learn-nav-bar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .learn-tabs .nav-link {
+            font-weight: 600;
+            font-size: 14px;
+            color: #64748b;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            padding: 10px 18px;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .learn-tabs .nav-link:hover {
+            color: #2563eb;
+            background: transparent;
+        }
+
+        .learn-tabs .nav-link.active {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            background: transparent;
+        }
+
+        .curriculum-sidebar {
+            width: var(--sidebar-width);
+            background: #f8fafc;
+            border-left: 1px solid #e2e8f0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1020;
+        }
+
+        .curriculum-sidebar.collapsed {
+            margin-right: calc(-1 * var(--sidebar-width));
+        }
+
+        .sidebar-header-bar {
+            padding: 16px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .sidebar-section-header {
+            padding: 12px 18px;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: 0.2px;
+        }
+
+        .sidebar-section-header:first-child {
+            border-top: none;
+        }
+
+        .sidebar-section-badge {
+            font-size: 10.5px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+
+        .sidebar-lesson-item {
+            cursor: pointer;
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #ffffff;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-lesson-item:hover {
+            background: #f8fafc;
+        }
+
+        .sidebar-lesson-item.active {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+
+        .sidebar-lesson-item.active .lesson-title-text {
+            color: #1d4ed8;
+            font-weight: 700;
+        }
+
+        .lesson-title-text {
+            font-size: 13.5px;
+            font-weight: 500;
+            color: #334155;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .lesson-status-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .floating-sidebar-btn {
+            position: fixed;
+            right: 0;
+            top: 120px;
+            z-index: 1040;
+            background: #ffffff;
+            color: #2563eb;
+            border: 1px solid #e2e8f0;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            padding: 10px 14px;
+            box-shadow: -4px 6px 16px rgba(0, 0, 0, 0.08);
+            display: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .floating-sidebar-btn:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding-left: 18px;
+        }
+
+        .document-reading-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 30px;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #334155;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+        }
+
+        .document-reading-card pre {
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 991.98px) {
+            .learn-workspace {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            body {
+                overflow: auto;
+            }
+
+            .learn-main-viewport {
+                padding: 16px;
+                overflow: visible;
+            }
+
+            .curriculum-sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            .curriculum-sidebar.collapsed {
+                margin-right: 0;
+                display: none;
+            }
+
+            .module-header-title {
+                max-width: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="learn-header justify-content-between">
+    <div class="d-flex align-items-center gap-2 overflow-hidden">
+        <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id}}" class="btn-circle-back" title="Quay lại chi tiết Module">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <div class="brand-logo-badge brand-logo-mini">
+            <i class="bi bi-mortarboard-fill"></i>
+        </div>
+        <div class="d-none d-sm-block brand-title brand-title-mini me-2">
+            UTE<span>Learn</span>
+        </div>
+        <div class="vr d-none d-md-block mx-1 opacity-25" style="height: 24px;"></div>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary text-white" style="font-size: 11px;" th:text="${module.code}">MOD-01</span>
+                <h1 class="module-header-title mb-0" th:text="${module.name}">Tên Module</h1>
+            </div>
+            <div class="text-muted d-none d-lg-block" style="font-size: 11.5px;">
+                Khóa học: <span th:text="${course.title}">Tên Khóa Học</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 gap-md-3">
+        <div class="dropdown d-none d-md-block" th:if="${otherEnrolledModules != null && !otherEnrolledModules.isEmpty()}">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-layers me-1"></i>Đổi Module
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 260px;">
+                <li class="px-3 py-1 text-muted small fw-bold text-uppercase" style="font-size: 11px;">Module khác của bạn:</li>
+                <li th:each="om : ${otherEnrolledModules}">
+                    <a class="dropdown-item py-2 small rounded-3 d-flex align-items-center gap-2" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${om.id} + '/learn'}">
+                        <span class="badge bg-primary-subtle text-primary border" style="font-size: 10px;" th:text="${om.code}">MOD</span>
+                        <span class="text-truncate" th:text="${om.name}">Tên Module</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="d-none d-lg-flex align-items-center gap-2 px-3 py-1 bg-light rounded-pill border">
+            <i class="bi bi-trophy-fill text-warning"></i>
+            <span class="small fw-semibold text-secondary">
+                Tiến độ: <strong class="text-primary" id="progressPercent">0%</strong> 
+                (<span id="completedCount">0</span>/<span id="totalCount">0</span> bài)
+            </span>
+            <div class="progress" style="width: 80px; height: 6px; background-color: #e2e8f0;">
+                <div class="progress-bar bg-primary rounded-pill" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-flex align-items-center gap-1" id="toggleSidebarBtn" title="Đóng/Mở giáo trình">
+            <i class="bi bi-layout-sidebar-reverse"></i>
+            <span class="d-none d-md-inline small fw-semibold">Bài học</span>
+        </button>
+
+        <div class="dropdown" th:if="${currentUser != null}">
+            <button class="btn btn-light d-flex align-items-center gap-2 border-0 py-1 px-2 px-md-3 rounded-pill" style="background-color: #f1f5f9;" type="button" data-bs-toggle="dropdown">
+                <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden" style="width: 32px; height: 32px;">
+                    <img th:src="${currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
+                </div>
+                <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder" style="width: 32px; height: 32px; font-size: 13px;" th:text="${currentUser.fullName != null and !currentUser.fullName.isEmpty() ? #strings.substring(currentUser.fullName, 0, 1) : 'U'}">U</div>
+                <div class="d-none d-md-block text-start pe-1">
+                    <div class="fw-bold text-dark lh-1" style="font-size: 13px;" th:text="${currentUser.fullName}">Người dùng</div>
+                </div>
+                <i class="bi bi-chevron-down text-muted" style="font-size: 11px;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 240px;">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="fw-bold text-dark small" th:text="${currentUser.fullName}">Người dùng</div>
+                    <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">student@utelearn.edu.vn</div>
+                </li>
+                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
+                <li th:if="${isAdmin}"><a class="dropdown-item py-2 small rounded-3" href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
+                <li th:if="${isInstructor}"><a class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
+                <li th:if="${isModerator}"><a class="dropdown-item py-2 small rounded-3" href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi Kiểm duyệt</a></li>
+                <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                <li><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item py-2 small rounded-3 text-danger" href="/logout">
+                        <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<button id="floatingOpenSidebarBtn" class="floating-sidebar-btn" title="Mở danh sách bài học">
+    <i class="bi bi-layout-sidebar-reverse me-1"></i>
+    <span class="small fw-bold">Bài học</span>
+</button>
+
+<div class="learn-workspace">
+    <main class="learn-main-viewport" id="mainViewport">
+        <div class="learn-content-inner" id="mainContentInner">
+            <div class="text-center py-5 my-5 text-muted">
+                <div class="spinner-border text-primary fs-4 mb-3"></div>
+                <h5>Đang chuẩn bị phòng học Module...</h5>
+            </div>
+        </div>
+    </main>
+
+    <aside class="curriculum-sidebar" id="curriculumSidebar">
+        <div class="sidebar-header-bar d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-collection-play-fill text-primary"></i>
+                    Bài học Module
+                </h6>
+                <div class="text-muted small" id="sidebarMetaCount" th:text="${moduleLessons != null ? moduleLessons.size() + ' bài học' : '0 bài học'}">0 bài học</div>
+            </div>
+            <button class="btn btn-sm btn-light border-0 rounded-circle text-muted" id="closeSidebarBtn" title="Đóng giáo trình" style="width: 32px; height: 32px;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="flex-grow-1 overflow-y-auto" id="curriculumLessonList">
+            <div class="text-center py-4 text-muted small">Đang tải dữ liệu bài học...</div>
+        </div>
+    </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+<script th:inline="javascript">
+    const moduleId = /*[[${module.id}]]*/ 0;
+    const courseSlug = /*[[${course.slug}]]*/ '';
+    const moduleCode = /*[[${module.code}]]*/ '';
+    const moduleName = /*[[${module.name}]]*/ '';
+    const moduleObjectives = /*[[${module.objectives}]]*/ '';
+    const moduleDescription = /*[[${module.description}]]*/ '';
+    const initialLessonId = /*[[${initialLessonId}]]*/ null;
+
+    const lessonsRaw = /*[[${lessonDtos}]]*/ [];
+    let moduleLessons = [];
+    if (lessonsRaw && Array.isArray(lessonsRaw)) {
+        moduleLessons = lessonsRaw.map(l => ({
+            id: l.id,
+            title: l.title,
+            lessonType: l.lessonType,
+            durationSeconds: l.durationSeconds || 0,
+            videoUrl: l.videoUrl || null,
+            documentContent: l.documentContent || null,
+            assetUrl: l.assetUrl || null,
+            sectionId: l.sectionId || null,
+            sectionTitle: l.sectionTitle || 'Nội dung chung'
+        }));
+    }
+
+    let currentLessonIndex = -1;
+    let player = null;
+
+    const storageKey = 'utelearn_completed_mod_' + moduleId;
+    function getCompletedLessons() {
+        try {
+            const data = localStorage.getItem(storageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function isLessonCompleted(id) {
+        return getCompletedLessons().includes(id);
+    }
+
+    function toggleLessonCompleted(id) {
+        let completed = getCompletedLessons();
+        if (completed.includes(id)) {
+            completed = completed.filter(item => item !== id);
+        } else {
+            completed.push(id);
+        }
+        localStorage.setItem(storageKey, JSON.stringify(completed));
+        updateProgressUI();
+        updateSidebarItemsUI();
+        updateCompleteButtonUI(id);
+    }
+
+    function updateProgressUI() {
+        const completed = getCompletedLessons();
+        const total = moduleLessons.length;
+        const count = moduleLessons.filter(l => completed.includes(l.id)).length;
+        const percent = total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0;
+
+        const percentEl = document.getElementById('progressPercent');
+        const countEl = document.getElementById('completedCount');
+        const totalEl = document.getElementById('totalCount');
+        const barEl = document.getElementById('progressBar');
+
+        if (percentEl) percentEl.textContent = percent + '%';
+        if (countEl) countEl.textContent = count;
+        if (totalEl) totalEl.textContent = total;
+        if (barEl) barEl.style.width = percent + '%';
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        setupSidebarControls();
+        renderSidebar();
+        updateProgressUI();
+
+        if (moduleLessons.length > 0) {
+            let targetIndex = -1;
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryLessonParam = urlParams.get('lesson');
+            if (queryLessonParam) {
+                const parsedId = parseInt(queryLessonParam, 10);
+                const foundIdx = moduleLessons.findIndex(l => l.id === parsedId);
+                if (foundIdx !== -1) {
+                    targetIndex = foundIdx;
+                }
+            }
+
+            if (targetIndex === -1 && initialLessonId) {
+                const foundIdx = moduleLessons.findIndex(l => l.id === initialLessonId);
+                if (foundIdx !== -1) {
+                    targetIndex = foundIdx;
+                }
+            }
+
+            if (targetIndex === -1) {
+                const completed = getCompletedLessons();
+                const firstUncompletedIndex = moduleLessons.findIndex(l => !completed.includes(l.id));
+                targetIndex = firstUncompletedIndex !== -1 ? firstUncompletedIndex : 0;
+            }
+
+            loadLessonByIndex(targetIndex);
+        } else {
+            document.getElementById('mainContentInner').innerHTML = `
+                <div class="text-center py-5 my-5 text-muted">
+                    <i class="bi bi-journal-x display-3 mb-3 text-secondary opacity-50"></i>
+                    <h5>Module này hiện chưa có bài học nào được phát hành.</h5>
+                    <p class="small text-muted">Giảng viên sẽ sớm cập nhật bài học và lịch mở bài giảng.</p>
+                    <a href="/courses/${courseSlug}/modules/${moduleId}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
+                        <i class="bi bi-arrow-left me-1"></i>Quay lại trang Module
+                    </a>
+                </div>
+            `;
+        }
+    });
+
+    function setupSidebarControls() {
+        const sidebar = document.getElementById('curriculumSidebar');
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        const closeBtn = document.getElementById('closeSidebarBtn');
+        const floatingBtn = document.getElementById('floatingOpenSidebarBtn');
+
+        function hideSidebar() {
+            sidebar.classList.add('collapsed');
+            floatingBtn.style.display = 'block';
+        }
+
+        function showSidebar() {
+            sidebar.classList.remove('collapsed');
+            floatingBtn.style.display = 'none';
+        }
+
+        if (closeBtn) closeBtn.onclick = hideSidebar;
+        if (floatingBtn) floatingBtn.onclick = showSidebar;
+        if (toggleBtn) {
+            toggleBtn.onclick = function() {
+                if (sidebar.classList.contains('collapsed')) {
+                    showSidebar();
+                } else {
+                    hideSidebar();
+                }
+            };
+        }
+    }
+
+    function renderSidebar() {
+        const container = document.getElementById('curriculumLessonList');
+        if (!moduleLessons || moduleLessons.length === 0) {
+            container.innerHTML = '<div class="p-4 text-muted small text-center">Chưa có bài học nào trong module này.</div>';
+            return;
+        }
+
+        const sectionsMap = new Map();
+        moduleLessons.forEach(lesson => {
+            const secKey = lesson.sectionTitle || 'Nội dung chung';
+            if (!sectionsMap.has(secKey)) {
+                sectionsMap.set(secKey, []);
+            }
+            sectionsMap.get(secKey).push(lesson);
+        });
+
+        const completed = getCompletedLessons();
+        let html = '';
+        let globalIndex = 0;
+        let secIndex = 0;
+
+        sectionsMap.forEach((lessons, secTitle) => {
+            secIndex++;
+            html += `
+                <div class="sidebar-section-header">
+                    <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                        <i class="bi bi-folder2-open text-primary"></i>
+                        <span class="text-truncate" title="${secTitle}">Phần ${secIndex}: ${secTitle}</span>
+                    </div>
+                    <span class="sidebar-section-badge flex-shrink-0">${lessons.length} bài</span>
+                </div>
+            `;
+
+            lessons.forEach(lesson => {
+                globalIndex++;
+                const isCompleted = completed.includes(lesson.id);
+                let iconClass = 'bi-file-earmark-text text-secondary';
+                if (isCompleted) {
+                    iconClass = 'bi-check-circle-fill text-success';
+                } else if (lesson.lessonType === 'VIDEO') {
+                    iconClass = 'bi-play-circle-fill text-primary';
+                } else if (lesson.lessonType === 'DOCUMENT') {
+                    iconClass = 'bi-file-earmark-text-fill text-info';
+                } else if (lesson.lessonType === 'QUIZ') {
+                    iconClass = 'bi-question-circle-fill text-warning';
+                } else if (lesson.lessonType === 'CODE_PRACTICE') {
+                    iconClass = 'bi-code-slash text-info';
+                }
+
+                let durationHtml = '';
+                if (lesson.durationSeconds && lesson.durationSeconds > 0) {
+                    const mins = Math.ceil(lesson.durationSeconds / 60);
+                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>${mins}p</span>`;
+                } else if (lesson.lessonType === 'DOCUMENT') {
+                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-file-text me-1"></i>Tài liệu</span>`;
+                } else if (lesson.lessonType === 'QUIZ') {
+                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-question-circle me-1"></i>Trắc nghiệm</span>`;
+                } else if (lesson.lessonType === 'CODE_PRACTICE') {
+                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-laptop me-1"></i>Bài tập Code</span>`;
+                }
+
+                html += `
+                    <div class="sidebar-lesson-item" id="sidebar-lesson-${lesson.id}" onclick="loadLessonById(${lesson.id})">
+                        <i class="bi ${iconClass} lesson-status-icon" id="sidebar-icon-${lesson.id}"></i>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="lesson-title-text" title="${lesson.title}">${globalIndex}. ${lesson.title}</div>
+                            <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
+                                ${durationHtml}
+                                <span class="badge bg-light text-secondary border" style="font-size: 10px;">Bài ${globalIndex}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        container.innerHTML = html;
+    }
+
+    function updateSidebarItemsUI() {
+        const completed = getCompletedLessons();
+        moduleLessons.forEach(l => {
+            const iconEl = document.getElementById('sidebar-icon-' + l.id);
+            if (!iconEl) return;
+            const isCompleted = completed.includes(l.id);
+
+            if (isCompleted) {
+                iconEl.className = 'bi bi-check-circle-fill text-success lesson-status-icon';
+            } else if (l.lessonType === 'VIDEO') {
+                iconEl.className = 'bi bi-play-circle-fill text-primary lesson-status-icon';
+            } else {
+                iconEl.className = 'bi bi-file-earmark-text-fill text-info lesson-status-icon';
+            }
+        });
+    }
+
+    function loadLessonById(id) {
+        const idx = moduleLessons.findIndex(l => l.id === id);
+        if (idx !== -1) {
+            loadLessonByIndex(idx);
+        }
+    }
+
+    function loadLessonByIndex(index) {
+        if (index < 0 || index >= moduleLessons.length) return;
+        currentLessonIndex = index;
+        const lesson = moduleLessons[index];
+
+        document.querySelectorAll('.sidebar-lesson-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.getElementById('sidebar-lesson-' + lesson.id);
+        if (activeItem) {
+            activeItem.classList.add('active');
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        if (player) {
+            player.destroy();
+            player = null;
+        }
+
+        renderLessonContent(lesson);
+        updateCompleteButtonUI(lesson.id);
+        updateNavButtonsUI();
+        syncLastAccessedLesson(lesson.id);
+    }
+
+    function syncLastAccessedLesson(lessonId) {
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('lesson') !== String(lessonId)) {
+                url.searchParams.set('lesson', lessonId);
+                window.history.replaceState({ lessonId: lessonId }, '', url.toString());
+            }
+        } catch (e) {
+        }
+
+        fetch('/api/cohorts/' + moduleId + '/last-lesson/' + lessonId, {
+            method: 'POST'
+        }).catch(() => {});
+    }
+
+    function updateCompleteButtonUI(lessonId) {
+        const btn = document.getElementById('btnToggleComplete');
+        const icon = document.getElementById('completeIcon');
+        const text = document.getElementById('completeText');
+        if (!btn) return;
+
+        const isCompleted = isLessonCompleted(lessonId);
+        if (isCompleted) {
+            btn.className = 'btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2';
+            icon.className = 'bi bi-check-circle-fill fs-6';
+            text.textContent = 'Đã hoàn thành bài học';
+        } else {
+            btn.className = 'btn btn-outline-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2';
+            icon.className = 'bi bi-check2-circle fs-6';
+            text.textContent = 'Đánh dấu đã hoàn thành';
+        }
+    }
+
+    function updateNavButtonsUI() {
+        const prevBtn = document.getElementById('btnPrevLesson');
+        const nextBtn = document.getElementById('btnNextLesson');
+
+        if (prevBtn) {
+            prevBtn.disabled = (currentLessonIndex <= 0);
+        }
+        if (nextBtn) {
+            nextBtn.disabled = (currentLessonIndex >= moduleLessons.length - 1);
+        }
+    }
+
+    function extractYoutubeId(url) {
+        if (!url) return null;
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|watch\?.+&v=))([\w-]{11})/;
+        const match = url.match(regExp);
+        return (match && match[1]) ? match[1] : null;
+    }
+
+    function extractVimeoId(url) {
+        if (!url) return null;
+        const regExp = /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)/;
+        const match = url.match(regExp);
+        return (match && (match[3] || match[2] || match[1])) ? (match[3] || match[2] || match[1]) : null;
+    }
+
+    function buildDirectDocumentViewerHtml(assetUrl) {
+        if (!assetUrl) return '';
+        const lower = assetUrl.toLowerCase();
+        const isPdf = lower.includes('.pdf') || lower.includes('/pdf');
+        const isOffice = lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.ppt') || lower.endsWith('.pptx') || lower.endsWith('.xls') || lower.endsWith('.xlsx');
+        const isDrive = lower.includes('docs.google.com') || (lower.includes('drive.google.com') && !lower.includes('video'));
+
+        if (isPdf) {
+            return `
+                <div class="card border rounded-4 overflow-hidden shadow-sm mb-4">
+                    <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-3 p-2 bg-danger-subtle text-danger">
+                                <i class="bi bi-file-earmark-pdf-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark small">Tài liệu học tập trực tiếp (PDF)</div>
+                                <div class="text-muted" style="font-size: 11px;">Đọc trực tiếp tài liệu, lướt trang hoặc phóng to toàn màn hình</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="${assetUrl}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Toàn màn hình
+                            </a>
+                            <a href="${assetUrl}" target="_blank" download class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-download me-1"></i>Tải về máy
+                            </a>
+                        </div>
+                    </div>
+                    <div style="height: 750px; background: #525659;">
+                        <iframe src="${assetUrl}#toolbar=1&navpanes=1" width="100%" height="100%" class="border-0 w-100 h-100" allowfullscreen></iframe>
+                    </div>
+                </div>
+            `;
+        } else if (isOffice) {
+            const encoded = encodeURIComponent(assetUrl);
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encoded}`;
+            return `
+                <div class="card border rounded-4 overflow-hidden shadow-sm mb-4">
+                    <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-3 p-2 bg-primary-subtle text-primary">
+                                <i class="bi bi-file-earmark-word-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark small">Tài liệu bài giảng trực tiếp (Office Online)</div>
+                                <div class="text-muted" style="font-size: 11px;">Xem trực tiếp slide PowerPoint, Word hoặc Excel mà không cần cài đặt phần mềm</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="${assetUrl}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Mở rộng
+                            </a>
+                            <a href="${assetUrl}" target="_blank" download class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-download me-1"></i>Tải file gốc
+                            </a>
+                        </div>
+                    </div>
+                    <div style="height: 750px; background: #f8fafc;">
+                        <iframe src="${officeViewerUrl}" width="100%" height="100%" class="border-0 w-100 h-100" allowfullscreen></iframe>
+                    </div>
+                </div>
+            `;
+        } else if (isDrive) {
+            let drivePreview = assetUrl.replace(/\/view(\?.*)?$/, '/preview').replace(/\/edit(\?.*)?$/, '/preview');
+            if (!drivePreview.includes('/preview')) {
+                drivePreview = drivePreview.replace(/\/$/, '') + '/preview';
+            }
+            return `
+                <div class="card border rounded-4 overflow-hidden shadow-sm mb-4">
+                    <div class="p-3 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-3 p-2 bg-success-subtle text-success">
+                                <i class="bi bi-file-earmark-text-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark small">Tài liệu trực tuyến (Google Docs / Drive)</div>
+                                <div class="text-muted" style="font-size: 11px;">Xem trực tiếp tài liệu học tập trên nền tảng</div>
+                            </div>
+                        </div>
+                        <a href="${assetUrl}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Mở liên kết
+                        </a>
+                    </div>
+                    <div style="height: 750px; background: #fff;">
+                        <iframe src="${drivePreview}" width="100%" height="100%" class="border-0 w-100 h-100" allowfullscreen></iframe>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="card border rounded-4 p-3 bg-light d-flex flex-row align-items-center justify-content-between gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-arrow-down-fill fs-2 text-primary"></i>
+                        <div>
+                            <div class="fw-bold text-dark small">Tài liệu đính kèm bài học</div>
+                            <div class="text-muted" style="font-size: 11px;">Tải về mã nguồn mẫu và tài liệu bổ trợ</div>
+                        </div>
+                    </div>
+                    <a href="${assetUrl}" target="_blank" download class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                        <i class="bi bi-download me-1"></i>Tải tài liệu
+                    </a>
+                </div>
+            `;
+        }
+    }
+
+    function renderLessonContent(lesson) {
+        const mainContent = document.getElementById('mainContentInner');
+        let resolvedVideoUrl = (lesson.videoUrl && lesson.videoUrl.trim() !== '') ? lesson.videoUrl.trim() : '';
+        const rawAssetUrl = (lesson.assetUrl && lesson.assetUrl.trim() !== '') ? lesson.assetUrl.trim() : '';
+
+        const assetIsVideo = rawAssetUrl && (
+            rawAssetUrl.toLowerCase().includes('.mp4') ||
+            rawAssetUrl.toLowerCase().includes('.webm') ||
+            rawAssetUrl.toLowerCase().includes('/video/') ||
+            rawAssetUrl.toLowerCase().includes('youtube.com') ||
+            rawAssetUrl.toLowerCase().includes('youtu.be')
+        );
+
+        if (!resolvedVideoUrl && (lesson.lessonType === 'VIDEO' || assetIsVideo)) {
+            resolvedVideoUrl = rawAssetUrl;
+        }
+
+        const attachedDocUrl = (rawAssetUrl && rawAssetUrl !== resolvedVideoUrl) ? rawAssetUrl : '';
+
+        let mainMediaHtml = '';
+        let initPlyr = false;
+
+        const ytId = extractYoutubeId(resolvedVideoUrl);
+        const vimeoId = extractVimeoId(resolvedVideoUrl);
+
+        if (ytId) {
+            initPlyr = true;
+            mainMediaHtml = `
+                <div class="cinema-player-wrapper mb-4">
+                    <div class="video-container">
+                        <div class="plyr__video-embed" id="player">
+                            <iframe
+                                src="https://www.youtube.com/embed/${ytId}?origin=${encodeURIComponent(window.location.origin)}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
+                                allowfullscreen
+                                allowtransparency
+                                allow="autoplay">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (vimeoId) {
+            initPlyr = true;
+            mainMediaHtml = `
+                <div class="cinema-player-wrapper mb-4">
+                    <div class="video-container">
+                        <div class="plyr__video-embed" id="player">
+                            <iframe
+                                src="https://player.vimeo.com/video/${vimeoId}?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
+                                allowfullscreen
+                                allowtransparency
+                                allow="autoplay">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (resolvedVideoUrl.includes('drive.google.com')) {
+            let drivePreview = resolvedVideoUrl.replace(/\/view(\?.*)?$/, '/preview').replace(/\/edit(\?.*)?$/, '/preview');
+            if (!drivePreview.includes('/preview')) {
+                drivePreview = drivePreview.replace(/\/$/, '') + '/preview';
+            }
+            mainMediaHtml = `
+                <div class="cinema-player-wrapper mb-4">
+                    <div class="video-container" style="background: #000; height: 520px;">
+                        <iframe src="${drivePreview}" allowfullscreen class="w-100 h-100 border-0" allow="autoplay; fullscreen"></iframe>
+                    </div>
+                </div>
+            `;
+        } else if (resolvedVideoUrl) {
+            initPlyr = true;
+            mainMediaHtml = `
+                <div class="cinema-player-wrapper mb-4">
+                    <div class="video-container">
+                        <video id="player" playsinline controls class="w-100" preload="metadata">
+                            <source src="${resolvedVideoUrl}" type="video/mp4" />
+                        </video>
+                    </div>
+                </div>
+            `;
+        } else if (lesson.lessonType === 'DOCUMENT') {
+            if (attachedDocUrl) {
+                mainMediaHtml = buildDirectDocumentViewerHtml(attachedDocUrl);
+            } else if (lesson.documentContent) {
+                mainMediaHtml = `
+                    <div class="document-reading-card mb-4">
+                        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                            <div class="rounded-4 p-3 bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-file-earmark-richtext fs-2"></i>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary text-white mb-1">Tài liệu học tập</span>
+                                <h4 class="fw-bold mb-0 text-dark">${lesson.title}</h4>
+                            </div>
+                        </div>
+                        <div class="article-content" style="white-space: pre-wrap; line-height: 1.8;">${lesson.documentContent}</div>
+                    </div>
+                `;
+            } else {
+                mainMediaHtml = `
+                    <div class="document-reading-card mb-4 text-center py-5">
+                        <i class="bi bi-journal-text display-4 text-secondary opacity-50 mb-3 d-block"></i>
+                        <h5 class="fw-bold text-dark">Nội dung tài liệu đang được cập nhật</h5>
+                        <p class="text-muted small">Giảng viên sẽ sớm cập nhật giáo trình cho bài học này.</p>
+                    </div>
+                `;
+            }
+        } else {
+            mainMediaHtml = `
+                <div class="cinema-player-wrapper mb-4">
+                    <div class="video-container d-flex align-items-center justify-content-center p-5 text-center text-white-50">
+                        <div>
+                            <i class="bi bi-camera-video-off display-4 mb-3 d-block text-secondary"></i>
+                            <h5>Chưa có video cho bài học này</h5>
+                            <p class="small text-white-50">Vui lòng tham khảo tài liệu học tập bên dưới.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let tabOverviewExtraDocHtml = '';
+        if (resolvedVideoUrl && attachedDocUrl) {
+            tabOverviewExtraDocHtml = `
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-text text-primary"></i>
+                        Tài liệu & Slide bài giảng trực tiếp
+                    </h6>
+                    ${buildDirectDocumentViewerHtml(attachedDocUrl)}
+                </div>
+            `;
+        }
+
+        let objectivesHtml = '';
+        let objectivesArr = [];
+        if (moduleObjectives && moduleObjectives.trim().length > 0 && moduleObjectives !== '[]') {
+            try {
+                if (moduleObjectives.trim().startsWith('[')) {
+                    objectivesArr = JSON.parse(moduleObjectives);
+                } else {
+                    objectivesArr = moduleObjectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+                }
+            } catch (e) {
+                objectivesArr = moduleObjectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            }
+        }
+
+        if (objectivesArr && objectivesArr.length > 0) {
+            objectivesHtml = `
+                <div class="d-flex flex-column gap-2 mb-3">
+                    ${objectivesArr.map(item => `
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                            <span class="text-secondary small lh-base">${item}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            objectivesHtml = `<p class="text-muted small">Hoàn thành bài giảng và thực hành ứng dụng theo lộ trình ${moduleName}.</p>`;
+        }
+
+        const noteStorageKey = 'utelearn_notes_mod_' + moduleId + '_' + lesson.id;
+        const savedNote = localStorage.getItem(noteStorageKey) || '';
+
+        mainContent.innerHTML = `
+            ${mainMediaHtml}
+
+            <div class="learn-nav-bar">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnPrevLesson" onclick="stepLesson(-1)">
+                        <i class="bi bi-chevron-left"></i>
+                        <span>Bài trước</span>
+                    </button>
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnNextLesson" onclick="stepLesson(1)">
+                        <span>Bài kế tiếp</span>
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-outline-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnToggleComplete" onclick="toggleLessonCompleted(${lesson.id})">
+                        <i class="bi bi-check2-circle fs-6" id="completeIcon"></i>
+                        <span id="completeText">Đánh dấu đã hoàn thành</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="d-flex align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom flex-wrap">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary text-white" style="font-size: 11px;">Bài ${currentLessonIndex + 1} / ${moduleLessons.length}</span>
+                            <span class="badge bg-light text-secondary border" style="font-size: 11px;">${moduleCode}</span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-0">${lesson.title}</h4>
+                    </div>
+                </div>
+
+                <ul class="nav nav-tabs learn-tabs mb-3" id="lessonTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-overview-btn" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">
+                            <i class="bi bi-card-text me-1"></i>Nội dung & Hướng dẫn
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-objectives-btn" data-bs-toggle="tab" data-bs-target="#tab-objectives" type="button" role="tab">
+                            <i class="bi bi-bullseye me-1"></i>Mục tiêu Module
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-notes-btn" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button" role="tab">
+                            <i class="bi bi-pencil-square me-1"></i>Ghi chú cá nhân
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content pt-2" id="lessonTabsContent">
+                    <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+                        <div class="text-secondary small lh-lg mb-3" style="white-space: pre-wrap;">
+                            ${lesson.documentContent ? lesson.documentContent : (resolvedVideoUrl ? 'Xem kỹ video bài giảng, thực hành theo mẫu và nhấn nút "Đánh dấu đã hoàn thành" để ghi nhận tiến độ.' : 'Chưa có mô tả chi tiết.')}
+                        </div>
+                        ${tabOverviewExtraDocHtml}
+                    </div>
+
+                    <div class="tab-pane fade" id="tab-objectives" role="tabpanel">
+                        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-check-all text-primary me-1"></i>Mục tiêu kiến thức của Module ${moduleCode}:</h6>
+                        ${objectivesHtml}
+                    </div>
+
+                    <div class="tab-pane fade" id="tab-notes" role="tabpanel">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Ghi chú của bạn cho bài học này:</label>
+                            <textarea id="lessonUserNotes" class="form-control rounded-3" rows="4" placeholder="Nhập ghi chú quan trọng hoặc câu hỏi cần nhớ...">${savedNote}</textarea>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="savePersonalNote(${lesson.id})">
+                            <i class="bi bi-save me-1"></i>Lưu ghi chú
+                        </button>
+                        <span id="noteSaveNotice" class="ms-2 small text-success fw-semibold" style="display: none;"><i class="bi bi-check-circle me-1"></i>Đã lưu!</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (initPlyr) {
+            const playerEl = document.getElementById('player');
+            if (playerEl) {
+                player = new Plyr('#player', {
+                    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                    youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }
+                });
+            }
+        }
+    }
+
+    function savePersonalNote(lessonId) {
+        const textarea = document.getElementById('lessonUserNotes');
+        const notice = document.getElementById('noteSaveNotice');
+        if (!textarea) return;
+        const key = 'utelearn_notes_mod_' + moduleId + '_' + lessonId;
+        localStorage.setItem(key, textarea.value);
+        if (notice) {
+            notice.style.display = 'inline';
+            setTimeout(() => { notice.style.display = 'none'; }, 2000);
+        }
+    }
+
+    function stepLesson(direction) {
+        const newIndex = currentLessonIndex + direction;
+        if (newIndex >= 0 && newIndex < moduleLessons.length) {
+            loadLessonByIndex(newIndex);
+        }
+    }
+</script>
+
+</body>
+</html>

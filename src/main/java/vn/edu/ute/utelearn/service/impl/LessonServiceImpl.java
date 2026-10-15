@@ -38,8 +38,14 @@ public class LessonServiceImpl implements LessonService {
     public Lesson createLesson(Long sectionId, LessonRequestDTO request, Long instructorId) {
         Section section = sectionService.getSectionById(sectionId);
 
-        if (!section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            throw new RuntimeException("Bạn không có quyền thêm bài học vào khóa học này");
+        boolean authorized = false;
+        if (section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        } else if (section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        }
+        if (!authorized) {
+            throw new RuntimeException("Bạn không có quyền thêm bài học vào phần này");
         }
 
         Lesson lesson = Lesson.builder()
@@ -57,16 +63,19 @@ public class LessonServiceImpl implements LessonService {
 
         Lesson savedLesson = lessonRepository.save(lesson);
 
-        if (request.getCohortId() != null) {
-            cohortRepository.findById(request.getCohortId()).ifPresent(cohort -> {
-                if (cohort.getCourse().getId().equals(section.getCourse().getId())) {
-                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
-                            .cohort(cohort)
-                            .lesson(savedLesson)
-                            .unlockAt(java.time.Instant.now())
-                            .build();
-                    cohortScheduleRepository.save(schedule);
-                }
+        Long targetCohortId = request.getCohortId();
+        if (targetCohortId == null && section.getCohort() != null) {
+            targetCohortId = section.getCohort().getId();
+        }
+
+        if (targetCohortId != null) {
+            cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
+                vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                        .cohort(cohort)
+                        .lesson(savedLesson)
+                        .unlockAt(java.time.Instant.now())
+                        .build();
+                cohortScheduleRepository.save(schedule);
             });
         }
 
@@ -77,8 +86,15 @@ public class LessonServiceImpl implements LessonService {
     @Transactional
     public Lesson updateLesson(Long lessonId, LessonRequestDTO request, Long instructorId) {
         Lesson lesson = getLessonById(lessonId);
+        Section section = lesson.getSection();
 
-        if (!lesson.getSection().getCourse().getCreatedBy().getId().equals(instructorId)) {
+        boolean authorized = false;
+        if (section != null && section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        } else if (section != null && section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        }
+        if (!authorized) {
             throw new RuntimeException("Bạn không có quyền sửa bài học này");
         }
 
@@ -104,16 +120,18 @@ public class LessonServiceImpl implements LessonService {
         Lesson savedLesson = lessonRepository.save(lesson);
 
         cohortScheduleRepository.deleteByLessonId(lesson.getId());
-        if (request.getCohortId() != null) {
-            cohortRepository.findById(request.getCohortId()).ifPresent(cohort -> {
-                if (cohort.getCourse().getId().equals(lesson.getSection().getCourse().getId())) {
-                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
-                            .cohort(cohort)
-                            .lesson(savedLesson)
-                            .unlockAt(java.time.Instant.now())
-                            .build();
-                    cohortScheduleRepository.save(schedule);
-                }
+        Long targetCohortId = request.getCohortId();
+        if (targetCohortId == null && section != null && section.getCohort() != null) {
+            targetCohortId = section.getCohort().getId();
+        }
+        if (targetCohortId != null) {
+            cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
+                vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                        .cohort(cohort)
+                        .lesson(savedLesson)
+                        .unlockAt(java.time.Instant.now())
+                        .build();
+                cohortScheduleRepository.save(schedule);
             });
         }
 
@@ -124,8 +142,15 @@ public class LessonServiceImpl implements LessonService {
     @Transactional
     public void deleteLesson(Long lessonId, Long instructorId) {
         Lesson lesson = getLessonById(lessonId);
+        Section section = lesson.getSection();
 
-        if (!lesson.getSection().getCourse().getCreatedBy().getId().equals(instructorId)) {
+        boolean authorized = false;
+        if (section != null && section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        } else if (section != null && section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
+            authorized = true;
+        }
+        if (!authorized) {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
         }
 

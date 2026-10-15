@@ -14,8 +14,10 @@ import java.util.Set;
 public interface CohortScheduleRepository extends JpaRepository<CohortSchedule, Long> {
     List<CohortSchedule> findByCohortId(Long cohortId);
     
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"cohort"})
     List<CohortSchedule> findByLessonId(Long lessonId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"cohort"})
     Optional<CohortSchedule> findByCohortIdAndLessonId(Long cohortId, Long lessonId);
     
     @org.springframework.transaction.annotation.Transactional
@@ -32,4 +34,7 @@ public interface CohortScheduleRepository extends JpaRepository<CohortSchedule, 
 
     @Query("SELECT cs FROM CohortSchedule cs JOIN FETCH cs.lesson l JOIN FETCH cs.cohort c LEFT JOIN FETCH l.section s WHERE cs.cohort.id = :cohortId ORDER BY s.orderIndex ASC, l.orderIndex ASC")
     List<CohortSchedule> findByCohortIdWithDetails(@Param("cohortId") Long cohortId);
+
+    @Query("SELECT cs FROM CohortSchedule cs JOIN FETCH cs.cohort WHERE cs.lesson.section.id = :sectionId")
+    List<CohortSchedule> findBySectionId(@Param("sectionId") Long sectionId);
 }

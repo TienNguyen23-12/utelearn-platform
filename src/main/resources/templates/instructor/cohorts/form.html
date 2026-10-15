@@ -33,6 +33,7 @@
         <div class="card card-custom p-4">
             <form th:action="${cohortId != null ? '/instructor/cohorts/' + cohortId + '/edit' : '/instructor/cohorts/create'}" 
                   th:object="${cohortDto}" method="post">
+                <input type="hidden" id="currentCohortId" th:value="${cohortId}">
                   
                 <div class="row g-4">
                     <div class="col-md-6">
@@ -48,12 +49,25 @@
                     </div>
                     
                     <div class="col-md-12">
-                        <label class="form-label fw-semibold">Khóa học trực thuộc <span class="text-danger">*</span></label>
-                        <select class="form-select" th:field="*{courseId}" required>
-                            <option value="">-- Chọn khóa học --</option>
+                        <label class="form-label fw-semibold">Khóa học trực thuộc <span class="text-muted fw-normal">(Tùy chọn - để trống nếu là module bán lẻ độc lập)</span></label>
+                        <select class="form-select" th:field="*{courseId}">
+                            <option value="">-- Không trực thuộc khóa học nào (Bán lẻ độc lập) --</option>
                             <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.title}"></option>
                         </select>
+                        <small class="text-muted" style="font-size: 11px;">Bạn có thể tạo module độc lập để bán lẻ, sau đó có thể thêm module này vào các khóa học bất cứ lúc nào.</small>
                         <div class="text-danger small mt-1" th:if="${#fields.hasErrors('courseId')}" th:errors="*{courseId}"></div>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold">URL Ảnh bìa (Thumbnail)</label>
+                        <input type="text" class="form-control" th:field="*{thumbnailUrl}" id="cohortThumbnailUrl" placeholder="https://... (Để trống để sử dụng ảnh bìa mặc định)">
+                        <div class="mt-2 d-flex align-items-center gap-3">
+                            <span class="text-muted small">Xem trước:</span>
+                            <div style="width: 80px; height: 50px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;" class="flex-shrink-0 bg-light">
+                                <img id="cohortCoverPreview" th:src="${cohortDto != null && cohortDto.thumbnailUrl != null && !cohortDto.thumbnailUrl.isBlank() ? cohortDto.thumbnailUrl : '/images/courses/default-cover.png'}" class="w-100 h-100 object-fit-cover" alt="Preview">
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">Nếu không nhập link ảnh bìa, hệ thống sẽ tự động dùng ảnh bìa mặc định của UTELearn.</small>
+                        </div>
                     </div>
                     
                     <div class="col-md-6">
@@ -76,24 +90,41 @@
                         <input type="text" class="form-control datetimepicker" th:field="*{studyEnd}">
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold">Sức chứa tối đa</label>
                         <input type="number" class="form-control" th:field="*{maxCapacity}">
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold">Học phí mua lẻ (VNĐ)</label>
                         <input type="number" step="0.01" class="form-control" th:field="*{price}">
                     </div>
                     
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Trạng thái</label>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Tiến độ đợt học</label>
                         <select class="form-select" th:field="*{status}">
                             <option value="UPCOMING">Sắp mở</option>
                             <option value="ENROLLING">Đang ghi danh</option>
                             <option value="IN_PROGRESS">Đang học</option>
                             <option value="COMPLETED">Đã kết thúc</option>
                         </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Quyền chia sẻ</label>
+                        <select class="form-select" th:field="*{visibility}">
+                            <option value="PUBLIC">🌐 Cho phép chia sẻ (Public)</option>
+                            <option value="PRIVATE">🔒 Độc quyền tác giả (Private)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12" th:if="${cohortId != null}">
+                        <label class="form-label fw-semibold">Người tạo Module / Đợt học</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" class="form-control bg-light" readonly 
+                                   th:value="${cohort != null && cohort.createdBy != null ? cohort.createdBy.fullName + ' (' + cohort.createdBy.username + ')' : 'Chưa thiết lập'}">
+                        </div>
                     </div>
                 </div>
                 
@@ -162,10 +193,18 @@
             
             scheduleContainer.innerHTML = '<div class="text-center text-muted py-5 bg-light rounded-4 border"><div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><br>Đang tải danh sách bài học...</div>';
             
-            fetch('/api/instructor/courses/' + courseId + '/full-curriculum')
-                .then(res => res.json())
+            const cohortIdVal = document.getElementById('currentCohortId') ? document.getElementById('currentCohortId').value : '';
+            const apiUrl = '/api/instructor/courses/' + courseId + '/full-curriculum' + (cohortIdVal ? '?cohortId=' + cohortIdVal : '');
+
+            fetch(apiUrl)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('HTTP ' + res.status);
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if(data.length === 0) {
+                    if(!Array.isArray(data) || data.length === 0) {
                         scheduleContainer.innerHTML = '<div class="text-center text-muted py-5 bg-light rounded-4 border">Khóa học này chưa có nội dung bài học nào. Vui lòng quay lại Quản lý Khóa học để thêm bài giảng trước khi mở lớp.</div>';
                         return;
                     }
@@ -197,6 +236,9 @@
                         section.lessons.forEach(lesson => {
                             let icon = lesson.lessonType === 'VIDEO' ? 'bi-play-circle-fill text-danger' : 
                                       (lesson.lessonType === 'DOCUMENT' ? 'bi-file-earmark-text-fill text-info' : 'bi-patch-question-fill text-warning');
+                            let unlockVal = lesson.unlockAt ? lesson.unlockAt : '';
+                            let deadlineVal = lesson.deadlineAt ? lesson.deadlineAt : '';
+                            let scoreType = lesson.showScoreType ? lesson.showScoreType : 'IMMEDIATELY';
                             
                             html += `
                                 <tr>
@@ -206,16 +248,16 @@
                                         <span class="small fw-medium">${lesson.title}</span>
                                     </td>
                                     <td class="align-middle">
-                                        <input type="text" class="form-control form-control-sm datetimepicker unlock-at-input" name="schedules[${scheduleIndex}].unlockAt">
+                                        <input type="text" class="form-control form-control-sm datetimepicker unlock-at-input" name="schedules[${scheduleIndex}].unlockAt" value="${unlockVal}">
                                     </td>
                                     <td class="align-middle">
-                                        <input type="text" class="form-control form-control-sm datetimepicker" name="schedules[${scheduleIndex}].deadlineAt">
+                                        <input type="text" class="form-control form-control-sm datetimepicker" name="schedules[${scheduleIndex}].deadlineAt" value="${deadlineVal}">
                                     </td>
                                     <td class="align-middle pe-4">
                                         <select class="form-select form-select-sm" name="schedules[${scheduleIndex}].showScoreType">
-                                            <option value="IMMEDIATELY">Ngay lập tức</option>
-                                            <option value="AFTER_DEADLINE">Sau khi hết hạn</option>
-                                            <option value="MANUAL">Chấm tay</option>
+                                            <option value="IMMEDIATELY" ${scoreType === 'IMMEDIATELY' ? 'selected' : ''}>Ngay lập tức</option>
+                                            <option value="AFTER_DEADLINE" ${scoreType === 'AFTER_DEADLINE' ? 'selected' : ''}>Sau khi hết hạn</option>
+                                            <option value="MANUAL" ${scoreType === 'MANUAL' ? 'selected' : ''}>Chấm tay</option>
                                         </select>
                                     </td>
                                 </tr>`;
@@ -234,7 +276,7 @@
                 })
                 .catch(err => {
                     scheduleContainer.innerHTML = '<div class="text-center text-danger py-5 bg-light rounded-4 border">Lỗi tải danh sách bài học. Vui lòng thử lại.</div>';
-                    console.error(err);
+                    console.error('Lỗi khi tải danh sách bài học:', err);
                 });
         }
     });
@@ -253,6 +295,19 @@
             } else {
                 input.value = nowStr;
             }
+        });
+    }
+
+    const cohortThumbnailInput = document.getElementById('cohortThumbnailUrl');
+    const cohortCoverPreview = document.getElementById('cohortCoverPreview');
+    const defaultCover = '/images/courses/default-cover.png';
+    if (cohortThumbnailInput && cohortCoverPreview) {
+        cohortThumbnailInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            cohortCoverPreview.src = val ? val : defaultCover;
+        });
+        cohortCoverPreview.addEventListener('error', function() {
+            this.src = defaultCover;
         });
     }
 </script>

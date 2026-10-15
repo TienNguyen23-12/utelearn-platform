@@ -69,14 +69,16 @@
                                 <th>Mã Module</th>
                                 <th>Tên Module</th>
                                 <th>Khóa học gốc</th>
+                                <th>Người tạo</th>
                                 <th>Hạn ghi danh</th>
-                                <th>Trạng thái</th>
+                                <th>Chia sẻ</th>
+                                <th>Tiến độ</th>
                                 <th class="text-center">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:if="${cohorts == null || cohorts.empty}">
-                                <td colspan="6" class="text-center text-muted py-4">Chưa có module nào được tạo.</td>
+                                <td colspan="8" class="text-center text-muted py-4">Chưa có module nào được tạo.</td>
                             </tr>
                             <tr th:each="cohort : ${cohorts}">
                                 <td th:text="${cohort.code}">CODE</td>
@@ -86,7 +88,14 @@
                                             th:text="${cohort.currentEnrolled}">0</span>/<span
                                             th:text="${cohort.maxCapacity}">50</span> học viên</small>
                                 </td>
-                                <td th:text="${cohort.course != null ? cohort.course.title : 'N/A'}">Khóa học</td>
+                                <td>
+                                    <span th:if="${cohort.course != null}" th:text="${cohort.course.title}">Khóa học</span>
+                                    <span th:unless="${cohort.course != null}" class="badge bg-secondary-subtle text-secondary border">Bán lẻ độc lập</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border fw-normal" 
+                                          th:text="${cohort.createdBy != null ? cohort.createdBy.fullName : (cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Hệ thống')}">Người tạo</span>
+                                </td>
                                 <td>
                                     <div style="font-size: 0.85rem">
                                         <div><span class="text-muted">Bắt đầu:</span> <span
@@ -94,6 +103,14 @@
                                         <div><span class="text-muted">Kết thúc:</span> <span
                                                 th:text="${cohort.formattedEnrollmentEnd}"></span></div>
                                     </div>
+                                </td>
+                                <td>
+                                    <span th:if="${cohort.visibility == 'PRIVATE'}" class="badge bg-secondary-subtle text-secondary border" title="Chỉ tác giả được dùng trong khóa học của mình">
+                                        <i class="bi bi-lock-fill me-1"></i>Độc quyền
+                                    </span>
+                                    <span th:unless="${cohort.visibility == 'PRIVATE'}" class="badge bg-success-subtle text-success border" title="Cho phép giảng viên khác thêm vào khóa học">
+                                        <i class="bi bi-share-fill me-1"></i>Cho phép chia sẻ
+                                    </span>
                                 </td>
                                 <td>
                                     <span th:if="${cohort.status == 'UPCOMING'}" class="badge bg-secondary">Sắp
@@ -105,9 +122,13 @@
                                     <span th:if="${cohort.status == 'COMPLETED'}" class="badge bg-success">Đã kết
                                         thúc</span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center text-nowrap">
+                                    <a th:href="@{/instructor/cohorts/{id}/curriculum(id=${cohort.id})}"
+                                        class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                        <i class="bi bi-journal-text me-1"></i> Giáo trình
+                                    </a>
                                     <a th:href="@{/instructor/cohorts/{id}/schedule(id=${cohort.id})}"
-                                        class="btn btn-sm btn-outline-info rounded-pill px-3">
+                                        class="btn btn-sm btn-outline-info rounded-pill px-3 ms-1">
                                         <i class="bi bi-calendar-event me-1"></i> Lộ trình
                                     </a>
                                     <a th:href="@{/instructor/cohorts/{id}/edit(id=${cohort.id})}"

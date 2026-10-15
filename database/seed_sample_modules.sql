@@ -40,13 +40,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'lap-trinh-web-co-ban'),
     'MOD-WEB-01',
-    'Module 1: Nền tảng Web với HTML5, CSS3 & Responsive Design',
+    'Nền tảng Web với HTML5, CSS3 & Responsive Design',
     NOW() - INTERVAL '10 days',
     NOW() + INTERVAL '60 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     50,
-    18,
+    0,
     250000.00,
     'ENROLLING',
     NOW()
@@ -54,13 +54,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'lap-trinh-web-co-ban'),
     'MOD-WEB-02',
-    'Module 2: Lập trình JavaScript Hiện đại & DOM Manipulation',
+    'Lập trình JavaScript Hiện đại & DOM Manipulation',
     NOW() - INTERVAL '10 days',
     NOW() + INTERVAL '60 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     50,
-    15,
+    0,
     300000.00,
     'ENROLLING',
     NOW()
@@ -68,13 +68,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'lap-trinh-web-co-ban'),
     'MOD-WEB-03',
-    'Module 3: Lập trình Backend RESTful API với Node.js & Express',
+    'Lập trình Backend RESTful API với Node.js & Express',
     NOW() - INTERVAL '10 days',
     NOW() + INTERVAL '60 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     50,
-    12,
+    0,
     350000.00,
     'ENROLLING',
     NOW()
@@ -228,13 +228,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'java-spring-boot-doanh-nghiep'),
     'MOD-JAVA-01',
-    'Module 1: Java Core & Lập trình Hướng đối tượng OOP Chuyên sâu',
+    'Java Core & Lập trình Hướng đối tượng OOP Chuyên sâu',
     NOW() - INTERVAL '15 days',
     NOW() + INTERVAL '45 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     60,
-    24,
+    0,
     290000.00,
     'ENROLLING',
     NOW()
@@ -242,13 +242,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'java-spring-boot-doanh-nghiep'),
     'MOD-JAVA-02',
-    'Module 2: Xây dựng REST API Doanh nghiệp với Spring Boot & JPA',
+    'Xây dựng REST API Doanh nghiệp với Spring Boot & JPA',
     NOW() - INTERVAL '15 days',
     NOW() + INTERVAL '45 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     60,
-    20,
+    0,
     450000.00,
     'ENROLLING',
     NOW()
@@ -256,13 +256,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'java-spring-boot-doanh-nghiep'),
     'MOD-JAVA-03',
-    'Module 3: Bảo mật Hệ thống với Spring Security & JWT',
+    'Bảo mật Hệ thống với Spring Security & JWT',
     NOW() - INTERVAL '15 days',
     NOW() + INTERVAL '45 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '120 days',
     60,
-    16,
+    0,
     490000.00,
     'ENROLLING',
     NOW()
@@ -391,13 +391,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'luyen-thi-thuat-toan-oj'),
     'MOD-OJ-01',
-    'Module 1: Giải thuật Cơ bản, Hai con trỏ & Đệ quy Quay lui',
+    'Giải thuật Cơ bản, Hai con trỏ & Đệ quy Quay lui',
     NOW() - INTERVAL '20 days',
     NOW() + INTERVAL '40 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '90 days',
     50,
-    28,
+    0,
     199000.00,
     'ENROLLING',
     NOW()
@@ -405,13 +405,13 @@ INSERT INTO cohorts (
 (
     (SELECT id FROM courses WHERE slug = 'luyen-thi-thuat-toan-oj'),
     'MOD-OJ-02',
-    'Module 2: Cấu trúc Dữ liệu Nâng cao & Quy hoạch Động',
+    'Cấu trúc Dữ liệu Nâng cao & Quy hoạch Động',
     NOW() - INTERVAL '20 days',
     NOW() + INTERVAL '40 days',
     NOW() - INTERVAL '5 days',
     NOW() + INTERVAL '90 days',
     50,
-    21,
+    0,
     349000.00,
     'ENROLLING',
     NOW()
@@ -492,5 +492,8 @@ WHERE (c.code = 'MOD-WEB-01' AND cr.slug = 'lap-trinh-web-co-ban' AND s.order_in
    OR (c.code = 'MOD-OJ-01' AND cr.slug = 'luyen-thi-thuat-toan-oj' AND s.order_index = 1)
    OR (c.code = 'MOD-OJ-02' AND cr.slug = 'luyen-thi-thuat-toan-oj' AND s.order_index = 2)
 ON CONFLICT (cohort_id, lesson_id) DO NOTHING;
+
+UPDATE cohorts SET created_by = 2 WHERE created_by IS NULL OR created_by != 2;
+UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL;
 
 COMMIT;

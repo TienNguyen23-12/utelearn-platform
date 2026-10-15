@@ -84,13 +84,20 @@ public class CourseServiceImpl implements CourseService {
 
         String slug = generateSlug(request.getTitle());
 
+        String thumbnail = request.getThumbnailUrl();
+        if (thumbnail == null || thumbnail.trim().isEmpty()) {
+            thumbnail = "/images/courses/default-cover.png";
+        } else {
+            thumbnail = thumbnail.trim();
+        }
+
         Course course = Course.builder()
                 .code(request.getCode())
                 .title(request.getTitle())
                 .slug(slug)
                 .headline(request.getHeadline())
                 .description(request.getDescription())
-                .thumbnailUrl(request.getThumbnailUrl())
+                .thumbnailUrl(thumbnail)
                 .level(request.getLevel())
                 .category(category)
                 .createdBy(creator)
@@ -114,11 +121,18 @@ public class CourseServiceImpl implements CourseService {
         vn.edu.ute.utelearn.entity.Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
 
+        String thumbnail = request.getThumbnailUrl();
+        if (thumbnail == null || thumbnail.trim().isEmpty()) {
+            thumbnail = "/images/courses/default-cover.png";
+        } else {
+            thumbnail = thumbnail.trim();
+        }
+
         course.setCode(request.getCode());
         course.setTitle(request.getTitle());
         course.setHeadline(request.getHeadline());
         course.setDescription(request.getDescription());
-        course.setThumbnailUrl(request.getThumbnailUrl());
+        course.setThumbnailUrl(thumbnail);
         course.setLevel(request.getLevel());
         course.setCategory(category);
         course.setObjectives(parseObjectives(request.getObjectives()));

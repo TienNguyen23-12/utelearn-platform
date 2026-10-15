@@ -11,4 +11,6 @@ public class SectionRequestDTO {
     private String title;
 
     private Integer orderIndex;
+
+    private Long cohortId;
 }

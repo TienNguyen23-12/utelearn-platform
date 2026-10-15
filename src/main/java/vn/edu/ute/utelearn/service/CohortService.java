@@ -23,13 +23,16 @@ public interface CohortService {
     Cohort getCohortByIdAndInstructor(Long id, Long instructorId);
     
     Cohort createCohort(CohortRequestDTO dto, User instructor);
-    
+
     Cohort updateCohort(Long id, CohortRequestDTO dto, User instructor);
-    
+
     void deleteCohort(Long id, User instructor);
-    
-    // Schedule management
+
     List<CohortSchedule> getCohortSchedules(Long cohortId);
-    
+
     void updateSchedules(Long cohortId, List<CohortSchedule> schedules, User instructor);
+
+    vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO getUserEnrollmentSummary(User user);
+
+    boolean updateLastAccessedLesson(Long cohortId, Long lessonId, User user);
 }

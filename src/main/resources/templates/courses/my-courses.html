@@ -1,81 +1,170 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khóa học của tôi - UTELearn LMS Platform</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Admin Master Layout CSS -->
     <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
-</head>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 
+    <style>
+        .sub-pills .nav-link {
+            color: #475569;
+            font-weight: 600;
+            font-size: 13.5px;
+            border-radius: 50rem;
+            padding: 6px 18px;
+            transition: all 0.2s ease;
+        }
+
+        .sub-pills .nav-link:hover {
+            color: #2563eb;
+            background-color: #e2e8f0;
+        }
+
+        .sub-pills .nav-link.active {
+            color: #ffffff;
+            background-color: #2563eb;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .course-card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .course-card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 25px -4px rgba(15, 23, 42, 0.12) !important;
+        }
+    </style>
+</head>
 <body>
 
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!-- Master Sidebar Fragment -->
     <aside th:replace="~{fragments/sidebar :: sidebar('my_courses')}"></aside>
 
-    <!-- Master Content Wrapper -->
     <div class="app-content-wrapper">
-        <!-- Top Navbar Fragment -->
         <header th:replace="~{fragments/navbar :: navbar('Khóa học của tôi')}"></header>
 
-        <!-- Main Content Area -->
         <main class="app-main-content">
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
-                    <h5 class="fw-bold text-dark mb-1">
-                        <i class="bi bi-journal-check text-primary me-2"></i>Các khóa học đã tham gia
-                    </h5>
-                    <p class="text-muted small mb-0">Tiếp tục hành trình học tập của bạn</p>
-                </div>
-                <div class="card-body p-4">
-                    <div th:if="${myCourses == null || myCourses.isEmpty()}" class="text-center py-5 text-muted">
-                        <i class="bi bi-folder-x display-4 mb-3 d-block text-secondary opacity-50"></i>
-                        <h6>Bạn chưa tham gia khóa học nào.</h6>
-                        <a href="/courses" class="btn btn-outline-primary rounded-pill mt-3 px-4">Khám phá khóa học</a>
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">
+                            <i class="bi bi-journal-check text-primary me-2"></i>Các khóa học đã tham gia
+                        </h5>
+                        <p class="text-muted small mb-0">Tiếp tục hành trình học tập và hoàn thiện lộ trình kiến thức của bạn</p>
                     </div>
-                    <div th:if="${myCourses != null && !myCourses.isEmpty()}" class="row g-4">
-                        <div th:each="cohortMember : ${myCourses}" class="col-md-6 col-lg-4">
-                            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden"
-                                style="transition: transform 0.2s;">
-                                <div class="position-relative">
-                                    <img th:src="${cohortMember.cohort.course.thumbnailUrl != null ? cohortMember.cohort.course.thumbnailUrl : 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80'}"
-                                        class="card-img-top" alt="Course thumbnail"
-                                        style="height: 160px; object-fit: cover;">
-                                    <span
-                                        class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white"
-                                        th:text="${cohortMember.cohort.name}">Đợt học</span>
+                    <ul class="nav nav-pills sub-pills bg-light p-1 rounded-pill border" id="myCoursesSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="subtab-courses-btn" data-bs-toggle="pill" data-bs-target="#subtab-courses-pane" type="button" role="tab">
+                                <i class="bi bi-mortarboard-fill me-1"></i>Khóa học (Courses)
+                                <span class="badge bg-primary-subtle text-primary border rounded-pill ms-1" th:text="${enrolledCourses != null ? enrolledCourses.size() : 0}">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="subtab-modules-btn" data-bs-toggle="pill" data-bs-target="#subtab-modules-pane" type="button" role="tab">
+                                <i class="bi bi-layers-fill me-1"></i>Module đã đăng ký
+                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill ms-1" th:text="${enrolledModules != null ? enrolledModules.size() : 0}">0</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="tab-content" id="myCoursesSubTabsContent">
+                        <div class="tab-pane fade show active" id="subtab-courses-pane" role="tabpanel">
+                            <div th:if="${enrolledCourses == null || enrolledCourses.isEmpty()}" class="text-center py-5 text-muted">
+                                <i class="bi bi-mortarboard display-4 mb-3 d-block text-secondary opacity-50"></i>
+                                <h6>Bạn chưa sở hữu trọn gói khóa học nào.</h6>
+                                <p class="small text-muted mb-3">Bạn có thể chọn mua trọn bộ khóa học để nhận ưu đãi và toàn quyền truy cập giáo trình.</p>
+                                <a href="/courses" class="btn btn-primary btn-gradient rounded-pill px-4">
+                                    <i class="bi bi-compass me-1"></i>Khám phá khóa học
+                                </a>
+                            </div>
+
+                            <div th:if="${enrolledCourses != null && !enrolledCourses.isEmpty()}" class="row g-4">
+                                <div th:each="item : ${enrolledCourses}" class="col-md-6 col-lg-4">
+                                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
+                                        <div class="position-relative">
+                                            <img th:src="${item.course.thumbnailUrl != null && !item.course.thumbnailUrl.isBlank() ? item.course.thumbnailUrl : '/images/courses/default-cover.png'}"
+                                                 class="card-img-top" alt="Course thumbnail" style="height: 165px; object-fit: cover;">
+                                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white shadow-sm rounded-pill px-3 py-1">
+                                                <i class="bi bi-patch-check-fill me-1"></i>Trọn gói khóa học
+                                            </span>
+                                        </div>
+                                        <div class="card-body p-3 d-flex flex-column">
+                                            <div class="d-flex align-items-center gap-1 mb-1" th:if="${item.course.category != null}">
+                                                <span class="badge bg-light text-primary border small" th:text="${item.course.category.name}">Danh mục</span>
+                                            </div>
+                                            <h6 class="card-title fw-bold text-dark mb-2" th:text="${item.course.title}" style="line-height: 1.4;">Tiêu đề khóa học</h6>
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-person-circle me-1"></i><span th:text="${item.course.createdBy != null ? item.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
+                                                <br>
+                                                <i class="bi bi-layers-fill me-1 text-info"></i><span th:text="${item.totalModules > 0 ? 'Bao gồm ' + item.totalModules + ' Module' : 'Trọn bộ bài giảng'}">Lộ trình</span>
+                                            </p>
+                                            <div class="mt-auto d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
+                                                <a th:href="@{'/courses/' + ${item.course.slug}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                                    <i class="bi bi-info-circle me-1"></i>Chi tiết
+                                                </a>
+                                                <a th:href="@{'/courses/' + ${item.course.slug} + '/learn'}" class="btn btn-sm btn-primary btn-gradient rounded-pill px-3">
+                                                    <i class="bi bi-play-circle-fill me-1"></i>Vào học ngay
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body p-3 d-flex flex-column">
-                                    <h6 class="card-title fw-bold text-dark mb-1"
-                                        th:text="${cohortMember.cohort.course.title}">Course Title</h6>
-                                    <p class="text-muted small mb-3">
-                                        <i class="bi bi-person-circle me-1"></i><span
-                                            th:text="${cohortMember.cohort.course.createdBy != null ? cohortMember.cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng
-                                            viên</span>
-                                        <br>
-                                        <i class="bi bi-tag-fill me-1"></i><span
-                                            th:text="${cohortMember.cohort.code}">Mã Lớp</span>
-                                    </p>
-                                    <div class="mt-auto d-flex justify-content-between align-items-center">
-                                        <span class="badge bg-primary-subtle text-primary small">
-                                            Điểm: <span
-                                                th:text="${cohortMember.finalGrade != null ? cohortMember.finalGrade : 'Chưa có'}">0</span>
-                                        </span>
-                                        <a th:href="@{'/courses/' + ${cohortMember.cohort.course.slug} + '/learn'}"
-                                            class="btn btn-sm btn-primary rounded-pill px-3">
-                                            Tiếp tục học
-                                        </a>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="subtab-modules-pane" role="tabpanel">
+                            <div th:if="${enrolledModules == null || enrolledModules.isEmpty()}" class="text-center py-5 text-muted">
+                                <i class="bi bi-layers display-4 mb-3 d-block text-secondary opacity-50"></i>
+                                <h6>Không có module đăng ký lẻ nào.</h6>
+                                <p class="small text-muted mb-3">Nếu bạn đã mua trọn gói toàn bộ khóa học, các module tương ứng sẽ được tích hợp sẵn trong thẻ Khóa học.</p>
+                                <a href="/cohorts" class="btn btn-outline-primary rounded-pill px-4">
+                                    <i class="bi bi-collection me-1"></i>Xem danh sách Module
+                                </a>
+                            </div>
+
+                            <div th:if="${enrolledModules != null && !enrolledModules.isEmpty()}" class="row g-4">
+                                <div th:each="cm : ${enrolledModules}" class="col-md-6 col-lg-4">
+                                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
+                                        <div class="position-relative">
+                                            <img th:src="${cm.cohort.thumbnailUrl != null && !cm.cohort.thumbnailUrl.isBlank() ? cm.cohort.thumbnailUrl : (cm.cohort.course != null && cm.cohort.course.thumbnailUrl != null && !cm.cohort.course.thumbnailUrl.isBlank() ? cm.cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}"
+                                                 class="card-img-top" alt="Module thumbnail" style="height: 165px; object-fit: cover;">
+                                            <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white shadow-sm rounded-pill px-3 py-1" th:text="${cm.cohort.code}">
+                                                MOD-WEB-01
+                                            </span>
+                                            <span class="position-absolute top-0 end-0 m-2 badge bg-info-subtle text-info border border-info-subtle shadow-sm rounded-pill px-2 py-1 small">
+                                                Module lẻ
+                                            </span>
+                                        </div>
+                                        <div class="card-body p-3 d-flex flex-column">
+                                            <small class="text-primary fw-semibold text-truncate d-block mb-1">
+                                                <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course.title}">Khóa học</span>
+                                            </small>
+                                            <h6 class="card-title fw-bold text-dark mb-2" th:text="${cm.cohort.name}" style="line-height: 1.4;">Tên Module</h6>
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-person-circle me-1"></i><span th:text="${cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
+                                                <br>
+                                                <i class="bi bi-calendar-check me-1 text-success"></i>Trạng thái: <span th:text="${cm.cohort.status}">Đang học</span>
+                                            </p>
+                                            <div class="mt-auto d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
+                                                <a th:href="@{'/courses/' + ${cm.cohort.course.slug} + '/modules/' + ${cm.cohort.id}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                                    <i class="bi bi-eye me-1"></i>Chi tiết
+                                                </a>
+                                                <a th:href="@{'/courses/' + ${cm.cohort.course.slug} + '/modules/' + ${cm.cohort.id} + '/learn'}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                                    <i class="bi bi-play-circle-fill me-1"></i>Vào học
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -86,10 +175,7 @@
         </main>
     </div>
 
-    <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Admin Custom JS -->
     <script th:src="@{/js/admin-layout.js}"></script>
 </body>
-
 </html>

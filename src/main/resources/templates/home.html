@@ -292,8 +292,10 @@
         <div th:each="cohort : ${latestCohorts}" class="col-lg-3 col-md-6">
             <div class="course-card">
                 <div class="course-image-wrapper">
-                    <img th:src="${cohort.course != null && cohort.course.thumbnailUrl != null ? cohort.course.thumbnailUrl : 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80'}" th:alt="${cohort.course != null ? cohort.course.title : ''}">
-                    <span class="cohort-badge"><i class="bi bi-puzzle me-1"></i><span th:text="${cohort.name}">Tên Module</span></span>
+                    <img th:src="${cohort.thumbnailUrl != null && !cohort.thumbnailUrl.isBlank() ? cohort.thumbnailUrl : (cohort.course != null && cohort.course.thumbnailUrl != null && !cohort.course.thumbnailUrl.isBlank() ? cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}" th:alt="${cohort.name}">
+                    <span class="cohort-badge text-truncate" style="max-width: 88%;" th:title="${cohort.course != null ? 'Thuộc khóa: ' + cohort.course.title : 'Module độc lập'}">
+                        <i th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i><span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa học</span>
+                    </span>
                 </div>
                 <div class="p-4 d-flex flex-column flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -301,8 +303,8 @@
                         <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học lẻ</span>
                     </div>
 
-                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-journal-bookmark me-1 text-primary"></i>Thuộc khóa học:</div>
-                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.course != null ? cohort.course.title : 'N/A'}">Tiêu đề khóa học</h6>
+                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-puzzle me-1 text-primary"></i>Học phần / Chuyên đề:</div>
+                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.name}">Tên Module</h6>
 
                     <div class="text-muted small mb-3">
                         <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>

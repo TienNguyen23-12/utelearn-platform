@@ -17,7 +17,6 @@ public class CohortRequestDTO {
     @NotBlank(message = "Cohort name is required")
     private String name;
 
-    @NotNull(message = "Course ID is required")
     private Long courseId;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
@@ -37,6 +36,13 @@ public class CohortRequestDTO {
     private BigDecimal price = BigDecimal.ZERO;
 
     private String status = "UPCOMING";
+    private String visibility = "PUBLIC";
+
+    private String description;
+
+    private String objectives;
+
+    private String thumbnailUrl;
 
     private java.util.List<CohortScheduleRequestDTO> schedules = new java.util.ArrayList<>();
 }

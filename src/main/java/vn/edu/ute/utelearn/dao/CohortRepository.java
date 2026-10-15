@@ -14,29 +14,40 @@ import java.util.Optional;
 public interface CohortRepository extends JpaRepository<Cohort, Long> {
     Page<Cohort> findByCourseId(Long courseId, Pageable pageable);
     
-    @Query(value = "SELECT c FROM Cohort c JOIN FETCH c.course cr WHERE cr.createdBy.id = :instructorId",
-           countQuery = "SELECT count(c) FROM Cohort c WHERE c.course.createdBy.id = :instructorId")
+    @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))",
+           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))")
     Page<Cohort> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
-    @Query(value = "SELECT c FROM Cohort c JOIN FETCH c.course cr WHERE cr.createdBy.id = :instructorId " +
+    @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')",
-           countQuery = "SELECT count(c) FROM Cohort c WHERE c.course.createdBy.id = :instructorId " +
+           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')")
     Page<Cohort> searchCohortsByInstructor(@Param("instructorId") Long instructorId, @Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
 
-    @Query(value = "SELECT c FROM Cohort c JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category WHERE " +
-           "(c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
-           "AND (cr.category.slug = :categorySlug OR :categorySlug = '')",
-           countQuery = "SELECT count(c) FROM Cohort c JOIN c.course cr LEFT JOIN cr.createdBy LEFT JOIN cr.category WHERE " +
-           "(c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
-           "AND (cr.category.slug = :categorySlug OR :categorySlug = '')")
+    @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category LEFT JOIN FETCH c.createdBy WHERE " +
+           "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
+           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
+           "AND (:categorySlug = '' OR (cr IS NOT NULL AND cr.category IS NOT NULL AND cr.category.slug = :categorySlug))",
+           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.createdBy LEFT JOIN cr.category cat WHERE " +
+           "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
+           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
+           "AND (:categorySlug = '' OR (cat IS NOT NULL AND cat.slug = :categorySlug))")
     Page<Cohort> searchPublicCohorts(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, Pageable pageable);
 
-    @Query("SELECT c FROM Cohort c JOIN FETCH c.course cr WHERE cr.createdBy.id = :instructorId AND c.id = :id")
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))")
+    java.util.List<Cohort> findShareableCohorts(@Param("instructorId") Long instructorId);
+
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE " +
+           "(c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "ORDER BY c.createdAt DESC")
+    java.util.List<Cohort> searchShareableCohorts(@Param("instructorId") Long instructorId, @Param("keyword") String keyword);
+
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) AND c.id = :id")
     Optional<Cohort> findByIdAndInstructorId(@Param("id") Long id, @Param("instructorId") Long instructorId);
     
     boolean existsByCode(String code);
@@ -47,5 +58,9 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
 
     java.util.List<Cohort> findByCourseIdAndStatusIn(Long courseId, java.util.List<String> statuses);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "createdBy"})
+    java.util.Optional<Cohort> findById(Long id);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "createdBy"})
     java.util.List<Cohort> findByCourseIdOrderByCreatedAtAsc(Long courseId);
 }

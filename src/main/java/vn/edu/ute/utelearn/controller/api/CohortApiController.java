@@ -22,6 +22,24 @@ import java.util.stream.Collectors;
 public class CohortApiController {
 
     private final CohortService cohortService;
+    private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
+    private final vn.edu.ute.utelearn.service.AuthService authService;
+
+    @PostMapping("/{moduleId}/last-lesson/{lessonId}")
+    public ResponseEntity<Map<String, Object>> updateLastAccessedLesson(
+            @PathVariable Long moduleId,
+            @PathVariable Long lessonId
+    ) {
+        java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+
+        boolean updated = cohortService.updateLastAccessedLesson(moduleId, lessonId, currentUserOpt.get());
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", updated);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -43,15 +61,50 @@ public class CohortApiController {
             map.put("code", cohort.getCode());
             map.put("name", cohort.getName());
             map.put("status", cohort.getStatus());
+            map.put("visibility", cohort.getVisibility() != null ? cohort.getVisibility() : "PUBLIC");
             map.put("price", cohort.getPrice());
-            map.put("currentEnrolled", cohort.getCurrentEnrolled());
+            map.put("currentEnrolled", cohortMemberRepository.countByCohort_Id(cohort.getId()));
             map.put("maxCapacity", cohort.getMaxCapacity());
+            map.put("description", cohort.getDescription());
+            map.put("objectives", cohort.getObjectives());
             
+            String thumb = cohort.getThumbnailUrl();
+            if (thumb == null || thumb.isBlank()) {
+                thumb = (cohort.getCourse() != null) ? cohort.getCourse().getThumbnailUrl() : null;
+            }
+            if (thumb == null || thumb.isBlank()) {
+                thumb = "/images/courses/default-cover.png";
+            }
+            map.put("thumbnailUrl", thumb);
+
+            String instructorName = "Giảng viên";
+            Long creatorId = null;
+            if (cohort.getCreatedBy() != null) {
+                creatorId = cohort.getCreatedBy().getId();
+                String name = cohort.getCreatedBy().getFullName();
+                if (name == null || name.isBlank()) {
+                    name = cohort.getCreatedBy().getUsername();
+                }
+                if (name != null && !name.isBlank()) {
+                    instructorName = name;
+                }
+            } else if (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null) {
+                creatorId = cohort.getCourse().getCreatedBy().getId();
+                String name = cohort.getCourse().getCreatedBy().getFullName();
+                if (name == null || name.isBlank()) {
+                    name = cohort.getCourse().getCreatedBy().getUsername();
+                }
+                if (name != null && !name.isBlank()) {
+                    instructorName = name;
+                }
+            }
+            map.put("creatorId", creatorId);
+            map.put("creatorName", instructorName);
+            map.put("instructorName", instructorName);
+
             if (cohort.getCourse() != null) {
                 map.put("courseTitle", cohort.getCourse().getTitle());
                 map.put("courseSlug", cohort.getCourse().getSlug());
-                map.put("thumbnailUrl", cohort.getCourse().getThumbnailUrl());
-                map.put("instructorName", cohort.getCourse().getCreatedBy() != null ? cohort.getCourse().getCreatedBy().getFullName() : "Giảng viên");
                 map.put("categoryName", cohort.getCourse().getCategory() != null ? cohort.getCourse().getCategory().getName() : null);
             }
             return map;

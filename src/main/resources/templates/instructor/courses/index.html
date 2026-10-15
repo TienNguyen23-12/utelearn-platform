@@ -56,11 +56,8 @@
                         <td th:text="${course.code}">CS101</td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
-                                <div th:if="${course.thumbnailUrl != null}" style="width: 48px; height: 36px; border-radius: 6px; overflow: hidden;">
-                                    <img th:src="${course.thumbnailUrl}" class="w-100 h-100 object-fit-cover" alt="Thumbnail">
-                                </div>
-                                <div th:unless="${course.thumbnailUrl != null}" class="bg-light d-flex align-items-center justify-content-center text-muted" style="width: 48px; height: 36px; border-radius: 6px;">
-                                    <i class="bi bi-image"></i>
+                                <div style="width: 48px; height: 36px; border-radius: 6px; overflow: hidden;" class="flex-shrink-0 bg-light border">
+                                    <img th:src="${course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="w-100 h-100 object-fit-cover" alt="Thumbnail">
                                 </div>
                                 <div>
                                     <div class="fw-bold text-dark" th:text="${course.title}">Tiêu đề</div>
@@ -70,7 +67,7 @@
                         </td>
                         <td th:text="${course.category != null ? course.category.name : 'N/A'}">Danh mục</td>
                         <td>
-                            <span th:if="${course.level == 'BEGINNER'}" class="badge bg-success-subtle text-success border">Cơ bản</span>
+                            <span th:if="${course.level == 'BEGINNER'}" class="badge bg-success-subtle text-success border">Người mới bắt đầu</span>
                             <span th:if="${course.level == 'INTERMEDIATE'}" class="badge bg-warning-subtle text-warning border">Trung bình</span>
                             <span th:if="${course.level == 'ADVANCED'}" class="badge bg-danger-subtle text-danger border">Nâng cao</span>
                             <span th:if="${course.level == 'ALL_LEVELS'}" class="badge bg-info-subtle text-info border">Mọi cấp độ</span>
