@@ -188,9 +188,12 @@ public class CourseController {
             List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
             enrolledCohortIds = userMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
             isEnrolled = !enrolledCohortIds.isEmpty();
-            hasAccessRole = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN") ||
-                    r.getCode().equals("MODERATOR") ||
-                    r.getCode().equals("INSTRUCTOR"));
+            boolean isOwner = (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
+            hasAccessRole = isOwner || user.getRoles().stream().anyMatch(r -> 
+                    "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
+                    "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()) ||
+                    "INSTRUCTOR".equals(r.getCode()) || "ROLE_INSTRUCTOR".equals(r.getCode()) ||
+                    "TEACHER".equals(r.getCode()));
         }
 
         List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
@@ -235,6 +238,7 @@ public class CourseController {
 
         long unenrolledCount = availableCohorts.stream().filter(c -> !finalEnrolledCohortIds.contains(c.getId())).count();
 
+        model.addAttribute("course", course);
         model.addAttribute("availableCohorts", cohortList);
         model.addAttribute("courseSlug", slug);
         model.addAttribute("isEnrolled", isEnrolled);
@@ -269,9 +273,12 @@ public class CourseController {
         if (currentUserOpt.isPresent()) {
             User user = currentUserOpt.get();
             isModEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(module.getId(), user.getId());
-            hasAccessRole = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN") ||
-                    r.getCode().equals("MODERATOR") ||
-                    r.getCode().equals("INSTRUCTOR"));
+            boolean isOwner = (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
+            hasAccessRole = isOwner || user.getRoles().stream().anyMatch(r -> 
+                    "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
+                    "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()) ||
+                    "INSTRUCTOR".equals(r.getCode()) || "ROLE_INSTRUCTOR".equals(r.getCode()) ||
+                    "TEACHER".equals(r.getCode()));
         }
 
         long enrolledCount = cohortMemberRepository.countByCohort_Id(module.getId());

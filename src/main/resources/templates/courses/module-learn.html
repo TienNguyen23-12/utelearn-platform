@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
         :root {
@@ -116,29 +117,26 @@
             box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
             margin-bottom: 20px;
             position: relative;
+            width: 100%;
+        }
+
+        .cinema-player-wrapper .plyr,
+        .cinema-player-wrapper video {
+            width: 100%;
+            border-radius: 18px;
+            display: block;
+        }
+
+        .cinema-player-wrapper iframe {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: 0;
+            display: block;
         }
 
         .plyr--video {
             border-radius: 18px;
             overflow: hidden;
-        }
-
-        .video-container {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            overflow: hidden;
-            background: #090d16;
-        }
-
-        .video-container iframe,
-        .video-container video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 0;
         }
 
         .learn-nav-bar {
@@ -347,6 +345,69 @@
                 max-width: 220px;
             }
         }
+
+        body.focus-mode .learn-header {
+            display: none !important;
+        }
+
+        body.focus-mode .curriculum-sidebar {
+            display: none !important;
+        }
+
+        body.focus-mode .floating-sidebar-btn {
+            display: none !important;
+        }
+
+        body.focus-mode .learn-workspace {
+            height: 100vh !important;
+        }
+
+        body.focus-mode .learn-main-viewport {
+            padding: 24px 48px 80px 48px !important;
+            max-width: 100% !important;
+        }
+
+        body.focus-mode .learn-content-inner {
+            max-width: 1240px !important;
+        }
+
+        .btn-exit-focus {
+            position: fixed;
+            top: 18px;
+            right: 24px;
+            z-index: 2050;
+            display: none;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-exit-focus:hover {
+            transform: scale(1.04);
+        }
+
+        body.focus-mode .btn-exit-focus {
+            display: inline-flex !important;
+        }
+
+        .moodle-nav-footer {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            margin-top: 24px;
+        }
+
+        .activity-jump-select {
+            max-width: 380px;
+            font-size: 13.5px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -406,6 +467,11 @@
             <span class="d-none d-md-inline small fw-semibold">Bài học</span>
         </button>
 
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-flex align-items-center gap-1" id="btnToggleFocusMode" title="Chế độ tập trung (Phím F)">
+            <i class="bi bi-aspect-ratio" id="focusModeIcon"></i>
+            <span class="d-none d-md-inline small fw-semibold" id="focusModeText">Tập trung</span>
+        </button>
+
         <div class="dropdown" th:if="${currentUser != null}">
             <button class="btn btn-light d-flex align-items-center gap-2 border-0 py-1 px-2 px-md-3 rounded-pill" style="background-color: #f1f5f9;" type="button" data-bs-toggle="dropdown">
                 <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden" style="width: 32px; height: 32px;">
@@ -438,6 +504,11 @@
         </div>
     </div>
 </header>
+
+<button id="btnExitFocusMode" class="btn btn-dark btn-sm rounded-pill px-3.5 py-2 btn-exit-focus align-items-center gap-2" title="Thoát chế độ tập trung (ESC)">
+    <i class="bi bi-fullscreen-exit"></i>
+    <span class="small fw-bold">Thoát tập trung (ESC)</span>
+</button>
 
 <button id="floatingOpenSidebarBtn" class="floating-sidebar-btn" title="Mở danh sách bài học">
     <i class="bi bi-layout-sidebar-reverse me-1"></i>
@@ -476,6 +547,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
 <script th:inline="javascript">
     const moduleId = /*[[${module.id}]]*/ 0;
@@ -523,8 +595,14 @@
         let completed = getCompletedLessons();
         if (completed.includes(id)) {
             completed = completed.filter(item => item !== id);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({text: 'Đã hủy đánh dấu hoàn thành bài học.', style: {background: '#64748b'}}).showToast();
+            }
         } else {
             completed.push(id);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({text: 'Chúc mừng! Bạn đã hoàn thành bài học này.', style: {background: '#15803d'}}).showToast();
+            }
         }
         localStorage.setItem(storageKey, JSON.stringify(completed));
         updateProgressUI();
@@ -551,6 +629,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         setupSidebarControls();
+        setupFocusModeControls();
         renderSidebar();
         updateProgressUI();
 
@@ -739,7 +818,9 @@
         }
 
         if (player) {
-            player.destroy();
+            try {
+                player.destroy();
+            } catch (e) {}
             player = null;
         }
 
@@ -785,12 +866,31 @@
     function updateNavButtonsUI() {
         const prevBtn = document.getElementById('btnPrevLesson');
         const nextBtn = document.getElementById('btnNextLesson');
+        const footerPrev = document.getElementById('footerBtnPrev');
+        const footerNext = document.getElementById('footerBtnNext');
+        const footerPrevTitle = document.getElementById('footerPrevTitle');
+        const footerNextTitle = document.getElementById('footerNextTitle');
+        const jumpSelect = document.getElementById('jumpLessonSelect');
 
-        if (prevBtn) {
-            prevBtn.disabled = (currentLessonIndex <= 0);
+        if (prevBtn) prevBtn.disabled = (currentLessonIndex <= 0);
+        if (nextBtn) nextBtn.disabled = (currentLessonIndex >= moduleLessons.length - 1);
+
+        if (footerPrev) {
+            footerPrev.disabled = (currentLessonIndex <= 0);
+            if (footerPrevTitle) {
+                footerPrevTitle.textContent = currentLessonIndex > 0 ? ('Bài trước: ' + moduleLessons[currentLessonIndex - 1].title) : 'Bài đầu tiên';
+            }
         }
-        if (nextBtn) {
-            nextBtn.disabled = (currentLessonIndex >= moduleLessons.length - 1);
+
+        if (footerNext) {
+            footerNext.disabled = (currentLessonIndex >= moduleLessons.length - 1);
+            if (footerNextTitle) {
+                footerNextTitle.textContent = currentLessonIndex < moduleLessons.length - 1 ? ('Bài tiếp: ' + moduleLessons[currentLessonIndex + 1].title) : 'Hoàn tất module';
+            }
+        }
+
+        if (jumpSelect && currentLessonIndex >= 0 && currentLessonIndex < moduleLessons.length) {
+            jumpSelect.value = moduleLessons[currentLessonIndex].id;
         }
     }
 
@@ -944,15 +1044,13 @@
             initPlyr = true;
             mainMediaHtml = `
                 <div class="cinema-player-wrapper mb-4">
-                    <div class="video-container">
-                        <div class="plyr__video-embed" id="player">
-                            <iframe
-                                src="https://www.youtube.com/embed/${ytId}?origin=${encodeURIComponent(window.location.origin)}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
-                                allowfullscreen
-                                allowtransparency
-                                allow="autoplay">
-                            </iframe>
-                        </div>
+                    <div class="plyr__video-embed" id="player">
+                        <iframe
+                            src="https://www.youtube.com/embed/${ytId}?origin=${encodeURIComponent(window.location.origin)}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
+                            allowfullscreen
+                            allowtransparency
+                            allow="autoplay">
+                        </iframe>
                     </div>
                 </div>
             `;
@@ -960,15 +1058,13 @@
             initPlyr = true;
             mainMediaHtml = `
                 <div class="cinema-player-wrapper mb-4">
-                    <div class="video-container">
-                        <div class="plyr__video-embed" id="player">
-                            <iframe
-                                src="https://player.vimeo.com/video/${vimeoId}?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
-                                allowfullscreen
-                                allowtransparency
-                                allow="autoplay">
-                            </iframe>
-                        </div>
+                    <div class="plyr__video-embed" id="player">
+                        <iframe
+                            src="https://player.vimeo.com/video/${vimeoId}?loop=false&amp;byline=false&amp;portrait=false&amp;title=false&amp;speed=true&amp;transparent=0&amp;gesture=media"
+                            allowfullscreen
+                            allowtransparency
+                            allow="autoplay">
+                        </iframe>
                     </div>
                 </div>
             `;
@@ -979,20 +1075,16 @@
             }
             mainMediaHtml = `
                 <div class="cinema-player-wrapper mb-4">
-                    <div class="video-container" style="background: #000; height: 520px;">
-                        <iframe src="${drivePreview}" allowfullscreen class="w-100 h-100 border-0" allow="autoplay; fullscreen"></iframe>
-                    </div>
+                    <iframe src="${drivePreview}" allowfullscreen class="w-100 border-0" style="aspect-ratio: 16 / 9; max-height: 600px; display: block;" allow="autoplay; fullscreen"></iframe>
                 </div>
             `;
         } else if (resolvedVideoUrl) {
             initPlyr = true;
             mainMediaHtml = `
                 <div class="cinema-player-wrapper mb-4">
-                    <div class="video-container">
-                        <video id="player" playsinline controls class="w-100" preload="metadata">
-                            <source src="${resolvedVideoUrl}" type="video/mp4" />
-                        </video>
-                    </div>
+                    <video id="player" playsinline controls class="w-100" preload="metadata" style="aspect-ratio: 16 / 9; object-fit: contain; background: #000; display: block;" src="${resolvedVideoUrl}">
+                        <source src="${resolvedVideoUrl}" type="video/mp4" />
+                    </video>
                 </div>
             `;
         } else if (lesson.lessonType === 'DOCUMENT') {
@@ -1025,10 +1117,10 @@
         } else {
             mainMediaHtml = `
                 <div class="cinema-player-wrapper mb-4">
-                    <div class="video-container d-flex align-items-center justify-content-center p-5 text-center text-white-50">
+                    <div class="d-flex align-items-center justify-content-center p-5 text-center text-white-50" style="min-height: 380px;">
                         <div>
                             <i class="bi bi-camera-video-off display-4 mb-3 d-block text-secondary"></i>
-                            <h5>Chưa có video cho bài học này</h5>
+                            <h5 class="text-white">Chưa có video cho bài học này</h5>
                             <p class="small text-white-50">Vui lòng tham khảo tài liệu học tập bên dưới.</p>
                         </div>
                     </div>
@@ -1157,16 +1249,92 @@
                     </div>
                 </div>
             </div>
+
+            <div class="moodle-nav-footer">
+                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" 
+                        id="footerBtnPrev" 
+                        onclick="stepLesson(-1)">
+                    <i class="bi bi-arrow-left"></i>
+                    <span id="footerPrevTitle">Bài trước</span>
+                </button>
+
+                <div class="d-flex align-items-center gap-2 flex-grow-1 justify-content-center">
+                    <select class="form-select form-select-sm rounded-pill activity-jump-select" id="jumpLessonSelect" onchange="loadLessonById(Number(this.value))">
+                        ${moduleLessons.map((l, idx) => `
+                            <option value="${l.id}" ${l.id === lesson.id ? 'selected' : ''}>
+                                ${idx + 1}. ${l.title}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+
+                <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" 
+                        id="footerBtnNext" 
+                        onclick="stepLesson(1)">
+                    <span id="footerNextTitle">Bài kế tiếp</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
         `;
 
         if (initPlyr) {
             const playerEl = document.getElementById('player');
             if (playerEl) {
-                player = new Plyr('#player', {
-                    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
-                    youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }
-                });
+                try {
+                    player = new Plyr('#player', {
+                        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                        youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }
+                    });
+                } catch (e) {
+                    console.error('Error initializing Plyr:', e);
+                }
             }
+        }
+    }
+
+    function setupFocusModeControls() {
+        const toggleFocusBtn = document.getElementById('btnToggleFocusMode');
+        const exitFocusBtn = document.getElementById('btnExitFocusMode');
+        const focusText = document.getElementById('focusModeText');
+        const focusIcon = document.getElementById('focusModeIcon');
+
+        function setFocusMode(enable) {
+            if (enable) {
+                document.body.classList.add('focus-mode');
+                if (focusText) focusText.textContent = 'Thoát';
+                if (focusIcon) focusIcon.className = 'bi bi-fullscreen-exit';
+                localStorage.setItem('utelearn_focus_mode', 'true');
+            } else {
+                document.body.classList.remove('focus-mode');
+                if (focusText) focusText.textContent = 'Tập trung';
+                if (focusIcon) focusIcon.className = 'bi bi-aspect-ratio';
+                localStorage.setItem('utelearn_focus_mode', 'false');
+            }
+        }
+
+        function toggleFocusMode() {
+            const isFocus = document.body.classList.contains('focus-mode');
+            setFocusMode(!isFocus);
+        }
+
+        if (toggleFocusBtn) toggleFocusBtn.onclick = toggleFocusMode;
+        if (exitFocusBtn) exitFocusBtn.onclick = () => setFocusMode(false);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'f' || e.key === 'F') {
+                e.preventDefault();
+                toggleFocusMode();
+            } else if (e.key === 'Escape') {
+                if (document.body.classList.contains('focus-mode')) {
+                    setFocusMode(false);
+                }
+            }
+        });
+
+        const savedFocus = localStorage.getItem('utelearn_focus_mode');
+        if (savedFocus === 'true') {
+            setFocusMode(true);
         }
     }
 

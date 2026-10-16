@@ -96,6 +96,37 @@
             text-align: center;
             color: #888;
         }
+        .activity-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+        }
+        .activity-card:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
+            color: inherit;
+        }
+        .activity-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -150,11 +181,11 @@
                     </div>
                     
                     <div class="d-flex align-items-center gap-1">
-                        <button class="btn btn-sm btn-light border" 
+                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
                                 th:data-id="${section.id}" 
                                 th:data-module-id="${section.cohort != null ? section.cohort.id : ''}"
-                                onclick="openLessonModalWithModule(this.getAttribute('data-id'), this.getAttribute('data-module-id'), event)">
-                            <i class="bi bi-plus"></i> Bài học
+                                onclick="openActivityChooser(this.getAttribute('data-id'), this.getAttribute('data-module-id'), event)">
+                            <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
                         </button>
                         <button class="btn btn-sm btn-light border text-primary" 
                                 th:data-id="${section.id}" 
@@ -215,6 +246,141 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
         <button type="button" class="btn btn-primary" onclick="saveSection()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="activityChooserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom pb-3">
+        <div>
+          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-grid-3x3-gap-fill text-primary"></i>
+            Thêm một hoạt động hoặc tài nguyên
+          </h5>
+          <div class="text-muted small">Chọn loại nội dung sư phạm phù hợp với mục tiêu của chương học</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+          <ul class="nav nav-pills gap-1" id="activityTab" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active rounded-pill px-3 py-1.5 small fw-semibold" id="all-tab" data-bs-toggle="pill" data-bs-target="#tab-all-activities" type="button">Tất cả</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link rounded-pill px-3 py-1.5 small fw-semibold" id="resources-tab" data-bs-toggle="pill" data-bs-target="#tab-resources" type="button">Tài nguyên học tập</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link rounded-pill px-3 py-1.5 small fw-semibold" id="activities-tab" data-bs-toggle="pill" data-bs-target="#tab-activities" type="button">Đánh giá &amp; Thực hành</button>
+            </li>
+          </ul>
+          <div class="search-box position-relative" style="min-width: 240px;">
+            <input type="text" class="form-control form-control-sm rounded-pill ps-4" id="activitySearchInput" placeholder="Tìm hoạt động...">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2.5 text-muted small"></i>
+          </div>
+        </div>
+
+        <div class="tab-content" id="activityTabContent">
+          <div class="tab-pane fade show active" id="tab-all-activities">
+            <div class="row g-3 activity-grid-container">
+              <div class="col-md-6 activity-item-col" data-title="video bai giang bài giảng clip" data-type="VIDEO">
+                <div class="activity-card" onclick="selectActivityType('VIDEO')">
+                  <div class="activity-card-icon icon-video"><i class="bi bi-play-btn-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Bài giảng Video</h6>
+                    <div class="text-muted small lh-base">Video bài học từ Cloudinary, Youtube hoặc lưu trữ số, hỗ trợ học viên tự học trực quan.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 activity-item-col" data-title="tai lieu hoc tap pdf slide docx giáo trình" data-type="DOCUMENT">
+                <div class="activity-card" onclick="selectActivityType('DOCUMENT')">
+                  <div class="activity-card-icon icon-doc"><i class="bi bi-file-earmark-text-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Tài liệu học tập &amp; Slide</h6>
+                    <div class="text-muted small lh-base">Tài liệu định dạng PDF, slide thuyết trình, ghi chú bài giảng chuyên sâu hoặc văn bản.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 activity-item-col" data-title="trac nghiem quiz kiem tra test" data-type="QUIZ">
+                <div class="activity-card" onclick="selectActivityType('QUIZ')">
+                  <div class="activity-card-icon icon-quiz"><i class="bi bi-patch-question-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Kiểm tra Trắc nghiệm (Quiz)</h6>
+                    <div class="text-muted small lh-base">Bộ câu hỏi trắc nghiệm tự động chấm điểm, tính tỷ lệ chính xác và cấp chứng nhận.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 activity-item-col" data-title="lap trinh online judge code thực hành oj" data-type="CODE_PRACTICE">
+                <div class="activity-card" onclick="selectActivityType('CODE_PRACTICE')">
+                  <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Bài tập Lập trình (OJ)</h6>
+                    <div class="text-muted small lh-base">Chấm code tự động qua Online Judge với nhiều ngôn ngữ (Java, C++, Python) và testcases.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 activity-item-col" data-title="thong bao announcement hướng dẫn tin tức" data-type="ANNOUNCEMENT">
+                <div class="activity-card" onclick="selectActivityType('ANNOUNCEMENT')">
+                  <div class="activity-card-icon icon-quiz"><i class="bi bi-megaphone-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Thông báo &amp; Hướng dẫn</h6>
+                    <div class="text-muted small lh-base">Tin tức quan trọng, thông điệp khai giảng hoặc quy chế kiểm tra dành cho sinh viên.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="tab-resources">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="activity-card" onclick="selectActivityType('VIDEO')">
+                  <div class="activity-card-icon icon-video"><i class="bi bi-play-btn-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Bài giảng Video</h6>
+                    <div class="text-muted small lh-base">Video bài học từ Cloudinary hoặc Youtube.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="activity-card" onclick="selectActivityType('DOCUMENT')">
+                  <div class="activity-card-icon icon-doc"><i class="bi bi-file-earmark-text-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Tài liệu học tập &amp; Slide</h6>
+                    <div class="text-muted small lh-base">File PDF, tài liệu nghiên cứu và sách bài tập.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="tab-activities">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="activity-card" onclick="selectActivityType('QUIZ')">
+                  <div class="activity-card-icon icon-quiz"><i class="bi bi-patch-question-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Kiểm tra Trắc nghiệm (Quiz)</h6>
+                    <div class="text-muted small lh-base">Bài test trắc nghiệm đánh giá năng lực tự động.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="activity-card" onclick="selectActivityType('CODE_PRACTICE')">
+                  <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1 text-dark">Bài tập Lập trình (OJ)</h6>
+                    <div class="text-muted small lh-base">Chấm điểm thuật toán và code tự động trực tuyến.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light">
+        <button type="button" class="btn btn-sm btn-light border px-3 rounded-pill" data-bs-dismiss="modal">Đóng</button>
       </div>
     </div>
   </div>
@@ -376,19 +542,34 @@
     
     let sectionModal;
     let lessonModal;
+    let activityChooserModal;
     let redirectModal;
     let assetPickerModal;
     let confirmModal;
     let pendingConfirmAction = null;
     let targetModuleUrl = '';
     let localEditCallback = null;
+    let pendingActivitySectionId = null;
+    let pendingActivityModuleId = null;
     
     document.addEventListener('DOMContentLoaded', () => {
         sectionModal = new bootstrap.Modal(document.getElementById('sectionModal'));
         lessonModal = new bootstrap.Modal(document.getElementById('lessonModal'));
+        activityChooserModal = new bootstrap.Modal(document.getElementById('activityChooserModal'));
         redirectModal = new bootstrap.Modal(document.getElementById('moduleRedirectModal'));
         assetPickerModal = new bootstrap.Modal(document.getElementById('assetPickerModal'));
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
+        const actSearch = document.getElementById('activitySearchInput');
+        if (actSearch) {
+            actSearch.addEventListener('input', function(e) {
+                const q = e.target.value.toLowerCase().trim();
+                document.querySelectorAll('.activity-item-col').forEach(col => {
+                    const title = (col.getAttribute('data-title') || '').toLowerCase();
+                    col.style.display = (!q || title.includes(q)) ? 'block' : 'none';
+                });
+            });
+        }
         
         document.getElementById('btnConfirmRedirect').addEventListener('click', function() {
             if (targetModuleUrl) {
@@ -535,16 +716,33 @@
         });
     }
 
+    function openActivityChooser(sectionId, moduleId = null, event = null) {
+        if (event) event.stopPropagation();
+        pendingActivitySectionId = sectionId;
+        pendingActivityModuleId = moduleId;
+        const searchInput = document.getElementById('activitySearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            document.querySelectorAll('.activity-item-col').forEach(c => c.style.display = 'block');
+        }
+        activityChooserModal.show();
+    }
+
+    function selectActivityType(type) {
+        activityChooserModal.hide();
+        openLessonModalWithModule(pendingActivitySectionId, pendingActivityModuleId, null, type);
+    }
+
     function openLessonModal(sectionId, event) {
         openLessonModalWithModule(sectionId, null, event);
     }
 
-    function openLessonModalWithModule(sectionId, moduleId = null, event = null) {
+    function openLessonModalWithModule(sectionId, moduleId = null, event = null, preselectedType = 'VIDEO') {
         if(event) event.stopPropagation();
         document.getElementById('lessonId').value = '';
         document.getElementById('parentSectionId').value = sectionId;
         document.getElementById('lessonTitle').value = '';
-        document.getElementById('lessonType').value = 'VIDEO';
+        document.getElementById('lessonType').value = preselectedType;
         document.getElementById('videoUrl').value = '';
         document.getElementById('assetUrl').value = '';
         document.getElementById('documentContent').value = '';
@@ -623,9 +821,9 @@
                         const headerRight = sectionCard.querySelector('.section-header > div:last-child');
                         if (headerRight) {
                             headerRight.innerHTML = `
-                                <button class="btn btn-sm btn-light border" 
-                                        onclick="openLessonModalWithModule('${sectionId}', '${targetModId}', event)">
-                                    <i class="bi bi-plus"></i> Bài học
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                        onclick="openActivityChooser('${sectionId}', '${targetModId}', event)">
+                                    <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
                                 </button>
                                 <button class="btn btn-sm btn-light border text-primary" 
                                         onclick="handleSectionEdit('${sectionId}', '${targetModName.replace(/'/g, "\\'")}', '${targetModId}', '${targetModName.replace(/'/g, "\\'")}', event)">
