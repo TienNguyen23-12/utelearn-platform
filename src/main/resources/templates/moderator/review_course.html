@@ -43,7 +43,7 @@
             <div class="col-lg-4">
                 <div class="card card-custom border-0 shadow-sm rounded-4 p-4">
                     <h5 class="fw-bold mb-4">Thông tin Khóa học</h5>
-                    <img th:if="${course.thumbnailUrl}" th:src="${course.thumbnailUrl}" class="img-fluid rounded mb-3" alt="Thumbnail">
+                    <img th:src="${course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="img-fluid rounded mb-3" alt="Thumbnail">
                     <h6 class="fw-bold" th:text="${course.title}">Tên khóa học</h6>
                     <p class="text-muted small mb-2" th:text="${course.headline}">Mô tả ngắn</p>
                     <hr>

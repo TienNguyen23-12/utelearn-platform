@@ -42,6 +42,12 @@ public class SecurityConfig {
                                 "/",
                                 "/home",
                                 "/courses/**",
+                                "/course/**",
+                                "/cohorts",
+                                "/cohorts/**",
+                                "/cohort/**",
+                                "/modules/**",
+                                "/module/**",
                                 "/login",
                                 "/register",
                                 "/forgot-password",
@@ -64,12 +70,12 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api/courses/**",
+                                "/api/cohorts/**",
                                 "/oj/**")
                         .permitAll()
 
-                        // CHỈ ADMIN MỚI ĐƯỢC VÀO TRANG QUẢN TRỊ
                         .requestMatchers("/admin/**", "/dashboard/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
-                        .requestMatchers("/instructor/**")
+                        .requestMatchers("/instructor/**", "/api/instructor/**")
                         .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/moderator/**")
                         .hasAnyAuthority("MODERATOR", "ROLE_MODERATOR", "ADMIN", "ROLE_ADMIN")

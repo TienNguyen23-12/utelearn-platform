@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Lộ trình Module: ' + ${cohort.name} + ' - UTELearn Platform'">Cấu hình Lộ trình Module</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar('cohorts')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Module & Chuyên đề')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+            <div class="d-flex align-items-center">
+                <a th:href="@{/instructor/cohorts}" class="btn btn-icon btn-light rounded-circle me-3 border flex-shrink-0">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h4 class="fw-bold mb-1">Cấu hình Lộ trình Module (Schedules)</h4>
+                    <p class="text-muted mb-0">
+                        Module: <strong class="text-dark" th:text="${cohort.name}"></strong> • 
+                        <span th:if="${cohort.course != null}">Khóa học: <span class="text-primary fw-semibold" th:text="${cohort.course.title}"></span></span>
+                        <span th:unless="${cohort.course != null}" class="badge bg-secondary-subtle text-secondary border"><i class="bi bi-box-seam me-1"></i>Module bán lẻ độc lập</span>
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{'/instructor/cohorts/' + ${cohort.id} + '/curriculum'}" class="btn btn-outline-success rounded-pill px-3">
+                    <i class="bi bi-journal-text me-1"></i> Soạn nội dung Module
+                </a>
+                <a th:if="${cohort.course != null}" th:href="@{'/instructor/courses/' + ${cohort.course.id} + '/modules/' + ${cohort.id} + '/edit'}" class="btn btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-check2-square me-1"></i> Chọn thêm/bớt bài học
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-custom p-4">
+            <div th:if="${schedules == null || schedules.empty}" class="text-center py-5 text-muted">
+                <i class="bi bi-journal-x fs-1 text-secondary opacity-50 d-block mb-3"></i>
+                <h5 class="fw-bold text-dark">Chưa có bài học nào được gán cho module này</h5>
+                <p class="small text-muted mb-4">Bạn có thể trực tiếp soạn giáo trình cho module hoặc chọn các bài học để đưa vào module này.</p>
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <a th:href="@{'/instructor/cohorts/' + ${cohort.id} + '/curriculum'}" class="btn btn-primary rounded-pill px-4">
+                        <i class="bi bi-journal-plus me-1"></i> Soạn Giáo trình (Thêm Chương & Bài học)
+                    </a>
+                    <a th:if="${cohort.course != null}" th:href="@{'/instructor/courses/' + ${cohort.course.id} + '/modules/' + ${cohort.id} + '/edit'}" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="bi bi-check2-square me-1"></i> Chọn bài học từ Khóa học gốc
+                    </a>
+                </div>
+            </div>
+
+            <div th:if="${schedules != null && !schedules.empty}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark"><i class="bi bi-journal-bookmark text-primary me-2"></i>Danh sách bài học (<span th:text="${schedules.size()}">0</span> bài)</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setAllUnlockAtNow()">
+                        <i class="bi bi-clock-history me-1"></i>Set tất cả mở ngay bây giờ
+                    </button>
+                </div>
+
+                <form th:action="@{'/instructor/cohorts/' + ${cohort.id} + '/schedule'}" method="post">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 250px;">Bài học (Lesson)</th>
+                                    <th style="min-width: 180px;">Ngày mở bài (unlock_at)</th>
+                                    <th style="min-width: 180px;">Hạn nộp (deadline_at)</th>
+                                    <th style="min-width: 160px;">Chế độ xem điểm</th>
+                                    <th class="text-center" style="width: 80px;">Gỡ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="cs : ${schedules}">
+                                    <td>
+                                        <input type="hidden" name="scheduleIds" th:value="${cs.id}">
+                                        <div class="d-flex align-items-center">
+                                            <i th:if="${cs.lesson.lessonType == 'VIDEO'}" class="bi bi-play-circle-fill text-primary fs-5 me-2 flex-shrink-0"></i>
+                                            <i th:if="${cs.lesson.lessonType == 'DOCUMENT'}" class="bi bi-file-earmark-text-fill text-success fs-5 me-2 flex-shrink-0"></i>
+                                            <i th:if="${cs.lesson.lessonType == 'QUIZ'}" class="bi bi-question-circle-fill text-warning fs-5 me-2 flex-shrink-0"></i>
+                                            <i th:if="${cs.lesson.lessonType != 'VIDEO' and cs.lesson.lessonType != 'DOCUMENT' and cs.lesson.lessonType != 'QUIZ'}" class="bi bi-file-earmark-text text-secondary fs-5 me-2 flex-shrink-0"></i>
+                                            <div>
+                                                <div class="fw-semibold text-dark small" th:text="${cs.lesson.title}">Tiêu đề bài học</div>
+                                                <span class="text-muted" style="font-size: 11px;" th:text="${cs.lesson.section != null ? cs.lesson.section.title : ''}">Chương</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="datetime-local" class="form-control form-control-sm unlock-at-input" name="unlockAts" th:value="${cs.formattedUnlockAt}" required>
+                                    </td>
+                                    <td>
+                                        <input type="datetime-local" class="form-control form-control-sm" name="deadlineAts" th:value="${cs.formattedDeadlineAt}">
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="showScoreTypes">
+                                            <option value="IMMEDIATELY" th:selected="${cs.showScoreType == 'IMMEDIATELY'}">Ngay lập tức</option>
+                                            <option value="AFTER_DEADLINE" th:selected="${cs.showScoreType == 'AFTER_DEADLINE'}">Sau khi hết hạn</option>
+                                            <option value="MANUAL" th:selected="${cs.showScoreType == 'MANUAL'}">Chấm tay</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger border-0" th:onclick="'deleteScheduleItem(' + ${cs.id} + ')'" title="Gỡ khỏi module">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a th:href="@{/instructor/cohorts}" class="btn btn-light border px-4 rounded-pill">Quay lại</a>
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill fw-semibold shadow-sm">
+                            <i class="bi bi-floppy me-1"></i> Lưu cấu hình
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<form id="deleteScheduleForm" method="post" style="display: none;"></form>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script th:inline="javascript">
+    const cohortId = /*[[${cohort.id}]]*/ 0;
+    const successMessage = /*[[${successMessage}]]*/ null;
+    const errorMessage = /*[[${errorMessage}]]*/ null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (successMessage) {
+            Toastify({text: successMessage, style: {background: "#00b050"}}).showToast();
+        }
+        if (errorMessage) {
+            Toastify({text: errorMessage, style: {background: "#dc3545"}}).showToast();
+        }
+    });
+
+    function setAllUnlockAtNow() {
+        const inputs = document.querySelectorAll('.unlock-at-input');
+        if (inputs.length === 0) return;
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const nowStr = now.toISOString().slice(0, 16);
+        inputs.forEach(input => {
+            input.value = nowStr;
+        });
+    }
+
+    function deleteScheduleItem(scheduleId) {
+        showConfirmModal(window.event, function() {
+            const form = document.getElementById('deleteScheduleForm');
+            form.action = '/instructor/cohorts/' + cohortId + '/schedule/' + scheduleId + '/delete';
+            form.submit();
+        }, 'Bạn có chắc chắn muốn gỡ bài học này khỏi module không?');
+    }
+</script>
+</body>
+</html>

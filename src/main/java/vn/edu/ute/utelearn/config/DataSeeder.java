@@ -53,7 +53,28 @@ public class DataSeeder implements CommandLineRunner {
 
             seedCategories();
             
-            // Fix stuck courses from previous bug
+            if (isTablePresent("cohorts")) {
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS description TEXT");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS objectives TEXT");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id) ON DELETE SET NULL");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS visibility VARCHAR(30) DEFAULT 'PUBLIC'");
+                jdbcTemplate.execute("ALTER TABLE cohorts ALTER COLUMN course_id DROP NOT NULL");
+                jdbcTemplate.execute("UPDATE cohorts SET created_by = 2");
+                jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL");
+                jdbcTemplate.execute("UPDATE cohorts SET name = REGEXP_REPLACE(name, '^Module\\s*[0-9]+[:\\.\\-]\\s*', '', 'i') WHERE name ~* '^Module\\s*[0-9]+'");
+                seedCohortObjectives();
+                if (isTablePresent("cohort_members")) {
+                    jdbcTemplate.execute("UPDATE cohorts c SET current_enrolled = (SELECT COUNT(*) FROM cohort_members cm WHERE cm.cohort_id = c.id)");
+                }
+                if (isTablePresent("sections")) {
+                    try {
+                        jdbcTemplate.execute("ALTER TABLE sections DROP CONSTRAINT IF EXISTS fk2umk8kh0l48nxphb0tneb6yv2");
+                        jdbcTemplate.execute("ALTER TABLE sections DROP CONSTRAINT IF EXISTS fk_sections_cohort");
+                        jdbcTemplate.execute("ALTER TABLE sections ADD CONSTRAINT fk_sections_cohort FOREIGN KEY (cohort_id) REFERENCES cohorts(id) ON DELETE CASCADE");
+                    } catch (Exception ignored) {}
+                }
+            }
+
             int fixedCourses = jdbcTemplate.update("UPDATE courses SET status = 'PUBLISHED' WHERE status = 'APPROVED'");
             if (fixedCourses > 0) {
                 log.info("[DataSeeder] Đã tự động sửa " + fixedCourses + " khóa học bị kẹt ở trạng thái APPROVED sang PUBLISHED.");
@@ -63,6 +84,32 @@ public class DataSeeder implements CommandLineRunner {
         } catch (Exception e) {
             log.error("[DataSeeder] Có lỗi xảy ra trong quá trình nạp dữ liệu mẫu: {}", e.getMessage(), e);
         }
+    }
+
+    private void seedCohortObjectives() {
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-WEB-01' AND (objectives IS NULL OR objectives = '')",
+                "Khám phá toàn diện nền tảng xây dựng giao diện Web hiện đại. Thành thạo cấu trúc ngữ nghĩa HTML5, định kiểu nâng cao với CSS3, hệ thống Flexbox, CSS Grid và kỹ thuật thiết kế Responsive thích ứng mọi thiết bị.",
+                "[\"Hiểu sâu cấu trúc DOM và các thẻ ngữ nghĩa HTML5 chuẩn SEO\", \"Làm chủ CSS3: Typography, Box Model, Flexbox và Grid Layout\", \"Thiết kế giao diện thích ứng chuẩn Responsive trên Mobile, Tablet và Desktop\", \"Tự tay xây dựng hoàn chỉnh giao diện Landing Page chuyên nghiệp\"]");
+
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-WEB-02' AND (objectives IS NULL OR objectives = '')",
+                "Nâng cao tư duy lập trình và kỹ năng tương tác giao diện người dùng với JavaScript chuẩn ES6+. Nắm vững lập trình hướng đối tượng, xử lý bất đồng bộ Promise/Async-Await và tương tác chuyên sâu với DOM API.",
+                "[\"Thành thạo cú pháp JavaScript hiện đại ES6+ (Arrow Functions, Destructuring, Spread)\", \"Thao tác DOM, bắt sự kiện và render dữ liệu động linh hoạt\", \"Làm chủ lập trình bất đồng bộ với Promise, Async/Await và Fetch API\", \"Xử lý lưu trữ dữ liệu phía client với LocalStorage và SessionStorage\"]");
+
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-WEB-03' AND (objectives IS NULL OR objectives = '')",
+                "Chinh phục kỹ năng lập trình phía Server với hệ sinh thái Node.js và Express Framework. Xây dựng các API RESTful chuẩn mực, kết nối cơ sở dữ liệu PostgreSQL và tích hợp cơ chế xác thực an toàn.",
+                "[\"Hiểu rõ kiến trúc Client - Server và chu trình Request - Response\", \"Xây dựng hệ thống RESTful API hoàn chỉnh với Node.js và Express\", \"Tương tác cơ sở dữ liệu quan hệ PostgreSQL thông qua các truy vấn và ORM\", \"Triển khai cơ chế xác thực người dùng an toàn với JWT và Middleware bảo mật\"]");
+
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-JAVA-01' AND (objectives IS NULL OR objectives = '')",
+                "Nắm vững các nguyên lý lập trình hướng đối tượng cốt lõi, cú pháp Java hiện đại và các tính năng mới từ Java 17 đến Java 21.",
+                "[\"Làm chủ 4 tính chất OOP trong Java\", \"Sử dụng thành thạo Java Collections Framework\", \"Xử lý ngoại lệ, I/O Stream và Java Generics\", \"Lập trình hàm với Lambda Expressions và Stream API\"]");
+
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-JAVA-02' AND (objectives IS NULL OR objectives = '')",
+                "Xây dựng ứng dụng doanh nghiệp chuẩn mực với Spring Boot 3, Spring Data JPA, Hibernate và cơ chế Dependency Injection.",
+                "[\"Hiểu sâu vòng đời Bean và Spring IoC Container\", \"Thiết kế mô hình dữ liệu quan hệ với JPA và Hibernate\", \"Xây dựng dịch vụ RESTful API hoàn chỉnh\", \"Xử lý Transaction và tối ưu truy vấn Database\"]");
+
+        jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-JAVA-03' AND (objectives IS NULL OR objectives = '')",
+                "Triển khai giải pháp phân quyền nâng cao RBAC và bảo mật hệ thống microservice với Spring Security 6 và JWT.",
+                "[\"Cấu hình Spring Security Filter Chain chuẩn xác\", \"Tích hợp xác thực Stateless với JSON Web Token (JWT)\", \"Phân quyền phương thức và endpoint động với @PreAuthorize\", \"Triển khai Single Sign-On (SSO) OAuth2 Google\"]");
     }
 
     private boolean isTablePresent(String tableName) {
