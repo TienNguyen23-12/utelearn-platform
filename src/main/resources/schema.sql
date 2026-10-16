@@ -113,6 +113,7 @@ CREATE TABLE courses (
     thumbnail_url TEXT,
     level VARCHAR(30) DEFAULT 'ALL_LEVELS',       -- 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'
     status VARCHAR(30) DEFAULT 'DRAFT',           -- 'DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED'
+    price NUMERIC(12, 2) DEFAULT NULL,
     category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
     created_by BIGINT NOT NULL REFERENCES users(id),
     objectives JSONB DEFAULT '[]'::jsonb,
@@ -123,7 +124,8 @@ CREATE TABLE courses (
 
 CREATE TABLE sections (
     id BIGSERIAL PRIMARY KEY,
-    course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    course_id BIGINT REFERENCES courses(id) ON DELETE CASCADE,
+    cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     order_index INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -151,23 +153,28 @@ CREATE INDEX idx_lessons_section ON lessons(section_id, order_index);
 
 CREATE TABLE cohorts (
     id BIGSERIAL PRIMARY KEY,
-    course_id BIGINT NOT NULL REFERENCES courses(id),
+    course_id BIGINT REFERENCES courses(id) ON DELETE SET NULL,
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     code VARCHAR(50) UNIQUE NOT NULL,             -- VD: 'K23-JAVA-01'
     name VARCHAR(255) NOT NULL,                  -- VD: 'Lớp Spring Boot K23 - Đợt 1'
     
-    enrollment_start TIMESTAMPTZ NOT NULL,        -- Open enrollment
-    enrollment_end TIMESTAMPTZ NOT NULL,          -- Close enrollment
-    study_start TIMESTAMPTZ NOT NULL,             -- Start study
-    study_end TIMESTAMPTZ NOT NULL,               -- End study
+    enrollment_start TIMESTAMPTZ,
+    enrollment_end TIMESTAMPTZ,
+    study_start TIMESTAMPTZ,
+    study_end TIMESTAMPTZ,
     
     max_capacity INT DEFAULT 50,
     current_enrolled INT DEFAULT 0,
     price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
     status VARCHAR(30) DEFAULT 'UPCOMING',
+    visibility VARCHAR(30) DEFAULT 'PUBLIC',
+    thumbnail_url TEXT,
+    description TEXT,
+    objectives TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT chk_enrollment_period CHECK (enrollment_start < enrollment_end),
-    CONSTRAINT chk_study_period CHECK (study_start < study_end)
+    CONSTRAINT chk_enrollment_period CHECK (enrollment_start IS NULL OR enrollment_end IS NULL OR enrollment_start < enrollment_end),
+    CONSTRAINT chk_study_period CHECK (study_start IS NULL OR study_end IS NULL OR study_start < study_end)
 );
 
 CREATE TABLE cohort_members (
@@ -179,6 +186,8 @@ CREATE TABLE cohort_members (
     final_grade NUMERIC(5, 2),
     is_passed BOOLEAN DEFAULT FALSE,
     certificate_url TEXT,
+    last_lesson_id BIGINT REFERENCES lessons(id) ON DELETE SET NULL,
+    last_accessed_at TIMESTAMPTZ,
     CONSTRAINT uq_cohort_user UNIQUE (cohort_id, user_id)
 );
 
@@ -200,8 +209,14 @@ CREATE TABLE cohort_schedules (
 );
 
 CREATE INDEX idx_cohorts_course ON cohorts(course_id);
+CREATE INDEX idx_cohorts_creator ON cohorts(created_by);
+CREATE INDEX idx_cohorts_visibility ON cohorts(visibility);
 CREATE INDEX idx_cohort_members_user ON cohort_members(user_id);
 CREATE INDEX idx_cohort_members_cohort ON cohort_members(cohort_id);
+CREATE INDEX idx_cohort_members_last_lesson ON cohort_members(last_lesson_id);
+
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_sections_cohort ON sections(cohort_id);
 
 -- 5. MULTIPLE CHOICE QUIZZES, CHECKBOXES, FILL-IN-THE-BLANK, ESSAYS
 

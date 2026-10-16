@@ -36,4 +36,5 @@ application-local.properties
 application-local.yml
 
 .agents/
+dev-logs/
 DEV_LOG.md

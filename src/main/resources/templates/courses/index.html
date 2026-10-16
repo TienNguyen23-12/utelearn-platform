@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khóa học - UTELearn</title>
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap 5 & Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
@@ -32,7 +30,7 @@
             padding: 0;
             overflow-x: hidden;
         }
-        /* Navbar */
+
         .site-navbar {
             background: #ffffff;
             border-bottom: 1px solid #e2e8f0;
@@ -96,46 +94,95 @@
             box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
         }
 
-        /* Sidebar & Filters */
         .filter-sidebar {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.04);
         }
-        .filter-title { font-weight: 700; font-size: 16px; margin-bottom: 15px; }
-        .filter-item { cursor: pointer; padding: 8px 12px; border-radius: 8px; font-size: 14px; transition: 0.2s; }
-        .filter-item:hover, .filter-item.active { background: #eff6ff; color: #2563eb; font-weight: 600; }
+        .filter-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #0f172a;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-item {
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            color: #475569;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+        .filter-item:hover {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        .filter-item.active {
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 700;
+        }
 
-        /* Course Cards */
         .course-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
             transition: all 0.3s ease;
             height: 100%;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.04);
         }
         .course-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1);
+            border-color: #cbd5e1;
         }
-        .course-img { height: 160px; object-fit: cover; width: 100%; }
-        .course-card-body { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
-        .course-title { font-weight: 700; font-size: 16px; color: #0f172a; margin-bottom: 10px; line-height: 1.4; }
-        .course-title:hover { color: var(--primary-color); }
-        .course-headline {
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
+        .course-image-wrapper {
+            height: 190px;
+            position: relative;
             overflow: hidden;
-            line-height: 1.5;
-            text-align: justify;
         }
-        .skeleton { background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .course-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .course-card:hover .course-image-wrapper img {
+            transform: scale(1.05);
+        }
+        .cohort-badge {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+
+        .skeleton {
+            background: #e2e8f0;
+            border-radius: 4px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
         .user-avatar-placeholder {
             background: var(--primary-gradient);
@@ -150,29 +197,30 @@
 </head>
 <body>
 
-<nav th:replace="~{fragments/site-navbar :: siteNavbar('courses')}"></nav>
+<nav th:replace="~{fragments/navbar :: siteNavbar('courses')}"></nav>
 
-<!-- Main Content -->
-<div class="container py-5">
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
-            <h2 class="fw-bold mb-1">Khám phá Khóa học</h2>
-            <p class="text-muted">Tìm kiếm và chọn lọc khóa học phù hợp với bạn.</p>
+<section class="container my-5 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+        <div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold" style="font-size: 11px;">
+                LỘ TRÌNH ĐÀO TẠO TOÀN DIỆN
+            </span>
+            <h2 class="fw-bold text-dark mb-0">Khám phá Khóa học</h2>
+            <p class="text-muted mt-2 mb-0">Tìm kiếm và lựa chọn lộ trình đào tạo chuẩn hóa, bài bản và chuyên sâu.</p>
         </div>
-        <div class="col-md-6 text-md-end">
-            <div class="input-group" style="max-width: 400px; margin-left: auto;">
-                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm khóa học...">
-                <button class="btn btn-primary px-4" onclick="loadCourses()">Tìm</button>
-            </div>
+        <div class="input-group input-group-sm mt-3 mt-md-0" style="max-width: 380px;">
+            <input type="text" id="searchInput" class="form-control border rounded-start-pill ps-3" placeholder="Tìm tên khóa học, kỹ năng...">
+            <button class="btn btn-primary rounded-end-pill px-3" onclick="loadCourses()"><i class="bi bi-search"></i></button>
         </div>
     </div>
 
     <div class="row">
-        <!-- Sidebar -->
         <div class="col-lg-3 mb-4">
             <div class="filter-sidebar">
-                <div class="filter-title">Danh mục</div>
+                <div class="filter-title">
+                    <i class="bi bi-grid-fill text-primary"></i>
+                    <span>Danh mục</span>
+                </div>
                 <div id="categoryList">
                     <div class="skeleton" style="height: 20px; width: 80%; margin-bottom: 10px;"></div>
                     <div class="skeleton" style="height: 20px; width: 60%; margin-bottom: 10px;"></div>
@@ -180,7 +228,10 @@
 
                 <hr class="my-4 text-muted">
 
-                <div class="filter-title">Cấp độ</div>
+                <div class="filter-title">
+                    <i class="bi bi-bar-chart-fill text-primary"></i>
+                    <span>Cấp độ</span>
+                </div>
                 <div id="levelList">
                     <div class="filter-item active" onclick="setFilter('level', 'ALL_LEVELS', this)">Tất cả cấp độ</div>
                     <div class="filter-item" onclick="setFilter('level', 'BEGINNER', this)">Người mới bắt đầu</div>
@@ -190,23 +241,37 @@
             </div>
         </div>
 
-        <!-- Course Grid -->
         <div class="col-lg-9">
             <div class="row g-4" id="courseGrid">
-                <!-- Skeletons -->
                 <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 6)}">
-                    <div class="course-card p-3">
-                        <div class="skeleton mb-3" style="height: 150px; border-radius: 12px;"></div>
-                        <div class="skeleton mb-2" style="height: 20px; width: 90%;"></div>
-                        <div class="skeleton mb-3" style="height: 15px; width: 60%;"></div>
+                    <div class="course-card">
+                        <div class="skeleton" style="height: 190px;"></div>
+                        <div class="p-4 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between mb-2">
+                                <div class="skeleton rounded-pill" style="height: 22px; width: 35%;"></div>
+                                <div class="skeleton rounded-pill" style="height: 22px; width: 25%;"></div>
+                            </div>
+                            <div class="skeleton mb-2" style="height: 14px; width: 50%;"></div>
+                            <div class="skeleton mb-2" style="height: 20px; width: 85%;"></div>
+                            <div class="skeleton mb-3" style="height: 14px; width: 40%;"></div>
+                            <div class="skeleton pt-3 border-top mt-auto" style="height: 18px; width: 100%;"></div>
+                            <div class="skeleton mt-2 mx-auto" style="height: 20px; width: 50%;"></div>
+                            <div class="mt-3 w-100">
+                                <div class="skeleton rounded-pill" style="height: 34px; width: 100%;"></div>
+                                <div class="skeleton rounded-pill mt-2" style="height: 34px; width: 100%;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script>
     let currentFilters = {
         q: '',
@@ -215,24 +280,30 @@
     };
 
     document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('q')) {
+            currentFilters.q = urlParams.get('q');
+            document.getElementById('searchInput').value = urlParams.get('q');
+        }
+        if (urlParams.has('category')) {
+            currentFilters.category = urlParams.get('category');
+        }
         loadCategories();
         loadCourses();
-    });
 
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            currentFilters.q = this.value;
-            loadCourses();
-        }
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                currentFilters.q = this.value;
+                loadCourses();
+            }
+        });
     });
 
     function setFilter(type, value, element) {
         currentFilters[type] = value;
-        // Update active class
         let parent = element.parentElement;
         parent.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
-        
         loadCourses();
     }
 
@@ -241,9 +312,11 @@
             const res = await fetch('/api/courses/categories');
             const categories = await res.json();
             const list = document.getElementById('categoryList');
-            let html = `<div class="filter-item active" onclick="setFilter('category', '', this)">Tất cả danh mục</div>`;
+            const isAllActive = !currentFilters.category ? 'active' : '';
+            let html = `<div class="filter-item ${isAllActive}" onclick="setFilter('category', '', this)">Tất cả danh mục</div>`;
             categories.forEach(cat => {
-                html += `<div class="filter-item" onclick="setFilter('category', '${cat.slug}', this)">${cat.name}</div>`;
+                const isActive = currentFilters.category === cat.slug ? 'active' : '';
+                html += `<div class="filter-item ${isActive}" onclick="setFilter('category', '${cat.slug}', this)">${cat.name}</div>`;
             });
             list.innerHTML = html;
         } catch (error) {
@@ -254,7 +327,7 @@
     async function loadCourses() {
         try {
             const grid = document.getElementById('courseGrid');
-            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải...</p></div>';
+            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách khóa học...</p></div>';
 
             const params = new URLSearchParams();
             if (currentFilters.q) params.append('q', currentFilters.q);
@@ -262,35 +335,87 @@
             if (currentFilters.level && currentFilters.level !== 'ALL_LEVELS') params.append('level', currentFilters.level);
 
             const res = await fetch('/api/courses?' + params.toString());
+            if (!res.ok) throw new Error("Failed to fetch");
             const data = await res.json();
 
-            if (data.content.length === 0) {
+            if (!data.content || data.content.length === 0) {
                 grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p>Không tìm thấy khóa học nào phù hợp.</p></div>';
                 return;
             }
 
             let html = '';
             data.content.forEach(course => {
-                const img = course.thumbnailUrl || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80';
+                const img = course.thumbnailUrl || '/images/courses/default-cover.png';
+                const priceFormatted = (course.price && course.price > 0)
+                    ? new Intl.NumberFormat('vi-VN').format(course.price) + ' VNĐ'
+                    : 'Miễn phí';
+
+                const originalFormatted = (course.originalPrice && course.originalPrice > course.price)
+                    ? new Intl.NumberFormat('vi-VN').format(course.originalPrice) + ' VNĐ'
+                    : null;
+
+                let levelBadgeText = 'Tất cả cấp độ';
+                if (course.level === 'BEGINNER') levelBadgeText = 'Người mới bắt đầu';
+                else if (course.level === 'INTERMEDIATE') levelBadgeText = 'Trung bình';
+                else if (course.level === 'ADVANCED') levelBadgeText = 'Nâng cao';
+
+                const typeBadge = (course.price && course.price > 0)
+                    ? '<span class="badge bg-primary-subtle text-primary ms-2 border border-primary-subtle">Trọn gói</span>'
+                    : '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Miễn phí</span>';
+
+                const modulesLabel = (course.modulesCount && course.modulesCount > 0)
+                    ? course.modulesCount + ' Module học phần'
+                    : 'Trọn bộ bài giảng';
+
                 html += `
                 <div class="col-md-6 col-lg-4">
                     <div class="course-card">
-                        <img src="${img}" class="course-img" alt="${course.title}">
-                        <div class="course-card-body">
-                            <span class="badge bg-primary-subtle text-primary border rounded-pill px-2 py-1 small mb-2 d-inline-block" style="width:fit-content">${course.categoryName || 'Khác'}</span>
-                            <a href="/courses/${course.slug}" class="text-decoration-none"><h3 class="course-title">${course.title}</h3></a>
-                            <div class="text-muted small mb-3 flex-grow-1 course-headline">${course.headline || ''}</div>
-                            <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small mt-auto">
-                                <span><i class="bi bi-person me-1"></i>${course.instructorName}</span>
-                                <span class="badge bg-light text-dark">${course.level}</span>
+                        <div class="course-image-wrapper">
+                            <img src="${img}" alt="${course.title}">
+                            <span class="cohort-badge"><i class="bi bi-mortarboard-fill me-1"></i>${levelBadgeText}</span>
+                        </div>
+                        <div class="p-4 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${course.categoryName || 'Khóa học'}</span>
+                                ${typeBadge}
+                            </div>
+                            <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-layers-fill me-1 text-primary"></i>Lộ trình: ${modulesLabel}</div>
+                            <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">
+                                <a href="/courses/${course.slug}" class="text-dark text-decoration-none">${course.title}</a>
+                            </h6>
+                            <div class="text-muted small mb-3">
+                                <i class="bi bi-person-fill text-secondary me-1"></i><span>${course.instructorName}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
+                                <span><i class="bi bi-people-fill me-1"></i>${course.enrolledCount || 0} học viên</span>
+                                <span><i class="bi bi-tag-fill me-1"></i>Mã: ${course.code || 'N/A'}</span>
+                            </div>
+                            <div class="mt-2 text-center">
+                                <small class="text-muted d-block" style="font-size: 11px;">Học phí trọn gói khóa học:</small>
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    ${originalFormatted ? `<span class="text-muted text-decoration-line-through small" style="font-size: 13px;">${originalFormatted}</span>` : ''}
+                                    <span class="fw-bold text-success fs-6">${priceFormatted}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 w-100">
+                                <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill w-100 fw-semibold btn-sm py-2">
+                                    <i class="bi bi-info-circle me-1"></i>Chi tiết
+                                </a>
+                                <form action="/courses/${course.slug}/enroll-all" method="post" class="w-100 mt-2">
+                                    <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2">
+                                        <i class="bi bi-cart-plus me-1"></i>Đăng ký
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
-                </div>`;
+                </div>
+                `;
             });
             grid.innerHTML = html;
         } catch (error) {
-            console.error("Error loading courses", error);
+            console.error(error);
+            document.getElementById('courseGrid').innerHTML = '<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><p>Có lỗi xảy ra khi tải danh sách khóa học.</p></div>';
         }
     }
 
@@ -336,7 +461,5 @@
         showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong Phase 2!', 'warning');
     }
 </script>
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 </html>

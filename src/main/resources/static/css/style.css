@@ -1,0 +1,89 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    --body-bg: #f8fafc;
+}
+
+.site-navbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.brand-logo-badge {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-gradient);
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.brand-title {
+    font-weight: 800;
+    font-size: 20px;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+.brand-title span {
+    color: #2563eb;
+}
+
+.nav-link {
+    font-weight: 600;
+    font-size: 14px;
+    color: #475569;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.nav-link.active {
+    color: #2563eb;
+}
+
+.user-avatar-placeholder {
+    background: var(--primary-gradient);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-gradient {
+    background: var(--primary-gradient);
+    color: #ffffff;
+    border: none;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.5);
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-gradient:hover {
+    opacity: 0.95;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px -4px rgba(37, 99, 235, 0.65);
+}

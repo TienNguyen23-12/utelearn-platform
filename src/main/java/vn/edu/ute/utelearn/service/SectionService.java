@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface SectionService {
     List<Section> getSectionsByCourseId(Long courseId);
+    List<Section> getSectionsByCohortId(Long cohortId);
     Section getSectionById(Long sectionId);
     Section createSection(Long courseId, SectionRequestDTO request, Long instructorId);
     Section updateSection(Long sectionId, SectionRequestDTO request, Long instructorId);

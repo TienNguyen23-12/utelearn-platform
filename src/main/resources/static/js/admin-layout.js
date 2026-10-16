@@ -13,7 +13,9 @@ function toggleSidebar() {
 }
 
 function showConfirmModal(event, element, message) {
-    event.preventDefault();
+    if (event) {
+        event.preventDefault();
+    }
 
     let confirmModalEl = document.getElementById('globalConfirmModal');
     if (!confirmModalEl) {
@@ -29,7 +31,7 @@ function showConfirmModal(event, element, message) {
                         <p class="text-muted mb-4" id="globalConfirmMessage"></p>
                         <div class="d-flex gap-2 justify-content-center">
                             <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                            <button type="button" class="btn btn-primary rounded-pill px-4" id="globalConfirmBtn">Đồng ý</button>
+                            <button type="button" class="btn btn-danger rounded-pill px-4" id="globalConfirmBtn">Đồng ý</button>
                         </div>
                     </div>
                 </div>
@@ -41,13 +43,21 @@ function showConfirmModal(event, element, message) {
 
     document.getElementById('globalConfirmMessage').innerText = message;
 
+    const isDelete = message && (message.toLowerCase().includes('xóa') || message.toLowerCase().includes('delete'));
     const confirmBtn = document.getElementById('globalConfirmBtn');
+    if (confirmBtn) {
+        confirmBtn.className = isDelete ? 'btn btn-danger rounded-pill px-4' : 'btn btn-primary rounded-pill px-4';
+        confirmBtn.innerText = isDelete ? 'Xóa' : 'Đồng ý';
+    }
+
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
     newConfirmBtn.addEventListener('click', function() {
         const modalInstance = bootstrap.Modal.getInstance(confirmModalEl);
-        modalInstance.hide();
+        if (modalInstance) {
+            modalInstance.hide();
+        }
 
         if (typeof element === 'function') {
             element();
@@ -58,7 +68,7 @@ function showConfirmModal(event, element, message) {
         }
     });
 
-    const modal = new bootstrap.Modal(confirmModalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
     modal.show();
 
     return false;

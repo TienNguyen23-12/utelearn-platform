@@ -173,9 +173,7 @@
 </head>
 <body>
 
-<nav th:replace="~{fragments/site-navbar :: siteNavbar('home')}"></nav>
-
-<!-- Alert Cảnh báo khi người dùng không phải Admin cố tình vào /dashboard (đã chuyển sang Toastify bên dưới) -->
+<nav th:replace="~{fragments/navbar :: siteNavbar('home')}"></nav>
 
 <!-- Hero Section -->
 <section class="hero-section">
@@ -192,7 +190,7 @@
                     Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến và rèn luyện tư duy thuật toán đỉnh cao trên hệ thống chấm tự động Online Judge.
                 </p>
                 <div class="d-flex flex-wrap align-items-center gap-3">
-                    <a href="#cohorts" class="btn btn-gradient">
+                    <a href="/cohorts" class="btn btn-gradient">
                         <i class="bi bi-rocket-takeoff-fill"></i>
                         <span>Khám phá các đợt học</span>
                     </a>
@@ -271,49 +269,59 @@
     </div>
 </section>
 
-<!-- Featured Cohort Courses Section -->
 <section id="cohorts" class="container my-5 py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
         <div>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold" style="font-size: 11px;">
-                CÁC ĐỢT TUYỂN SINH MỚI NHẤT
+                HỌC PHẦN & CHUYÊN ĐỀ NỔI BẬT
             </span>
-            <h2 class="fw-bold text-dark mb-0">Khóa học theo đợt nổi bật</h2>
+            <h2 class="fw-bold text-dark mb-0">Chuyên đề & Module học tập nổi bật</h2>
         </div>
         <div class="text-muted small">
-            Đào tạo tập trung • Giảng viên hướng dẫn • Dự án thực tế
+            Học lẻ từng kỹ năng • Học phí linh hoạt • Tích lũy lộ trình
         </div>
     </div>
 
     <div class="row g-4">
-        <!-- Loop through sample cohort courses -->
-        <div th:each="course : ${cohortCourses}" class="col-lg-3 col-md-6">
+        <div class="col-12" th:if="${latestCohorts == null || latestCohorts.empty}">
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1"></i>
+                <p>Chưa có module nào nổi bật lúc này.</p>
+            </div>
+        </div>
+        <div th:each="cohort : ${latestCohorts}" class="col-lg-3 col-md-6">
             <div class="course-card">
                 <div class="course-image-wrapper">
-                    <img th:src="${course.image}" th:alt="${course.title}">
-                    <span class="cohort-badge" th:text="${course.cohortName}">Đợt K24 - Kỳ Thu</span>
+                    <img th:src="${cohort.thumbnailUrl != null && !cohort.thumbnailUrl.isBlank() ? cohort.thumbnailUrl : (cohort.course != null && cohort.course.thumbnailUrl != null && !cohort.course.thumbnailUrl.isBlank() ? cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}" th:alt="${cohort.name}">
+                    <span class="cohort-badge text-truncate" style="max-width: 88%;" th:title="${cohort.course != null ? 'Thuộc khóa: ' + cohort.course.title : 'Module độc lập'}">
+                        <i th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i><span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa học</span>
+                    </span>
                 </div>
                 <div class="p-4 d-flex flex-column flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small" th:text="${course.category}">Web</span>
-                        <span class="text-warning small fw-bold">
-                            <i class="bi bi-star-fill"></i> <span th:text="${course.rating}">4.9</span>
-                        </span>
+                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small" th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên đề</span>
+                        <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học lẻ</span>
                     </div>
 
-                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${course.title}">Tiêu đề khóa học</h6>
+                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-puzzle me-1 text-primary"></i>Học phần / Chuyên đề:</div>
+                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.name}">Tên Module</h6>
 
                     <div class="text-muted small mb-3">
-                        <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${course.instructor}">Giảng viên</span>
+                        <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                        <span><i class="bi bi-clock me-1"></i><span th:text="${course.duration}">12 Tuần</span></span>
-                        <span><i class="bi bi-journal-text me-1"></i><span th:text="${course.lessons}">45 bài</span></span>
+                        <span><i class="bi bi-people-fill me-1"></i><span th:text="${cohort.currentEnrolled} + ' học viên'">0 học viên</span></span>
+                        <span><i class="bi bi-tag-fill me-1"></i>Mã: <span th:text="${cohort.code}"></span></span>
                     </div>
 
-                    <a th:href="@{/register}" class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
-                        <span>Xem chi tiết đợt</span>
+                    <div class="mt-2 text-center">
+                        <small class="text-muted d-block" style="font-size: 11px;">Học phí mua lẻ:</small>
+                        <span class="fw-bold text-success fs-6" th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
+                    </div>
+
+                    <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug : '#'}" class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
+                        <span>Khám phá module</span>
                     </a>
                 </div>
             </div>

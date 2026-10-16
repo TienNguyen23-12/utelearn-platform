@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "cohort_members", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"cohort_id", "user_id"})
+        @UniqueConstraint(columnNames = { "cohort_id", "user_id" })
 })
 @Getter
 @Setter
@@ -46,4 +46,11 @@ public class CohortMember {
 
     @Column(name = "certificate_url", columnDefinition = "TEXT")
     private String certificateUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_lesson_id")
+    private Lesson lastLesson;
+
+    @Column(name = "last_accessed_at")
+    private Instant lastAccessedAt;
 }

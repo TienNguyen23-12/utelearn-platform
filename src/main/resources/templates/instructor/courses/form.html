@@ -56,7 +56,7 @@
                         <textarea class="form-control" id="objectives" name="objectives" rows="5" placeholder="Hiểu biết về...&#10;Làm được..." th:text="${courseObjectives != null ? courseObjectives : ''}"></textarea>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Danh mục <span class="text-danger">*</span></label>
                         <select class="form-select" id="categoryId" name="categoryId" required>
                             <option value="">-- Chọn danh mục --</option>
@@ -64,7 +64,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Cấp độ <span class="text-danger">*</span></label>
                         <select class="form-select" id="level" name="level" required>
                             <option value="ALL_LEVELS" th:selected="${course == null || course.level == 'ALL_LEVELS'}">Mọi cấp độ</option>
@@ -74,9 +74,22 @@
                         </select>
                     </div>
 
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Giá trọn gói ưu đãi (VNĐ)</label>
+                        <input type="number" class="form-control" id="price" name="price" min="0" step="1000" th:value="${course != null ? course.price : ''}" placeholder="VD: 699000">
+                        <small class="text-muted" style="font-size: 11px;">Giá mua combo toàn bộ lộ trình (rẻ hơn tổng module lẻ)</small>
+                    </div>
+
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">URL Ảnh bìa (Thumbnail)</label>
-                        <input type="url" class="form-control" id="thumbnailUrl" name="thumbnailUrl" th:value="${course != null ? course.thumbnailUrl : ''}" placeholder="https://...">
+                        <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl" th:value="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.equals('/images/courses/default-cover.png') ? course.thumbnailUrl : ''}" placeholder="https://... (Để trống để sử dụng ảnh bìa mặc định)">
+                        <div class="mt-2 d-flex align-items-center gap-3">
+                            <span class="text-muted small">Xem trước ảnh bìa:</span>
+                            <div style="width: 80px; height: 50px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;" class="flex-shrink-0 bg-light">
+                                <img id="coverPreview" th:src="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="w-100 h-100 object-fit-cover" alt="Preview">
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">Nếu không điền link ảnh, hệ thống sẽ tự động sử dụng ảnh bìa mặc định của UTELearn.</small>
+                        </div>
                     </div>
 
                     <div class="col-md-12">
@@ -101,5 +114,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-layout.js}"></script>
+<script>
+    const thumbnailInput = document.getElementById('thumbnailUrl');
+    const coverPreview = document.getElementById('coverPreview');
+    const defaultCover = '/images/courses/default-cover.png';
+    if (thumbnailInput && coverPreview) {
+        thumbnailInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            coverPreview.src = val ? val : defaultCover;
+        });
+        coverPreview.addEventListener('error', function() {
+            this.src = defaultCover;
+        });
+    }
+</script>
 </body>
 </html>

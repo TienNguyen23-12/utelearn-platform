@@ -28,4 +28,6 @@ public class CourseRequestDTO {
     private Long categoryId;
 
     private String objectives;
+
+    private java.math.BigDecimal price;
 }
