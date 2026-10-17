@@ -91,6 +91,14 @@
                         <textarea class="form-control" name="objectives" rows="3" placeholder="VD:&#10;Hiểu sâu cấu trúc DOM và các thẻ ngữ nghĩa HTML5&#10;Làm chủ CSS3: Typography, Flexbox và Grid Layout&#10;Tự tay xây dựng hoàn chỉnh giao diện Landing Page" th:text="${moduleObjectives != null ? moduleObjectives : ''}"></textarea>
                         <small class="text-muted" style="font-size: 11px;">Nhập các gạch đầu dòng mục tiêu để hiển thị trong lộ trình khóa học và trang chi tiết của module.</small>
                     </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Tiêu đề thông báo trong Module</label>
+                        <input type="text" class="form-control" name="announcementTitle" th:value="${module != null ? module.announcementTitle : ''}" placeholder="Mặc định: Thông báo chung &amp; Hướng dẫn học tập">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Nội dung thông báo &amp; Hướng dẫn học tập</label>
+                        <textarea class="form-control" name="announcementContent" rows="2" placeholder="Mặc định: Khóa học được thiết kế theo chuẩn sư phạm tích cực..." th:text="${module != null ? module.announcementContent : ''}"></textarea>
+                    </div>
                 </div>
 
                 <div class="border-top pt-4">

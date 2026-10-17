@@ -496,4 +496,13 @@ ON CONFLICT (cohort_id, lesson_id) DO NOTHING;
 UPDATE cohorts SET created_by = 2 WHERE created_by IS NULL OR created_by != 2;
 UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL;
 
+UPDATE sections s SET cohort_id = sub.cohort_id
+FROM (
+    SELECT DISTINCT ON (l.section_id) l.section_id, cs.cohort_id
+    FROM cohort_schedules cs
+    JOIN lessons l ON cs.lesson_id = l.id
+    WHERE cs.cohort_id IS NOT NULL
+) sub
+WHERE s.id = sub.section_id AND s.cohort_id IS NULL;
+
 COMMIT;

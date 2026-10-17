@@ -32,7 +32,7 @@ public interface CohortScheduleRepository extends JpaRepository<CohortSchedule, 
     @Query("SELECT cs.lesson.id FROM CohortSchedule cs WHERE cs.cohort.id = :cohortId")
     List<Long> findLessonIdsByCohortId(@Param("cohortId") Long cohortId);
 
-    @Query("SELECT cs FROM CohortSchedule cs JOIN FETCH cs.lesson l JOIN FETCH cs.cohort c LEFT JOIN FETCH l.section s WHERE cs.cohort.id = :cohortId ORDER BY s.orderIndex ASC, l.orderIndex ASC")
+    @Query("SELECT cs FROM CohortSchedule cs JOIN FETCH cs.lesson l JOIN FETCH cs.cohort c LEFT JOIN FETCH l.section s WHERE cs.cohort.id = :cohortId ORDER BY s.orderIndex ASC, s.id ASC, l.orderIndex ASC, l.id ASC")
     List<CohortSchedule> findByCohortIdWithDetails(@Param("cohortId") Long cohortId);
 
     @Query("SELECT cs FROM CohortSchedule cs JOIN FETCH cs.cohort WHERE cs.lesson.section.id = :sectionId")

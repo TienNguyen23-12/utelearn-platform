@@ -26,4 +26,6 @@ public interface CloudinaryService {
      * Tạo signature để frontend upload trực tiếp
      */
     Map<String, Object> generateSignature(String folder, String resourceType, String originalFilename);
+
+    Integer getVideoDuration(String videoUrl);
 }

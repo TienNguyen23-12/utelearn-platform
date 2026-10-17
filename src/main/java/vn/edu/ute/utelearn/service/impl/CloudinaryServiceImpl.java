@@ -95,4 +95,36 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         
         return response;
     }
+
+    @Override
+    public Integer getVideoDuration(String videoUrl) {
+        if (videoUrl == null || videoUrl.isBlank()) {
+            return null;
+        }
+        try {
+            int uploadIndex = videoUrl.indexOf("/upload/");
+            if (uploadIndex == -1) {
+                return null;
+            }
+            String path = videoUrl.substring(uploadIndex + 8);
+            if (path.matches("^v\\d+/.*")) {
+                path = path.replaceFirst("^v\\d+/", "");
+            }
+            int dotIndex = path.lastIndexOf('.');
+            if (dotIndex != -1) {
+                path = path.substring(0, dotIndex);
+            }
+            String publicId = java.net.URLDecoder.decode(path, java.nio.charset.StandardCharsets.UTF_8);
+            Map<?, ?> result = cloudinary.api().resource(publicId, ObjectUtils.asMap("resource_type", "video", "image_metadata", true));
+            if (result != null && result.get("duration") != null) {
+                double duration = Double.parseDouble(result.get("duration").toString());
+                int rounded = (int) Math.round(duration);
+                log.info("[CloudinaryService] Đã nhận diện thời lượng video: {}s cho file: {}", rounded, publicId);
+                return rounded;
+            }
+        } catch (Exception e) {
+            log.warn("[CloudinaryService] Không thể lấy thời lượng video từ Cloudinary: {}", e.getMessage());
+        }
+        return null;
+    }
 }

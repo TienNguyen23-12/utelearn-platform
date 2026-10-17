@@ -52,17 +52,27 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 250px;">
                         <li class="px-3 py-2 border-bottom">
-                            <div class="fw-bold text-dark small" th:text="${currentUser.fullName}">Tên học viên</div>
+                            <div class="fw-bold text-dark small" th:text="${currentUser.fullName}">Người dùng</div>
                             <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">user@utelearn.edu.vn</div>
                             <div class="mt-1">
-                                <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1" style="font-size: 10px;" th:text="${r.name}">Học viên</span>
+                                <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 me-1" style="font-size: 10px;" th:text="${r.name}">Học viên</span>
                             </div>
                         </li>
                         <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                        <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
                         <li th:if="${@rbac.hasRole('ADMIN')}">
                             <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/dashboard">
                                 <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
+                            </a>
+                        </li>
+                        <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                            <a class="dropdown-item py-2 small rounded-3 text-success fw-semibold" href="/instructor/courses">
+                                <i class="bi bi-easel-fill me-2"></i>Quản lý Đào tạo
+                            </a>
+                        </li>
+                        <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
+                            <a class="dropdown-item py-2 small rounded-3 text-danger fw-semibold" href="/moderator/queue">
+                                <i class="bi bi-check2-circle me-2"></i>Hàng đợi Kiểm duyệt
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>

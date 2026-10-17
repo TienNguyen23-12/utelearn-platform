@@ -12,94 +12,67 @@
 | **2. Quản trị Hệ thống (Admin)** | `UC-08`, `UC-09`, `UC-10`, `UC-12`: Quản lý User, Phân quyền động RBAC (Role/Permission), Dashboard thống kê doanh thu/học viên theo ngày-tuần-tháng, Giám sát điểm danh Moderator. | `UserController`, `RoleController`, `DashboardController`, `AdminAttendanceController`, `AdminModerationController` | **~85% Hoàn thành** *(Thiếu UI CRUD Category)* |
 | **3. Kho Tài nguyên số (Digital Assets)** | `UC-30`, `UC-31`, `UC-32`: Direct Signed Upload lên Cloudinary (chữ ký SHA-1), tự khóa đuôi file theo loại, chuẩn hóa phần mở rộng, phân quyền `PRIVATE`/`DEPARTMENT_SHARED`/`COHORT_PUBLIC`, tải file qua Backend Security Proxy. | `InstructorAssetController`, `AssetDownloadController`, `CloudinaryServiceImpl`, `InstructorAssetServiceImpl` | **100% Hoàn thành** |
 | **4. Kiểm duyệt Nội dung (Moderation)** | `UC-18`, `UC-19`, `UC-20`: Điểm danh Check-in/Check-out ca trực Moderator, Hàng đợi duyệt khóa học, Phê duyệt (`PUBLISHED`), Từ chối kèm nhận xét (`REJECTED`), Chuyển cấp lên Admin (`ESCALATED`). | `ModeratorController`, `ModeratorApiController`, `ModerationServiceImpl`, `AttendanceServiceImpl` | **~85% Hoàn thành** *(Cần bổ sung ràng buộc SLA)* |
-| **5. Khóa học & Học tập cơ bản** | `UC-13`, `UC-14`, `UC-15`, `UC-21`, `UC-23`: Tạo/Sửa/Xóa Course, Soạn Section & Lesson (nhúng từ Kho tài nguyên), Duyệt/Tìm kiếm Course, Học Video (Plyr: YouTube/Vimeo/MP4) & Đọc tài liệu (PDF/Office Viewer). | `InstructorCourseController`, `InstructorCurriculumApiController`, `CourseController`, `CourseApiController`, `learn.html`, `detail.html` | **~65% Hoàn thành** *(Đang chạy theo Course đơn, chưa ghép Cohort & Giá)* |
+| **5. Quản lý Khóa học & Đợt học (Course - Cohort)** | `UC-13`, `UC-14`, `UC-15`, `UC-16`, `UC-17`, `UC-33`: Tạo/Sửa/Xóa Course; Cấu hình Giá Full Course trọn bộ; CRUD Lớp học / Module Cohort (mã lớp, tên lớp, giá bán lẻ, sĩ số, lịch học); Quản lý Giáo trình Module độc lập. | `InstructorCourseController`, `InstructorCohortController`, `CohortApiController`, `CohortService`, `CohortRepository`, `templates/instructor/cohorts/` | **100% Hoàn thành** |
+| **6. Quản lý Lộ trình & Lịch học Drip Content** | `UC-36`: Cấu hình Lộ trình Module theo Cohort; Thiết lập thời điểm mở khóa từng bài học (`unlock_at`), hạn nộp bài (`deadline_at`), chế độ công bố điểm (`showScoreType`); Nút mở nhanh tất cả bài học. | `CohortSchedule`, `CohortScheduleRepository`, `InstructorCohortController` (`/schedule`), `templates/instructor/cohorts/schedule.html` | **100% Hoàn thành** |
+| **7. Thương mại Điện tử & Thanh toán Khóa học** | `UC-21`, `UC-22`, `UC-34`: Trang chi tiết khóa học/module; So sánh giá Full Course trọn bộ vs Mua lẻ từng Module; Trang Checkout tính toán tự động khấu trừ nâng cấp (`discountAmount`); Xử lý ghi danh học tập. | `CourseController`, `CheckoutController`, `templates/courses/detail.html`, `templates/courses/module-detail.html`, `templates/checkout/index.html` | **~80% Hoàn thành** *(Đã có luồng Checkout & ghi danh; đang chờ tích hợp VNPay IPN)* |
+| **8. Trải nghiệm Học tập (Learning Experience)** | `UC-23`, `UC-25`: Giao diện học tập chuẩn Moodle Layout responsive; Học Video (Plyr Player), đọc tài liệu (PDF/Office viewer); Đánh dấu hoàn thành bài học realtime; Theo dõi `% Tiến độ`; Trang Khóa học của tôi phân loại 2 tab (Trọn gói & Module lẻ). | `templates/courses/module-learn.html`, `templates/courses/my-courses.html`, `UserEnrollmentSummaryDTO` | **100% Hoàn thành** |
+| **9. Điều hướng An toàn Online Judge (UI Guard)** | `UC-26` -> `UC-29`: Trang giới thiệu & Roadmap Phase 2; Gắn badge `Coming Soon` trên Sidebar & Navbar; Chống lỗi 404 Not Found khi bảo vệ đồ án. | `OjController`, `templates/oj/problems.html`, `fragments/sidebar.html`, `system-menus.json` | **100% Hoàn thành** |
 
 ---
 
-## PHẦN 2: DANH SÁCH CÁC TÍNH NĂNG CHƯA LÀM (CHIA THEO MỨC ĐỘ KHẨN CẤP)
+## PHẦN 2: BẢNG TIẾN ĐỘ THEO DÕI CÔNG VIỆC (TO-DO TRACKER)
+
+| Mã Task | Mức độ khẩn cấp | Phân hệ (Module) | Use Case | Tên tính năng / Công việc | Trạng thái (Status) | Ghi chú nghiệm thu |
+| :---: | :---: | :--- | :---: | :--- | :---: | :--- |
+| **TASK-01** | 🔴 P0 - Khẩn cấp | Module 4: Quản lý Cohort | `UC-16, UC-33` | Quản lý Lớp học / Module thành phần (Cohort CRUD) | **✅ DONE** | Đã hoàn thành 100% (`CohortController`, `CohortService`, UI form/list, sửa lỗi 404 Sidebar). |
+| **TASK-02** | 🔴 P0 - Khẩn cấp | Module 3 & 5: Pricing | `UC-17, UC-21, UC-22, UC-34` | Cấu hình Giá Full Course & Chính sách mua 3 lựa chọn | **✅ DONE** | Đã hoàn thành 100% (Giá Full Course, trang `/checkout`, tính chiết khấu khi nâng cấp). |
+| **TASK-03** | 🔴 P0 - Khẩn cấp | Module 8: OJ Guard | `UC-26 -> UC-29` | Xử lý điều hướng mục Online Judge trên Sidebar | **✅ DONE** | Đã hoàn thành 100% (Badge Coming Soon, trang Roadmap Phase 2 chống 404). |
+| **TASK-08** | 🟡 P2 - Trung bình | Module 4: Lịch học | `UC-36` | Quản lý Lịch mở bài học (Drip Content) theo Cohort | **✅ DONE** | Đã hoàn thành 100% (`CohortScheduleRepository`, UI `schedule.html`, mở bài, hạn nộp, xem điểm). |
+| **TASK-07** | 🟡 P2 - Trung bình | Module 5: Tiến độ | `UC-23, UC-25` | Đánh dấu hoàn thành bài học (% Tiến độ) & My Courses | **✅ DONE** | Đã hoàn thành 100% (Progress-bar, nút đánh dấu hoàn thành, phân 2 tab tại `my-courses.html`). |
+| **TASK-04** | 🟠 P1 - Quan trọng cao | Module 5: Đơn hàng | `UC-22, UC-34` | Hệ thống Đơn hàng (Order) & Cổng thanh toán VNPay | **⏳ IN_PROGRESS** | Đã có Checkout xử lý mua lẻ và trọn gói; đang chờ đấu nối cổng thanh toán VNPay Sandbox. |
+| **TASK-05** | 🟠 P1 - Quan trọng cao | Module 4 & 5: Quiz | `UC-24, UC-37` | Soạn đề Quiz (Giảng viên) & Làm bài trắc nghiệm (Học viên) | **❌ TODO** | Entity JSONB đã có sẵn; cần làm Controller, Service và UI làm bài trắc nghiệm tính giờ. |
+| **TASK-06** | 🟡 P2 - Trung bình | Module 4: Realtime Chat | `UC-35` | Phòng Chat thảo luận lớp học realtime qua WebSocket | **❌ TODO** | Đã có entity `CohortMessage` và thư viện; cần cấu hình `WebSocketConfig` và UI khung chat. |
+| **TASK-09** | 🟡 P2 - Trung bình | Module 2 & 6: Admin/SLA | `UC-11, UC-18, UC-19` | Quản lý Danh mục cho Admin & Ràng buộc SLA Kiểm duyệt | **❌ TODO** | Cần làm trang `/admin/categories` và bổ sung chặn tự duyệt bài trong `ModerationServiceImpl`. |
+| **TASK-10** | 🟢 P3 - Định hướng | Module 8: OJ Sandbox | `UC-26 -> UC-29` | Hệ thống Chấm bài Lập trình tự động (Judge0 Sandbox) | **🎯 FUTURE_SCOPE** | Giai đoạn 2 (Future Work); giữ nguyên Schema & Tài liệu Use Case để báo cáo. |
 
 ---
 
-### 🔴 MỨC ĐỘ 1: KHẨN CẤP – BẮT BUỘC PHẢI LÀM NGAY (CRITICAL / P0)
-*Lý do khẩn cấp: Khắc phục các đường dẫn đang bị lỗi 404 trên Sidebar và hoàn thiện xương sống của kiến trúc nghiệp vụ **Course - Cohort**.*
-
-#### 1.1. Quản lý Lớp học / Module thành phần – Cohort CRUD (`UC-16`, `UC-33`)
-- **Hiện trạng trong code:**
-  - Trong `fragments/sidebar.html` (dòng 117) đã có menu **"Đợt học (Cohorts)"** trỏ tới `/instructor/cohorts`, nhưng **chưa có `CohortController` và `CohortService`** -> Bấm vào sẽ bị lỗi `404 Not Found`.
-  - Đã có sẵn Entity `Cohort.java`, `CohortMember.java` và `CohortMemberRepository.java`, nhưng chưa có `CohortRepository.java`.
-- **Cần code những gì:**
-  1. Tạo `CohortRepository`, `CohortService`, `InstructorCohortController` (`/instructor/cohorts` và tab quản lý Cohort trong `/instructor/courses/{id}`).
-  2. Cho phép Giảng viên tạo/sửa/xóa Cohort thuộc một Course: nhập Mã lớp (`code`), Tên lớp (`name`), Giá bán lẻ (`price`), Sĩ số tối đa (`maxCapacity`), Ngày mở/đóng đăng ký (`enrollmentStart`, `enrollmentEnd`), Ngày bắt đầu/kết thúc học (`studyStart`, `studyEnd`).
-  3. Tự động gán Giảng viên tạo lớp vào `cohort_members` với vai trò `TEACHER` và hỗ trợ gán Trợ giảng (`TEACHING_ASSISTANT`).
-
-#### 1.2. Cấu hình Giá trọn gói Full Course & Chính sách Mua 3 Lựa chọn (`UC-17`, `UC-22`, `UC-34`)
-- **Hiện trạng trong code:**
-  - Bảng `courses` (`Course.java` & `CourseRequestDTO.java`) hiện **chưa có trường `price` (Giá trọn gói Full Course)**.
-  - Trang chi tiết khóa học `templates/courses/detail.html` (dòng 377) đang hiển thị cứng chữ `"Miễn phí"` và nút `"Tham gia ngay"` chỉ lưu thẳng vào bảng `Enrollment`.
-- **Cần code những gì:**
-  1. Bổ sung trường `price` (Giá Full Course trọn bộ ưu đãi) vào `Course.java`, `CourseRequestDTO.java` và form tạo/sửa khóa học (`instructor/courses/form.html`).
-  2. Trên trang `/courses/{slug}` (`detail.html`), hiển thị danh sách các Cohort thành phần kèm giá lẻ từng Cohort và bảng so sánh với Giá Full Course ưu đãi.
-  3. Cho phép Học viên chọn 1 trong 3 hình thức mua chuẩn thương mại điện tử (`UC-22`, `UC-34`):
-     - **Mua Full Course:** Sở hữu toàn bộ các Cohort trong Course với giá ưu đãi trọn gói.
-     - **Mua lẻ 1 hoặc nhiều Cohort:** Tick chọn các Cohort muốn mua -> Tính tổng tiền = `Sum(Cohort.price)`.
-     - **Nâng cấp (Upgrade) lên Full Course:** Nếu học viên đã mua lẻ một số Cohort trước đó, tự động tính số tiền bù chênh lệch = `Giá Full Course - Tổng tiền đã thanh toán cho các Cohort trước`.
-
-#### 1.3. Xử lý điều hướng mục Online Judge trên Sidebar để tránh lỗi 404 (`UC-26` -> `UC-29`) [ĐÃ HOÀN THÀNH - DONE]
-- **Hiện trạng:** Đã tạo `OjController.java`, giao diện `templates/oj/problems.html` (Roadmap Phase 2), bổ sung route vào `SecurityConfig`, và gắn badge `Coming Soon` tại `fragments/sidebar.html` & `system-menus.json`. An toàn 100% khi demo/bảo vệ đồ án.
+## PHẦN 3: CHI TIẾT CÁC CÔNG VIỆC CÒN LẠI CẦN LÀM TIẾP
 
 ---
 
-### 🟠 MỨC ĐỘ 2: QUAN TRỌNG CAO – NGHIỆP VỤ TRỌNG TÂM CHUẨN DOANH NGHIỆP (HIGH / P1)
-*Lý do quan trọng: Hoàn thiện luồng Thanh toán Đơn hàng (`Order`) và Hệ thống Kiểm tra Đánh giá (`Quiz`) để khép kín vòng đời học tập và doanh thu.*
+### 🟠 MỨC ĐỘ 1: QUAN TRỌNG CAO – NGHIỆP VỤ TRỌNG TÂM (HIGH / P1)
 
-#### 2.1. Hệ thống Đơn hàng & Cổng Thanh toán Điện tử (`UC-22`, `UC-34`)
-- **Hiện trạng trong code:**
-  - Đã có Entity `Order.java` (lưu `orderCode`, `totalAmount`, `status`, `paymentMethod`, `transactionId`, `items` JSONB) và `OrderRepository.java` (đã viết sẵn hàm tính doanh thu cho Dashboard), nhưng **chưa có `OrderController` và `OrderService`**.
-- **Cần code những gì:**
-  1. Xây dựng `OrderService` & `OrderController` (`/checkout`, `/orders`, `/api/payment/vnpay-return` hoặc Webhook IPN):
-     - Khởi tạo đơn hàng `Order` (`status = PENDING`, lưu danh sách Course/Cohort mua mới hoặc nâng cấp vào cột `items` JSONB).
-     - Tích hợp luồng thanh toán chuẩn doanh nghiệp (VNPay Sandbox / VietQR IPN Webhook).
-     - Khi giao dịch thành công (`status = SUCCESS`), tự động ghi nhận `transactionId`, kích hoạt bản ghi `Enrollment` và `CohortMember` (cộng `currentEnrolled`), đồng thời cập nhật ngay doanh thu trên Admin Dashboard (`/dashboard`).
+#### 1. Hoàn thiện Cổng thanh toán Điện tử VNPay & Lưu trữ Đơn hàng (`TASK-04` - `UC-22`, `UC-34`)
+- **Hiện trạng:** `CheckoutController` đã xử lý luồng thanh toán mô phỏng và ghi danh học viên vào `cohort_members`.
+- **Cần làm tiếp:**
+  1. Tạo `OrderService` ghi nhận lịch sử giao dịch vào bảng `orders` (`orderCode`, `totalAmount`, `status`, `paymentMethod`, `items` JSONB).
+  2. Tích hợp thư viện thanh toán VNPay Sandbox (Tạo URL thanh toán, xử lý Return URL và Webhook IPN).
+  3. Cập nhật trạng thái `SUCCESS` và tự động cộng doanh thu vào thống kê Dashboard.
 
-#### 2.2. Hệ thống Bài kiểm tra Trắc nghiệm – Quiz & Question (`UC-24`, `UC-37`)
-- **Hiện trạng trong code:**
-  - Đã có 3 Entity: `Quiz.java`, `Question.java` (lưu `options` bằng JSONB), `QuizSubmission.java` (lưu `answers` bằng JSONB).
-  - Trong `curriculum.html` đã cho phép tạo bài học loại `QUIZ`, nhưng **chưa có giao diện soạn câu hỏi cho Quiz** và trong `learn.html` **chưa có giao diện làm bài thi trắc nghiệm**.
-- **Cần code những gì:**
-  1. **Cho Giảng viên (`UC-37`):** Giao diện cấu hình `Quiz` (thời gian làm bài `durationMinutes`, điểm đạt `passingScore`, số lần làm tối đa `maxAttempts`, trộn đề `shuffleQuestions`) và CRUD danh sách câu hỏi `Question` (`SINGLE_CHOICE`, `MULTI_SELECT`, `FILL_BLANK`).
-  2. **Cho Học viên (`UC-24`):** Giao diện làm bài thi trong `learn.html` có đồng hồ đếm ngược, tự động nộp bài khi hết giờ, chấm điểm tự động trên Server và lưu kết quả vào `quiz_submissions`.
+#### 2. Hệ thống Bài kiểm tra Trắc nghiệm – Quiz & Question (`TASK-05` - `UC-24`, `UC-37`)
+- **Hiện trạng:** Đã có 3 Entity `Quiz.java`, `Question.java` (lưu options bằng JSONB), `QuizSubmission.java`.
+- **Cần làm tiếp:**
+  1. **Cho Giảng viên (`UC-37`):** Giao diện cấu hình Quiz (thời gian làm bài `durationMinutes`, điểm đạt `passingScore`, số lần làm tối đa `maxAttempts`, trộn đề) và CRUD câu hỏi `Question` (`SINGLE_CHOICE`, `MULTI_SELECT`, `FILL_BLANK`).
+  2. **Cho Học viên (`UC-24`):** Giao diện làm bài thi trong `module-learn.html` có đồng hồ đếm ngược, tự động nộp bài khi hết giờ, chấm điểm tự động trên Server và lưu kết quả vào `quiz_submissions`.
 
 ---
 
-### 🟡 MỨC ĐỘ 3: TRUNG BÌNH – HOÀN THIỆN CHI TIẾT USE CASE (MEDIUM / P2)
-*Lý do: Hoàn thiện đầy đủ các tính năng tương tác thời gian thực, lịch mở bài học và quản trị danh mục.*
+### 🟡 MỨC ĐỘ 2: TRUNG BÌNH – HOÀN THIỆN TÍNH NĂNG NÂNG CAO (MEDIUM / P2)
 
-#### 3.1. Phòng Chat Thảo luận Lớp học Thời gian thực qua WebSocket (`UC-35`)
-- **Hiện trạng trong code:**
-  - Đã khai báo thư viện `spring-boot-starter-websocket` trong `pom.xml`, đã có cấu hình `/ws`, `/app`, `/topic` trong `application.yml` và đã có Entity `CohortMessage.java`.
-  - **Chưa có:** `WebSocketConfig.java`, `CohortChatController.java`, `CohortMessageRepository.java` và giao diện khung chat.
-- **Cần code những gì:**
-  - Cấu hình STOMP WebSocket endpoint `/ws`, kiểm tra quyền thành viên Cohort (`cohort_members`), broadcast tin nhắn qua `/topic/cohort/{cohortId}` và lưu lịch sử vào `cohort_messages`.
+#### 3. Phòng Chat Thảo luận Lớp học Thời gian thực qua WebSocket (`TASK-06` - `UC-35`)
+- **Hiện trạng:** Đã có `spring-boot-starter-websocket` trong `pom.xml`, cấu hình STOMP trong `application.yml` và Entity `CohortMessage.java`.
+- **Cần làm tiếp:**
+  - Viết `WebSocketConfig.java`, `CohortChatController.java`, `CohortMessageRepository.java`.
+  - Tích hợp khung chat realtime tại góc phải giao diện `module-learn.html` qua SockJS/STOMP.
 
-#### 3.2. Đánh dấu Hoàn thành Bài học, Theo dõi Tiến độ & Gợi ý Nâng cấp (`UC-23`, `UC-25`)
-- **Hiện trạng trong code:**
-  - Bảng `Enrollment` đã có cột `progress` (Double), trang `/courses/my-courses` đã hiển thị danh sách khóa học đã tham gia.
-  - **Chưa có:** Nút *"Đánh dấu hoàn thành bài học"* trên `learn.html` để cập nhật `% progress`, và khối *"Gợi ý nâng cấp trọn bộ Full Course (Upsell)"* trên `/courses/my-courses`.
-
-#### 3.3. Quản lý Lịch mở bài học & Hạn nộp bài theo Cohort (`UC-36`)
-- **Hiện trạng trong code:**
-  - Đã có Entity `CohortSchedule.java` (`unlockAt`, `deadlineAt`, `showScoreType`, `allowReviewAnswers`), cần bổ sung giao diện cho Giảng viên thiết lập lịch mở khóa từng bài học (Drip Content) và cấu hình chế độ xem điểm cho Cohort.
-
-#### 3.4. Quản lý Danh mục Khóa học cho Admin (`UC-11`) & Ràng buộc Kiểm duyệt SLA (`UC-18`, `UC-19`)
-- **Quản lý Danh mục (`UC-11`):** Tạo trang `/admin/categories` để Admin thêm/sửa/xóa `Category` đa cấp (hiện mới chỉ đọc danh mục từ DB).
-- **Hoàn thiện Kiểm duyệt (`UC-18`, `UC-19`):**
-  - Bổ sung kiểm tra trong `ModerationServiceImpl`: chặn Giảng viên tự duyệt khóa học của chính mình (`authorId != moderatorId`), kiểm tra Moderator đang trong ca trực (`isActive = true`), và tự động cập nhật thống kê năng suất (`assignedTasksCount`, `completedTasksCount`) vào `moderator_attendances`.
+#### 4. Quản lý Danh mục Khóa học cho Admin & Ràng buộc Kiểm duyệt SLA (`TASK-09` - `UC-11`, `UC-18`, `UC-19`)
+- **Quản lý Danh mục (`UC-11`):** Tạo trang `/admin/categories` để Admin thêm/sửa/xóa danh mục đa cấp.
+- **Ràng buộc Kiểm duyệt (`UC-18`, `UC-19`):** Trong `ModerationServiceImpl`, bổ sung kiểm tra chặn Giảng viên tự duyệt khóa học của chính mình (`authorId != moderatorId`) và bắt buộc Moderator Check-in ca trực trước khi duyệt bài.
 
 ---
 
-### 🟢 MỨC ĐỘ 4: ĐỊNH HƯỚNG PHÁT TRIỂN TƯƠNG LAI (FUTURE SCOPE / P3 – KHÔNG CODE)
-*Đúng theo đặc tả trong `UC06_OnlineJudge.md` và `UTELearn_SRS.md`:*
-
-- **Phân hệ 8 – Online Judge (`UC-26`, `UC-27`, `UC-28`, `UC-29`):**
-  - Soạn đề bài lập trình (`CodingProblem`), nộp mã nguồn (`CodingSubmission`), chấm tự động qua Judge0 / Docker Sandbox.
-  - **Hành động:** Giữ nguyên Database Schema (`coding_problems`, `coding_submissions`) và tài liệu Use Case để trình bày trong chương **"Định hướng phát triển (Future Work)"** của báo cáo đồ án.
+### 🟢 MỨC ĐỘ 3: ĐỊNH HƯỚNG PHÁT TRIỂN TƯƠNG LAI (FUTURE SCOPE / P3 – KHÔNG CODE)
+- **TASK-10 (Module 8: Online Judge Sandbox - `UC-26` -> `UC-29`):**
+  - Trình biên dịch mã nguồn đa ngôn ngữ và chạy test case qua Docker Sandbox.
+  - Đã có trang giới thiệu tại `/oj/problems` và giữ nguyên trong Báo cáo Đồ án mục "Định hướng phát triển".

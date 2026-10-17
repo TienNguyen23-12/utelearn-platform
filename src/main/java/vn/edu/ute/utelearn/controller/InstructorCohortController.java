@@ -128,6 +128,8 @@ public class InstructorCohortController {
                 dto.setStudyEnd(LocalDateTime.ofInstant(cohort.getStudyEnd(), ZoneId.systemDefault()));
             dto.setDescription(cohort.getDescription());
             dto.setObjectives(cohort.getObjectives());
+            dto.setAnnouncementTitle(cohort.getAnnouncementTitle());
+            dto.setAnnouncementContent(cohort.getAnnouncementContent());
             dto.setThumbnailUrl(cohort.getThumbnailUrl());
 
             model.addAttribute("cohortDto", dto);

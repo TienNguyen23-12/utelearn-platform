@@ -92,10 +92,17 @@
             background-color: #f8fafc;
             border: none;
             border-radius: 14px !important;
-            padding: 16px 20px;
-            font-weight: 700;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
             color: #0f172a;
             box-shadow: none !important;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .section-accordion-btn:hover {
+            background-color: #f1f5f9;
         }
 
         .section-accordion-btn:not(.collapsed) {
@@ -103,6 +110,33 @@
             color: #1d4ed8;
             border-bottom-left-radius: 0 !important;
             border-bottom-right-radius: 0 !important;
+        }
+
+        .section-badge-pill {
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            line-height: 1.2;
+            letter-spacing: 0.2px;
+        }
+
+        .section-title-text {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.4;
+        }
+
+        .section-meta-badge {
+            font-size: 11.5px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 20px;
+            color: #64748b;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            line-height: 1.2;
         }
 
         .moodle-lesson-card {
@@ -165,9 +199,13 @@
             border: 1px solid #86efac;
         }
 
-        .sticky-drawer {
-            position: sticky;
-            top: 140px;
+        @media (min-width: 992px) {
+            .sticky-drawer {
+                position: -webkit-sticky;
+                position: sticky;
+                top: 135px;
+                z-index: 100;
+            }
         }
 
         .progress-circle-wrap {
@@ -262,16 +300,12 @@
             <ol class="breadcrumb small mb-0">
                 <li class="breadcrumb-item"><a href="/home" class="text-white-50 text-decoration-none"><i class="bi bi-house-door me-1"></i>Trang chủ</a></li>
                 <li class="breadcrumb-item"><a href="/courses" class="text-white-50 text-decoration-none">Khóa học</a></li>
-                <li class="breadcrumb-item"><a th:href="@{'/courses/' + ${course.slug}}" class="text-white-50 text-decoration-none" th:text="${course.title}">Khóa học</a></li>
-                <li class="breadcrumb-item active text-white" aria-current="page" th:text="${module.code}">Mã Module</li>
+                <li class="breadcrumb-item active text-white" aria-current="page"><a th:href="@{'/courses/' + ${course.slug}}" class="text-white text-decoration-none" th:text="${course.title}">Khóa học</a></li>
             </ol>
         </nav>
 
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-            <span class="badge bg-primary px-3 py-1.5 rounded-pill fw-semibold">
-                <i class="bi bi-collection-play me-1"></i>Moodle Course Outline
-            </span>
-            <span class="badge bg-white bg-opacity-15 text-white border border-white border-opacity-25 px-3 py-1.5 rounded-pill font-monospace" th:text="${module.code}">
+            <span class="badge bg-white text-primary border border-white border-opacity-50 px-3 py-1.5 rounded-pill font-monospace fw-bold shadow-sm" style="background-color: #ffffff !important; color: #2563eb !important;" th:text="${module.code}">
                 MOD-01
             </span>
             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-semibold" th:if="${isModEnrolled || hasAccessRole}">
@@ -406,17 +440,39 @@
                     <i class="bi bi-megaphone-fill fs-5"></i>
                 </div>
                 <div class="flex-grow-1">
-                    <h6 class="fw-bold mb-1 text-dark">Thông báo chung & Hướng dẫn học tập</h6>
-                    <p class="text-secondary small mb-2 lh-base">
-                        Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.
-                    </p>
-                    <div class="d-flex flex-wrap gap-2">
-                        <a th:href="@{'/courses/' + ${course.slug}}" class="btn btn-sm btn-light border text-primary rounded-pill px-3 py-1 fw-semibold">
-                            <i class="bi bi-journal-text me-1"></i>Đề cương tổng quát
-                        </a>
-                        <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-semibold">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Mở danh sách bài học
-                        </a>
+                    <div id="moduleAnnouncementViewWrap">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                            <h6 class="fw-bold mb-1 text-dark" id="moduleAnnouncementTitleText" th:text="${module.effectiveAnnouncementTitle}">Thông báo chung &amp; Hướng dẫn học tập</h6>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 instructor-edit-ctrl" onclick="toggleEditModuleAnnouncement()">
+                                <i class="bi bi-pencil-square me-1"></i>Sửa thông báo
+                            </button>
+                        </div>
+                        <p class="text-secondary small mb-0 lh-base" id="moduleAnnouncementContentText" th:text="${module.effectiveAnnouncementContent}">
+                            Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.
+                        </p>
+                    </div>
+
+                    <div id="moduleAnnouncementEditWrap" class="d-none bg-white p-3 rounded-4 border mt-2">
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-dark mb-1">Tiêu đề thông báo:</label>
+                            <input type="text" id="inputModuleAnnouncementTitle" class="form-control rounded-3" 
+                                   th:value="${module.announcementTitle != null ? module.announcementTitle : 'Thông báo chung & Hướng dẫn học tập'}" 
+                                   placeholder="Tiêu đề thông báo...">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-dark mb-1">Nội dung thông báo:</label>
+                            <textarea id="inputModuleAnnouncementContent" class="form-control rounded-3" rows="3" 
+                                      placeholder="Nội dung thông báo..." 
+                                      th:text="${module.announcementContent != null ? module.announcementContent : 'Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.'}"></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="saveModuleAnnouncementInline()">
+                                <i class="bi bi-check-lg me-1"></i>Lưu thông báo
+                            </button>
+                            <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="toggleEditModuleAnnouncement()">
+                                Hủy
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -496,15 +552,24 @@
 
                 <div th:if="${moduleSections != null && !moduleSections.empty}" class="accordion d-flex flex-column gap-3" id="courseSectionsAccordion">
                     <div th:each="sec, secIter : ${moduleSections}" class="accordion-item border rounded-3 overflow-hidden shadow-none" th:id="'section-card-' + ${sec.id}">
-                        <h2 class="accordion-header" th:id="'heading-' + ${sec.id}">
+                        <div class="accordion-header" th:id="'heading-' + ${sec.id}">
                             <div class="section-accordion-btn d-flex align-items-center justify-content-between w-100 flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-2 text-truncate cursor-pointer flex-grow-1" data-bs-toggle="collapse" th:data-bs-target="'#collapse-' + ${sec.id}">
-                                    <span class="badge bg-primary text-white rounded-pill px-2.5 py-1 small fw-bold font-monospace" th:text="'Chương ' + ${secIter.count}">Chương 1</span>
-                                    <span class="fw-bold text-dark text-truncate" th:text="${sec.title}" th:id="'section-title-' + ${sec.id}">Tiêu đề chương</span>
-                                    <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small" th:text="${sec.lessons.size()} + ' bài học'">0 bài</span>
+                                <div class="d-flex align-items-center gap-2.5 cursor-pointer flex-grow-1 min-w-0" data-bs-toggle="collapse" th:data-bs-target="'#collapse-' + ${sec.id}">
+                                    <span class="badge bg-primary text-white section-badge-pill flex-shrink-0" th:text="'Chương ' + ${secIter.count}">Chương 1</span>
+                                    <span class="section-title-text text-truncate flex-grow-1" th:text="${sec.title}" th:id="'section-title-' + ${sec.id}">Tiêu đề chương</span>
+                                    <span class="section-meta-badge flex-shrink-0" th:text="${sec.lessons.size()} + ' bài học'">0 bài</span>
                                 </div>
 
                                 <div class="instructor-edit-ctrl align-items-center gap-1">
+                                    <span class="btn btn-sm btn-light border text-muted px-2 py-1 section-drag-handle" title="Kéo thả đổi thứ tự chương" style="cursor: grab;">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </span>
+                                    <button class="btn btn-sm btn-light border text-muted px-1.5 py-1" onclick="moveSection(this, -1, event)" title="Di chuyển chương lên trên">
+                                        <i class="bi bi-arrow-up"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-light border text-muted px-1.5 py-1" onclick="moveSection(this, 1, event)" title="Di chuyển chương xuống dưới">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
                                     <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 bg-white" 
                                             th:data-id="${sec.id}" 
                                             onclick="openActivityChooser(this.getAttribute('data-id'), event)">
@@ -527,44 +592,63 @@
                                     </button>
                                 </div>
                             </div>
-                        </h2>
+                        </div>
 
                         <div th:id="'collapse-' + ${sec.id}" class="accordion-collapse collapse show">
                             <div class="accordion-body p-3 bg-white d-flex flex-column gap-2" th:id="'lesson-list-' + ${sec.id}">
                                 <div th:each="l, iter : ${sec.lessons}" 
                                      class="moodle-lesson-card" 
                                      th:id="'lesson-card-' + ${l.id}"
-                                     th:classappend="${(!isModEnrolled && !hasAccessRole && !l.isFreePreview) ? 'opacity-75' : ''}">
+                                     th:with="cs=${scheduleMap != null ? scheduleMap.get(l.id) : null}, isLocked=${!hasAccessRole and cs != null and cs.isLockedNow()}, isCompleted=${completedLessonIds != null and completedLessonIds.contains(l.id)}"
+                                     th:classappend="${(!isModEnrolled && !hasAccessRole && !l.isFreePreview) || isLocked ? 'opacity-75' : ''}">
                                     
-                                    <a th:href="${(isModEnrolled || hasAccessRole || l.isFreePreview) ? ('/courses/' + course.slug + '/modules/' + module.id + '/learn?lesson=' + l.id) : '#'}" 
+                                    <a th:href="${(isModEnrolled || hasAccessRole || l.isFreePreview) && !isLocked ? ('/courses/' + course.slug + '/modules/' + module.id + '/learn?lesson=' + l.id) : '#'}" 
+                                       th:title="${isLocked ? ('Bài học mở vào lúc: ' + cs.displayUnlockAt) : ''}"
                                        class="d-flex align-items-center gap-3 flex-grow-1 min-w-0 text-decoration-none text-reset">
                                         <div class="lesson-icon-badge" 
-                                             th:classappend="${l.lessonType == 'VIDEO' ? 'icon-video-style' : (l.lessonType == 'DOCUMENT' ? 'icon-doc-style' : (l.lessonType == 'QUIZ' ? 'icon-quiz-style' : (l.lessonType == 'CODE_PRACTICE' ? 'icon-code-style' : 'icon-announcement-style')))}">
-                                            <i class="bi bi-play-circle-fill" th:if="${l.lessonType == 'VIDEO'}"></i>
-                                            <i class="bi bi-file-earmark-text-fill" th:if="${l.lessonType == 'DOCUMENT'}"></i>
-                                            <i class="bi bi-patch-question-fill" th:if="${l.lessonType == 'QUIZ'}"></i>
-                                            <i class="bi bi-code-square" th:if="${l.lessonType == 'CODE_PRACTICE'}"></i>
-                                            <i class="bi bi-megaphone-fill" th:if="${l.lessonType == 'ANNOUNCEMENT'}"></i>
+                                             th:classappend="${isLocked ? 'bg-warning-subtle text-warning' : (l.lessonType == 'VIDEO' ? 'icon-video-style' : (l.lessonType == 'DOCUMENT' ? 'icon-doc-style' : (l.lessonType == 'QUIZ' ? 'icon-quiz-style' : (l.lessonType == 'CODE_PRACTICE' ? 'icon-code-style' : 'icon-announcement-style'))))}">
+                                            <i class="bi bi-lock-fill" th:if="${isLocked}"></i>
+                                            <i class="bi bi-play-circle-fill" th:if="${!isLocked && l.lessonType == 'VIDEO'}"></i>
+                                            <i class="bi bi-file-earmark-text-fill" th:if="${!isLocked && l.lessonType == 'DOCUMENT'}"></i>
+                                            <i class="bi bi-patch-question-fill" th:if="${!isLocked && l.lessonType == 'QUIZ'}"></i>
+                                            <i class="bi bi-code-square" th:if="${!isLocked && l.lessonType == 'CODE_PRACTICE'}"></i>
+                                            <i class="bi bi-megaphone-fill" th:if="${!isLocked && l.lessonType == 'ANNOUNCEMENT'}"></i>
                                         </div>
 
                                         <div class="min-w-0 flex-grow-1">
                                             <div class="fw-semibold text-dark text-truncate" th:text="${l.title}">Tên hoạt động</div>
-                                            <div class="d-flex align-items-center gap-2 text-muted small mt-0.5">
+                                            <div class="d-flex align-items-center flex-wrap gap-2 text-muted small mt-0.5">
                                                 <span class="badge bg-light text-secondary border px-2 py-0.5" style="font-size: 11px;" th:text="${l.lessonType}">VIDEO</span>
                                                 <span th:if="${l.durationSeconds != null && l.durationSeconds > 0}" th:text="${#numbers.formatDecimal(l.durationSeconds / 60, 0, 'POINT', 0, 'POINT')} + ' phút'">10 phút</span>
                                                 <span class="badge bg-success-subtle text-success border border-success-subtle" th:if="${l.isFreePreview}" style="font-size: 10px;">Học thử</span>
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle" th:if="${isLocked}" style="font-size: 10px;">
+                                                    <i class="bi bi-clock me-1"></i>Mở: <span th:text="${cs.displayUnlockAt}"></span>
+                                                </span>
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" th:if="${cs != null && cs.deadlineAt != null}" style="font-size: 10px;">
+                                                    <i class="bi bi-alarm me-1"></i>Hạn: <span th:text="${cs.displayDeadlineAt}"></span>
+                                                </span>
                                             </div>
                                         </div>
                                     </a>
 
                                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
                                         <div class="instructor-edit-ctrl align-items-center gap-1">
+                                            <span class="btn btn-sm btn-light border text-muted px-2 py-1 lesson-drag-handle" title="Kéo thả đổi thứ tự bài học" style="cursor: grab;">
+                                                <i class="bi bi-grip-vertical"></i>
+                                            </span>
+                                            <button class="btn btn-sm btn-light border text-muted px-1.5 py-1" onclick="moveLesson(this, -1, event)" title="Di chuyển bài học lên">
+                                                <i class="bi bi-arrow-up"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-light border text-muted px-1.5 py-1" onclick="moveLesson(this, 1, event)" title="Di chuyển bài học xuống">
+                                                <i class="bi bi-arrow-down"></i>
+                                            </button>
                                             <button class="btn btn-sm btn-light border text-primary rounded-circle" 
                                                     style="width: 32px; height: 32px;"
                                                     th:data-lesson-id="${l.id}" 
                                                     th:data-lesson-title="${l.title}"
                                                     th:data-lesson-type="${l.lessonType}"
                                                     th:data-video-url="${l.videoUrl}"
+                                                    th:data-duration-seconds="${l.durationSeconds}"
                                                     th:data-asset-url="${l.assetUrl}"
                                                     th:data-document-content="${l.documentContent}"
                                                     th:data-is-free="${l.isFreePreview}"
@@ -582,13 +666,19 @@
                                             </button>
                                         </div>
 
-                                        <span class="completion-pill completion-pill-done" th:if="${l.isFreePreview}">
+                                        <span class="completion-pill completion-pill-pending bg-warning-subtle text-warning border-warning" th:if="${isLocked}">
+                                            <i class="bi bi-lock-fill"></i>Chưa mở
+                                        </span>
+                                        <span class="completion-pill completion-pill-done bg-success-subtle text-success border-success-subtle" th:if="${!isLocked && isCompleted}">
+                                            <i class="bi bi-check-circle-fill"></i>Đã hoàn thành
+                                        </span>
+                                        <span class="completion-pill completion-pill-done" th:if="${!isLocked && !isCompleted && l.isFreePreview}">
                                             <i class="bi bi-play-circle-fill"></i>Học thử
                                         </span>
-                                        <span class="completion-pill completion-pill-done" th:if="${!l.isFreePreview && (isModEnrolled || hasAccessRole)}">
+                                        <span class="completion-pill completion-pill-done" th:if="${!isLocked && !isCompleted && !l.isFreePreview && (isModEnrolled || hasAccessRole)}">
                                             <i class="bi bi-arrow-right-circle"></i>Vào học
                                         </span>
-                                        <span class="completion-pill completion-pill-pending" th:if="${!l.isFreePreview && !isModEnrolled && !hasAccessRole}">
+                                        <span class="completion-pill completion-pill-pending" th:if="${!isLocked && !isCompleted && !l.isFreePreview && !isModEnrolled && !hasAccessRole}">
                                             <i class="bi bi-lock-fill"></i>Cần ghi danh
                                         </span>
                                     </div>
@@ -621,11 +711,12 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="progress-circle-wrap" id="moodleProgressCircle">
-                            <div class="progress-circle-inner" id="moodleProgressText">0%</div>
+                        <div class="progress-circle-wrap" id="moodleProgressCircle"
+                             th:style="'background: conic-gradient(#2563eb ' + (${progressPercent} * 3.6) + 'deg, #e2e8f0 ' + (${progressPercent} * 3.6) + 'deg);'">
+                            <div class="progress-circle-inner" id="moodleProgressText" th:text="${progressPercent} + '%'">0%</div>
                         </div>
                         <div>
-                            <div class="fw-bold text-dark" id="moodleProgressSub">Đang đồng bộ...</div>
+                            <div class="fw-bold text-dark" id="moodleProgressSub" th:text="'Đã hoàn thành ' + ${completedCount} + '/' + ${moduleLessons.size()} + ' bài'">Đang đồng bộ...</div>
                             <div class="text-muted small">Cập nhật theo tiến độ từng hoạt động</div>
                         </div>
                     </div>
@@ -634,6 +725,35 @@
                         <i class="bi bi-play-circle-fill fs-5"></i>
                         <span>Tiếp tục học tập</span>
                     </a>
+                </div>
+
+                <div class="moodle-card p-4" th:if="${upcomingSchedules != null && !upcomingSchedules.empty}">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-alarm-fill text-danger"></i>
+                            <span>Hạn nộp &amp; Lộ trình sắp tới</span>
+                        </h6>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill small" th:text="${upcomingSchedules.size()} + ' mốc'">0 mốc</span>
+                    </div>
+                    <div class="d-flex flex-column gap-2.5">
+                        <div th:each="us : ${upcomingSchedules}" class="p-3 rounded-3 bg-light border d-flex flex-column gap-1">
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <span class="fw-semibold text-dark text-truncate small" th:text="${us.lesson.title}">Tên bài học</span>
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-nowrap" style="font-size: 10px;" th:if="${us.isLockedNow()}">
+                                    <i class="bi bi-lock-fill me-1"></i>Sắp mở
+                                </span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-nowrap" style="font-size: 10px;" th:if="${!us.isLockedNow() && us.deadlineAt != null}">
+                                    <i class="bi bi-clock-history me-1"></i>Hạn nộp
+                                </span>
+                            </div>
+                            <div class="text-muted" style="font-size: 11.5px;" th:if="${us.isLockedNow()}">
+                                Mở lúc: <strong class="text-dark" th:text="${us.displayUnlockAt}">Thời gian</strong>
+                            </div>
+                            <div class="text-muted" style="font-size: 11.5px;" th:if="${us.deadlineAt != null}">
+                                Hạn chót: <strong class="text-danger" th:text="${us.displayDeadlineAt}">Thời gian</strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="moodle-card p-4" th:unless="${isModEnrolled || hasAccessRole}">
@@ -895,7 +1015,20 @@
 
                 <div class="col-md-12" id="fieldVideoUrl">
                     <label class="form-label fw-semibold">URL Video (Youtube, Cloudinary, ...)</label>
-                    <input type="url" class="form-control rounded-3" id="videoUrl" placeholder="https://...">
+                    <input type="url" class="form-control rounded-3" id="videoUrl" placeholder="https://..." onchange="handleVideoUrlChange(this.value)">
+                </div>
+
+                <div class="col-md-12" id="fieldDuration">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-semibold mb-0">Thời lượng Video</label>
+                        <span id="durationDetectionBadge" class="small text-muted"></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light rounded-start-3"><i class="bi bi-clock"></i></span>
+                        <input type="number" class="form-control" id="lessonDurationSeconds" placeholder="Thời lượng (giây)">
+                        <span class="input-group-text bg-light rounded-end-3 fw-medium" id="durationMinutesHint">0 phút</span>
+                    </div>
+                    <div class="form-text small text-muted">Hệ thống sẽ tự động quét thời lượng từ Cloudinary hoặc metadata video khi bạn nhập link.</div>
                 </div>
 
                 <div class="col-md-12">
@@ -971,6 +1104,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 <script th:inline="javascript">
     const currentModuleId = /*[[${module.id}]]*/ 0;
@@ -991,13 +1125,16 @@
             setupInstructorEditMode();
         }
 
+        const serverCompleted = /*[[${completedLessonIds}]]*/ [];
         const storageKey = 'utelearn_completed_mod_' + currentModuleId;
         let completed = [];
         try {
             const raw = localStorage.getItem(storageKey);
-            if (raw) completed = JSON.parse(raw);
+            const localArr = raw ? JSON.parse(raw) : [];
+            const merged = new Set([...(serverCompleted || []), ...localArr]);
+            completed = Array.from(merged);
         } catch (e) {
-            completed = [];
+            completed = serverCompleted || [];
         }
 
         const count = Array.isArray(completed) ? completed.length : 0;
@@ -1054,6 +1191,8 @@
             toggle.checked = true;
             document.body.classList.add('moodle-edit-mode-active');
         }
+
+        initReorderSortables();
 
         if (toggle) {
             toggle.addEventListener('change', function() {
@@ -1161,6 +1300,8 @@
         document.getElementById('lessonTitle').value = '';
         document.getElementById('lessonType').value = preselectedType;
         document.getElementById('videoUrl').value = '';
+        document.getElementById('lessonDurationSeconds').value = '';
+        updateDurationHint(0);
         document.getElementById('assetUrl').value = '';
         document.getElementById('documentContent').value = '';
         document.getElementById('isFreePreview').checked = false;
@@ -1176,6 +1317,9 @@
         document.getElementById('lessonTitle').value = btn.getAttribute('data-lesson-title') || '';
         document.getElementById('lessonType').value = btn.getAttribute('data-lesson-type') || 'VIDEO';
         document.getElementById('videoUrl').value = btn.getAttribute('data-video-url') || '';
+        const durSec = parseInt(btn.getAttribute('data-duration-seconds'), 10) || 0;
+        document.getElementById('lessonDurationSeconds').value = durSec || '';
+        updateDurationHint(durSec);
         document.getElementById('assetUrl').value = btn.getAttribute('data-asset-url') || '';
         document.getElementById('documentContent').value = btn.getAttribute('data-document-content') || '';
         document.getElementById('isFreePreview').checked = (btn.getAttribute('data-is-free') === 'true');
@@ -1187,8 +1331,10 @@
     function toggleLessonFields() {
         const type = document.getElementById('lessonType').value;
         const videoField = document.getElementById('fieldVideoUrl');
+        const durationField = document.getElementById('fieldDuration');
         const docField = document.getElementById('fieldDocumentContent');
         if (videoField) videoField.style.display = (type === 'VIDEO') ? 'block' : 'none';
+        if (durationField) durationField.style.display = (type === 'VIDEO') ? 'block' : 'none';
         if (docField) docField.style.display = (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') ? 'block' : 'none';
     }
 
@@ -1207,6 +1353,7 @@
             title: title,
             lessonType: type,
             videoUrl: document.getElementById('videoUrl').value,
+            durationSeconds: parseInt(document.getElementById('lessonDurationSeconds').value, 10) || 0,
             assetUrl: document.getElementById('assetUrl').value,
             documentContent: document.getElementById('documentContent').value,
             isFreePreview: document.getElementById('isFreePreview').checked,
@@ -1227,8 +1374,14 @@
                 Toastify({text: 'Lưu hoạt động thành công!', style: {background: '#059669'}}).showToast();
                 setTimeout(() => location.reload(), 600);
             } else {
-                const err = await res.text();
-                Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();
+                let errorMsg = 'Lưu hoạt động thất bại';
+                try {
+                    const errData = await res.json();
+                    errorMsg = errData.message || errData.error || errorMsg;
+                } catch {
+                    errorMsg = await res.text();
+                }
+                Toastify({text: 'Lỗi: ' + errorMsg, style: {background: '#dc3545'}}).showToast();
             }
         } catch (e) {
             Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
@@ -1244,8 +1397,14 @@
                     Toastify({text: 'Xóa bài học thành công!', style: {background: '#059669'}}).showToast();
                     setTimeout(() => location.reload(), 600);
                 } else {
-                    const err = await res.text();
-                    Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();
+                    let errorMsg = 'Xóa bài học thất bại';
+                    try {
+                        const errData = await res.json();
+                        errorMsg = errData.message || errData.error || errorMsg;
+                    } catch {
+                        errorMsg = await res.text();
+                    }
+                    Toastify({text: 'Lỗi: ' + errorMsg, style: {background: '#dc3545'}}).showToast();
                 }
             } catch (e) {
                 Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
@@ -1304,8 +1463,90 @@
     function selectAsset(url) {
         if (url) {
             document.getElementById('assetUrl').value = url;
+            const currentType = document.getElementById('lessonType').value;
+            const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
+            if (currentType === 'VIDEO' || isVideoUrl) {
+                if (!document.getElementById('videoUrl').value || document.getElementById('videoUrl').value.trim() === '') {
+                    document.getElementById('videoUrl').value = url;
+                }
+                handleVideoUrlChange(url);
+            }
         }
         assetPickerModal.hide();
+    }
+
+    function updateDurationHint(seconds) {
+        const hintEl = document.getElementById('durationMinutesHint');
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (!seconds || seconds <= 0) {
+            if (hintEl) hintEl.textContent = '0 phút';
+            if (badgeEl) badgeEl.textContent = '';
+            return;
+        }
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        if (hintEl) hintEl.textContent = `${m}p ${s}s (~${Math.ceil(seconds / 60)} phút)`;
+    }
+
+    const durInput = document.getElementById('lessonDurationSeconds');
+    if (durInput) {
+        durInput.addEventListener('input', function(e) {
+            updateDurationHint(parseInt(e.target.value, 10) || 0);
+        });
+    }
+
+    async function handleVideoUrlChange(url) {
+        if (!url || !url.trim()) return;
+        const trimmedUrl = url.trim();
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhận diện thời lượng...';
+            badgeEl.className = 'small text-primary';
+        }
+
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        let detected = false;
+
+        tempVideo.onloadedmetadata = function() {
+            if (!detected && tempVideo.duration && !isNaN(tempVideo.duration) && tempVideo.duration > 0) {
+                detected = true;
+                const sec = Math.round(tempVideo.duration);
+                document.getElementById('lessonDurationSeconds').value = sec;
+                updateDurationHint(sec);
+                if (badgeEl) {
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động thành công';
+                    badgeEl.className = 'small text-success';
+                }
+            }
+        };
+
+        tempVideo.src = trimmedUrl;
+
+        setTimeout(async () => {
+            if (!detected) {
+                try {
+                    const res = await fetch('/api/instructor/courses/videos/detect-duration?url=' + encodeURIComponent(trimmedUrl));
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.durationSeconds && data.durationSeconds > 0) {
+                            detected = true;
+                            document.getElementById('lessonDurationSeconds').value = data.durationSeconds;
+                            updateDurationHint(data.durationSeconds);
+                            if (badgeEl) {
+                                badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động từ Cloudinary';
+                                badgeEl.className = 'small text-success';
+                            }
+                            return;
+                        }
+                    }
+                } catch (err) {}
+                if (!detected && badgeEl) {
+                    badgeEl.textContent = 'Bạn có thể tự nhập thời lượng nếu cần';
+                    badgeEl.className = 'small text-muted';
+                }
+            }
+        }, 1200);
     }
 
     function toggleEditModuleTitle() {
@@ -1388,6 +1629,179 @@
                 Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();
             }
         } catch (e) {
+            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+        }
+    }
+
+    function toggleEditModuleAnnouncement() {
+        const viewEl = document.getElementById('moduleAnnouncementViewWrap');
+        const editEl = document.getElementById('moduleAnnouncementEditWrap');
+        if (!viewEl || !editEl) return;
+        if (editEl.classList.contains('d-none')) {
+            editEl.classList.remove('d-none');
+            viewEl.classList.add('d-none');
+            const input = document.getElementById('inputModuleAnnouncementTitle');
+            if (input) input.focus();
+        } else {
+            editEl.classList.add('d-none');
+            viewEl.classList.remove('d-none');
+        }
+    }
+
+    async function saveModuleAnnouncementInline() {
+        const titleInput = document.getElementById('inputModuleAnnouncementTitle');
+        const contentInput = document.getElementById('inputModuleAnnouncementContent');
+        const rawTitle = titleInput ? titleInput.value.trim() : '';
+        const rawContent = contentInput ? contentInput.value.trim() : '';
+
+        try {
+            const res = await fetch(`/api/instructor/courses/modules/${currentModuleId}/inline`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ announcementTitle: rawTitle, announcementContent: rawContent })
+            });
+
+            if (res.ok) {
+                const titleEl = document.getElementById('moduleAnnouncementTitleText');
+                const contentEl = document.getElementById('moduleAnnouncementContentText');
+                if (titleEl) titleEl.textContent = rawTitle || 'Thông báo chung & Hướng dẫn học tập';
+                if (contentEl) contentEl.textContent = rawContent || 'Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.';
+                toggleEditModuleAnnouncement();
+                Toastify({text: 'Đã cập nhật thông báo Module thành công!', style: {background: '#059669'}}).showToast();
+            } else {
+                const err = await res.text();
+                Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();
+            }
+        } catch (e) {
+            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+        }
+    }
+
+    function initReorderSortables() {
+        if (typeof Sortable === 'undefined') return;
+
+        const secContainer = document.getElementById('courseSectionsAccordion');
+        if (secContainer) {
+            Sortable.create(secContainer, {
+                handle: '.section-drag-handle',
+                animation: 180,
+                ghostClass: 'bg-light-subtle',
+                onEnd: function() {
+                    saveSectionOrder();
+                }
+            });
+        }
+
+        document.querySelectorAll('.accordion-body[id^="lesson-list-"]').forEach(listEl => {
+            Sortable.create(listEl, {
+                group: 'module-lessons',
+                handle: '.lesson-drag-handle',
+                animation: 180,
+                ghostClass: 'bg-primary-subtle',
+                onEnd: function(evt) {
+                    saveLessonOrder(evt.to);
+                    if (evt.from !== evt.to) {
+                        saveLessonOrder(evt.from);
+                    }
+                }
+            });
+        });
+    }
+
+    function moveSection(btn, direction, event) {
+        if (event) event.stopPropagation();
+        const item = btn.closest('.accordion-item');
+        if (!item) return;
+        const container = document.getElementById('courseSectionsAccordion');
+        if (direction === -1) {
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('accordion-item')) {
+                container.insertBefore(item, prev);
+                saveSectionOrder();
+            }
+        } else if (direction === 1) {
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('accordion-item')) {
+                container.insertBefore(next, item);
+                saveSectionOrder();
+            }
+        }
+    }
+
+    async function saveSectionOrder() {
+        const items = Array.from(document.querySelectorAll('#courseSectionsAccordion > .accordion-item'));
+        const sectionIds = items.map(el => {
+            const idStr = el.id.replace('section-card-', '');
+            return Number(idStr);
+        }).filter(id => id > 0);
+
+        items.forEach((item, idx) => {
+            const pill = item.querySelector('.section-badge-pill');
+            if (pill) pill.textContent = 'Chương ' + (idx + 1);
+        });
+
+        try {
+            const res = await fetch('/api/instructor/courses/sections/reorder', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(sectionIds)
+            });
+            if (res.ok) {
+                Toastify({text: 'Đã cập nhật thứ tự chương!', style: {background: '#059669'}}).showToast();
+            } else {
+                Toastify({text: 'Lỗi khi lưu thứ tự chương', style: {background: '#dc3545'}}).showToast();
+            }
+        } catch(e) {
+            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+        }
+    }
+
+    function moveLesson(btn, direction, event) {
+        if (event) event.stopPropagation();
+        const item = btn.closest('.moodle-lesson-card');
+        if (!item) return;
+        const container = item.closest('.accordion-body');
+        if (!container) return;
+        if (direction === -1) {
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('moodle-lesson-card')) {
+                container.insertBefore(item, prev);
+                saveLessonOrder(container);
+            }
+        } else if (direction === 1) {
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('moodle-lesson-card')) {
+                container.insertBefore(next, item);
+                saveLessonOrder(container);
+            }
+        }
+    }
+
+    async function saveLessonOrder(container) {
+        if (!container) return;
+        const secIdStr = container.id.replace('lesson-list-', '');
+        const sectionId = Number(secIdStr);
+        const lessonCards = Array.from(container.querySelectorAll('.moodle-lesson-card'));
+        const lessonIds = lessonCards.map(el => {
+            const idStr = el.id.replace('lesson-card-', '');
+            return Number(idStr);
+        }).filter(id => id > 0);
+
+        const badge = container.closest('.accordion-item')?.querySelector('.section-meta-badge');
+        if (badge) badge.textContent = lessonIds.length + ' bài học';
+
+        try {
+            const res = await fetch('/api/instructor/courses/lessons/reorder', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sectionId: sectionId, lessonIds: lessonIds })
+            });
+            if (res.ok) {
+                Toastify({text: 'Đã cập nhật thứ tự bài học!', style: {background: '#059669'}}).showToast();
+            } else {
+                Toastify({text: 'Lỗi khi lưu thứ tự bài học', style: {background: '#dc3545'}}).showToast();
+            }
+        } catch(e) {
             Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
         }
     }

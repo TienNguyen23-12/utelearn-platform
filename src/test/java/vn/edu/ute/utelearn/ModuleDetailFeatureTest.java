@@ -68,6 +68,9 @@ public class ModuleDetailFeatureTest {
     @Mock
     private vn.edu.ute.utelearn.service.SectionService sectionService;
 
+    @Mock
+    private vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
+
     @InjectMocks
     private CourseController courseController;
 
@@ -117,7 +120,7 @@ public class ModuleDetailFeatureTest {
     void testShowCourseDetailReturnsViewWithModules() throws Exception {
         when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
         when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
-        when(cohortRepository.findByCourseIdAndStatusIn(anyLong(), anyList()))
+        when(cohortRepository.findByCourseIdAndStatusInOrdered(anyLong(), anyList()))
                 .thenReturn(List.of(sampleCohort));
 
         courseMvc.perform(get("/courses/lap-trinh-web-co-ban"))
@@ -127,16 +130,45 @@ public class ModuleDetailFeatureTest {
     }
 
     @Test
+    void testShowCourseDetailThymeleafRendering() throws Exception {
+        org.thymeleaf.templateresolver.ClassLoaderTemplateResolver templateResolver = new org.thymeleaf.templateresolver.ClassLoaderTemplateResolver();
+        templateResolver.setPrefix("templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setTemplateMode("HTML");
+        templateResolver.setCharacterEncoding("UTF-8");
+        org.thymeleaf.spring6.SpringTemplateEngine templateEngine = new org.thymeleaf.spring6.SpringTemplateEngine();
+        templateEngine.setTemplateResolver(templateResolver);
+        org.thymeleaf.spring6.view.ThymeleafViewResolver viewResolver = new org.thymeleaf.spring6.view.ThymeleafViewResolver();
+        viewResolver.setTemplateEngine(templateEngine);
+        viewResolver.setCharacterEncoding("UTF-8");
+
+        MockMvc mvcWithThymeleaf = MockMvcBuilders.standaloneSetup(courseController)
+                .setViewResolvers(viewResolver)
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findByCourseIdAndStatusInOrdered(anyLong(), anyList()))
+                .thenReturn(List.of(sampleCohort));
+        when(cohortRepository.findByCourseIdOrdered(anyLong()))
+                .thenReturn(List.of(sampleCohort));
+
+        mvcWithThymeleaf.perform(get("/courses/lap-trinh-web-co-ban"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void testShowModuleDetailReturnsModuleDetailView() throws Exception {
         when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
         when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
         when(cohortRepository.findById(1L)).thenReturn(Optional.of(sampleCohort));
         when(cohortScheduleRepository.findByCohortIdWithDetails(1L)).thenReturn(Collections.emptyList());
+        when(sectionRepository.findSectionsForCohort(1L)).thenReturn(Collections.emptyList());
 
         courseMvc.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("courses/module-detail"))
-                .andExpect(model().attributeExists("course", "module", "moduleLessons"));
+                .andExpect(model().attributeExists("course", "module", "moduleLessons", "upcomingSchedules"));
     }
 
     @Test
@@ -153,7 +185,7 @@ public class ModuleDetailFeatureTest {
         when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
         when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
         when(sectionService.getSectionsByCourseId(1L)).thenReturn(Collections.emptyList());
-        when(cohortRepository.findByCourseIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(sampleCohort));
+        when(cohortRepository.findByCourseIdOrdered(1L)).thenReturn(List.of(sampleCohort));
 
         apiMvc.perform(get("/api/courses/lap-trinh-web-co-ban"))
                 .andExpect(status().isOk())
@@ -237,6 +269,7 @@ public class ModuleDetailFeatureTest {
                         null,
                         cohortMemberRepository,
                         null,
+                        null,
                         null
                 );
 
@@ -308,6 +341,7 @@ public class ModuleDetailFeatureTest {
                         mockLessonRepo,
                         cohortMemberRepository,
                         mockSecRepo,
+                        null,
                         mockJdbc
                 );
 
