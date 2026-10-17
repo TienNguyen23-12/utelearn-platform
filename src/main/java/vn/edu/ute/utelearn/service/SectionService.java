@@ -12,4 +12,5 @@ public interface SectionService {
     Section createSection(Long courseId, SectionRequestDTO request, Long instructorId);
     Section updateSection(Long sectionId, SectionRequestDTO request, Long instructorId);
     void deleteSection(Long sectionId, Long instructorId);
+    void reorderSections(List<Long> sectionIds, Long instructorId);
 }

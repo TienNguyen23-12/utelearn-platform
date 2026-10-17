@@ -48,6 +48,10 @@ public class CohortSchedule {
     @Column(name = "review_available_at")
     private Instant reviewAvailableAt;
 
+    public boolean isLockedNow() {
+        return unlockAt != null && unlockAt.isAfter(Instant.now());
+    }
+
     public String getFormattedUnlockAt() {
         if (unlockAt == null) return "";
         return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
@@ -55,9 +59,23 @@ public class CohortSchedule {
                 .format(unlockAt);
     }
 
+    public String getDisplayUnlockAt() {
+        if (unlockAt == null) return "";
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(unlockAt);
+    }
+
     public String getFormattedDeadlineAt() {
         if (deadlineAt == null) return "";
         return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                .withZone(java.time.ZoneId.systemDefault())
+                .format(deadlineAt);
+    }
+
+    public String getDisplayDeadlineAt() {
+        if (deadlineAt == null) return "";
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                 .withZone(java.time.ZoneId.systemDefault())
                 .format(deadlineAt);
     }

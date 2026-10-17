@@ -18,6 +18,6 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     List<Section> findByCohortIdOrderByOrderIndexAsc(Long cohortId);
 
     @EntityGraph(attributePaths = {"cohort"})
-    @Query("SELECT DISTINCT s FROM Section s LEFT JOIN s.cohort c WHERE c.id = :cohortId OR s.id IN (SELECT cs.lesson.section.id FROM CohortSchedule cs WHERE cs.cohort.id = :cohortId) ORDER BY s.orderIndex ASC")
+    @Query("SELECT DISTINCT s FROM Section s LEFT JOIN s.cohort c WHERE c.id = :cohortId OR s.id IN (SELECT cs.lesson.section.id FROM CohortSchedule cs WHERE cs.cohort.id = :cohortId) ORDER BY s.orderIndex ASC, s.id ASC")
     List<Section> findSectionsForCohort(@Param("cohortId") Long cohortId);
 }

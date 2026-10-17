@@ -1,17 +1,21 @@
 package vn.edu.ute.utelearn.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.ute.utelearn.dao.LessonRepository;
 import vn.edu.ute.utelearn.dto.LessonRequestDTO;
 import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.Section;
+import vn.edu.ute.utelearn.entity.User;
+import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.LessonService;
 import vn.edu.ute.utelearn.service.SectionService;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -19,8 +23,45 @@ public class LessonServiceImpl implements LessonService {
 
     private final LessonRepository lessonRepository;
     private final SectionService sectionService;
+    private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    private final vn.edu.ute.utelearn.dao.UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
+
+    private boolean isAuthorized(Section section, Long instructorId) {
+        if (instructorId == null) {
+            return false;
+        }
+        User user = userRepository.findById(instructorId).orElse(null);
+        if (user != null && user.getRoles() != null) {
+            boolean hasAdminOrMod = user.getRoles().stream().anyMatch(r ->
+                    "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()) ||
+                    "MODERATOR".equalsIgnoreCase(r.getCode()) || "ROLE_MODERATOR".equalsIgnoreCase(r.getCode()));
+            if (hasAdminOrMod) {
+                return true;
+            }
+        }
+        if (section == null) {
+            return false;
+        }
+        if (section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
+            return true;
+        }
+        if (section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
+            return true;
+        }
+        if (user != null && user.getRoles() != null) {
+            boolean isInstructor = user.getRoles().stream().anyMatch(r ->
+                    "INSTRUCTOR".equalsIgnoreCase(r.getCode()) || "ROLE_INSTRUCTOR".equalsIgnoreCase(r.getCode()) ||
+                    "TEACHER".equalsIgnoreCase(r.getCode()));
+            if (isInstructor && ((section.getCourse() != null && section.getCourse().getCreatedBy() == null) ||
+                    (section.getCohort() != null && section.getCohort().getCreatedBy() == null))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public List<Lesson> getLessonsBySectionId(Long sectionId) {
@@ -33,19 +74,33 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài học ID: " + lessonId));
     }
 
+    private Integer resolveDurationSeconds(LessonRequestDTO request) {
+        if (request.getDurationSeconds() != null && request.getDurationSeconds() > 0) {
+            return request.getDurationSeconds();
+        }
+        if ("VIDEO".equalsIgnoreCase(request.getLessonType()) && request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
+            Integer detected = cloudinaryService.getVideoDuration(request.getVideoUrl());
+            if (detected != null && detected > 0) {
+                return detected;
+            }
+        }
+        return 0;
+    }
+
     @Override
     @Transactional
     public Lesson createLesson(Long sectionId, LessonRequestDTO request, Long instructorId) {
         Section section = sectionService.getSectionById(sectionId);
 
-        boolean authorized = false;
-        if (section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền thêm bài học vào phần này");
+        }
+
+        Integer durationSeconds = resolveDurationSeconds(request);
+
+        Integer orderIndex = request.getOrderIndex();
+        if (orderIndex == null) {
+            orderIndex = lessonRepository.findBySectionIdOrderByOrderIndexAsc(sectionId).size() + 1;
         }
 
         Lesson lesson = Lesson.builder()
@@ -55,10 +110,10 @@ public class LessonServiceImpl implements LessonService {
                 .videoUrl(request.getVideoUrl())
                 .documentContent(request.getDocumentContent())
                 .assetUrl(request.getAssetUrl())
-                .durationSeconds(request.getDurationSeconds() != null ? request.getDurationSeconds() : 0)
+                .durationSeconds(durationSeconds)
                 .isFreePreview(request.getIsFreePreview() != null ? request.getIsFreePreview() : false)
                 .isPublicForCohorts(request.getIsPublicForCohorts() != null ? request.getIsPublicForCohorts() : false)
-                .orderIndex(request.getOrderIndex() != null ? request.getOrderIndex() : 1)
+                .orderIndex(orderIndex)
                 .build();
 
         Lesson savedLesson = lessonRepository.save(lesson);
@@ -79,6 +134,7 @@ public class LessonServiceImpl implements LessonService {
             });
         }
 
+        log.info("[LessonService] Đã tạo thành công bài học ID: {}", savedLesson.getId());
         return savedLesson;
     }
 
@@ -88,13 +144,7 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = getLessonById(lessonId);
         Section section = lesson.getSection();
 
-        boolean authorized = false;
-        if (section != null && section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (section != null && section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền sửa bài học này");
         }
 
@@ -104,8 +154,13 @@ public class LessonServiceImpl implements LessonService {
         lesson.setDocumentContent(request.getDocumentContent());
         lesson.setAssetUrl(request.getAssetUrl());
         
-        if (request.getDurationSeconds() != null) {
+        if (request.getDurationSeconds() != null && request.getDurationSeconds() > 0) {
             lesson.setDurationSeconds(request.getDurationSeconds());
+        } else if ("VIDEO".equalsIgnoreCase(request.getLessonType()) && request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
+            Integer detected = cloudinaryService.getVideoDuration(request.getVideoUrl());
+            if (detected != null && detected > 0) {
+                lesson.setDurationSeconds(detected);
+            }
         }
         if (request.getIsFreePreview() != null) {
             lesson.setIsFreePreview(request.getIsFreePreview());
@@ -119,22 +174,25 @@ public class LessonServiceImpl implements LessonService {
 
         Lesson savedLesson = lessonRepository.save(lesson);
 
-        cohortScheduleRepository.deleteByLessonId(lesson.getId());
         Long targetCohortId = request.getCohortId();
         if (targetCohortId == null && section != null && section.getCohort() != null) {
             targetCohortId = section.getCohort().getId();
         }
         if (targetCohortId != null) {
-            cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
-                vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
-                        .cohort(cohort)
-                        .lesson(savedLesson)
-                        .unlockAt(java.time.Instant.now())
-                        .build();
-                cohortScheduleRepository.save(schedule);
-            });
+            boolean scheduleExists = cohortScheduleRepository.findByCohortIdAndLessonId(targetCohortId, savedLesson.getId()).isPresent();
+            if (!scheduleExists) {
+                cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
+                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                            .cohort(cohort)
+                            .lesson(savedLesson)
+                            .unlockAt(java.time.Instant.now())
+                            .build();
+                    cohortScheduleRepository.save(schedule);
+                });
+            }
         }
 
+        log.info("[LessonService] Đã cập nhật thành công bài học ID: {}", savedLesson.getId());
         return savedLesson;
     }
 
@@ -144,17 +202,30 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = getLessonById(lessonId);
         Section section = lesson.getSection();
 
-        boolean authorized = false;
-        if (section != null && section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (section != null && section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
         }
 
         cohortScheduleRepository.deleteByLessonId(lessonId);
         lessonRepository.delete(lesson);
+        log.info("[LessonService] Đã xóa thành công bài học ID: {}", lessonId);
+    }
+
+    @Override
+    @Transactional
+    public void reorderLessons(Long sectionId, List<Long> lessonIds, Long instructorId) {
+        if (lessonIds == null || lessonIds.isEmpty()) return;
+        Section targetSection = (sectionId != null && sectionId > 0) ? sectionRepository.findById(sectionId).orElse(null) : null;
+        for (int i = 0; i < lessonIds.size(); i++) {
+            Long lId = lessonIds.get(i);
+            Lesson l = lessonRepository.findById(lId).orElse(null);
+            if (l != null) {
+                l.setOrderIndex(i + 1);
+                if (targetSection != null) {
+                    l.setSection(targetSection);
+                }
+                lessonRepository.save(l);
+            }
+        }
     }
 }

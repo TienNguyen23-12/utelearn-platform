@@ -18,14 +18,20 @@ import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.InstructorAssetService;
 import vn.edu.ute.utelearn.service.LessonService;
 import vn.edu.ute.utelearn.service.SectionService;
+import vn.edu.ute.utelearn.dao.CohortRepository;
+import vn.edu.ute.utelearn.dao.CourseRepository;
+import vn.edu.ute.utelearn.entity.User;
+import org.springframework.http.MediaType;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +53,12 @@ public class CurriculumApiControllerTest {
 
     @Mock
     private CohortScheduleRepository cohortScheduleRepository;
+
+    @Mock
+    private CohortRepository cohortRepository;
+
+    @Mock
+    private CourseRepository courseRepository;
 
     @InjectMocks
     private InstructorCurriculumApiController curriculumApiController;
@@ -106,9 +118,72 @@ public class CurriculumApiControllerTest {
     @Test
     void testCourseControllerRedirectToCurriculum() {
         vn.edu.ute.utelearn.controller.CourseController courseController = new vn.edu.ute.utelearn.controller.CourseController(
-                authService, null, null, null, null, null, null
+                authService, null, null, null, null, null, null, null
         );
         String redirect = courseController.redirectToCurriculum(12L);
         org.junit.jupiter.api.Assertions.assertEquals("redirect:/instructor/courses/12/curriculum", redirect);
+    }
+
+    @Test
+    void testReorderSectionsSuccess() throws Exception {
+        User user = User.builder().id(1L).email("teacher@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+
+        mockMvc.perform(put("/api/instructor/courses/sections/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[10, 20, 30]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Cập nhật thứ tự chương thành công"));
+
+        verify(sectionService).reorderSections(List.of(10L, 20L, 30L), 1L);
+    }
+
+    @Test
+    void testReorderLessonsSuccess() throws Exception {
+        User user = User.builder().id(1L).email("teacher@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+
+        mockMvc.perform(put("/api/instructor/courses/lessons/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sectionId\": 10, \"lessonIds\": [101, 102]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Cập nhật thứ tự bài học thành công"));
+
+        verify(lessonService).reorderLessons(10L, List.of(101L, 102L), 1L);
+    }
+
+    @Test
+    void testReorderModulesSuccess() throws Exception {
+        User user = User.builder().id(1L).email("teacher@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+        Cohort cohort1 = Cohort.builder().id(100L).orderIndex(1).build();
+        Cohort cohort2 = Cohort.builder().id(200L).orderIndex(2).build();
+        when(cohortRepository.findById(200L)).thenReturn(Optional.of(cohort2));
+        when(cohortRepository.findById(100L)).thenReturn(Optional.of(cohort1));
+
+        mockMvc.perform(put("/api/instructor/courses/1/modules/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[200, 100]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Cập nhật thứ tự module thành công"));
+
+        verify(cohortRepository).save(cohort2);
+        verify(cohortRepository).save(cohort1);
+    }
+
+    @Test
+    void testUpdateLessonSuccess() throws Exception {
+        User user = User.builder().id(1L).email("teacher@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+        Lesson updated = Lesson.builder().id(100L).title("Bài 1.1 đã cập nhật").build();
+        when(lessonService.updateLesson(org.mockito.ArgumentMatchers.eq(100L), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1L)))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/instructor/courses/lessons/100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Bài 1.1 đã cập nhật\",\"lessonType\":\"DOCUMENT\",\"cohortId\":13}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Cập nhật bài học thành công"))
+                .andExpect(jsonPath("$.id").value(100));
     }
 }

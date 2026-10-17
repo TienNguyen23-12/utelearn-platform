@@ -1,19 +1,23 @@
 package vn.edu.ute.utelearn.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.ute.utelearn.dao.CohortRepository;
 import vn.edu.ute.utelearn.dao.SectionRepository;
+import vn.edu.ute.utelearn.dao.UserRepository;
 import vn.edu.ute.utelearn.dto.SectionRequestDTO;
 import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.Section;
+import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CourseService;
 import vn.edu.ute.utelearn.service.SectionService;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -23,6 +27,38 @@ public class SectionServiceImpl implements SectionService {
     private final CourseService courseService;
     private final CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    private final UserRepository userRepository;
+
+    private boolean isAuthorized(Course course, Cohort cohort, Long instructorId) {
+        if (instructorId == null) {
+            return false;
+        }
+        User user = userRepository.findById(instructorId).orElse(null);
+        if (user != null && user.getRoles() != null) {
+            boolean hasAdminOrMod = user.getRoles().stream().anyMatch(r ->
+                    "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()) ||
+                    "MODERATOR".equalsIgnoreCase(r.getCode()) || "ROLE_MODERATOR".equalsIgnoreCase(r.getCode()));
+            if (hasAdminOrMod) {
+                return true;
+            }
+        }
+        if (course != null && course.getCreatedBy() != null && course.getCreatedBy().getId().equals(instructorId)) {
+            return true;
+        }
+        if (cohort != null && cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(instructorId)) {
+            return true;
+        }
+        if (user != null && user.getRoles() != null) {
+            boolean isInstructor = user.getRoles().stream().anyMatch(r ->
+                    "INSTRUCTOR".equalsIgnoreCase(r.getCode()) || "ROLE_INSTRUCTOR".equalsIgnoreCase(r.getCode()) ||
+                    "TEACHER".equalsIgnoreCase(r.getCode()));
+            if (isInstructor && ((course != null && course.getCreatedBy() == null) ||
+                    (cohort != null && cohort.getCreatedBy() == null))) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     @Transactional
@@ -37,6 +73,37 @@ public class SectionServiceImpl implements SectionService {
                 }
             }
         }
+
+        List<Cohort> courseCohorts = cohortRepository.findByCourseIdOrdered(courseId);
+        java.util.Map<Long, Integer> cohortOrderMap = new java.util.HashMap<>();
+        for (int i = 0; i < courseCohorts.size(); i++) {
+            cohortOrderMap.put(courseCohorts.get(i).getId(), i);
+        }
+
+        sections.sort((s1, s2) -> {
+            Long c1Id = s1.getCohort() != null ? s1.getCohort().getId() : null;
+            Long c2Id = s2.getCohort() != null ? s2.getCohort().getId() : null;
+
+            if (java.util.Objects.equals(c1Id, c2Id)) {
+                int ord1 = s1.getOrderIndex() != null ? s1.getOrderIndex() : 0;
+                int ord2 = s2.getOrderIndex() != null ? s2.getOrderIndex() : 0;
+                if (ord1 != ord2) {
+                    return Integer.compare(ord1, ord2);
+                }
+                return Long.compare(s1.getId(), s2.getId());
+            }
+
+            int rank1 = c1Id != null ? cohortOrderMap.getOrDefault(c1Id, 9999) : 99999;
+            int rank2 = c2Id != null ? cohortOrderMap.getOrDefault(c2Id, 9999) : 99999;
+            if (rank1 != rank2) {
+                return Integer.compare(rank1, rank2);
+            }
+
+            int ord1 = s1.getOrderIndex() != null ? s1.getOrderIndex() : 0;
+            int ord2 = s2.getOrderIndex() != null ? s2.getOrderIndex() : 0;
+            return Integer.compare(ord1, ord2);
+        });
+
         return sections;
     }
 
@@ -57,13 +124,7 @@ public class SectionServiceImpl implements SectionService {
         Course course = courseId != null ? courseService.getCourseById(courseId) : null;
         Cohort cohort = request.getCohortId() != null ? cohortRepository.findById(request.getCohortId()).orElse(null) : null;
 
-        boolean authorized = false;
-        if (course != null && course.getCreatedBy() != null && course.getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (cohort != null && cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(course, cohort, instructorId)) {
             throw new RuntimeException("Bạn không có quyền thêm chương vào nội dung này");
         }
 
@@ -71,13 +132,26 @@ public class SectionServiceImpl implements SectionService {
             course = cohort.getCourse();
         }
 
+        Integer orderIndex = request.getOrderIndex();
+        if (orderIndex == null) {
+            if (cohort != null) {
+                orderIndex = sectionRepository.findSectionsForCohort(cohort.getId()).size() + 1;
+            } else if (course != null) {
+                orderIndex = sectionRepository.findByCourseIdOrderByOrderIndexAsc(course.getId()).size() + 1;
+            } else {
+                orderIndex = 1;
+            }
+        }
+
         Section.SectionBuilder builder = Section.builder()
                 .course(course)
                 .cohort(cohort)
                 .title(request.getTitle())
-                .orderIndex(request.getOrderIndex() != null ? request.getOrderIndex() : 1);
+                .orderIndex(orderIndex);
 
-        return sectionRepository.save(builder.build());
+        Section saved = sectionRepository.save(builder.build());
+        log.info("[SectionService] Đã tạo thành công chương ID: {}", saved.getId());
+        return saved;
     }
 
     @Override
@@ -85,13 +159,7 @@ public class SectionServiceImpl implements SectionService {
     public Section updateSection(Long sectionId, SectionRequestDTO request, Long instructorId) {
         Section section = getSectionById(sectionId);
         
-        boolean authorized = false;
-        if (section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(section.getCourse(), section.getCohort(), instructorId)) {
             throw new RuntimeException("Bạn không có quyền sửa chương này");
         }
 
@@ -101,9 +169,13 @@ public class SectionServiceImpl implements SectionService {
         }
         if (request.getCohortId() != null) {
             cohortRepository.findById(request.getCohortId()).ifPresent(section::setCohort);
+        } else {
+            section.setCohort(null);
         }
 
-        return sectionRepository.save(section);
+        Section saved = sectionRepository.save(section);
+        log.info("[SectionService] Đã cập nhật thành công chương ID: {}", saved.getId());
+        return saved;
     }
 
     @Override
@@ -111,16 +183,25 @@ public class SectionServiceImpl implements SectionService {
     public void deleteSection(Long sectionId, Long instructorId) {
         Section section = getSectionById(sectionId);
         
-        boolean authorized = false;
-        if (section.getCourse() != null && section.getCourse().getCreatedBy() != null && section.getCourse().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        } else if (section.getCohort() != null && section.getCohort().getCreatedBy() != null && section.getCohort().getCreatedBy().getId().equals(instructorId)) {
-            authorized = true;
-        }
-        if (!authorized) {
+        if (!isAuthorized(section.getCourse(), section.getCohort(), instructorId)) {
             throw new RuntimeException("Bạn không có quyền xóa chương này");
         }
 
         sectionRepository.delete(section);
+        log.info("[SectionService] Đã xóa thành công chương ID: {}", sectionId);
+    }
+
+    @Override
+    @Transactional
+    public void reorderSections(List<Long> sectionIds, Long instructorId) {
+        if (sectionIds == null || sectionIds.isEmpty()) return;
+        for (int i = 0; i < sectionIds.size(); i++) {
+            Long sId = sectionIds.get(i);
+            Section s = sectionRepository.findById(sId).orElse(null);
+            if (s != null) {
+                s.setOrderIndex(i + 1);
+                sectionRepository.save(s);
+            }
+        }
     }
 }

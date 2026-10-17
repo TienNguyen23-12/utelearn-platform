@@ -59,12 +59,13 @@
                                 khiển</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i
                                     class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                        <li><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i
+                        <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/courses/my-courses"><i
                                     class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
-                        <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER')}"><a
+                        <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}"><a
                                 class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i
                                     class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
-                        <li th:if="${@rbac.hasRole('MODERATOR')}"><a class="dropdown-item py-2 small rounded-3"
+                        <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
                                 href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi
                                 Kiểm duyệt</a></li>
                         <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
@@ -160,7 +161,8 @@
                             </li>
                             <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i
                                         class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i
+                            <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1"
+                                    href="/courses/my-courses"><i
                                         class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a>
                             </li>
                             <li th:if="${@rbac.hasRole('ADMIN')}">
@@ -169,13 +171,13 @@
                                     <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
                                 </a>
                             </li>
-                            <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER')}">
+                            <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                                 <a class="dropdown-item py-2 small rounded-3 text-success fw-semibold"
                                     href="/instructor/courses">
                                     <i class="bi bi-easel-fill me-2"></i>Quản lý Đào tạo
                                 </a>
                             </li>
-                            <li th:if="${@rbac.hasRole('MODERATOR')}">
+                            <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
                                 <a class="dropdown-item py-2 small rounded-3 text-danger fw-semibold"
                                     href="/moderator/queue">
                                     <i class="bi bi-check2-circle me-2"></i>Hàng đợi Kiểm duyệt

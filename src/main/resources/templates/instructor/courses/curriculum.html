@@ -159,64 +159,133 @@
         </div>
 
         <div id="curriculumList">
-            <div th:each="section, sStat : ${sections}" 
-                 class="section-card" 
-                 th:id="'section-' + ${section.id}"
-                 th:data-is-module="${section.cohort != null}"
-                 th:data-module-id="${section.cohort != null ? section.cohort.id : ''}"
-                 th:data-module-name="${section.cohort != null ? section.cohort.name : ''}">
-                <div class="section-header" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
-                    <div th:if="${section.cohort != null}" class="d-flex align-items-center flex-wrap gap-2">
-                        <span class="badge bg-primary text-white border border-primary px-2.5 py-1.5 rounded-pill font-monospace" style="font-size: 12px; font-weight: 700;">
-                            <i class="bi bi-collection me-1"></i><span th:text="${section.cohort.code != null ? section.cohort.code : 'Module'}">MOD</span>
+            <div class="module-group card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" 
+                 th:each="grp : ${moduleGroups}">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="badge bg-primary text-white font-monospace px-2.5 py-1.5 rounded-pill font-monospace" style="font-size: 12px; font-weight: 700;">
+                            <i class="bi bi-collection me-1"></i><span th:text="${grp.module.code != null ? grp.module.code : 'Module'}">MOD</span>
                         </span>
-                        <h5 class="fw-bold text-dark mb-0" th:text="${section.cohort.name != null && !section.cohort.name.isBlank() ? section.cohort.name : section.title}">Tên Module</h5>
+                        <h5 class="fw-bold text-dark mb-0" th:text="${grp.module.name}">Tên Module</h5>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" th:text="${#lists.size(grp.sections)} + ' chương'">0 chương</span>
                     </div>
-                    <div th:unless="${section.cohort != null}" class="d-flex align-items-center flex-wrap gap-2">
-                        <i class="bi bi-list fs-5 me-2 text-muted" style="cursor: grab;"></i>
-                        <h5 class="fw-bold text-dark mb-0" th:text="'Chương ' + ${sStat.index + 1} + ': ' + ${section.title}">Chương 1: Introduction</h5>
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill ms-2" style="font-size: 11px;">
-                            <i class="bi bi-stars me-1 text-primary"></i>Chương riêng của khóa
-                        </span>
-                    </div>
-                    
-                    <div class="d-flex align-items-center gap-1">
+                    <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
-                                th:data-id="${section.id}" 
-                                th:data-module-id="${section.cohort != null ? section.cohort.id : ''}"
-                                onclick="openActivityChooser(this.getAttribute('data-id'), this.getAttribute('data-module-id'), event)">
-                            <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
+                                th:data-module-id="${grp.module.id}" 
+                                th:data-module-name="${grp.module.name}"
+                                onclick="openSectionModalForModule(this.getAttribute('data-module-id'), this.getAttribute('data-module-name'))">
+                            <i class="bi bi-plus-circle me-1"></i>Thêm chương
                         </button>
-                        <button class="btn btn-sm btn-light border text-primary" 
-                                th:data-id="${section.id}" 
-                                th:data-title="${section.title}" 
-                                th:data-module-id="${section.cohort != null ? section.cohort.id : ''}"
-                                th:data-module-name="${section.cohort != null ? section.cohort.name : ''}"
-                                onclick="handleSectionEdit(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-module-id'), this.getAttribute('data-module-name'), event)">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-light border text-danger" 
-                                th:data-id="${section.id}" 
-                                onclick="deleteSection(this.getAttribute('data-id'), event)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        <button th:if="${section.cohort != null}"
-                                class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-2" 
-                                th:data-module-id="${section.cohort.id}" 
-                                th:data-module-name="${section.cohort.name}" 
-                                onclick="promptModuleRedirect(this.getAttribute('data-module-id'), this.getAttribute('data-module-name'), null, event)">
+                        <a th:href="@{'/instructor/courses/' + ${course.id} + '/modules/' + ${grp.module.id} + '/curriculum'}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                             <i class="bi bi-box-arrow-up-right me-1"></i> Quản lý trong Module
-                        </button>
+                        </a>
                     </div>
                 </div>
-                
-                <div th:id="'collapseSection' + ${section.id}" class="collapse show">
-                    <div class="section-body" th:id="'lesson-list-' + ${section.id}">
-                        <div class="empty-state" style="display: none;">Chưa có bài học nào.</div>
+                <div class="card-body p-3 bg-light bg-opacity-25 d-flex flex-column gap-3" th:if="${!#lists.isEmpty(grp.sections)}">
+                    <div th:each="section, sStat : ${grp.sections}" 
+                         class="section-card mb-0 shadow-xs" 
+                         th:id="'section-' + ${section.id}"
+                         th:data-is-module="true"
+                         th:data-module-id="${grp.module.id}"
+                         th:data-module-name="${grp.module.name}"
+                         th:data-section-title="${section.title}">
+                        <div class="section-header" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <i class="bi bi-folder2-open text-primary me-1 fs-5"></i>
+                                <h5 class="fw-bold text-dark mb-0" th:text="${section.title}">Tên Chương</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                        th:data-id="${section.id}" 
+                                        th:data-module-id="${grp.module.id}"
+                                        onclick="openActivityChooser(this.getAttribute('data-id'), this.getAttribute('data-module-id'), event)">
+                                    <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
+                                </button>
+                                <button class="btn btn-sm btn-light border text-primary" 
+                                        th:data-id="${section.id}" 
+                                        th:data-title="${section.title}" 
+                                        th:data-module-id="${grp.module.id}"
+                                        th:data-module-name="${grp.module.name}"
+                                        onclick="handleSectionEdit(this.getAttribute('data-id'), this.getAttribute('data-title'), this.getAttribute('data-module-id'), this.getAttribute('data-module-name'), event)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" 
+                                        th:data-id="${section.id}" 
+                                        onclick="deleteSection(this.getAttribute('data-id'), event)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div th:id="'collapseSection' + ${section.id}" class="collapse show">
+                            <div class="section-body" th:id="'lesson-list-' + ${section.id}">
+                                <div class="empty-state" style="display: none;">Chưa có bài học nào.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 bg-light bg-opacity-25 text-center" th:if="${#lists.isEmpty(grp.sections)}">
+                    <p class="text-muted mb-2 small">Module này chưa có chương học nào.</p>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                            th:data-module-id="${grp.module.id}" 
+                            th:data-module-name="${grp.module.name}"
+                            onclick="openSectionModalForModule(this.getAttribute('data-module-id'), this.getAttribute('data-module-name'))">
+                        <i class="bi bi-plus-circle me-1"></i>Thêm chương vào Module
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" 
+                 th:if="${!#lists.isEmpty(standaloneSections)}">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary text-white px-2.5 py-1.5 rounded-pill font-monospace" style="font-size: 12px; font-weight: 700;">
+                            <i class="bi bi-stars me-1 text-warning"></i>CHƯƠNG RIÊNG
+                        </span>
+                        <h5 class="fw-bold text-dark mb-0">Chương riêng độc quyền của Khóa học</h5>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2" th:text="${#lists.size(standaloneSections)} + ' chương'">0 chương</span>
+                    </div>
+                </div>
+                <div class="card-body p-3 bg-light bg-opacity-25 d-flex flex-column gap-3">
+                    <div th:each="section, sStat : ${standaloneSections}" 
+                         class="section-card mb-0 shadow-xs" 
+                         th:id="'section-' + ${section.id}"
+                         th:data-is-module="false"
+                         th:data-module-id=""
+                         th:data-module-name=""
+                         th:data-section-title="${section.title}">
+                        <div class="section-header" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <i class="bi bi-folder2-open text-primary me-1 fs-5"></i>
+                                <h5 class="fw-bold text-dark mb-0" th:text="'Chương ' + ${sStat.index + 1} + ': ' + ${section.title}">Chương 1: Introduction</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                        th:data-id="${section.id}" 
+                                        onclick="openActivityChooser(this.getAttribute('data-id'), null, event)">
+                                    <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
+                                </button>
+                                <button class="btn btn-sm btn-light border text-primary" 
+                                        th:data-id="${section.id}" 
+                                        th:data-title="${section.title}" 
+                                        onclick="handleSectionEdit(this.getAttribute('data-id'), this.getAttribute('data-title'), null, null, event)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" 
+                                        th:data-id="${section.id}" 
+                                        onclick="deleteSection(this.getAttribute('data-id'), event)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div th:id="'collapseSection' + ${section.id}" class="collapse show">
+                            <div class="section-body" th:id="'lesson-list-' + ${section.id}">
+                                <div class="empty-state" style="display: none;">Chưa có bài học nào.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
+
             <div th:if="${#lists.isEmpty(sections)}" class="text-center py-5">
                 <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="Empty" width="120" class="mb-3 opacity-50">
                 <h5 class="text-muted">Chưa có chương nào trong giáo trình</h5>
@@ -240,6 +309,14 @@
             <div class="mb-3">
                 <label class="form-label fw-semibold">Tên chương <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="sectionTitle" required placeholder="VD: Chương 1: Giới thiệu chung">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Thuộc Module (Tùy chọn)</label>
+                <select class="form-select" id="sectionCohortId">
+                    <option value="">-- Không thuộc module (Chương riêng) --</option>
+                    <option th:each="grp : ${moduleGroups}" th:value="${grp.module.id}" th:text="${(grp.module.code != null ? '[' + grp.module.code + '] ' : '') + grp.module.name}"></option>
+                </select>
+                <div class="form-text text-muted">Chọn module để nhóm chương này vào module tương ứng.</div>
             </div>
         </form>
       </div>
@@ -416,7 +493,20 @@
 
                 <div class="col-md-12" id="fieldVideoUrl">
                     <label class="form-label fw-semibold">URL Video (Cloudinary, Youtube, ...)</label>
-                    <input type="url" class="form-control" id="videoUrl" placeholder="https://...">
+                    <input type="url" class="form-control" id="videoUrl" placeholder="https://..." onchange="handleVideoUrlChange(this.value)">
+                </div>
+
+                <div class="col-md-12" id="fieldDuration">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-semibold mb-0">Thời lượng Video</label>
+                        <span id="durationDetectionBadge" class="small text-muted"></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-clock"></i></span>
+                        <input type="number" class="form-control" id="lessonDurationSeconds" placeholder="Thời lượng (giây)">
+                        <span class="input-group-text bg-light fw-medium" id="durationMinutesHint">0 phút</span>
+                    </div>
+                    <div class="form-text small text-muted">Hệ thống sẽ tự động quét thời lượng từ Cloudinary hoặc metadata video khi bạn nhập link.</div>
                 </div>
 
                 <div class="col-md-12">
@@ -436,7 +526,7 @@
                     <label class="form-label fw-semibold">Phân bổ vào Module / Chuyên đề <span class="badge bg-primary-subtle text-primary ms-1">Tự động đồng bộ</span></label>
                     <select class="form-select" id="lessonCohortId">
                         <option value="">-- Bài học ngoài module (Chỉ thuộc khóa học này) --</option>
-                        <option th:each="m : ${modules}" th:value="${m.id}" th:text="${m.name + ' (' + m.code + ')'}"></option>
+                        <option th:each="grp : ${moduleGroups}" th:value="${grp.module.id}" th:text="${grp.module.name + (grp.module.code != null ? ' (' + grp.module.code + ')' : '')}"></option>
                     </select>
                     <div class="form-text small text-muted">Hệ thống sẽ tự động gán bài học này vào module được chọn hoặc giữ nguyên ở khóa học nếu chọn ngoài module.</div>
                 </div>
@@ -638,12 +728,15 @@
     function toggleLessonFields() {
         const type = document.getElementById('lessonType').value;
         const videoField = document.getElementById('fieldVideoUrl');
+        const durationField = document.getElementById('fieldDuration');
         const docField = document.getElementById('fieldDocumentContent');
         
         if (type === 'VIDEO') {
             videoField.style.display = 'block';
+            if (durationField) durationField.style.display = 'block';
         } else {
             videoField.style.display = 'none';
+            if (durationField) durationField.style.display = 'none';
         }
 
         if (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') {
@@ -653,23 +746,32 @@
         }
     }
 
-    function openSectionModal(id = null, title = '', event = null) {
+    function openSectionModal(id = null, title = '', moduleId = null, event = null) {
         if (event) event.stopPropagation();
         document.getElementById('sectionId').value = id || '';
         document.getElementById('sectionTitle').value = title;
+        const cohortSelect = document.getElementById('sectionCohortId');
+        if (cohortSelect) {
+            cohortSelect.value = moduleId || '';
+        }
         document.getElementById('sectionModalTitle').innerText = id ? 'Sửa Chương' : 'Thêm Chương mới';
+        sectionModal.show();
+    }
+
+    function openSectionModalForModule(moduleId, moduleName) {
+        document.getElementById('sectionId').value = '';
+        document.getElementById('sectionTitle').value = '';
+        const cohortSelect = document.getElementById('sectionCohortId');
+        if (cohortSelect) {
+            cohortSelect.value = moduleId || '';
+        }
+        document.getElementById('sectionModalTitle').innerText = 'Thêm Chương vào ' + (moduleName || 'Module');
         sectionModal.show();
     }
 
     function handleSectionEdit(sectionId, sectionTitle, moduleId, moduleName, event) {
         if (event) event.stopPropagation();
-        if (moduleId) {
-            promptModuleRedirect(moduleId, moduleName, function() {
-                openSectionModal(sectionId, sectionTitle);
-            }, event);
-        } else {
-            openSectionModal(sectionId, sectionTitle);
-        }
+        openSectionModal(sectionId, sectionTitle, moduleId);
     }
 
     async function saveSection() {
@@ -679,6 +781,8 @@
             Toastify({text: 'Vui lòng nhập tên chương!', style: {background: '#dc3545'}}).showToast();
             return;
         }
+        const cohortSelect = document.getElementById('sectionCohortId');
+        const cohortIdVal = cohortSelect && cohortSelect.value ? parseInt(cohortSelect.value, 10) : null;
 
         const url = id ? `/api/instructor/courses/sections/${id}` : `/api/instructor/courses/${courseId}/sections`;
         const method = id ? 'PUT' : 'POST';
@@ -687,7 +791,10 @@
             const res = await fetch(url, {
                 method: method,
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({title: title})
+                body: JSON.stringify({
+                    title: title,
+                    cohortId: cohortIdVal
+                })
             });
             if(res.ok) {
                 location.reload();
@@ -744,6 +851,8 @@
         document.getElementById('lessonTitle').value = '';
         document.getElementById('lessonType').value = preselectedType;
         document.getElementById('videoUrl').value = '';
+        document.getElementById('lessonDurationSeconds').value = '';
+        updateDurationHint(0);
         document.getElementById('assetUrl').value = '';
         document.getElementById('documentContent').value = '';
         document.getElementById('isFreePreview').checked = false;
@@ -776,6 +885,8 @@
         document.getElementById('lessonTitle').value = lesson.title;
         document.getElementById('lessonType').value = lesson.lessonType;
         document.getElementById('videoUrl').value = lesson.videoUrl || '';
+        document.getElementById('lessonDurationSeconds').value = lesson.durationSeconds || '';
+        updateDurationHint(lesson.durationSeconds || 0);
         document.getElementById('assetUrl').value = lesson.assetUrl || '';
         document.getElementById('documentContent').value = lesson.documentContent || '';
         document.getElementById('isFreePreview').checked = lesson.isFreePreview || false;
@@ -791,57 +902,6 @@
             const res = await fetch(`/api/instructor/courses/sections/${sectionId}/lessons`);
             if(res.ok) {
                 const lessons = await res.json();
-
-                if (lessons.length > 0 && lessons.some(l => l.cohortId)) {
-                    const firstModLesson = lessons.find(l => l.cohortId);
-                    const targetModId = firstModLesson.cohortId;
-                    const targetModCode = firstModLesson.cohortCode || 'Module';
-                    const targetModName = firstModLesson.cohortName || ('Module ' + targetModCode);
-                    isModule = true;
-                    moduleId = targetModId;
-                    moduleName = targetModName;
-
-                    const sectionCard = document.getElementById(`section-${sectionId}`);
-                    if (sectionCard) {
-                        sectionCard.setAttribute('data-is-module', 'true');
-                        sectionCard.setAttribute('data-module-id', targetModId);
-                        sectionCard.setAttribute('data-module-name', targetModName);
-
-                        const headerLeft = sectionCard.querySelector('.section-header > div:first-child');
-                        if (headerLeft) {
-                            headerLeft.className = 'd-flex align-items-center flex-wrap gap-2';
-                            headerLeft.innerHTML = `
-                                <span class="badge bg-primary text-white border border-primary px-2.5 py-1.5 rounded-pill font-monospace" style="font-size: 12px; font-weight: 700;">
-                                    <i class="bi bi-collection me-1"></i>${targetModCode}
-                                </span>
-                                <h5 class="fw-bold text-dark mb-0">${targetModName}</h5>
-                            `;
-                        }
-                        
-                        const headerRight = sectionCard.querySelector('.section-header > div:last-child');
-                        if (headerRight) {
-                            headerRight.innerHTML = `
-                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
-                                        onclick="openActivityChooser('${sectionId}', '${targetModId}', event)">
-                                    <i class="bi bi-plus-circle me-1"></i>Thêm hoạt động hoặc tài nguyên
-                                </button>
-                                <button class="btn btn-sm btn-light border text-primary" 
-                                        onclick="handleSectionEdit('${sectionId}', '${targetModName.replace(/'/g, "\\'")}', '${targetModId}', '${targetModName.replace(/'/g, "\\'")}', event)">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-light border text-danger" 
-                                        onclick="deleteSection('${sectionId}', event)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-2" 
-                                        onclick="promptModuleRedirect('${targetModId}', '${targetModName.replace(/'/g, "\\'")}', null, event)">
-                                    <i class="bi bi-box-arrow-up-right me-1"></i> Quản lý trong Module
-                                </button>
-                            `;
-                        }
-                    }
-                }
-
                 renderLessons(sectionId, lessons, isModule, moduleId, moduleName);
             }
         } catch(e) { console.error(e); }
@@ -918,6 +978,7 @@
             title: title,
             lessonType: type,
             videoUrl: document.getElementById('videoUrl').value,
+            durationSeconds: parseInt(document.getElementById('lessonDurationSeconds').value, 10) || 0,
             assetUrl: document.getElementById('assetUrl').value,
             documentContent: document.getElementById('documentContent').value,
             isFreePreview: document.getElementById('isFreePreview').checked,
@@ -1035,8 +1096,90 @@
     function selectAsset(url) {
         if (url) {
             document.getElementById('assetUrl').value = url;
+            const currentType = document.getElementById('lessonType').value;
+            const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
+            if (currentType === 'VIDEO' || isVideoUrl) {
+                if (!document.getElementById('videoUrl').value || document.getElementById('videoUrl').value.trim() === '') {
+                    document.getElementById('videoUrl').value = url;
+                }
+                handleVideoUrlChange(url);
+            }
         }
         assetPickerModal.hide();
+    }
+
+    function updateDurationHint(seconds) {
+        const hintEl = document.getElementById('durationMinutesHint');
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (!seconds || seconds <= 0) {
+            if (hintEl) hintEl.textContent = '0 phút';
+            if (badgeEl) badgeEl.textContent = '';
+            return;
+        }
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        if (hintEl) hintEl.textContent = `${m}p ${s}s (~${Math.ceil(seconds / 60)} phút)`;
+    }
+
+    const durInput = document.getElementById('lessonDurationSeconds');
+    if (durInput) {
+        durInput.addEventListener('input', function(e) {
+            updateDurationHint(parseInt(e.target.value, 10) || 0);
+        });
+    }
+
+    async function handleVideoUrlChange(url) {
+        if (!url || !url.trim()) return;
+        const trimmedUrl = url.trim();
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhận diện thời lượng...';
+            badgeEl.className = 'small text-primary';
+        }
+
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        let detected = false;
+
+        tempVideo.onloadedmetadata = function() {
+            if (!detected && tempVideo.duration && !isNaN(tempVideo.duration) && tempVideo.duration > 0) {
+                detected = true;
+                const sec = Math.round(tempVideo.duration);
+                document.getElementById('lessonDurationSeconds').value = sec;
+                updateDurationHint(sec);
+                if (badgeEl) {
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động thành công';
+                    badgeEl.className = 'small text-success';
+                }
+            }
+        };
+
+        tempVideo.src = trimmedUrl;
+
+        setTimeout(async () => {
+            if (!detected) {
+                try {
+                    const res = await fetch('/api/instructor/courses/videos/detect-duration?url=' + encodeURIComponent(trimmedUrl));
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.durationSeconds && data.durationSeconds > 0) {
+                            detected = true;
+                            document.getElementById('lessonDurationSeconds').value = data.durationSeconds;
+                            updateDurationHint(data.durationSeconds);
+                            if (badgeEl) {
+                                badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động từ Cloudinary';
+                                badgeEl.className = 'small text-success';
+                            }
+                            return;
+                        }
+                    }
+                } catch (err) {}
+                if (!detected && badgeEl) {
+                    badgeEl.textContent = 'Bạn có thể tự nhập thời lượng nếu cần';
+                    badgeEl.className = 'small text-muted';
+                }
+            }
+        }, 1200);
     }
 </script>
 </body>

@@ -20,6 +20,7 @@ import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.CohortMember;
 import vn.edu.ute.utelearn.entity.CohortSchedule;
 import vn.edu.ute.utelearn.entity.Lesson;
+import vn.edu.ute.utelearn.entity.Section;
 import vn.edu.ute.utelearn.entity.User;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
@@ -39,6 +40,7 @@ public class CourseController {
     private final CohortRepository cohortRepository;
     private final CohortScheduleRepository cohortScheduleRepository;
     private final LessonRepository lessonRepository;
+    private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
 
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank()) {
@@ -59,10 +61,11 @@ public class CourseController {
     @GetMapping({"/modules/{moduleId}/learn", "/module/{moduleId}/learn"})
     public String showModuleLearnDirect(@PathVariable Long moduleId) {
         Optional<Cohort> cohortOpt = cohortRepository.findById(moduleId);
-        if (cohortOpt.isPresent() && cohortOpt.get().getCourse() != null) {
-            String courseKey = (cohortOpt.get().getCourse().getSlug() != null && !cohortOpt.get().getCourse().getSlug().isBlank())
-                    ? cohortOpt.get().getCourse().getSlug()
-                    : String.valueOf(cohortOpt.get().getCourse().getId());
+        if (cohortOpt.isPresent()) {
+            Cohort cohort = cohortOpt.get();
+            String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+                    ? cohort.getCourse().getSlug()
+                    : "standalone";
             return "redirect:/courses/" + courseKey + "/modules/" + moduleId + "/learn";
         }
         return "redirect:/cohorts";
@@ -71,10 +74,11 @@ public class CourseController {
     @GetMapping({"/modules/{moduleId}", "/module/{moduleId}"})
     public String showModuleDetailDirect(@PathVariable Long moduleId) {
         Optional<Cohort> cohortOpt = cohortRepository.findById(moduleId);
-        if (cohortOpt.isPresent() && cohortOpt.get().getCourse() != null) {
-            String courseKey = (cohortOpt.get().getCourse().getSlug() != null && !cohortOpt.get().getCourse().getSlug().isBlank())
-                    ? cohortOpt.get().getCourse().getSlug()
-                    : String.valueOf(cohortOpt.get().getCourse().getId());
+        if (cohortOpt.isPresent()) {
+            Cohort cohort = cohortOpt.get();
+            String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+                    ? cohort.getCourse().getSlug()
+                    : "standalone";
             return "redirect:/courses/" + courseKey + "/modules/" + moduleId;
         }
         return "redirect:/cohorts";
@@ -196,7 +200,7 @@ public class CourseController {
                     "TEACHER".equals(r.getCode()));
         }
 
-        List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
+        List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusInOrdered(course.getId(),
                 List.of("ENROLLING", "UPCOMING"));
         final java.util.Set<Long> finalEnrolledCohortIds = enrolledCohortIds;
         List<java.util.Map<String, Object>> cohortList = availableCohorts.stream().map(c -> {
@@ -238,6 +242,68 @@ public class CourseController {
 
         long unenrolledCount = availableCohorts.stream().filter(c -> !finalEnrolledCohortIds.contains(c.getId())).count();
 
+        List<Cohort> allCourseCohorts = cohortRepository.findByCourseIdOrdered(course.getId());
+        List<Lesson> allCourseLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+        java.util.Map<Long, Lesson> lessonMap = allCourseLessons.stream()
+                .collect(java.util.stream.Collectors.toMap(Lesson::getId, l -> l, (a, b) -> a));
+
+        java.util.Set<Long> assignedLessonIds = new java.util.HashSet<>();
+        List<java.util.Map<String, Object>> courseModulesData = new java.util.ArrayList<>();
+        for (Cohort cohort : allCourseCohorts) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", cohort.getId());
+            map.put("code", cohort.getCode());
+            map.put("name", cohort.getName());
+            map.put("status", cohort.getStatus());
+            map.put("price", cohort.getPrice());
+            map.put("description", cohort.getDescription());
+            map.put("objectivesRaw", cohort.getObjectives() != null ? cohort.getObjectives() : "");
+            map.put("objectivesList", parseJsonStringList(cohort.getObjectives()));
+            map.put("currentEnrolled", cohortMemberRepository.countByCohort_Id(cohort.getId()));
+            map.put("maxCapacity", cohort.getMaxCapacity());
+            map.put("isEnrolled", finalEnrolledCohortIds.contains(cohort.getId()));
+            map.put("isFull", cohort.getMaxCapacity() != null && cohortMemberRepository.countByCohort_Id(cohort.getId()) >= cohort.getMaxCapacity());
+
+            List<Long> modLessonIds = cohortScheduleRepository.findLessonIdsByCohortId(cohort.getId());
+            List<Lesson> modLessons = new java.util.ArrayList<>();
+            for (Long lid : modLessonIds) {
+                if (lessonMap.containsKey(lid)) {
+                    modLessons.add(lessonMap.get(lid));
+                    assignedLessonIds.add(lid);
+                }
+            }
+            map.put("lessons", modLessons);
+            map.put("lessonCount", modLessons.size());
+            courseModulesData.add(map);
+        }
+
+        java.util.Set<Long> standaloneLessonIds = new java.util.HashSet<>();
+        List<Section> courseSections = sectionRepository.findByCourseIdOrderByOrderIndexAsc(course.getId());
+        List<java.util.Map<String, Object>> standaloneSectionsData = new java.util.ArrayList<>();
+        for (Section sec : courseSections) {
+            if (sec.getCohort() == null) {
+                List<Lesson> secLessons = lessonRepository.findBySectionIdOrderByOrderIndexAsc(sec.getId())
+                        .stream()
+                        .filter(l -> !assignedLessonIds.contains(l.getId()))
+                        .toList();
+                if (!secLessons.isEmpty()) {
+                    java.util.Map<String, Object> sMap = new java.util.LinkedHashMap<>();
+                    sMap.put("id", sec.getId());
+                    sMap.put("title", sec.getTitle());
+                    sMap.put("lessons", secLessons);
+                    standaloneSectionsData.add(sMap);
+                    secLessons.forEach(l -> standaloneLessonIds.add(l.getId()));
+                }
+            }
+        }
+
+        List<Lesson> unassignedLessons = allCourseLessons.stream()
+                .filter(l -> !assignedLessonIds.contains(l.getId()) && !standaloneLessonIds.contains(l.getId()))
+                .toList();
+
+        log.info("[CourseController] Hiển thị chi tiết khóa học SSR cho slug: {}, id: {}, modules: {}, lessons: {}",
+                slug, course.getId(), courseModulesData.size(), allCourseLessons.size());
+
         model.addAttribute("course", course);
         model.addAttribute("availableCohorts", cohortList);
         model.addAttribute("courseSlug", slug);
@@ -249,8 +315,56 @@ public class CourseController {
         model.addAttribute("remainingCoursePrice", remainingCoursePrice);
         model.addAttribute("unenrolledCount", unenrolledCount);
         model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("objectivesList", parseJsonStringList(course.getObjectives()));
+        model.addAttribute("requirementsList", parseJsonStringList(course.getRequirements()));
+        model.addAttribute("courseModules", courseModulesData);
+        model.addAttribute("standaloneSections", standaloneSectionsData);
+        model.addAttribute("unassignedLessons", unassignedLessons);
+        model.addAttribute("totalLessonsCount", allCourseLessons.size());
+        model.addAttribute("totalModulesCount", allCourseCohorts.size());
 
         return "courses/detail";
+    }
+
+    private List<String> parseJsonStringList(String jsonOrText) {
+        if (jsonOrText == null || jsonOrText.isBlank() || "[]".equals(jsonOrText.trim())) {
+            return java.util.Collections.emptyList();
+        }
+        List<String> result = new java.util.ArrayList<>();
+        String trimmed = jsonOrText.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(trimmed);
+                if (root.isArray()) {
+                    for (com.fasterxml.jackson.databind.JsonNode node : root) {
+                        if (node.isObject() && node.has("value")) {
+                            result.add(node.get("value").asText());
+                        } else if (node.isTextual()) {
+                            result.add(node.asText());
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        if (result.isEmpty()) {
+            for (String line : trimmed.split("\n")) {
+                String clean = line.trim();
+                if (!clean.isEmpty()) {
+                    result.add(clean);
+                }
+            }
+        }
+        return result;
+    }
+
+    @GetMapping({"/{slug}/modules", "/{slug}/module"})
+    public String redirectToCourseOrCohorts(@PathVariable String slug) {
+        if ("standalone".equalsIgnoreCase(slug)) {
+            return "redirect:/cohorts";
+        }
+        return "redirect:/courses/" + slug;
     }
 
     @GetMapping({"/{slug}/modules/{moduleId}", "/{slug}/module/{moduleId}"})
@@ -258,14 +372,25 @@ public class CourseController {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         currentUserOpt.ifPresent(user -> model.addAttribute("currentUser", user));
 
-        Course course = resolveCourse(slug);
-        if (course == null) {
-            return "redirect:/courses";
+        Cohort module = cohortRepository.findById(moduleId).orElse(null);
+        if (module == null) {
+            return "redirect:/cohorts";
         }
 
-        Cohort module = cohortRepository.findById(moduleId).orElse(null);
-        if (module == null || (module.getCourse() != null && !module.getCourse().getId().equals(course.getId()))) {
-            return "redirect:/courses/" + slug;
+        Course course = resolveCourse(slug);
+        if (course == null || "standalone".equalsIgnoreCase(slug) || (module.getCourse() != null && !module.getCourse().getId().equals(course.getId()))) {
+            if (module.getCourse() != null) {
+                course = module.getCourse();
+            } else {
+                course = Course.builder()
+                        .id(0L)
+                        .title(module.getName())
+                        .slug("standalone")
+                        .code(module.getCode())
+                        .price(module.getPrice())
+                        .createdBy(module.getCreatedBy())
+                        .build();
+            }
         }
 
         boolean isModEnrolled = false;
@@ -284,6 +409,11 @@ public class CourseController {
         long enrolledCount = cohortMemberRepository.countByCohort_Id(module.getId());
         module.setCurrentEnrolled((int) enrolledCount);
 
+        List<Section> cohortSections = sectionRepository.findSectionsForCohort(module.getId());
+        if (cohortSections.isEmpty() && course != null) {
+            cohortSections = sectionRepository.findByCourseIdOrderByOrderIndexAsc(course.getId());
+        }
+
         List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
         List<Lesson> moduleLessons;
         if (!schedules.isEmpty()) {
@@ -294,10 +424,22 @@ public class CourseController {
 
         List<java.util.Map<String, Object>> moduleSections = new java.util.ArrayList<>();
         java.util.Map<Long, java.util.Map<String, Object>> sectionMap = new java.util.LinkedHashMap<>();
-        java.util.Map<String, Object> fallbackSection = null;
 
+        for (Section sec : cohortSections) {
+            java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+            map.put("id", sec.getId());
+            map.put("title", (sec.getTitle() != null && !sec.getTitle().isBlank()) ? sec.getTitle() : "Phần học");
+            map.put("orderIndex", sec.getOrderIndex() != null ? sec.getOrderIndex() : 0);
+            map.put("lessons", new java.util.ArrayList<Lesson>());
+            sectionMap.put(sec.getId(), map);
+            moduleSections.add(map);
+        }
+
+        java.util.Map<String, Object> fallbackSection = null;
         for (Lesson l : moduleLessons) {
-            if (l.getSection() != null) {
+            if (l.getSection() != null && sectionMap.containsKey(l.getSection().getId())) {
+                ((List<Lesson>) sectionMap.get(l.getSection().getId()).get("lessons")).add(l);
+            } else if (l.getSection() != null) {
                 Long secId = l.getSection().getId();
                 java.util.Map<String, Object> secData = sectionMap.computeIfAbsent(secId, id -> {
                     java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
@@ -323,12 +465,45 @@ public class CourseController {
             }
         }
 
+        java.util.Map<Long, CohortSchedule> scheduleMap = new java.util.HashMap<>();
+        for (CohortSchedule cs : schedules) {
+            if (cs.getLesson() != null) {
+                scheduleMap.put(cs.getLesson().getId(), cs);
+            }
+        }
+
+        List<Long> completedLessonIds = java.util.Collections.emptyList();
+        if (currentUserOpt.isPresent()) {
+            completedLessonIds = cohortService.getCompletedLessonIds(module.getId(), currentUserOpt.get().getId());
+        }
+        int totalLessonCount = moduleLessons.size();
+        int completedCount = completedLessonIds.size();
+        int progressPercent = (totalLessonCount > 0) ? (int) Math.min(100, Math.round(((double) completedCount / totalLessonCount) * 100)) : 0;
+
+        List<CohortSchedule> upcomingSchedules = schedules.stream()
+                .filter(cs -> cs.getLesson() != null && (cs.getDeadlineAt() != null || cs.isLockedNow()))
+                .sorted((a, b) -> {
+                    java.time.Instant tA = a.getDeadlineAt() != null ? a.getDeadlineAt() : a.getUnlockAt();
+                    java.time.Instant tB = b.getDeadlineAt() != null ? b.getDeadlineAt() : b.getUnlockAt();
+                    if (tA == null && tB == null) return 0;
+                    if (tA == null) return 1;
+                    if (tB == null) return -1;
+                    return tA.compareTo(tB);
+                })
+                .limit(5)
+                .toList();
+
         model.addAttribute("course", course);
         model.addAttribute("module", module);
         model.addAttribute("moduleLessons", moduleLessons);
         model.addAttribute("moduleSections", moduleSections);
         model.addAttribute("isModEnrolled", isModEnrolled);
         model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("completedLessonIds", completedLessonIds);
+        model.addAttribute("completedCount", completedCount);
+        model.addAttribute("progressPercent", progressPercent);
+        model.addAttribute("scheduleMap", scheduleMap);
+        model.addAttribute("upcomingSchedules", upcomingSchedules);
         return "courses/module-detail";
     }
 
@@ -340,23 +515,34 @@ public class CourseController {
             return "redirect:/login";
         }
 
-        Course course = resolveCourse(slug);
-        if (course == null) {
-            return "redirect:/courses";
-        }
-
         User user = currentUserOpt.get();
 
         Optional<Cohort> cohortOpt = cohortRepository.findById(cohortId);
-        if (cohortOpt.isEmpty() || !cohortOpt.get().getCourse().getId().equals(course.getId())) {
-            redirectAttributes.addFlashAttribute("error", "Lớp học không tồn tại hoặc không thuộc khóa học này.");
-            return "redirect:/courses/" + slug;
+        if (cohortOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Lớp học không tồn tại.");
+            return "redirect:/cohorts";
         }
 
         Cohort activeCohort = cohortOpt.get();
+        Course course = resolveCourse(slug);
+        if (course == null || "standalone".equalsIgnoreCase(slug) || (activeCohort.getCourse() != null && !activeCohort.getCourse().getId().equals(course.getId()))) {
+            if (activeCohort.getCourse() != null) {
+                course = activeCohort.getCourse();
+            } else {
+                course = Course.builder()
+                        .id(0L)
+                        .title(activeCohort.getName())
+                        .slug("standalone")
+                        .code(activeCohort.getCode())
+                        .price(activeCohort.getPrice())
+                        .createdBy(activeCohort.getCreatedBy())
+                        .build();
+            }
+        }
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(activeCohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia đợt học này rồi.");
-            return "redirect:/courses/" + slug + "/modules/" + activeCohort.getId() + "/learn";
+            String courseKey = (course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
+            return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
         }
 
         if (List.of("ENROLLING", "UPCOMING").contains(activeCohort.getStatus())) {
@@ -489,14 +675,25 @@ public class CourseController {
             return "redirect:/login";
         }
 
-        Course course = resolveCourse(slug);
-        if (course == null) {
-            return "redirect:/courses";
+        Cohort module = cohortRepository.findById(moduleId).orElse(null);
+        if (module == null) {
+            return "redirect:/cohorts";
         }
 
-        Cohort module = cohortRepository.findById(moduleId).orElse(null);
-        if (module == null || (module.getCourse() != null && !module.getCourse().getId().equals(course.getId()))) {
-            return "redirect:/courses/" + slug;
+        Course course = resolveCourse(slug);
+        if (course == null || "standalone".equalsIgnoreCase(slug) || (module.getCourse() != null && !module.getCourse().getId().equals(course.getId()))) {
+            if (module.getCourse() != null) {
+                course = module.getCourse();
+            } else {
+                course = Course.builder()
+                        .id(0L)
+                        .title(module.getName())
+                        .slug("standalone")
+                        .code(module.getCode())
+                        .price(module.getPrice())
+                        .createdBy(module.getCreatedBy())
+                        .build();
+            }
         }
 
         User user = currentUserOpt.get();
@@ -511,26 +708,66 @@ public class CourseController {
         }
 
         List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
-        List<Lesson> lessons;
+        List<Lesson> rawLessons;
         if (!schedules.isEmpty()) {
-            lessons = schedules.stream().map(CohortSchedule::getLesson).toList();
+            rawLessons = schedules.stream().map(CohortSchedule::getLesson).toList();
         } else {
-            lessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+            rawLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
         }
 
+        List<Lesson> lessons = new java.util.ArrayList<>(rawLessons);
+        lessons.sort((a, b) -> {
+            int secOrderA = (a.getSection() != null && a.getSection().getOrderIndex() != null) ? a.getSection().getOrderIndex() : 0;
+            int secOrderB = (b.getSection() != null && b.getSection().getOrderIndex() != null) ? b.getSection().getOrderIndex() : 0;
+            if (secOrderA != secOrderB) return Integer.compare(secOrderA, secOrderB);
+
+            long secIdA = (a.getSection() != null && a.getSection().getId() != null) ? a.getSection().getId() : 0L;
+            long secIdB = (b.getSection() != null && b.getSection().getId() != null) ? b.getSection().getId() : 0L;
+            if (secIdA != secIdB) return Long.compare(secIdA, secIdB);
+
+            int lOrderA = a.getOrderIndex() != null ? a.getOrderIndex() : 0;
+            int lOrderB = b.getOrderIndex() != null ? b.getOrderIndex() : 0;
+            if (lOrderA != lOrderB) return Integer.compare(lOrderA, lOrderB);
+
+            return Long.compare(a.getId() != null ? a.getId() : 0L, b.getId() != null ? b.getId() : 0L);
+        });
+
+        java.util.Map<Long, CohortSchedule> scheduleMap = new java.util.HashMap<>();
+        for (CohortSchedule cs : schedules) {
+            if (cs.getLesson() != null) {
+                scheduleMap.put(cs.getLesson().getId(), cs);
+            }
+        }
+
+        final boolean finalHasAccessRole = hasAccessRole;
         List<java.util.Map<String, Object>> lessonDtos = lessons.stream().map(l -> {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
+            CohortSchedule cs = scheduleMap.get(l.getId());
+            boolean isLocked = !finalHasAccessRole && cs != null && cs.isLockedNow();
+
             map.put("id", l.getId());
             map.put("title", l.getTitle() != null ? l.getTitle() : "");
             map.put("lessonType", l.getLessonType() != null ? l.getLessonType() : "VIDEO");
             map.put("durationSeconds", l.getDurationSeconds() != null ? l.getDurationSeconds() : 0);
-            map.put("videoUrl", l.getVideoUrl());
-            map.put("documentContent", l.getDocumentContent());
-            map.put("assetUrl", l.getAssetUrl());
+            map.put("videoUrl", isLocked ? null : l.getVideoUrl());
+            map.put("documentContent", isLocked ? null : l.getDocumentContent());
+            map.put("assetUrl", isLocked ? null : l.getAssetUrl());
             map.put("sectionId", (l.getSection() != null) ? l.getSection().getId() : null);
             map.put("sectionTitle", (l.getSection() != null && l.getSection().getTitle() != null) ? l.getSection().getTitle() : "Nội dung học tập");
+            map.put("sectionOrder", (l.getSection() != null && l.getSection().getOrderIndex() != null) ? l.getSection().getOrderIndex() : 0);
+            map.put("orderIndex", l.getOrderIndex() != null ? l.getOrderIndex() : 0);
+            map.put("isLocked", isLocked);
+            map.put("unlockAt", (cs != null) ? cs.getFormattedUnlockAt() : null);
+            map.put("unlockAtDisplay", (cs != null) ? cs.getDisplayUnlockAt() : null);
+            map.put("deadlineAt", (cs != null) ? cs.getFormattedDeadlineAt() : null);
+            map.put("deadlineAtDisplay", (cs != null) ? cs.getDisplayDeadlineAt() : null);
             return map;
         }).toList();
+
+        List<Long> completedLessonIds = cohortService.getCompletedLessonIds(module.getId(), user.getId());
+        int totalLessonCount = lessons.size();
+        int completedCount = completedLessonIds.size();
+        int progressPercent = (totalLessonCount > 0) ? (int) Math.min(100, Math.round(((double) completedCount / totalLessonCount) * 100)) : 0;
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCourseIdAndUserIdWithCohort(course.getId(), user.getId());
         List<java.util.Map<String, Object>> otherEnrolledModules = userMemberships.stream()
@@ -564,6 +801,9 @@ public class CourseController {
         model.addAttribute("module", module);
         model.addAttribute("moduleLessons", lessons);
         model.addAttribute("lessonDtos", lessonDtos);
+        model.addAttribute("completedLessonIds", completedLessonIds);
+        model.addAttribute("completedCount", completedCount);
+        model.addAttribute("progressPercent", progressPercent);
         model.addAttribute("otherEnrolledModules", otherEnrolledModules);
         model.addAttribute("initialLessonId", initialLessonId);
         return "courses/module-learn";

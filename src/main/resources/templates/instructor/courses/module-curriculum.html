@@ -404,7 +404,20 @@
 
                 <div class="col-md-12" id="fieldVideoUrl">
                     <label class="form-label fw-semibold">URL Video (Cloudinary, Youtube, ...)</label>
-                    <input type="url" class="form-control" id="videoUrl" placeholder="https://...">
+                    <input type="url" class="form-control" id="videoUrl" placeholder="https://..." onchange="handleVideoUrlChange(this.value)">
+                </div>
+
+                <div class="col-md-12" id="fieldDuration">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-semibold mb-0">Thời lượng Video</label>
+                        <span id="durationDetectionBadge" class="small text-muted"></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="bi bi-clock"></i></span>
+                        <input type="number" class="form-control" id="lessonDurationSeconds" placeholder="Thời lượng (giây)">
+                        <span class="input-group-text bg-light fw-medium" id="durationMinutesHint">0 phút</span>
+                    </div>
+                    <div class="form-text small text-muted">Hệ thống sẽ tự động quét thời lượng từ Cloudinary hoặc metadata video khi bạn nhập link.</div>
                 </div>
 
                 <div class="col-md-12">
@@ -550,12 +563,15 @@
     function toggleLessonFields() {
         const type = document.getElementById('lessonType').value;
         const videoField = document.getElementById('fieldVideoUrl');
+        const durationField = document.getElementById('fieldDuration');
         const docField = document.getElementById('fieldDocumentContent');
         
         if (type === 'VIDEO') {
             videoField.style.display = 'block';
+            if (durationField) durationField.style.display = 'block';
         } else {
             videoField.style.display = 'none';
+            if (durationField) durationField.style.display = 'none';
         }
 
         if (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') {
@@ -640,6 +656,8 @@
         document.getElementById('lessonTitle').value = '';
         document.getElementById('lessonType').value = preselectedType;
         document.getElementById('videoUrl').value = '';
+        document.getElementById('lessonDurationSeconds').value = '';
+        updateDurationHint(0);
         document.getElementById('assetUrl').value = '';
         document.getElementById('documentContent').value = '';
         document.getElementById('isFreePreview').checked = false;
@@ -655,6 +673,8 @@
         document.getElementById('lessonTitle').value = lesson.title;
         document.getElementById('lessonType').value = lesson.lessonType;
         document.getElementById('videoUrl').value = lesson.videoUrl || '';
+        document.getElementById('lessonDurationSeconds').value = lesson.durationSeconds || '';
+        updateDurationHint(lesson.durationSeconds || 0);
         document.getElementById('assetUrl').value = lesson.assetUrl || '';
         document.getElementById('documentContent').value = lesson.documentContent || '';
         document.getElementById('isFreePreview').checked = lesson.isFreePreview || false;
@@ -723,6 +743,7 @@
             title: title,
             lessonType: type,
             videoUrl: document.getElementById('videoUrl').value,
+            durationSeconds: parseInt(document.getElementById('lessonDurationSeconds').value, 10) || 0,
             assetUrl: document.getElementById('assetUrl').value,
             documentContent: document.getElementById('documentContent').value,
             isFreePreview: document.getElementById('isFreePreview').checked,
@@ -830,8 +851,87 @@
     function selectAsset(url) {
         if (url) {
             document.getElementById('assetUrl').value = url;
+            const currentType = document.getElementById('lessonType').value;
+            const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
+            if (currentType === 'VIDEO' || isVideoUrl) {
+                if (!document.getElementById('videoUrl').value || document.getElementById('videoUrl').value.trim() === '') {
+                    document.getElementById('videoUrl').value = url;
+                }
+                handleVideoUrlChange(url);
+            }
         }
         assetPickerModal.hide();
+    }
+
+    function updateDurationHint(seconds) {
+        const hintEl = document.getElementById('durationMinutesHint');
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (!seconds || seconds <= 0) {
+            if (hintEl) hintEl.textContent = '0 phút';
+            if (badgeEl) badgeEl.textContent = '';
+            return;
+        }
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        if (hintEl) hintEl.textContent = `${m}p ${s}s (~${Math.ceil(seconds / 60)} phút)`;
+    }
+
+    document.getElementById('lessonDurationSeconds').addEventListener('input', function(e) {
+        updateDurationHint(parseInt(e.target.value, 10) || 0);
+    });
+
+    async function handleVideoUrlChange(url) {
+        if (!url || !url.trim()) return;
+        const trimmedUrl = url.trim();
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhận diện thời lượng...';
+            badgeEl.className = 'small text-primary';
+        }
+
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        let detected = false;
+
+        tempVideo.onloadedmetadata = function() {
+            if (!detected && tempVideo.duration && !isNaN(tempVideo.duration) && tempVideo.duration > 0) {
+                detected = true;
+                const sec = Math.round(tempVideo.duration);
+                document.getElementById('lessonDurationSeconds').value = sec;
+                updateDurationHint(sec);
+                if (badgeEl) {
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động thành công';
+                    badgeEl.className = 'small text-success';
+                }
+            }
+        };
+
+        tempVideo.src = trimmedUrl;
+
+        setTimeout(async () => {
+            if (!detected) {
+                try {
+                    const res = await fetch('/api/instructor/courses/videos/detect-duration?url=' + encodeURIComponent(trimmedUrl));
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.durationSeconds && data.durationSeconds > 0) {
+                            detected = true;
+                            document.getElementById('lessonDurationSeconds').value = data.durationSeconds;
+                            updateDurationHint(data.durationSeconds);
+                            if (badgeEl) {
+                                badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Nhận diện tự động từ Cloudinary';
+                                badgeEl.className = 'small text-success';
+                            }
+                            return;
+                        }
+                    }
+                } catch (err) {}
+                if (!detected && badgeEl) {
+                    badgeEl.textContent = 'Bạn có thể tự nhập thời lượng nếu cần';
+                    badgeEl.className = 'small text-muted';
+                }
+            }
+        }, 1200);
     }
 </script>
 </body>

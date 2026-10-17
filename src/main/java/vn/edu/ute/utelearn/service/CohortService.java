@@ -35,4 +35,10 @@ public interface CohortService {
     vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO getUserEnrollmentSummary(User user);
 
     boolean updateLastAccessedLesson(Long cohortId, Long lessonId, User user);
+
+    java.util.Map<String, Object> toggleLessonCompletion(Long cohortId, Long lessonId, User user);
+
+    List<Long> getCompletedLessonIds(Long cohortId, Long userId);
+
+    java.util.Map<String, Object> getCohortProgress(Long cohortId, Long userId);
 }

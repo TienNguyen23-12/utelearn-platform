@@ -32,6 +32,7 @@ public class CohortServiceImpl implements CohortService {
     private final LessonRepository lessonRepository;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
+    private final vn.edu.ute.utelearn.dao.LessonCompletionRepository lessonCompletionRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
@@ -122,6 +123,8 @@ public class CohortServiceImpl implements CohortService {
                 .thumbnailUrl(finalThumbnail)
                 .description(dto.getDescription())
                 .objectives(dto.getObjectives())
+                .announcementTitle(dto.getAnnouncementTitle())
+                .announcementContent(dto.getAnnouncementContent())
                 .build();
 
         Cohort savedCohort = cohortRepository.save(cohort);
@@ -166,6 +169,8 @@ public class CohortServiceImpl implements CohortService {
         cohort.setVisibility(dto.getVisibility() != null && !dto.getVisibility().isBlank() ? dto.getVisibility() : "PUBLIC");
         cohort.setDescription(dto.getDescription());
         cohort.setObjectives(dto.getObjectives());
+        cohort.setAnnouncementTitle(dto.getAnnouncementTitle());
+        cohort.setAnnouncementContent(dto.getAnnouncementContent());
 
         String finalThumbnail = dto.getThumbnailUrl();
         if (finalThumbnail == null || finalThumbnail.trim().isEmpty()) {
@@ -346,5 +351,99 @@ public class CohortServiceImpl implements CohortService {
         cohortMemberRepository.save(member);
         log.info("[CohortService] Cập nhật bài học gần nhất cho user {} tại cohort {}: lesson {}", user.getId(), cohortId, lessonId);
         return true;
+    }
+
+    @Override
+    @Transactional
+    public java.util.Map<String, Object> toggleLessonCompletion(Long cohortId, Long lessonId, User user) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        if (cohortId == null || lessonId == null || user == null) {
+            response.put("success", false);
+            response.put("message", "Tham số không hợp lệ");
+            return response;
+        }
+
+        Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
+        vn.edu.ute.utelearn.entity.Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+        if (cohort == null || lesson == null) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy module hoặc bài học");
+            return response;
+        }
+
+        boolean isCompletedNow;
+        boolean exists = lessonCompletionRepository.existsByCohort_IdAndLesson_IdAndUser_Id(cohortId, lessonId, user.getId());
+        if (exists) {
+            lessonCompletionRepository.deleteByCohortIdAndLessonIdAndUserId(cohortId, lessonId, user.getId());
+            isCompletedNow = false;
+        } else {
+            vn.edu.ute.utelearn.entity.LessonCompletion completion = vn.edu.ute.utelearn.entity.LessonCompletion.builder()
+                    .cohort(cohort)
+                    .lesson(lesson)
+                    .user(user)
+                    .build();
+            lessonCompletionRepository.save(completion);
+            isCompletedNow = true;
+        }
+
+        long completedCount = lessonCompletionRepository.countByCohort_IdAndUser_Id(cohortId, user.getId());
+        List<Long> cohortLessonIds = cohortScheduleRepository.findLessonIdsByCohortId(cohortId);
+        int totalCount = cohortLessonIds != null ? cohortLessonIds.size() : 0;
+        int progressPercent = (totalCount > 0) ? (int) Math.min(100, Math.round(((double) completedCount / totalCount) * 100)) : 0;
+
+        boolean isPassed = false;
+        java.util.Optional<vn.edu.ute.utelearn.entity.CohortMember> memberOpt = cohortMemberRepository.findByCohort_IdAndUser_Id(cohortId, user.getId());
+        if (memberOpt.isPresent()) {
+            vn.edu.ute.utelearn.entity.CohortMember member = memberOpt.get();
+            if (totalCount > 0 && completedCount >= totalCount) {
+                member.setIsPassed(true);
+                isPassed = true;
+            }
+            cohortMemberRepository.save(member);
+        }
+
+        response.put("success", true);
+        response.put("completed", isCompletedNow);
+        response.put("completedCount", completedCount);
+        response.put("totalCount", totalCount);
+        response.put("progressPercent", progressPercent);
+        response.put("isPassed", isPassed);
+        log.info("[CohortService] Toggle bài học id: {} cho user: {} tại cohort: {}. Trạng thái mới: {}, Tiến độ: {}%",
+                lessonId, user.getEmail(), cohortId, isCompletedNow, progressPercent);
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getCompletedLessonIds(Long cohortId, Long userId) {
+        if (cohortId == null || userId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return lessonCompletionRepository.findCompletedLessonIds(cohortId, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getCohortProgress(Long cohortId, Long userId) {
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        if (cohortId == null || userId == null) {
+            response.put("completedCount", 0);
+            response.put("totalCount", 0);
+            response.put("progressPercent", 0);
+            response.put("completedLessonIds", java.util.Collections.emptyList());
+            return response;
+        }
+
+        List<Long> completedIds = lessonCompletionRepository.findCompletedLessonIds(cohortId, userId);
+        List<Long> totalLessonIds = cohortScheduleRepository.findLessonIdsByCohortId(cohortId);
+        int total = totalLessonIds != null ? totalLessonIds.size() : 0;
+        int count = completedIds != null ? completedIds.size() : 0;
+        int percent = (total > 0) ? (int) Math.min(100, Math.round(((double) count / total) * 100)) : 0;
+
+        response.put("completedCount", count);
+        response.put("totalCount", total);
+        response.put("progressPercent", percent);
+        response.put("completedLessonIds", completedIds != null ? completedIds : java.util.Collections.emptyList());
+        return response;
     }
 }

@@ -64,13 +64,13 @@
                     <ul class="nav nav-pills sub-pills bg-light p-1 rounded-pill border" id="myCoursesSubTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="subtab-courses-btn" data-bs-toggle="pill" data-bs-target="#subtab-courses-pane" type="button" role="tab">
-                                <i class="bi bi-mortarboard-fill me-1"></i>Khóa học (Courses)
+                                <i class="bi bi-mortarboard-fill me-1"></i>Trọn gói Khóa học
                                 <span class="badge bg-primary-subtle text-primary border rounded-pill ms-1" th:text="${enrolledCourses != null ? enrolledCourses.size() : 0}">0</span>
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="subtab-modules-btn" data-bs-toggle="pill" data-bs-target="#subtab-modules-pane" type="button" role="tab">
-                                <i class="bi bi-layers-fill me-1"></i>Module đã đăng ký
+                                <i class="bi bi-layers-fill me-1"></i>Module & Học phần lẻ
                                 <span class="badge bg-secondary-subtle text-secondary border rounded-pill ms-1" th:text="${enrolledModules != null ? enrolledModules.size() : 0}">0</span>
                             </button>
                         </li>
@@ -143,24 +143,24 @@
                                                 MOD-WEB-01
                                             </span>
                                             <span class="position-absolute top-0 end-0 m-2 badge bg-info-subtle text-info border border-info-subtle shadow-sm rounded-pill px-2 py-1 small">
-                                                Module lẻ
+                                                Học phần lẻ
                                             </span>
                                         </div>
                                         <div class="card-body p-3 d-flex flex-column">
                                             <small class="text-primary fw-semibold text-truncate d-block mb-1">
-                                                <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course.title}">Khóa học</span>
+                                                <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course != null ? cm.cohort.course.title : 'Module độc lập'}">Khóa học</span>
                                             </small>
                                             <h6 class="card-title fw-bold text-dark mb-2" th:text="${cm.cohort.name}" style="line-height: 1.4;">Tên Module</h6>
                                             <p class="text-muted small mb-3">
-                                                <i class="bi bi-person-circle me-1"></i><span th:text="${cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
+                                                <i class="bi bi-person-circle me-1"></i><span th:text="${cm.cohort.course != null && cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : (cm.cohort.createdBy != null ? cm.cohort.createdBy.fullName : 'Giảng viên')}">Giảng viên</span>
                                                 <br>
                                                 <i class="bi bi-calendar-check me-1 text-success"></i>Trạng thái: <span th:text="${cm.cohort.status}">Đang học</span>
                                             </p>
                                             <div class="mt-auto d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
-                                                <a th:href="@{'/courses/' + ${cm.cohort.course.slug} + '/modules/' + ${cm.cohort.id}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                                <a th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id : '/courses/standalone/modules/' + cm.cohort.id}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                                                     <i class="bi bi-eye me-1"></i>Chi tiết
                                                 </a>
-                                                <a th:href="@{'/courses/' + ${cm.cohort.course.slug} + '/modules/' + ${cm.cohort.id} + '/learn'}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                                <a th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id + '/learn' : '/courses/standalone/modules/' + cm.cohort.id + '/learn'}}" class="btn btn-sm btn-primary rounded-pill px-3">
                                                     <i class="bi bi-play-circle-fill me-1"></i>Vào học
                                                 </a>
                                             </div>
