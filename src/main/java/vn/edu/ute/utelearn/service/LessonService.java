@@ -11,4 +11,5 @@ public interface LessonService {
     Lesson createLesson(Long sectionId, LessonRequestDTO request, Long instructorId);
     Lesson updateLesson(Long lessonId, LessonRequestDTO request, Long instructorId);
     void deleteLesson(Long lessonId, Long instructorId);
+    void reorderLessons(Long sectionId, List<Long> lessonIds, Long instructorId);
 }

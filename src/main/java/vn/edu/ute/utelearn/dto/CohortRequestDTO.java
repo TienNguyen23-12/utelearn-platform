@@ -42,6 +42,10 @@ public class CohortRequestDTO {
 
     private String objectives;
 
+    private String announcementTitle;
+
+    private String announcementContent;
+
     private String thumbnailUrl;
 
     private java.util.List<CohortScheduleRequestDTO> schedules = new java.util.ArrayList<>();

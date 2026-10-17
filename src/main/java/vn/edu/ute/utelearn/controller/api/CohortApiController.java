@@ -41,6 +41,31 @@ public class CohortApiController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{moduleId}/lessons/{lessonId}/toggle-complete")
+    public ResponseEntity<Map<String, Object>> toggleLessonCompletion(
+            @PathVariable Long moduleId,
+            @PathVariable Long lessonId
+    ) {
+        java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Map<String, Object> result = cohortService.toggleLessonCompletion(moduleId, lessonId, currentUserOpt.get());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{moduleId}/progress")
+    public ResponseEntity<Map<String, Object>> getCohortProgress(@PathVariable Long moduleId) {
+        java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Map<String, Object> progress = cohortService.getCohortProgress(moduleId, currentUserOpt.get().getId());
+        return ResponseEntity.ok(progress);
+    }
+
     @GetMapping
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getPublicCohorts(

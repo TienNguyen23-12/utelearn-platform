@@ -8,7 +8,6 @@
 <body>
 
     <aside th:fragment="sidebar(activePage)" id="appSidebar" class="app-sidebar">
-        <!-- Brand Logo & Platform Title -->
         <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
             <a href="/home" class="d-flex align-items-center gap-3 text-decoration-none">
                 <span class="brand-logo-badge">
@@ -24,7 +23,6 @@
             </button>
         </div>
 
-        <!-- User Profile Card in Sidebar (Clickable to Profile) -->
         <a href="/profile" class="sidebar-user-card text-decoration-none d-block" th:if="${currentUser != null}"
             title="Xem & Chỉnh sửa hồ sơ cá nhân">
             <div class="d-flex align-items-center gap-3">
@@ -48,12 +46,10 @@
             </div>
         </a>
 
-        <!-- Navigation Menu Items -->
         <div class="sidebar-nav-container">
-            <!-- Section: TỔNG QUAN -->
             <div class="sidebar-heading">TỔNG QUAN</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'dashboard'} ? ' active' : ''"
                         href="/dashboard">
                         <i class="bi bi-grid-1x2-fill text-primary"></i>
@@ -67,7 +63,7 @@
                         <span>Hồ sơ cá nhân</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('STUDENT')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_courses'} ? ' active' : ''"
                         href="/courses/my-courses">
                         <i class="bi bi-journal-bookmark-fill text-warning"></i>
@@ -76,7 +72,6 @@
                 </li>
             </ul>
 
-            <!-- Section: QUẢN TRỊ HỆ THỐNG -->
             <div class="sidebar-heading" th:if="${@rbac.hasRole('ADMIN')}">QUẢN TRỊ HỆ THỐNG</div>
             <ul class="nav flex-column mb-2" th:if="${@rbac.hasRole('ADMIN')}">
                 <li class="nav-item">
@@ -102,9 +97,8 @@
                 </li>
             </ul>
 
-            <!-- Section: QUẢN LÝ ĐÀO TẠO & KHÓA HỌC -->
-            <div class="sidebar-heading">QUẢN LÝ ĐÀO TẠO</div>
-            <ul class="nav flex-column mb-2">
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">QUẢN LÝ ĐÀO TẠO</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                 <li class="nav-item">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'courses'} ? ' active' : ''"
                         href="/instructor/courses">
@@ -128,9 +122,8 @@
                 </li>
             </ul>
 
-            <!-- Section: KIỂM DUYỆT & THỰC HÀNH -->
-            <div class="sidebar-heading">KIỂM DUYỆT & THỰC HÀNH</div>
-            <ul class="nav flex-column mb-2">
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">KIỂM DUYỆT NỘI DUNG</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
                 <li class="nav-item">
                     <a class="nav-link sidebar-item"
                         th:classappend="${activePage == 'moderator-attendance'} ? ' active' : ''"
@@ -153,6 +146,10 @@
                         <span>Hàng đợi kiểm duyệt</span>
                     </a>
                 </li>
+            </ul>
+
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')}">LUYỆN TẬP</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')}">
                 <li class="nav-item">
                     <a class="nav-link sidebar-item d-flex align-items-center justify-content-between" th:classappend="${activePage == 'oj'} ? ' active' : ''"
                         href="/oj/problems">
@@ -166,7 +163,6 @@
             </ul>
         </div>
 
-        <!-- Sidebar Bottom Footer -->
         <div class="sidebar-footer mt-auto">
             <a href="/logout"
                 class="btn btn-soft-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2">

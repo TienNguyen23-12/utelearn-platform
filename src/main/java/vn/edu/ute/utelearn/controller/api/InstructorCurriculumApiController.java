@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import vn.edu.ute.utelearn.service.CloudinaryService;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/instructor/courses")
@@ -38,6 +40,7 @@ public class InstructorCurriculumApiController {
     private final LessonService lessonService;
     private final AuthService authService;
     private final InstructorAssetService assetService;
+    private final CloudinaryService cloudinaryService;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
@@ -147,6 +150,7 @@ public class InstructorCurriculumApiController {
                 map.put("title", l.getTitle());
                 map.put("lessonType", l.getLessonType());
                 map.put("isFreePreview", l.getIsFreePreview());
+                map.put("durationSeconds", l.getDurationSeconds() != null ? l.getDurationSeconds() : 0);
                 map.put("videoUrl", l.getVideoUrl());
                 map.put("assetUrl", l.getAssetUrl());
                 map.put("documentContent", l.getDocumentContent());
@@ -194,27 +198,49 @@ public class InstructorCurriculumApiController {
     @Transactional
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> createLesson(@PathVariable Long sectionId, @Valid @RequestBody LessonRequestDTO request) {
-        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
-        lessonService.createLesson(sectionId, request, currentUser.getId());
-        return ResponseEntity.ok().build();
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            Lesson created = lessonService.createLesson(sectionId, request, currentUser.getId());
+            return ResponseEntity.ok(Map.of("message", "Tạo bài học thành công", "id", created.getId()));
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi tạo bài học cho section {}: {}", sectionId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Lỗi khi tạo bài học"));
+        }
     }
 
     @PutMapping("/lessons/{lessonId}")
     @Transactional
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> updateLesson(@PathVariable Long lessonId, @Valid @RequestBody LessonRequestDTO request) {
-        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
-        lessonService.updateLesson(lessonId, request, currentUser.getId());
-        return ResponseEntity.ok().build();
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            Lesson updated = lessonService.updateLesson(lessonId, request, currentUser.getId());
+            return ResponseEntity.ok(Map.of("message", "Cập nhật bài học thành công", "id", updated.getId()));
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi cập nhật bài học {}: {}", lessonId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Lỗi khi cập nhật bài học"));
+        }
     }
 
     @DeleteMapping("/lessons/{lessonId}")
     @Transactional
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
-    public ResponseEntity<Void> deleteLesson(@PathVariable Long lessonId) {
-        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
-        lessonService.deleteLesson(lessonId, currentUser.getId());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> deleteLesson(@PathVariable Long lessonId) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            lessonService.deleteLesson(lessonId, currentUser.getId());
+            return ResponseEntity.ok(Map.of("message", "Xóa bài học thành công"));
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi xóa bài học {}: {}", lessonId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Lỗi khi xóa bài học"));
+        }
+    }
+
+    @GetMapping("/videos/detect-duration")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> detectVideoDuration(@RequestParam String url) {
+        Integer duration = cloudinaryService.getVideoDuration(url);
+        return ResponseEntity.ok(Map.of("durationSeconds", duration != null ? duration : 0));
     }
 
     @GetMapping("/assets")
@@ -367,6 +393,12 @@ public class InstructorCurriculumApiController {
                 cohort.setPrice(new java.math.BigDecimal(p.toString()));
             }
         }
+        if (payload.containsKey("announcementTitle")) {
+            cohort.setAnnouncementTitle((String) payload.get("announcementTitle"));
+        }
+        if (payload.containsKey("announcementContent")) {
+            cohort.setAnnouncementContent((String) payload.get("announcementContent"));
+        }
 
         Cohort saved = cohortRepository.save(cohort);
         log.info("[InstructorCurriculumApiController] Cập nhật inline module id: {}, user: {}", cohortId, currentUser.getEmail());
@@ -377,6 +409,57 @@ public class InstructorCurriculumApiController {
         resp.put("code", saved.getCode());
         resp.put("description", saved.getDescription());
         resp.put("price", saved.getPrice());
+        resp.put("announcementTitle", saved.getAnnouncementTitle());
+        resp.put("announcementContent", saved.getAnnouncementContent());
         return ResponseEntity.ok(resp);
+    }
+
+    @PutMapping("/sections/reorder")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> reorderSections(@RequestBody List<Long> sectionIds) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        sectionService.reorderSections(sectionIds, currentUser.getId());
+        return ResponseEntity.ok(Map.of("message", "Cập nhật thứ tự chương thành công"));
+    }
+
+    @PutMapping("/lessons/reorder")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> reorderLessons(@RequestBody Map<String, Object> payload) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        Long sectionId = null;
+        if (payload.get("sectionId") != null) {
+            sectionId = Long.valueOf(payload.get("sectionId").toString());
+        }
+        List<?> rawIds = (List<?>) payload.get("lessonIds");
+        List<Long> lessonIds = new ArrayList<>();
+        if (rawIds != null) {
+            for (Object id : rawIds) {
+                if (id != null) {
+                    lessonIds.add(Long.valueOf(id.toString()));
+                }
+            }
+        }
+        lessonService.reorderLessons(sectionId, lessonIds, currentUser.getId());
+        return ResponseEntity.ok(Map.of("message", "Cập nhật thứ tự bài học thành công"));
+    }
+
+    @PutMapping("/{courseId}/modules/reorder")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> reorderModules(@PathVariable Long courseId, @RequestBody List<Long> moduleIds) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        if (moduleIds != null && !moduleIds.isEmpty()) {
+            for (int i = 0; i < moduleIds.size(); i++) {
+                Long mId = moduleIds.get(i);
+                Cohort cohort = cohortRepository.findById(mId).orElse(null);
+                if (cohort != null) {
+                    cohort.setOrderIndex(i + 1);
+                    cohortRepository.save(cohort);
+                }
+            }
+        }
+        return ResponseEntity.ok(Map.of("message", "Cập nhật thứ tự module thành công"));
     }
 }

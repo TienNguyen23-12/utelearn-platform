@@ -19,7 +19,7 @@
 <aside th:replace="~{fragments/sidebar :: sidebar('courses')}"></aside>
 
 <div class="app-content-wrapper">
-    <header th:replace="~{fragments/navbar :: navbar('Khóa học & Lớp học')}"></header>
+    <header th:replace="~{fragments/navbar :: navbar('Quản lý Khóa học & Module')}"></header>
 
     <main class="app-main-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -116,8 +116,6 @@
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Phân trang (Pagination) -->
             <div th:if="${totalPages > 1}" class="d-flex justify-content-end mt-3">
                 <ul class="pagination pagination-sm mb-0">
                     <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">

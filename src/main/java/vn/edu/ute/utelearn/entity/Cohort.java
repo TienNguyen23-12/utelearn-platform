@@ -71,8 +71,18 @@ public class Cohort {
     @Column(columnDefinition = "TEXT")
     private String objectives;
 
+    @Column(name = "announcement_title", length = 255)
+    private String announcementTitle;
+
+    @Column(name = "announcement_content", columnDefinition = "TEXT")
+    private String announcementContent;
+
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
+
+    @Column(name = "order_index")
+    @Builder.Default
+    private Integer orderIndex = 1;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -150,5 +160,21 @@ public class Cohort {
         return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
                 .withZone(java.time.ZoneId.systemDefault())
                 .format(studyEnd);
+    }
+
+    @Transient
+    public String getEffectiveAnnouncementTitle() {
+        if (announcementTitle != null && !announcementTitle.trim().isBlank()) {
+            return announcementTitle.trim();
+        }
+        return "Thông báo chung & Hướng dẫn học tập";
+    }
+
+    @Transient
+    public String getEffectiveAnnouncementContent() {
+        if (announcementContent != null && !announcementContent.trim().isBlank()) {
+            return announcementContent.trim();
+        }
+        return "Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.";
     }
 }

@@ -139,19 +139,6 @@
             overflow: hidden;
         }
 
-        .learn-nav-bar {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 12px 18px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
         .learn-tabs .nav-link {
             font-weight: 600;
             font-size: 14px;
@@ -420,19 +407,23 @@
         <div class="brand-logo-badge brand-logo-mini">
             <i class="bi bi-mortarboard-fill"></i>
         </div>
-        <div class="d-none d-sm-block brand-title brand-title-mini me-2">
+        <div class="d-none d-sm-block brand-title brand-title-mini me-1">
             UTE<span>Learn</span>
         </div>
         <div class="vr d-none d-md-block mx-1 opacity-25" style="height: 24px;"></div>
-        <div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-primary text-white" style="font-size: 11px;" th:text="${module.code}">MOD-01</span>
-                <h1 class="module-header-title mb-0" th:text="${module.name}">Tên Module</h1>
-            </div>
-            <div class="text-muted d-none d-lg-block" style="font-size: 11.5px;">
-                Khóa học: <span th:text="${course.title}">Tên Khóa Học</span>
-            </div>
-        </div>
+        <nav aria-label="breadcrumb" class="d-flex align-items-center overflow-hidden">
+            <ol class="breadcrumb mb-0 align-items-center flex-nowrap small text-nowrap" style="font-size: 12px;">
+                <li class="breadcrumb-item d-none d-md-inline text-truncate" style="max-width: 180px;">
+                    <a th:href="@{'/courses/' + ${course.slug}}" class="text-decoration-none text-muted" th:text="${course.title}">Khóa học</a>
+                </li>
+                <li class="breadcrumb-item text-truncate" style="max-width: 220px;">
+                    <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id}}" class="text-decoration-none fw-semibold text-primary" th:text="${module.code + ': ' + module.name}">Module</a>
+                </li>
+                <li class="breadcrumb-item active d-none d-lg-inline text-truncate fw-bold text-dark" style="max-width: 260px;" id="learnBreadcrumbLessonTitle" aria-current="page">
+                    Đang tải bài học...
+                </li>
+            </ol>
+        </nav>
     </div>
 
     <div class="d-flex align-items-center gap-2 gap-md-3">
@@ -489,11 +480,11 @@
                     <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">student@utelearn.edu.vn</div>
                 </li>
                 <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
-                <li th:if="${isAdmin}"><a class="dropdown-item py-2 small rounded-3" href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
-                <li th:if="${isInstructor}"><a class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
-                <li th:if="${isModerator}"><a class="dropdown-item py-2 small rounded-3" href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi Kiểm duyệt</a></li>
+                <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
+                <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
+                <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi Kiểm duyệt</a></li>
                 <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                <li><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <a class="dropdown-item py-2 small rounded-3 text-danger" href="/logout">
@@ -558,6 +549,7 @@
     const moduleDescription = /*[[${module.description}]]*/ '';
     const initialLessonId = /*[[${initialLessonId}]]*/ null;
 
+    const serverCompletedIds = /*[[${completedLessonIds}]]*/ [];
     const lessonsRaw = /*[[${lessonDtos}]]*/ [];
     let moduleLessons = [];
     if (lessonsRaw && Array.isArray(lessonsRaw)) {
@@ -570,8 +562,30 @@
             documentContent: l.documentContent || null,
             assetUrl: l.assetUrl || null,
             sectionId: l.sectionId || null,
-            sectionTitle: l.sectionTitle || 'Nội dung chung'
+            sectionTitle: l.sectionTitle || 'Nội dung chung',
+            sectionOrder: l.sectionOrder || 0,
+            orderIndex: l.orderIndex || 0,
+            isLocked: l.isLocked || false,
+            unlockAt: l.unlockAt || null,
+            unlockAtDisplay: l.unlockAtDisplay || null,
+            deadlineAt: l.deadlineAt || null,
+            deadlineAtDisplay: l.deadlineAtDisplay || null
         }));
+        moduleLessons.sort((a, b) => {
+            const secOrderA = Number(a.sectionOrder) || 0;
+            const secOrderB = Number(b.sectionOrder) || 0;
+            if (secOrderA !== secOrderB) return secOrderA - secOrderB;
+
+            const secIdA = Number(a.sectionId) || 0;
+            const secIdB = Number(b.sectionId) || 0;
+            if (secIdA !== secIdB) return secIdA - secIdB;
+
+            const ordA = Number(a.orderIndex) || 0;
+            const ordB = Number(b.orderIndex) || 0;
+            if (ordA !== ordB) return ordA - ordB;
+
+            return (Number(a.id) || 0) - (Number(b.id) || 0);
+        });
     }
 
     let currentLessonIndex = -1;
@@ -581,9 +595,11 @@
     function getCompletedLessons() {
         try {
             const data = localStorage.getItem(storageKey);
-            return data ? JSON.parse(data) : [];
+            const localArr = data ? JSON.parse(data) : [];
+            const mergedSet = new Set([...serverCompletedIds, ...localArr]);
+            return Array.from(mergedSet);
         } catch (e) {
-            return [];
+            return serverCompletedIds || [];
         }
     }
 
@@ -591,30 +607,62 @@
         return getCompletedLessons().includes(id);
     }
 
-    function toggleLessonCompleted(id) {
-        let completed = getCompletedLessons();
-        if (completed.includes(id)) {
-            completed = completed.filter(item => item !== id);
+    async function toggleLessonCompleted(id) {
+        const currentLesson = moduleLessons.find(l => l.id === id);
+        if (currentLesson && currentLesson.isLocked) {
             if (typeof Toastify !== 'undefined') {
-                Toastify({text: 'Đã hủy đánh dấu hoàn thành bài học.', style: {background: '#64748b'}}).showToast();
+                Toastify({text: 'Bài học này chưa đến thời gian mở.', style: {background: '#eab308'}}).showToast();
             }
-        } else {
-            completed.push(id);
-            if (typeof Toastify !== 'undefined') {
-                Toastify({text: 'Chúc mừng! Bạn đã hoàn thành bài học này.', style: {background: '#15803d'}}).showToast();
-            }
+            return;
         }
-        localStorage.setItem(storageKey, JSON.stringify(completed));
-        updateProgressUI();
-        updateSidebarItemsUI();
-        updateCompleteButtonUI(id);
+
+        const btn = document.getElementById('btnToggleComplete');
+        if (btn) btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/cohorts/' + moduleId + '/lessons/' + id + '/toggle-complete', {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                let completed = getCompletedLessons();
+                if (data.completed) {
+                    if (!completed.includes(id)) completed.push(id);
+                    if (typeof Toastify !== 'undefined') {
+                        Toastify({text: 'Chúc mừng! Bạn đã hoàn thành bài học này.', style: {background: '#15803d'}}).showToast();
+                    }
+                } else {
+                    completed = completed.filter(item => item !== id);
+                    if (typeof Toastify !== 'undefined') {
+                        Toastify({text: 'Đã hủy đánh dấu hoàn thành bài học.', style: {background: '#64748b'}}).showToast();
+                    }
+                }
+                localStorage.setItem(storageKey, JSON.stringify(completed));
+                updateProgressUI(data.progressPercent, data.completedCount, data.totalCount);
+                updateSidebarItemsUI();
+                updateCompleteButtonUI(id);
+            }
+        } catch (e) {
+            let completed = getCompletedLessons();
+            if (completed.includes(id)) {
+                completed = completed.filter(item => item !== id);
+            } else {
+                completed.push(id);
+            }
+            localStorage.setItem(storageKey, JSON.stringify(completed));
+            updateProgressUI();
+            updateSidebarItemsUI();
+            updateCompleteButtonUI(id);
+        } finally {
+            if (btn) btn.disabled = false;
+        }
     }
 
-    function updateProgressUI() {
+    function updateProgressUI(forcedPercent, forcedCount, forcedTotal) {
         const completed = getCompletedLessons();
-        const total = moduleLessons.length;
-        const count = moduleLessons.filter(l => completed.includes(l.id)).length;
-        const percent = total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0;
+        const total = (forcedTotal !== undefined) ? forcedTotal : moduleLessons.length;
+        const count = (forcedCount !== undefined) ? forcedCount : moduleLessons.filter(l => completed.includes(l.id)).length;
+        const percent = (forcedPercent !== undefined) ? forcedPercent : (total > 0 ? Math.min(100, Math.round((count / total) * 100)) : 0);
 
         const percentEl = document.getElementById('progressPercent');
         const countEl = document.getElementById('completedCount');
@@ -654,8 +702,13 @@
 
             if (targetIndex === -1) {
                 const completed = getCompletedLessons();
-                const firstUncompletedIndex = moduleLessons.findIndex(l => !completed.includes(l.id));
-                targetIndex = firstUncompletedIndex !== -1 ? firstUncompletedIndex : 0;
+                const firstAvailableIndex = moduleLessons.findIndex(l => !l.isLocked && !completed.includes(l.id));
+                if (firstAvailableIndex !== -1) {
+                    targetIndex = firstAvailableIndex;
+                } else {
+                    const firstUnlockedIndex = moduleLessons.findIndex(l => !l.isLocked);
+                    targetIndex = firstUnlockedIndex !== -1 ? firstUnlockedIndex : 0;
+                }
             }
 
             loadLessonByIndex(targetIndex);
@@ -711,11 +764,14 @@
 
         const sectionsMap = new Map();
         moduleLessons.forEach(lesson => {
-            const secKey = lesson.sectionTitle || 'Nội dung chung';
+            const secKey = (lesson.sectionId !== null && lesson.sectionId !== undefined) ? 'sec_' + lesson.sectionId : 'general';
             if (!sectionsMap.has(secKey)) {
-                sectionsMap.set(secKey, []);
+                sectionsMap.set(secKey, {
+                    title: lesson.sectionTitle || 'Nội dung chung',
+                    lessons: []
+                });
             }
-            sectionsMap.get(secKey).push(lesson);
+            sectionsMap.get(secKey).lessons.push(lesson);
         });
 
         const completed = getCompletedLessons();
@@ -723,13 +779,15 @@
         let globalIndex = 0;
         let secIndex = 0;
 
-        sectionsMap.forEach((lessons, secTitle) => {
+        sectionsMap.forEach(secGroup => {
             secIndex++;
+            const secTitle = secGroup.title;
+            const lessons = secGroup.lessons;
             html += `
                 <div class="sidebar-section-header">
                     <div class="d-flex align-items-center gap-2 text-truncate me-2">
                         <i class="bi bi-folder2-open text-primary"></i>
-                        <span class="text-truncate" title="${secTitle}">Phần ${secIndex}: ${secTitle}</span>
+                        <span class="text-truncate" title="${secTitle}">Chương ${secIndex}: ${secTitle}</span>
                     </div>
                     <span class="sidebar-section-badge flex-shrink-0">${lessons.length} bài</span>
                 </div>
@@ -739,7 +797,9 @@
                 globalIndex++;
                 const isCompleted = completed.includes(lesson.id);
                 let iconClass = 'bi-file-earmark-text text-secondary';
-                if (isCompleted) {
+                if (lesson.isLocked) {
+                    iconClass = 'bi-lock-fill text-warning';
+                } else if (isCompleted) {
                     iconClass = 'bi-check-circle-fill text-success';
                 } else if (lesson.lessonType === 'VIDEO') {
                     iconClass = 'bi-play-circle-fill text-primary';
@@ -751,25 +811,31 @@
                     iconClass = 'bi-code-slash text-info';
                 }
 
-                let durationHtml = '';
-                if (lesson.durationSeconds && lesson.durationSeconds > 0) {
-                    const mins = Math.ceil(lesson.durationSeconds / 60);
-                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>${mins}p</span>`;
+                let metaBadgeHtml = '';
+                if (lesson.isLocked) {
+                    metaBadgeHtml = `<span class="badge bg-warning-subtle text-warning border border-warning-subtle text-truncate" style="font-size: 10px; max-width: 140px;" title="Mở lúc: ${lesson.unlockAtDisplay}"><i class="bi bi-clock me-1"></i>${lesson.unlockAtDisplay || 'Chưa mở'}</span>`;
+                } else if (lesson.durationSeconds && lesson.durationSeconds > 0) {
+                    const totalSec = lesson.durationSeconds;
+                    const mins = Math.floor(totalSec / 60);
+                    const secs = totalSec % 60;
+                    const exactTime = mins > 0 ? (secs > 0 ? `${mins}p ${secs}s` : `${mins}p`) : `${secs}s`;
+                    const roundedMins = Math.ceil(totalSec / 60);
+                    metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;" title="Thời lượng: ${exactTime}"><i class="bi bi-clock me-1"></i>${roundedMins}p</span>`;
                 } else if (lesson.lessonType === 'DOCUMENT') {
-                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-file-text me-1"></i>Tài liệu</span>`;
+                    metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-file-text me-1"></i>Tài liệu</span>`;
                 } else if (lesson.lessonType === 'QUIZ') {
-                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-question-circle me-1"></i>Trắc nghiệm</span>`;
+                    metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-question-circle me-1"></i>Trắc nghiệm</span>`;
                 } else if (lesson.lessonType === 'CODE_PRACTICE') {
-                    durationHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-laptop me-1"></i>Bài tập Code</span>`;
+                    metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-laptop me-1"></i>Bài tập Code</span>`;
                 }
 
                 html += `
-                    <div class="sidebar-lesson-item" id="sidebar-lesson-${lesson.id}" onclick="loadLessonById(${lesson.id})">
+                    <div class="sidebar-lesson-item ${lesson.isLocked ? 'sidebar-lesson-locked opacity-75' : ''}" id="sidebar-lesson-${lesson.id}" onclick="loadLessonById(${lesson.id})">
                         <i class="bi ${iconClass} lesson-status-icon" id="sidebar-icon-${lesson.id}"></i>
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="lesson-title-text" title="${lesson.title}">${globalIndex}. ${lesson.title}</div>
                             <div class="d-flex align-items-center justify-content-between gap-2 mt-1">
-                                ${durationHtml}
+                                ${metaBadgeHtml}
                                 <span class="badge bg-light text-secondary border" style="font-size: 10px;">Bài ${globalIndex}</span>
                             </div>
                         </div>
@@ -786,6 +852,10 @@
         moduleLessons.forEach(l => {
             const iconEl = document.getElementById('sidebar-icon-' + l.id);
             if (!iconEl) return;
+            if (l.isLocked) {
+                iconEl.className = 'bi bi-lock-fill text-warning lesson-status-icon';
+                return;
+            }
             const isCompleted = completed.includes(l.id);
 
             if (isCompleted) {
@@ -825,6 +895,11 @@
         }
 
         renderLessonContent(lesson);
+        const breadcrumbLessonEl = document.getElementById('learnBreadcrumbLessonTitle');
+        if (breadcrumbLessonEl) {
+            breadcrumbLessonEl.textContent = lesson.title || 'Bài học';
+            breadcrumbLessonEl.title = lesson.title || '';
+        }
         updateCompleteButtonUI(lesson.id);
         updateNavButtonsUI();
         syncLastAccessedLesson(lesson.id);
@@ -851,6 +926,13 @@
         const text = document.getElementById('completeText');
         if (!btn) return;
 
+        const currentLesson = moduleLessons.find(l => l.id === lessonId);
+        if (currentLesson && currentLesson.isLocked) {
+            btn.style.display = 'none';
+            return;
+        }
+        btn.style.display = 'inline-flex';
+
         const isCompleted = isLessonCompleted(lessonId);
         if (isCompleted) {
             btn.className = 'btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2';
@@ -864,16 +946,11 @@
     }
 
     function updateNavButtonsUI() {
-        const prevBtn = document.getElementById('btnPrevLesson');
-        const nextBtn = document.getElementById('btnNextLesson');
         const footerPrev = document.getElementById('footerBtnPrev');
         const footerNext = document.getElementById('footerBtnNext');
         const footerPrevTitle = document.getElementById('footerPrevTitle');
         const footerNextTitle = document.getElementById('footerNextTitle');
         const jumpSelect = document.getElementById('jumpLessonSelect');
-
-        if (prevBtn) prevBtn.disabled = (currentLessonIndex <= 0);
-        if (nextBtn) nextBtn.disabled = (currentLessonIndex >= moduleLessons.length - 1);
 
         if (footerPrev) {
             footerPrev.disabled = (currentLessonIndex <= 0);
@@ -1017,6 +1094,34 @@
 
     function renderLessonContent(lesson) {
         const mainContent = document.getElementById('mainContentInner');
+
+        if (lesson.isLocked) {
+            mainContent.innerHTML = `
+                <div class="card border-0 rounded-4 shadow-sm p-5 text-center my-4 bg-white">
+                    <div class="mb-4">
+                        <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center p-4" style="width: 90px; height: 90px;">
+                            <i class="bi bi-lock-fill display-4 text-warning"></i>
+                        </div>
+                    </div>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1.5 fw-bold mx-auto mb-3" style="font-size: 12px;">
+                        BÀI HỌC CHƯA ĐẾN THỜI ĐIỂM MỞ
+                    </span>
+                    <h3 class="fw-bold text-dark mb-2">${lesson.title}</h3>
+                    <p class="text-muted mb-4" style="max-width: 540px; margin: 0 auto; line-height: 1.6;">
+                        Nội dung bài học này được giảng viên thiết lập lịch phát hành vào lúc <strong class="text-dark">${lesson.unlockAtDisplay || lesson.unlockAt}</strong>. Vui lòng quay lại sau thời gian trên để tiếp tục học tập.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-outline-primary rounded-pill px-4" onclick="stepLesson(-1)">
+                            <i class="bi bi-arrow-left me-1"></i>Quay lại bài trước
+                        </button>
+                    </div>
+                </div>
+            `;
+            const completeBtn = document.getElementById('btnToggleComplete');
+            if (completeBtn) completeBtn.style.display = 'none';
+            return;
+        }
+
         let resolvedVideoUrl = (lesson.videoUrl && lesson.videoUrl.trim() !== '') ? lesson.videoUrl.trim() : '';
         const rawAssetUrl = (lesson.assetUrl && lesson.assetUrl.trim() !== '') ? lesson.assetUrl.trim() : '';
 
@@ -1116,13 +1221,24 @@
             }
         } else {
             mainMediaHtml = `
-                <div class="cinema-player-wrapper mb-4">
-                    <div class="d-flex align-items-center justify-content-center p-5 text-center text-white-50" style="min-height: 380px;">
-                        <div>
-                            <i class="bi bi-camera-video-off display-4 mb-3 d-block text-secondary"></i>
-                            <h5 class="text-white">Chưa có video cho bài học này</h5>
-                            <p class="small text-white-50">Vui lòng tham khảo tài liệu học tập bên dưới.</p>
+                <div class="card border-0 rounded-4 shadow-sm p-5 text-center my-4 bg-white">
+                    <div class="mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center p-3" style="width: 76px; height: 76px;">
+                            <i class="bi bi-hourglass-split display-6 text-primary"></i>
                         </div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5 fw-bold mx-auto mb-3" style="font-size: 11px;">
+                        BÀI GIẢNG ĐANG ĐƯỢC CẬP NHẬT
+                    </span>
+                    <h4 class="fw-bold text-dark mb-2">${lesson.title}</h4>
+                    <p class="text-muted mb-4" style="max-width: 520px; margin: 0 auto; line-height: 1.6; font-size: 13.5px;">
+                        Giảng viên đang biên soạn nội dung số cho bài học này. Bạn có thể tham khảo mục tiêu học phần bên dưới hoặc chuyển sang bài học tiếp theo.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold" onclick="stepLesson(1)">
+                            <span>Sang bài tiếp theo</span>
+                            <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -1176,33 +1292,22 @@
         mainContent.innerHTML = `
             ${mainMediaHtml}
 
-            <div class="learn-nav-bar">
-                <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnPrevLesson" onclick="stepLesson(-1)">
-                        <i class="bi bi-chevron-left"></i>
-                        <span>Bài trước</span>
-                    </button>
-                    <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnNextLesson" onclick="stepLesson(1)">
-                        <span>Bài kế tiếp</span>
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
-                </div>
-                <div>
-                    <button class="btn btn-outline-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnToggleComplete" onclick="toggleLessonCompleted(${lesson.id})">
-                        <i class="bi bi-check2-circle fs-6" id="completeIcon"></i>
-                        <span id="completeText">Đánh dấu đã hoàn thành</span>
-                    </button>
-                </div>
-            </div>
-
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
                 <div class="d-flex align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom flex-wrap">
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                             <span class="badge bg-primary text-white" style="font-size: 11px;">Bài ${currentLessonIndex + 1} / ${moduleLessons.length}</span>
                             <span class="badge bg-light text-secondary border" style="font-size: 11px;">${moduleCode}</span>
+                            ${lesson.deadlineAtDisplay ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 11px;"><i class="bi bi-alarm me-1"></i>Hạn nộp: ${lesson.deadlineAtDisplay}</span>` : ''}
+                            ${lesson.unlockAtDisplay ? `<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 11px;"><i class="bi bi-clock me-1"></i>Mở lúc: ${lesson.unlockAtDisplay}</span>` : ''}
                         </div>
                         <h4 class="fw-bold text-dark mb-0">${lesson.title}</h4>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-success btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" id="btnToggleComplete" onclick="toggleLessonCompleted(${lesson.id})">
+                            <i class="bi bi-check2-circle fs-6" id="completeIcon"></i>
+                            <span id="completeText">Đánh dấu đã hoàn thành</span>
+                        </button>
                     </div>
                 </div>
 

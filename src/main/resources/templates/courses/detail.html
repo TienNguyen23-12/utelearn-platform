@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết khóa học - UTELearn</title>
+    <title th:text="${course.title + ' - UTELearn'}">Chi tiết khóa học - UTELearn</title>
+    <meta name="description" th:content="${course.headline != null && !course.headline.isBlank() ? course.headline : course.title}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +29,6 @@
             color: #1e293b;
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
         }
         .site-navbar {
             background: #ffffff;
@@ -94,31 +94,25 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 15px 35px -5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 90px;
         }
-        .enroll-img { width: 100%; height: 220px; object-fit: cover; }
-        .btn-gradient {
-            background: var(--primary-gradient);
-            color: #ffffff;
-            border: none;
-            font-weight: 600;
-            padding: 12px 28px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.5);
-            transition: all 0.25s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+        @media (min-width: 992px) {
+            .enroll-col-desktop {
+                margin-top: -320px !important;
+            }
+            .sticky-drawer {
+                position: -webkit-sticky;
+                position: sticky;
+                top: 90px;
+                z-index: 100;
+            }
         }
-        .btn-gradient:hover {
-            background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
+        @media (max-width: 991.98px) {
+            .enroll-col-desktop {
+                margin-top: 24px !important;
+            }
         }
-
+        .enroll-img { width: 100%; height: 180px; object-fit: cover; }
+        .instructor-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
         .user-avatar-placeholder {
             background: var(--primary-gradient);
             color: #ffffff;
@@ -128,25 +122,41 @@
             align-items: center;
             justify-content: center;
         }
-
+        .btn-gradient {
+            background: var(--primary-gradient);
+            color: #ffffff;
+            border: none;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            text-align: center;
+            display: block;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        
         .instructor-edit-ctrl {
             display: none !important;
         }
         body.moodle-edit-mode-active .instructor-edit-ctrl {
             display: inline-flex !important;
         }
-        body.moodle-edit-mode-active .instructor-edit-block {
-            display: block !important;
+        body.moodle-edit-mode-active .instructor-edit-ctrl.d-flex {
+            display: flex !important;
         }
-        @media (min-width: 992px) {
-            .enroll-col-desktop {
-                margin-top: -120px !important;
-            }
+        body.moodle-edit-mode-active .module-drag-handle {
+            display: inline-flex !important;
         }
-        @media (max-width: 991.98px) {
-            .enroll-col-desktop {
-                margin-top: 24px !important;
-            }
+        body.moodle-edit-mode-active .accordion-button {
+            cursor: pointer;
+        }
+        .module-drag-handle {
+            display: none !important;
         }
     </style>
 </head>
@@ -154,58 +164,111 @@
 
 <nav th:replace="~{fragments/navbar :: siteNavbar('courses')}"></nav>
 
-<div id="appContainer">
-    <div class="text-center py-5 my-5 text-muted">
-        <div class="spinner-border text-primary fs-4 mb-3"></div>
-        <h5>Đang tải dữ liệu khóa học...</h5>
+<div class="hero-banner">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-3">
+                        <li class="breadcrumb-item"><a href="/home" class="text-white-50 text-decoration-none">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a href="/courses" class="text-white-50 text-decoration-none">Khóa học</a></li>
+                        <li class="breadcrumb-item" th:if="${course.category != null}"><a th:href="@{'/courses?category=' + ${course.category.slug}}" class="text-white-50 text-decoration-none" th:text="${course.category.name}">Danh mục</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page" th:text="${course.title}">Tiêu đề</li>
+                    </ol>
+                </nav>
+
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary text-white border border-primary-subtle rounded-pill px-3 py-1 fw-bold" th:if="${course.category != null}" th:text="${course.category.name}">Lập trình Web</span>
+                    <span class="badge bg-light text-primary border rounded-pill px-3 py-1" th:text="${course.code}">CS-101</span>
+                </div>
+
+                <div id="courseTitleViewWrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <h1 class="display-6 fw-bold text-white mb-2" id="courseTitleText" th:text="${course.title}">Tiêu đề khóa học</h1>
+                        <button class="btn btn-xs btn-outline-light rounded-circle instructor-edit-ctrl" onclick="toggleEditField('courseTitle')" style="width: 28px; height: 28px; padding: 0;">
+                            <i class="bi bi-pencil" style="font-size: 12px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="courseTitleEditWrap" class="d-none mb-3">
+                    <div class="input-group">
+                        <input type="text" id="inputCourseTitle" class="form-control form-control-lg fw-bold" th:value="${course.title}">
+                        <button class="btn btn-success fw-bold px-3" onclick="saveCourseField('title')">
+                            <i class="bi bi-check-lg me-1"></i>Lưu
+                        </button>
+                        <button class="btn btn-light" onclick="toggleEditField('courseTitle')">Hủy</button>
+                    </div>
+                </div>
+
+                <div id="courseHeadlineViewWrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <p class="lead opacity-90 text-light mb-0" id="courseHeadlineText" th:text="${course.headline != null && !course.headline.isBlank() ? course.headline : 'Chưa có mô tả ngắn cho khóa học này.'}">Mô tả ngắn</p>
+                        <button class="btn btn-xs btn-outline-light rounded-circle instructor-edit-ctrl" onclick="toggleEditField('courseHeadline')" style="width: 24px; height: 24px; padding: 0;">
+                            <i class="bi bi-pencil" style="font-size: 10px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="courseHeadlineEditWrap" class="d-none mb-3">
+                    <div class="input-group">
+                        <input type="text" id="inputCourseHeadline" class="form-control" th:value="${course.headline}">
+                        <button class="btn btn-success fw-bold px-3" onclick="saveCourseField('headline')">
+                            <i class="bi bi-check-lg me-1"></i>Lưu
+                        </button>
+                        <button class="btn btn-light" onclick="toggleEditField('courseHeadline')">Hủy</button>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center flex-wrap gap-4 mt-4 small opacity-75">
+                    <span th:if="${course.createdBy != null}">
+                        <i class="bi bi-person-fill me-1"></i> Giảng viên: <strong th:text="${course.createdBy.fullName}">Giảng viên</strong>
+                    </span>
+                    <div id="courseLevelViewWrap" class="d-inline-flex align-items-center gap-1">
+                        <span><i class="bi bi-bar-chart-fill me-1"></i> Cấp độ: 
+                            <span id="courseLevelText" th:text="${course.level == 'BEGINNER' ? 'Người mới bắt đầu' : (course.level == 'INTERMEDIATE' ? 'Trung bình' : (course.level == 'ADVANCED' ? 'Nâng cao' : 'Tất cả cấp độ'))}">Cấp độ</span>
+                        </span>
+                        <button class="btn btn-xs btn-outline-light rounded-circle instructor-edit-ctrl" onclick="toggleEditField('courseLevel')" style="width: 24px; height: 24px; padding: 0;">
+                            <i class="bi bi-pencil" style="font-size: 10px;"></i>
+                        </button>
+                    </div>
+                    <div id="courseLevelEditWrap" class="d-none align-items-center gap-1">
+                        <select id="inputCourseLevel" class="form-select form-select-sm py-0 px-2 bg-white text-dark" style="width: auto; font-size: 12px;">
+                            <option value="BEGINNER" th:selected="${course.level == 'BEGINNER'}">Người mới bắt đầu</option>
+                            <option value="INTERMEDIATE" th:selected="${course.level == 'INTERMEDIATE'}">Trung bình</option>
+                            <option value="ADVANCED" th:selected="${course.level == 'ADVANCED'}">Nâng cao</option>
+                        </select>
+                        <button class="btn btn-sm btn-success py-0 px-2" onclick="saveCourseField('level')"><i class="bi bi-check-lg"></i></button>
+                        <button class="btn btn-sm btn-light py-0 px-2" onclick="toggleEditField('courseLevel')"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<script th:inline="javascript">
-    const slug = /*[[${courseSlug}]]*/ 'default-slug';
-    const isEnrolled = /*[[${isEnrolled != null ? isEnrolled : false}]]*/ false;
-    const isAllEnrolled = /*[[${isAllEnrolled != null ? isAllEnrolled : false}]]*/ false;
-    const fullCoursePrice = /*[[${fullCoursePrice != null ? fullCoursePrice : 0}]]*/ 0;
-    const remainingCoursePrice = /*[[${remainingCoursePrice != null ? remainingCoursePrice : 0}]]*/ 0;
-    const sumOfCohorts = /*[[${sumOfCohorts != null ? sumOfCohorts : 0}]]*/ 0;
-    const discountAmount = /*[[${discountAmount != null ? discountAmount : 0}]]*/ 0;
-    const unenrolledCount = /*[[${unenrolledCount != null ? unenrolledCount : 0}]]*/ 0;
-    const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
-    let currentCourseId = 0;
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="content-card">
+                <div th:if="${hasAccessRole}" class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm w-100">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-cone-striped text-warning-emphasis fs-4"></i>
+                        <div>
+                            <div class="fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-1"></i>Chế độ chỉnh sửa trực tiếp (Inline Edit) đang BẬT</div>
+                            <div class="text-secondary small">Bạn có thể bấm vào biểu tượng cây bút để sửa trực tiếp Tiêu đề, Mô tả ngắn, Mục tiêu, Mô tả chi tiết hoặc Tên module ngay trên trang này.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <a th:href="@{'/instructor/courses/' + ${course.id} + '/edit'}" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1.5 fw-semibold bg-white">
+                            <i class="bi bi-sliders me-1"></i>Cài đặt nâng cao
+                        </a>
+                        <a th:href="@{'/instructor/courses/' + ${course.id} + '/curriculum'}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold bg-white">
+                            <i class="bi bi-diagram-3 me-1"></i>Sửa giáo trình
+                        </a>
+                    </div>
+                </div>
 
-    document.addEventListener("DOMContentLoaded", async () => {
-        try {
-            const res = await fetch('/api/courses/' + slug);
-            if (!res.ok) throw new Error("Khóa học không tồn tại");
-            const course = await res.json();
-            currentCourseId = course.id;
-            
-            const img = course.thumbnailUrl || '/images/courses/default-cover.png';
-            
-            let objItemsText = '';
-            let rawObjArr = [];
-            if (course.objectives && course.objectives !== '[]') {
-                try {
-                    rawObjArr = JSON.parse(course.objectives);
-                } catch(e) {
-                    rawObjArr = (course.objectives || '').split('\n').map(s => s.trim()).filter(s => s);
-                }
-            }
-            if (Array.isArray(rawObjArr)) {
-                objItemsText = rawObjArr.map(item => (typeof item === 'object' && item.value) ? item.value : item).join('\n');
-            }
-
-            let objectivesRenderHtml = '';
-            if (rawObjArr && rawObjArr.length > 0) {
-                rawObjArr.forEach(item => {
-                    const text = (typeof item === 'object' && item.value) ? item.value : item;
-                    objectivesRenderHtml += `<div class="col-md-6 d-flex gap-2"><i class="bi bi-check-circle-fill text-success mt-1"></i><span>${text}</span></div>`;
-                });
-            } else {
-                objectivesRenderHtml = '<div class="col-12 text-muted small fst-italic">Chưa thiết lập mục tiêu đầu ra cho khóa học.</div>';
-            }
-
-            let introHtml = `
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bullseye text-primary me-2"></i>Bạn sẽ học được gì?</h5>
@@ -216,13 +279,19 @@
                     
                     <div id="courseObjectivesViewWrap">
                         <div class="row g-2" id="courseObjectivesContainer">
-                            ${objectivesRenderHtml}
+                            <div th:if="${objectivesList == null || objectivesList.isEmpty()}" class="col-12 text-muted small fst-italic">
+                                Chưa thiết lập mục tiêu đầu ra cho khóa học.
+                            </div>
+                            <div th:each="obj : ${objectivesList}" class="col-md-6 d-flex gap-2">
+                                <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                <span th:text="${obj}">Mục tiêu học tập</span>
+                            </div>
                         </div>
                     </div>
 
                     <div id="courseObjectivesEditWrap" class="d-none bg-light p-3 rounded-4 border">
                         <label class="form-label fw-semibold small text-dark mb-1">Mỗi mục tiêu học tập viết trên một dòng:</label>
-                        <textarea id="inputCourseObjectives" class="form-control rounded-3 mb-2" rows="5">${objItemsText}</textarea>
+                        <textarea id="inputCourseObjectives" class="form-control rounded-3 mb-2" rows="5" th:text="${#strings.listJoin(objectivesList, '&#10;')}"></textarea>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="saveCourseField('objectives')">
                                 <i class="bi bi-check-lg me-1"></i>Lưu mục tiêu
@@ -243,14 +312,14 @@
                     </div>
 
                     <div id="courseDescriptionViewWrap">
-                        <div class="text-muted" style="line-height: 1.7;" id="courseDescriptionText">
-                            ${course.description || 'Chưa có mô tả chi tiết.'}
+                        <div class="text-muted" style="line-height: 1.7; white-space: pre-line;" id="courseDescriptionText" th:text="${course.description != null && !course.description.isBlank() ? course.description : 'Chưa có mô tả chi tiết cho khóa học này.'}">
+                            Mô tả chi tiết khóa học.
                         </div>
                     </div>
 
                     <div id="courseDescriptionEditWrap" class="d-none bg-light p-3 rounded-4 border">
                         <label class="form-label fw-semibold small text-dark mb-1">Nội dung mô tả khóa học chi tiết:</label>
-                        <textarea id="inputCourseDescription" class="form-control rounded-3 mb-2" rows="6">${course.description || ''}</textarea>
+                        <textarea id="inputCourseDescription" class="form-control rounded-3 mb-2" rows="6" th:text="${course.description}"></textarea>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="saveCourseField('description')">
                                 <i class="bi bi-check-lg me-1"></i>Lưu mô tả
@@ -261,710 +330,386 @@
                         </div>
                     </div>
                 </div>
-            `;
 
-            const availableCohorts = /*[[${availableCohorts}]]*/ [];
-            const cohortInfoMap = {};
-            if (availableCohorts && availableCohorts.length > 0) {
-                availableCohorts.forEach(c => {
-                    cohortInfoMap[c.id] = c;
-                });
-            }
-
-            let curriculumHtml = '';
-            const allLessons = [];
-            const lessonMap = {};
-            if (course.curriculum && course.curriculum.length > 0) {
-                course.curriculum.forEach(sec => {
-                    if (sec.lessons) {
-                        sec.lessons.forEach(l => {
-                            l.sectionTitle = sec.section ? sec.section.title : '';
-                            allLessons.push(l);
-                            lessonMap[l.id] = l;
-                        });
-                    }
-                });
-            }
-
-            if (course.modules && course.modules.length > 0) {
-                const assignedLessonIds = new Set();
-                let modulesAccordionHtml = '';
-
-                course.modules.forEach((mod, mIdx) => {
-                    const cohortInfo = cohortInfoMap[mod.id] || {};
-                    const isModEnrolled = cohortInfo.isEnrolled || false;
-                    const priceFormatted = mod.price > 0 
-                        ? new Intl.NumberFormat('vi-VN').format(mod.price) + ' VNĐ' 
-                        : 'Miễn phí';
-                    const isFull = cohortInfo.currentEnrolled >= cohortInfo.maxCapacity;
-
-                    const modLessons = [];
-                    if (mod.lessonIds && Array.isArray(mod.lessonIds)) {
-                        mod.lessonIds.forEach(lid => {
-                            if (lessonMap[lid]) {
-                                modLessons.push(lessonMap[lid]);
-                                assignedLessonIds.add(lid);
-                            }
-                        });
-                    }
-
-                    let objectivesArr = [];
-                    let objectivesRawText = '';
-                    if (mod.objectives && mod.objectives.trim().length > 0 && mod.objectives !== '[]') {
-                        try {
-                            if (mod.objectives.trim().startsWith('[')) {
-                                objectivesArr = JSON.parse(mod.objectives);
-                            } else {
-                                objectivesArr = mod.objectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-                            }
-                        } catch (e) {
-                            objectivesArr = mod.objectives.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-                        }
-                    }
-                    if (Array.isArray(objectivesArr) && objectivesArr.length > 0) {
-                        objectivesRawText = objectivesArr.map(item => (typeof item === 'object' && item.value) ? item.value : item).join('\n');
-                    }
-
-                    let objectivesItemsHtml = '';
-                    if (objectivesArr && objectivesArr.length > 0) {
-                        objectivesItemsHtml = objectivesArr.map(item => {
-                            const text = (typeof item === 'object' && item.value) ? item.value : item;
-                            return `
-                                <div class="d-flex align-items-start gap-2">
-                                    <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
-                                    <span class="text-secondary small lh-base">${text}</span>
-                                </div>
-                            `;
-                        }).join('');
-                    } else {
-                        objectivesItemsHtml = `
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
-                                <span class="text-secondary small lh-base">Hoàn thành các kiến thức trọng tâm và kỹ năng thực hành cốt lõi của ${mod.name}.</span>
-                            </div>
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
-                                <span class="text-secondary small lh-base">Vận dụng lý thuyết vào bài tập dự án thực chiến và kiểm tra đánh giá năng lực.</span>
-                            </div>
-                        `;
-                    }
-
-                    let objectivesBlockHtml = `
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-semibold text-dark small"><i class="bi bi-bullseye text-primary me-2"></i>Mục tiêu học phần:</span>
-                                <button class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" onclick="toggleEditModuleObj('${mod.id}')" style="font-size: 11px;">
-                                    <i class="bi bi-pencil me-1"></i>Sửa mục tiêu
-                                </button>
-                            </div>
-                            <div id="modObjViewWrap_${mod.id}">
-                                <div class="d-flex flex-column gap-2" id="modObjList_${mod.id}">
-                                    ${objectivesItemsHtml}
-                                </div>
-                            </div>
-                            <div id="modObjEditWrap_${mod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
-                                <label class="form-label fw-semibold small text-dark mb-1">Mỗi mục tiêu học phần viết trên một dòng:</label>
-                                <textarea id="inputModObj_${mod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="4">${objectivesRawText}</textarea>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-xs btn-success rounded-pill px-3 py-1 fw-semibold" onclick="saveModuleObj('${mod.id}')">
-                                        <i class="bi bi-check-lg me-1"></i>Lưu mục tiêu module
-                                    </button>
-                                    <button class="btn btn-xs btn-light border rounded-pill px-3 py-1" onclick="toggleEditModuleObj('${mod.id}')">
-                                        Hủy
-                                    </button>
-                                </div>
-                            </div>
+                <div class="d-flex justify-content-between align-items-center mb-3 pt-3 border-top">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-collection text-primary me-2"></i>Lộ trình học phần & Module đào tạo</h5>
+                        <div class="text-muted small mt-1">
+                            Khóa học bao gồm <strong th:text="${totalModulesCount}">0</strong> module chuyên môn với tổng cộng <strong th:text="${totalLessonsCount}">0</strong> bài học.
                         </div>
-                    `;
+                    </div>
+                    <div th:if="${hasAccessRole}" class="instructor-edit-ctrl">
+                        <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="addNewModuleDirect()">
+                            <i class="bi bi-plus-circle me-1"></i>Thêm Module mới
+                        </button>
+                    </div>
+                </div>
 
-                    let descHtml = `
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark small"><i class="bi bi-info-circle text-primary me-2"></i>Mô tả học phần:</span>
-                                <button class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" onclick="toggleEditModuleDesc('${mod.id}')" style="font-size: 11px;">
-                                    <i class="bi bi-pencil me-1"></i>Sửa mô tả
+                <div class="accordion curriculum-accordion" id="curriculumAccordion">
+                    <div th:if="${courseModules == null || courseModules.isEmpty()}" class="text-center py-5 text-muted border rounded-3 bg-light">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                        <p class="mb-0">Chưa có module nào trong khóa học này.</p>
+                    </div>
+
+                    <div th:each="courseMod, mStat : ${courseModules}" class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white" th:attr="data-module-id=${courseMod.id}">
+                        <h2 class="accordion-header d-flex align-items-center" th:id="'modHeading' + ${mStat.index}">
+                            <div th:if="${hasAccessRole}" class="instructor-edit-ctrl align-items-center gap-1 ps-3 pe-1 py-2">
+                                <span class="btn btn-xs btn-light border text-muted px-2 py-1 module-drag-handle" title="Kéo thả đổi thứ tự module" style="cursor: grab;">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </span>
+                                <button class="btn btn-xs btn-light border text-muted px-1.5 py-1" onclick="moveModule(this, -1, event)" title="Di chuyển module lên">
+                                    <i class="bi bi-arrow-up"></i>
+                                </button>
+                                <button class="btn btn-xs btn-light border text-muted px-1.5 py-1" onclick="moveModule(this, 1, event)" title="Di chuyển module xuống">
+                                    <i class="bi bi-arrow-down"></i>
                                 </button>
                             </div>
-                            <div id="modDescViewWrap_${mod.id}">
-                                <p class="text-muted small mb-0 lh-base" id="modDescText_${mod.id}">${mod.description || 'Chưa có mô tả cho module này.'}</p>
-                            </div>
-                            <div id="modDescEditWrap_${mod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
-                                <label class="form-label fw-semibold small text-dark mb-1">Nội dung mô tả Module:</label>
-                                <textarea id="inputModDesc_${mod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="3">${mod.description || ''}</textarea>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-xs btn-success rounded-pill px-3 py-1 fw-semibold" onclick="saveModuleDesc('${mod.id}')">
-                                        <i class="bi bi-check-lg me-1"></i>Lưu mô tả module
-                                    </button>
-                                    <button class="btn btn-xs btn-light border rounded-pill px-3 py-1" onclick="toggleEditModuleDesc('${mod.id}')">
-                                        Hủy
-                                    </button>
+                            <button class="accordion-button bg-light py-3 px-4" th:classappend="${mStat.index != 0} ? ' collapsed' : ''" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#modCollapse' + ${mStat.index}">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-3 gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary text-white module-order-badge" style="font-size: 11px;" th:text="'Module ' + ${mStat.index + 1}">Module 1</span>
+                                        <span class="fw-bold text-dark fs-6" th:id="'modHeadingTitle_' + ${courseMod.id}" th:text="${courseMod.name}">Tên Module</span>
+                                        <span class="badge bg-light text-primary border border-primary-subtle" style="font-size: 11px;" th:text="${courseMod.code}">MOD-01</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="fw-semibold text-primary small" th:text="${courseMod.price != null && courseMod.price > 0 ? #numbers.formatDecimal(courseMod.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
+                                        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;" th:text="${courseMod.lessonCount} + ' bài học'">0 bài học</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    `;
-
-                    let modActionHtml = '';
-                    if (isModEnrolled || hasAccessRole) {
-                        modActionHtml = `<a href="/courses/${slug}/modules/${mod.id}/learn" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold"><i class="bi bi-play-circle-fill me-1"></i>${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học ngay'}</a>`;
-                    } else if (isFull) {
-                        modActionHtml = `<span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">Đã đủ sĩ số</span>`;
-                    } else {
-                        modActionHtml = `
-                            <form action="/courses/${slug}/enroll/${mod.id}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
-                                    <i class="bi bi-plus-circle me-1"></i>Ghi danh module (${priceFormatted})
-                                </button>
-                            </form>
-                        `;
-                    }
-
-                    modulesAccordionHtml += `
-                        <div class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
-                            <h2 class="accordion-header" id="modHeading${mIdx}">
-                                <button class="accordion-button bg-light py-3 px-4 ${mIdx !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#modCollapse${mIdx}">
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-3 gap-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge bg-primary text-white" style="font-size: 11px;">Module ${mIdx + 1}</span>
-                                            <span class="fw-bold text-dark fs-6" id="modHeadingTitle_${mod.id}">${mod.name}</span>
-                                            <span class="badge bg-light text-primary border border-primary-subtle" style="font-size: 11px;">${mod.code}</span>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <span class="fw-semibold text-primary small">${priceFormatted}</span>
-                                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">${modLessons.length} bài học</span>
-                                        </div>
+                            </button>
+                        </h2>
+                        <div th:id="'modCollapse' + ${mStat.index}" class="accordion-collapse collapse" th:classappend="${mStat.index == 0} ? ' show' : ''">
+                            <div class="accordion-body p-4 bg-white border-top">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mb-3 bg-light rounded-3 border">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary text-white" th:text="'Module ' + ${mStat.index + 1}">Module 1</span>
+                                        <span class="fw-bold text-dark fs-6" th:id="'modNameText_' + ${courseMod.id}" th:text="${courseMod.name}">Tên Module</span>
+                                        <span class="badge bg-white text-primary border border-primary-subtle" th:text="${courseMod.code}">MOD-01</span>
                                     </div>
-                                </button>
-                            </h2>
-                            <div id="modCollapse${mIdx}" class="accordion-collapse collapse ${mIdx === 0 ? 'show' : ''}">
-                                <div class="accordion-body p-4 bg-white border-top">
-                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mb-3 bg-light rounded-3 border">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge bg-primary text-white">Module ${mIdx + 1}</span>
-                                            <span class="fw-bold text-dark fs-6" id="modNameText_${mod.id}">${mod.name}</span>
-                                            <span class="badge bg-white text-primary border border-primary-subtle">${mod.code}</span>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2 instructor-edit-ctrl">
-                                            <button class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 fw-semibold" onclick="toggleEditModule('${mod.id}')">
-                                                <i class="bi bi-pencil me-1"></i>Sửa tên module
-                                            </button>
-                                        </div>
+                                    <div th:if="${hasAccessRole}" class="d-flex align-items-center gap-2 instructor-edit-ctrl">
+                                        <button class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 fw-semibold" th:onclick="'toggleEditModule(' + ${courseMod.id} + ')'">
+                                            <i class="bi bi-pencil me-1"></i>Sửa tên module
+                                        </button>
                                     </div>
-                                    <div id="modNameEditWrap_${mod.id}" class="d-none mb-3 bg-light p-3 rounded-3 border">
-                                        <label class="form-label fw-semibold small text-dark mb-1">Chỉnh sửa tên Module / Học phần:</label>
-                                        <div class="input-group">
-                                            <input type="text" id="inputModName_${mod.id}" class="form-control rounded-start-3 fw-bold" value="${mod.name}">
-                                            <button class="btn btn-success px-3 fw-semibold" onclick="saveModuleField('${mod.id}', 'name')">
-                                                <i class="bi bi-check-lg me-1"></i>Lưu
+                                </div>
+
+                                <div th:if="${hasAccessRole}" th:id="'modNameEditWrap_' + ${courseMod.id}" class="d-none mb-3 bg-light p-3 rounded-3 border">
+                                    <label class="form-label fw-semibold small text-dark mb-1">Chỉnh sửa tên Module / Học phần:</label>
+                                    <div class="input-group">
+                                        <input type="text" th:id="'inputModName_' + ${courseMod.id}" class="form-control rounded-start-3 fw-bold" th:value="${courseMod.name}">
+                                        <button class="btn btn-success px-3 fw-semibold" th:onclick="'saveModuleField(' + ${courseMod.id} + ', \'name\')'">
+                                            <i class="bi bi-check-lg me-1"></i>Lưu
+                                        </button>
+                                        <button class="btn btn-light border px-3" th:onclick="'toggleEditModule(' + ${courseMod.id} + ')'">
+                                            Hủy
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-semibold text-dark small"><i class="bi bi-info-circle text-primary me-2"></i>Mô tả học phần:</span>
+                                        <button th:if="${hasAccessRole}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleDesc(' + ${courseMod.id} + ')'" style="font-size: 11px;">
+                                            <i class="bi bi-pencil me-1"></i>Sửa mô tả
+                                        </button>
+                                    </div>
+                                    <div th:id="'modDescViewWrap_' + ${courseMod.id}">
+                                        <p class="text-muted small mb-0 lh-base" th:id="'modDescText_' + ${courseMod.id}" th:text="${courseMod.description != null && !courseMod.description.isBlank() ? courseMod.description : 'Chưa có mô tả cho module này.'}">Mô tả</p>
+                                    </div>
+                                    <div th:if="${hasAccessRole}" th:id="'modDescEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
+                                        <label class="form-label fw-semibold small text-dark mb-1">Nội dung mô tả Module:</label>
+                                        <textarea th:id="'inputModDesc_' + ${courseMod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="3" th:text="${courseMod.description}"></textarea>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-xs btn-success rounded-pill px-3 py-1 fw-semibold" th:onclick="'saveModuleDesc(' + ${courseMod.id} + ')'">
+                                                <i class="bi bi-check-lg me-1"></i>Lưu mô tả module
                                             </button>
-                                            <button class="btn btn-light border px-3" onclick="toggleEditModule('${mod.id}')">
+                                            <button class="btn btn-xs btn-light border rounded-pill px-3 py-1" th:onclick="'toggleEditModuleDesc(' + ${courseMod.id} + ')'">
                                                 Hủy
                                             </button>
                                         </div>
                                     </div>
-                                    ${descHtml}
-                                    ${objectivesBlockHtml}
-                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top mt-3">
-                                        <div class="d-flex align-items-center gap-2 text-muted small">
-                                            <i class="bi bi-journal-text text-primary"></i>
-                                            <span>Chuyên đề gồm <strong>${modLessons.length}</strong> bài học</span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-semibold text-dark small"><i class="bi bi-bullseye text-primary me-2"></i>Mục tiêu học phần:</span>
+                                        <button th:if="${hasAccessRole}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleObj(' + ${courseMod.id} + ')'" style="font-size: 11px;">
+                                            <i class="bi bi-pencil me-1"></i>Sửa mục tiêu
+                                        </button>
+                                    </div>
+                                    <div th:id="'modObjViewWrap_' + ${courseMod.id}">
+                                        <div class="d-flex flex-column gap-2" th:id="'modObjList_' + ${courseMod.id}">
+                                            <div th:if="${courseMod.objectivesList == null || courseMod.objectivesList.isEmpty()}" class="d-flex align-items-start gap-2">
+                                                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                                                <span class="text-secondary small lh-base" th:text="'Hoàn thành các kiến thức trọng tâm và kỹ năng thực hành cốt lõi của ' + ${courseMod.name} + '.'">Mục tiêu</span>
+                                            </div>
+                                            <div th:each="mObj : ${courseMod.objectivesList}" class="d-flex align-items-start gap-2">
+                                                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0" style="font-size: 14px;"></i>
+                                                <span class="text-secondary small lh-base" th:text="${mObj}">Mục tiêu</span>
+                                            </div>
                                         </div>
-                                        <div class="d-flex flex-wrap align-items-center gap-2">
-                                            <a href="/courses/${slug}/modules/${mod.id}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
-                                                <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết Module
-                                            </a>
-                                            ${hasAccessRole ? `
-                                            <a href="/courses/${slug}/modules/${mod.id}" class="btn btn-warning btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
-                                                <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa cấu trúc Module
-                                            </a>
-                                            <a href="/instructor/cohorts/${mod.id}/edit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
-                                                <i class="bi bi-gear-fill me-1"></i>Cài đặt Module
-                                            </a>
-                                            ` : ''}
-                                            ${modActionHtml}
+                                    </div>
+                                    <div th:if="${hasAccessRole}" th:id="'modObjEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
+                                        <label class="form-label fw-semibold small text-dark mb-1">Mỗi mục tiêu học phần viết trên một dòng:</label>
+                                        <textarea th:id="'inputModObj_' + ${courseMod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="4" th:text="${#strings.listJoin(courseMod.objectivesList, '&#10;')}"></textarea>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-xs btn-success rounded-pill px-3 py-1 fw-semibold" th:onclick="'saveModuleObj(' + ${courseMod.id} + ')'">
+                                                <i class="bi bi-check-lg me-1"></i>Lưu mục tiêu module
+                                            </button>
+                                            <button class="btn btn-xs btn-light border rounded-pill px-3 py-1" th:onclick="'toggleEditModuleObj(' + ${courseMod.id} + ')'">
+                                                Hủy
+                                            </button>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-3 border-top mt-3">
+                                    <div class="d-flex align-items-center gap-2 text-muted small">
+                                        <i class="bi bi-journal-text text-primary"></i>
+                                        <span>Chuyên đề gồm <strong th:text="${courseMod.lessonCount}">0</strong> bài học</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id}}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết Module
+                                        </a>
+                                        <a th:if="${hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id}}" class="btn btn-warning btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
+                                            <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa cấu trúc Module
+                                        </a>
+                                        <a th:if="${hasAccessRole}" th:href="@{'/instructor/cohorts/' + ${courseMod.id} + '/edit'}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
+                                            <i class="bi bi-gear-fill me-1"></i>Cài đặt Module
+                                        </a>
+                                        <a th:if="${courseMod.isEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id} + '/learn'}" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-play-circle-fill me-1"></i><span th:text="${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học ngay'}">Vào học</span>
+                                        </a>
+                                        <span th:if="${!courseMod.isEnrolled && !hasAccessRole && courseMod.isFull}" class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">
+                                            Đã đủ sĩ số
+                                        </span>
+                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull}" th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${courseMod.id}}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                                                <i class="bi bi-plus-circle me-1"></i>Ghi danh module (<span th:text="${courseMod.price != null && courseMod.price > 0 ? #numbers.formatDecimal(courseMod.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>)
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    `;
-                });
+                    </div>
 
-                const standaloneSections = (course.curriculum || []).filter(sec => sec.section && !sec.section.cohortId && sec.lessons && sec.lessons.length > 0);
-                if (standaloneSections.length > 0) {
-                    standaloneSections.forEach((sec, sIdx) => {
-                        let secLessonsHtml = '';
-                        sec.lessons.forEach(lesson => {
-                            assignedLessonIds.add(lesson.id);
-                            let icon = 'bi-file-earmark-text';
-                            if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
-                            else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
-                            else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
-                            else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
-
-                            secLessonsHtml += `
-                                <li class="list-group-item p-3 border-0 border-bottom bg-transparent d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi ${icon} fs-5 me-2"></i>
-                                        <span class="fw-medium text-dark">${lesson.title}</span>
-                                    </div>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">
-                                        <i class="bi bi-stars me-1"></i>Độc quyền khóa học
-                                    </span>
-                                </li>
-                            `;
-                        });
-
-                        modulesAccordionHtml += `
-                            <div class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
-                                <h2 class="accordion-header" id="headingStandalone${sIdx}">
-                                    <button class="accordion-button bg-light collapsed py-3 px-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStandalone${sIdx}">
-                                        <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-3 gap-2">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <span class="badge bg-primary text-white" style="font-size: 11px;">Chương riêng</span>
-                                                <span class="fw-bold text-dark fs-6">${sec.section.title}</span>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-3">
-                                                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">${sec.lessons.length} bài học</span>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </h2>
-                                <div id="collapseStandalone${sIdx}" class="accordion-collapse collapse">
-                                    <div class="accordion-body p-0">
-                                        <ul class="list-group list-group-flush">
-                                            ${secLessonsHtml}
-                                        </ul>
-                                        <div class="p-3 bg-light border-top text-muted small d-flex align-items-center">
-                                            <i class="bi bi-info-circle text-primary me-2"></i>
-                                            <span>Nội dung bài học độc quyền dành riêng cho học viên đăng ký trọn bộ khóa học này.</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-
-                const remainingUnassigned = allLessons.filter(l => !assignedLessonIds.has(l.id));
-                if (remainingUnassigned.length > 0) {
-                    let unassignedHtml = '';
-                    remainingUnassigned.forEach(lesson => {
-                        let icon = 'bi-file-earmark-text';
-                        if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
-                        else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
-                        else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
-
-                        unassignedHtml += `
-                            <li class="list-group-item p-3 border-0 border-bottom bg-transparent">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi ${icon} fs-5 me-2"></i>
-                                    <span class="fw-medium">${lesson.title}</span>
-                                    <span class="badge bg-light text-muted border ms-auto" style="font-size: 10px;">Bổ trợ</span>
-                                </div>
-                            </li>
-                        `;
-                    });
-
-                    modulesAccordionHtml += `
-                        <div class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
-                            <h2 class="accordion-header" id="modHeadingUnassigned">
-                                <button class="accordion-button bg-light collapsed py-3 px-4" type="button" data-bs-toggle="collapse" data-bs-target="#modCollapseUnassigned">
+                    <div th:each="sec, sStat : ${standaloneSections}" class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
+                        <h2 class="accordion-header" th:id="'headingStandalone' + ${sStat.index}">
+                            <button class="accordion-button bg-light collapsed py-3 px-4" type="button" data-bs-toggle="collapse" th:attr="data-bs-target='#collapseStandalone' + ${sStat.index}">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center w-100 me-3 gap-2">
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="badge bg-secondary text-white" style="font-size: 11px;">Bổ trợ</span>
-                                        <span class="fw-bold text-dark fs-6">Chuyên đề bổ sung & Tài liệu tham khảo</span>
+                                        <span class="badge bg-primary text-white" style="font-size: 11px;">Chương riêng</span>
+                                        <span class="fw-bold text-dark fs-6" th:text="${sec.title}">Chương riêng</span>
                                     </div>
-                                </button>
-                            </h2>
-                            <div id="modCollapseUnassigned" class="accordion-collapse collapse">
-                                <div class="accordion-body p-0">
-                                    <ul class="list-group list-group-flush">
-                                        ${unassignedHtml}
-                                    </ul>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;" th:text="${sec.lessons.size()} + ' bài học'">0 bài học</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div th:id="'collapseStandalone' + ${sStat.index}" class="accordion-collapse collapse">
+                            <div class="accordion-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    <li th:each="lesson : ${sec.lessons}" class="list-group-item p-3 border-0 border-bottom bg-transparent d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : ' bi-code-slash text-info'))}"></i>
+                                            <span class="fw-medium text-dark" th:text="${lesson.title}">Tiêu đề bài học</span>
+                                        </div>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">
+                                            <i class="bi bi-stars me-1"></i>Độc quyền khóa học
+                                        </span>
+                                    </li>
+                                </ul>
+                                <div class="p-3 bg-light border-top text-muted small d-flex align-items-center">
+                                    <i class="bi bi-info-circle text-primary me-2"></i>
+                                    <span>Nội dung bài học độc quyền dành riêng cho học viên đăng ký trọn bộ khóa học này.</span>
                                 </div>
                             </div>
                         </div>
-                    `;
-                }
+                    </div>
 
-                let addModuleBtnHtml = '';
-                if (hasAccessRole) {
-                    addModuleBtnHtml = `
-                        <div class="instructor-edit-block text-center pt-3 pb-2" style="display: none;">
-                            <a href="/instructor/courses/${course.id}/modules" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
-                                <i class="bi bi-plus-circle me-1"></i>Quản lý &amp; Thêm Module mới
-                            </a>
+                    <div th:if="${unassignedLessons != null && !unassignedLessons.isEmpty()}" class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white">
+                        <h2 class="accordion-header" id="modHeadingUnassigned">
+                            <button class="accordion-button bg-light collapsed py-3 px-4" type="button" data-bs-toggle="collapse" data-bs-target="#modCollapseUnassigned">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-secondary text-white" style="font-size: 11px;">Bổ trợ</span>
+                                    <span class="fw-bold text-dark fs-6">Chuyên đề bổ sung & Tài liệu tham khảo</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="modCollapseUnassigned" class="accordion-collapse collapse">
+                            <div class="accordion-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    <li th:each="lesson : ${unassignedLessons}" class="list-group-item p-3 border-0 border-bottom bg-transparent">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : ' bi-file-earmark-text text-secondary'))}"></i>
+                                            <span class="fw-medium" th:text="${lesson.title}">Bài học</span>
+                                            <span class="badge bg-light text-muted border ms-auto" style="font-size: 10px;">Bổ trợ</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
-                    `;
-                }
-
-                curriculumHtml = `
-                    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
-                        <h5 class="fw-bold mb-0"><i class="bi bi-collection me-2 text-primary"></i>Lộ trình học tập theo các Module & Chuyên đề</h5>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">${course.modules.length} module học phần</span>
                     </div>
-                    <div class="accordion mb-4" id="curriculumAccordion">
-                        ${modulesAccordionHtml}
-                    </div>
-                    ${addModuleBtnHtml}
-                `;
-            } else if (course.curriculum && course.curriculum.length > 0) {
-                curriculumHtml = `
-                    <h5 class="fw-bold mt-5 mb-3">Nội dung khóa học</h5>
-                    <div class="accordion mb-4" id="curriculumAccordion">
-                `;
-                course.curriculum.forEach((item, index) => {
-                    let lessonsHtml = '';
-                    if (item.lessons && item.lessons.length > 0) {
-                        item.lessons.forEach(lesson => {
-                            let icon = 'bi-file-earmark-text';
-                            if (lesson.lessonType === 'VIDEO') icon = 'bi-play-circle-fill text-primary';
-                            else if (lesson.lessonType === 'DOCUMENT') icon = 'bi-file-earmark-text-fill text-success';
-                            else if (lesson.lessonType === 'QUIZ') icon = 'bi-question-circle-fill text-warning';
-                            else if (lesson.lessonType === 'CODE_PRACTICE') icon = 'bi-code-slash text-info';
-                            else if (lesson.lessonType === 'ANNOUNCEMENT') icon = 'bi-megaphone-fill text-danger';
+                </div>
+            </div>
+        </div>
 
-                            let badge = '';
-                            if (lesson.isFreePreview) {
-                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;"><i class="bi bi-play-circle me-1"></i>Học thử</span>';
-                            } else if (isAllEnrolled) {
-                                badge = '<span class="badge bg-success-subtle text-success ms-auto" style="font-size: 11px;"><i class="bi bi-check-circle-fill me-1"></i>Đã mở</span>';
-                            } else {
-                                badge = `<span class="badge bg-secondary-subtle text-secondary ms-auto" style="font-size: 11px;"><i class="bi bi-lock-fill me-1"></i>Đã khóa</span>`;
-                            }
-
-                            lessonsHtml += `
-                                <li class="list-group-item p-3 border-0 border-bottom bg-transparent">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi ${icon} fs-5 me-2"></i>
-                                        <span class="fw-medium">${lesson.title}</span>
-                                        ${badge}
-                                    </div>
-                                </li>
-                            `;
-                        });
-                    } else {
-                        lessonsHtml = '<li class="list-group-item text-muted small p-3 text-center border-0 border-bottom">Chương này chưa có bài học nào.</li>';
-                    }
-
-                    curriculumHtml += `
-                        <div class="accordion-item border-0 rounded-3 mb-2 shadow-sm overflow-hidden">
-                            <h2 class="accordion-header" id="heading${index}">
-                                <button class="accordion-button bg-light fw-bold ${index !== 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
-                                    ${item.section.title}
-                                </button>
-                            </h2>
-                            <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}">
-                                <div class="accordion-body p-0">
-                                    <ul class="list-group list-group-flush">
-                                        ${lessonsHtml}
-                                    </ul>
+        <div class="col-lg-4 enroll-col-desktop">
+            <div class="sticky-drawer d-flex flex-column gap-3">
+                <div class="enroll-card shadow-sm border-0 rounded-4 overflow-hidden bg-white">
+                    <img th:src="${course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="enroll-img w-100" alt="Course Image">
+                    <div class="p-3.5 p-md-4">
+                        <div th:if="${hasAccessRole}" class="card border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-3 p-3 mb-3 shadow-xs">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-shield-check fs-5 text-warning-emphasis"></i>
+                                    <strong class="small text-dark">Quyền Giảng viên / Quản trị</strong>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="courseDetailEditModeToggle" role="switch" style="cursor: pointer;">
                                 </div>
                             </div>
-                        </div>
-                    `;
-                });
-                curriculumHtml += `</div>`;
-            }
-
-            let enrollFormHtml = '';
-            if (availableCohorts && availableCohorts.length > 0) {
-                let fullCourseSection = '';
-                if (!isAllEnrolled) {
-                    const priceFormatted = remainingCoursePrice > 0 ? new Intl.NumberFormat('vi-VN').format(remainingCoursePrice) + ' VNĐ' : 'Miễn phí';
-                    let discountHtml = '';
-                    if (!isEnrolled && discountAmount > 0) {
-                        const originalFormatted = new Intl.NumberFormat('vi-VN').format(sumOfCohorts) + ' VNĐ';
-                        const discountFormatted = new Intl.NumberFormat('vi-VN').format(discountAmount) + ' VNĐ';
-                        discountHtml = `
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="text-muted text-decoration-line-through small" style="font-size: 13px;">${originalFormatted}</span>
-                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-semibold" style="font-size: 11px;">Tiết kiệm ${discountFormatted}</span>
+                            <div class="small text-muted mb-2" style="font-size: 11.5px;">Bật chế độ chỉnh sửa để thao tác và quản trị cấu trúc khóa học.</div>
+                            <div id="courseInstructorEditToolbar" class="d-none flex-column gap-2 pt-2 border-top border-warning border-opacity-25">
+                                <a th:href="@{'/instructor/courses/' + ${course.id} + '/edit'}" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
+                                    <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa thông tin khóa học
+                                </a>
+                                <a th:href="@{'/instructor/courses/' + ${course.id} + '/curriculum'}" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
+                                    <i class="bi bi-diagram-3 me-1"></i>Quản lý giáo trình chuẩn
+                                </a>
+                                <a th:href="@{'/instructor/courses/' + ${course.id} + '/modules'}" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
+                                    <i class="bi bi-collection me-1"></i>Quản lý các đợt học / Module
+                                </a>
                             </div>
-                        `;
-                    }
-                    const fullBtnText = isEnrolled 
-                        ? `Đăng ký ${unenrolledCount} module còn lại (${priceFormatted})` 
-                        : `Đăng ký trọn gói (${priceFormatted})`;
-                    
-                    fullCourseSection = `
-                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 p-3 mb-3">
+                        </div>
+
+                        <a th:if="${isEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/learn'}" class="btn btn-gradient w-100 rounded-pill mb-3">
+                            <i class="bi bi-play-circle-fill me-1"></i><span th:text="${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học ngay'}">Vào học</span>
+                        </a>
+
+                        <div th:if="${isAllEnrolled}" class="alert alert-success rounded-3 mb-3 p-3 text-center">
+                            <i class="bi bi-patch-check-fill fs-4 text-success d-block mb-1"></i>
+                            <span class="small fw-semibold">Bạn đã sở hữu trọn bộ khóa học này</span>
+                        </div>
+
+                        <div th:unless="${isAllEnrolled}" class="card border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 p-3 mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="fw-bold text-primary small"><i class="bi bi-stars me-1"></i>Gói trọn bộ khóa học</span>
                                 <span class="badge bg-primary text-white" style="font-size: 10px;">Ưu đãi Combo</span>
                             </div>
                             <div class="text-muted small mb-2" style="font-size: 12px;">Truy cập tất cả các module và chặng học của khóa</div>
-                            ${discountHtml}
-                            <form action="/courses/${slug}/enroll-all" method="post">
+                            <div class="mb-3" th:if="${sumOfCohorts > fullCoursePrice}">
+                                <span class="text-decoration-line-through text-muted small me-2" th:text="${#numbers.formatDecimal(sumOfCohorts, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">0 VNĐ</span>
+                                <span class="badge bg-danger text-white rounded-pill" th:text="'Tiết kiệm ' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">Tiết kiệm</span>
+                            </div>
+                            <div class="h5 fw-bold text-success mb-3" th:text="${fullCoursePrice > 0 ? #numbers.formatDecimal(fullCoursePrice, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</div>
+                            <form th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post">
                                 <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm">
-                                    <i class="bi bi-bag-check-fill me-1"></i>${fullBtnText}
+                                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${isEnrolled ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
                                 </button>
                             </form>
                         </div>
-                    `;
-                }
 
-                let quickLearnBtn = '';
-                if (isEnrolled || hasAccessRole) {
-                    quickLearnBtn = `<a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3"><i class="bi bi-play-circle-fill me-1"></i>${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học các module đã mở'}</a>`;
-                }
+                        <div class="text-center small text-muted mt-2" th:text="${(isEnrolled || hasAccessRole) ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}">
+                            Bắt đầu học ngay hôm nay!
+                        </div>
+                    </div>
+                </div>
 
-                enrollFormHtml = `
-                    ${quickLearnBtn}
-                    ${fullCourseSection}
-                    <div class="card border rounded-3 p-3 bg-light mb-3">
-                        <div class="fw-bold small text-muted text-uppercase mb-2">Thông tin khóa học</div>
-                        <ul class="list-unstyled mb-0 small d-flex flex-column gap-2">
+                <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 bg-white">
+                    <h6 class="fw-bold mb-3 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-person-circle text-primary"></i>
+                        <span>Giảng viên hướng dẫn</span>
+                    </h6>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 44px; height: 44px; font-size: 17px;">
+                            <span th:text="${course.createdBy != null && course.createdBy.fullName != null ? #strings.substring(course.createdBy.fullName, 0, 1) : 'G'}">G</span>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark" th:text="${course.createdBy != null ? course.createdBy.fullName : 'Ban Giảng viên'}">Giảng viên</div>
+                            <div class="text-muted small" th:text="${course.createdBy != null ? course.createdBy.email : 'giangvien@ute.edu.vn'}">email@ute.edu.vn</div>
+                        </div>
+                    </div>
+                    <div class="border-top pt-3">
+                        <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-muted">
                             <li class="d-flex justify-content-between">
-                                <span class="text-muted"><i class="bi bi-collection me-1"></i>Lộ trình học phần:</span>
-                                <span class="fw-semibold text-dark">${availableCohorts.length} module</span>
+                                <span><i class="bi bi-collection me-1"></i>Lộ trình:</span>
+                                <strong class="text-dark" th:text="${totalModulesCount} + ' module'">0 module</strong>
                             </li>
                             <li class="d-flex justify-content-between">
-                                <span class="text-muted"><i class="bi bi-play-circle me-1"></i>Tổng số bài học:</span>
-                                <span class="fw-semibold text-dark">${allLessons.length} bài học</span>
+                                <span><i class="bi bi-journal-text me-1"></i>Số bài học:</span>
+                                <strong class="text-dark" th:text="${totalLessonsCount} + ' bài'">0 bài</strong>
                             </li>
                             <li class="d-flex justify-content-between">
-                                <span class="text-muted"><i class="bi bi-patch-check me-1"></i>Cấp chứng chỉ:</span>
-                                <span class="fw-semibold text-success">Có</span>
+                                <span><i class="bi bi-patch-check me-1"></i>Chứng nhận:</span>
+                                <strong class="text-success">Cấp sau khi hoàn thành</strong>
                             </li>
                             <li class="d-flex justify-content-between">
-                                <span class="text-muted"><i class="bi bi-clock-history me-1"></i>Thời gian truy cập:</span>
-                                <span class="fw-semibold text-dark">Trọn đời</span>
+                                <span><i class="bi bi-clock-history me-1"></i>Thời gian:</span>
+                                <strong class="text-dark">Truy cập trọn đời</strong>
                             </li>
                         </ul>
                     </div>
-                `;
-            } else {
-                let quickLearnBtn = '';
-                if (isEnrolled || hasAccessRole) {
-                    quickLearnBtn = `
-                        <a href="/courses/${slug}/learn" class="btn btn-gradient w-100 rounded-pill mb-3">
-                            <i class="bi bi-play-circle-fill me-1"></i>${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học ngay'}
-                        </a>
-                    `;
-                }
-                let coursePurchaseSection = '';
-                if (!isEnrolled) {
-                    const priceFormatted = (fullCoursePrice > 0) 
-                        ? new Intl.NumberFormat('vi-VN').format(fullCoursePrice) + ' VNĐ' 
-                        : 'Miễn phí';
-                    coursePurchaseSection = `
-                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-3 p-3 mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold text-primary small"><i class="bi bi-stars me-1"></i>Khóa học trọn gói</span>
-                                <span class="badge bg-primary text-white" style="font-size: 10px;">Toàn bộ lộ trình</span>
-                            </div>
-                            <div class="text-muted small mb-2" style="font-size: 12px;">Đăng ký ngay để truy cập toàn bộ bài giảng và tài liệu học tập</div>
-                            <div class="h5 fw-bold text-success mb-3">${priceFormatted}</div>
-                            <form action="/courses/${slug}/enroll-all" method="post">
-                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm">
-                                    <i class="bi bi-bag-check-fill me-1"></i>Đăng ký học ngay (${priceFormatted})
-                                </button>
-                            </form>
-                        </div>
-                    `;
-                }
-                enrollFormHtml = quickLearnBtn + coursePurchaseSection;
-            }
-
-            let roleBadgeHtml = '';
-            if (hasAccessRole) {
-                roleBadgeHtml = `
-                    <div class="card border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-3 p-3 mb-3 shadow-xs">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-shield-check fs-5 text-warning-emphasis"></i>
-                                <strong class="small text-dark">Quyền Giảng viên / Quản trị</strong>
-                            </div>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="courseDetailEditModeToggle" role="switch" style="cursor: pointer;">
-                            </div>
-                        </div>
-                        <div class="small text-muted mb-2" style="font-size: 11.5px;">Bật chế độ chỉnh sửa để thao tác và quản trị cấu trúc khóa học.</div>
-                        <div id="courseInstructorEditToolbar" class="d-none flex-column gap-2 pt-2 border-top border-warning border-opacity-25">
-                            <a href="/instructor/courses/${course.id}/edit" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
-                                <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa thông tin khóa học
-                            </a>
-                            <a href="/instructor/courses/${course.id}/curriculum" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
-                                <i class="bi bi-diagram-3 me-1"></i>Quản lý giáo trình chuẩn
-                            </a>
-                            <a href="/instructor/courses/${course.id}/modules" class="btn btn-sm btn-outline-primary rounded-pill text-start py-1.5 px-3">
-                                <i class="bi bi-collection me-1"></i>Quản lý các đợt học / Module
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            let editModeBanner = '';
-            if (hasAccessRole) {
-                editModeBanner = `
-                    <div class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm w-100">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-cone-striped text-warning-emphasis fs-4"></i>
-                            <div>
-                                <div class="fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-1"></i>Chế độ chỉnh sửa trực tiếp (Inline Edit) đang BẬT</div>
-                                <div class="text-secondary small">Bạn có thể bấm vào biểu tượng cây bút để sửa trực tiếp Tiêu đề, Mô tả ngắn, Mục tiêu, Mô tả chi tiết hoặc Tên module ngay trên trang này.</div>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <a href="/instructor/courses/${course.id}/edit" class="btn btn-sm btn-outline-dark rounded-pill px-3 py-1.5 fw-semibold bg-white">
-                                <i class="bi bi-sliders me-1"></i>Cài đặt nâng cao
-                            </a>
-                            <a href="/instructor/courses/${course.id}/curriculum" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold bg-white">
-                                <i class="bi bi-diagram-3 me-1"></i>Sửa giáo trình
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            const mainLayoutHtml = `
-                <div class="col-lg-8">
-                    <div class="content-card">
-                        ${editModeBanner}
-                        ${introHtml}
-                        ${curriculumHtml}
-                    </div>
                 </div>
-                <div class="col-lg-4 mt-4 mt-lg-0 enroll-col-desktop">
-                    <div class="enroll-card shadow-sm border-0 rounded-4 overflow-hidden bg-white">
-                        <img src="${img}" class="enroll-img w-100" style="height: 220px; object-fit: cover;" alt="Course Image">
-                        <div class="p-4">
-                            ${roleBadgeHtml}
-                            ${enrollFormHtml}
-                            <div class="text-center small text-muted mt-3">${(isEnrolled || hasAccessRole) ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
 
-            let levelText = 'Tất cả cấp độ';
-            if (course.level === 'BEGINNER') levelText = 'Người mới bắt đầu';
-            else if (course.level === 'INTERMEDIATE') levelText = 'Trung bình';
-            else if (course.level === 'ADVANCED') levelText = 'Nâng cao';
-
-            const html = `
-            <div class="hero-banner">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <span class="badge bg-primary mb-3">${course.categoryName || 'Khác'}</span>
-                            
-                            <div id="courseTitleViewWrap" class="mb-3">
-                                <div class="d-flex align-items-center flex-wrap gap-2">
-                                    <h1 class="display-6 fw-bold mb-0 text-white" id="courseTitleText">${course.title}</h1>
-                                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 instructor-edit-ctrl" onclick="toggleEditField('courseTitle')">
-                                        <i class="bi bi-pencil me-1"></i>Sửa tiêu đề
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="courseTitleEditWrap" class="d-none mb-3">
-                                <label class="form-label text-white-50 small mb-1">Chỉnh sửa Tiêu đề khóa học:</label>
-                                <div class="input-group input-group-lg">
-                                    <input type="text" id="inputCourseTitle" class="form-control fw-bold bg-white text-dark" value="${course.title}">
-                                    <button class="btn btn-success px-4 fw-semibold" onclick="saveCourseField('title')">
-                                        <i class="bi bi-check-lg me-1"></i>Lưu
-                                    </button>
-                                    <button class="btn btn-light" onclick="toggleEditField('courseTitle')">
-                                        <i class="bi bi-x-lg me-1"></i>Hủy
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="courseHeadlineViewWrap" class="mb-3">
-                                <div class="d-flex align-items-start gap-2">
-                                    <p class="lead opacity-75 fs-6 mb-0 text-white" id="courseHeadlineText">${course.headline || 'Chưa có mô tả ngắn'}</p>
-                                    <button class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-0.5 instructor-edit-ctrl flex-shrink-0" onclick="toggleEditField('courseHeadline')" style="font-size: 12px;">
-                                        <i class="bi bi-pencil me-1"></i>Sửa
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="courseHeadlineEditWrap" class="d-none mb-3">
-                                <label class="form-label text-white-50 small mb-1">Chỉnh sửa Mô tả ngắn (Headline):</label>
-                                <div class="input-group">
-                                    <input type="text" id="inputCourseHeadline" class="form-control bg-white text-dark" value="${course.headline || ''}">
-                                    <button class="btn btn-success px-3 fw-semibold" onclick="saveCourseField('headline')">
-                                        <i class="bi bi-check-lg me-1"></i>Lưu
-                                    </button>
-                                    <button class="btn btn-light" onclick="toggleEditField('courseHeadline')">
-                                        <i class="bi bi-x-lg me-1"></i>Hủy
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-center flex-wrap gap-4 mt-4 small opacity-75">
-                                <span><i class="bi bi-person-fill me-1"></i> Giảng viên: ${course.instructorName}</span>
-                                <div id="courseLevelViewWrap" class="d-inline-flex align-items-center gap-1">
-                                    <span><i class="bi bi-bar-chart-fill me-1"></i> Cấp độ: <span id="courseLevelText">${levelText}</span></span>
-                                    <button class="btn btn-xs btn-outline-light rounded-circle instructor-edit-ctrl" onclick="toggleEditField('courseLevel')" style="width: 24px; height: 24px; padding: 0;">
-                                        <i class="bi bi-pencil" style="font-size: 10px;"></i>
-                                    </button>
-                                </div>
-                                <div id="courseLevelEditWrap" class="d-none align-items-center gap-1">
-                                    <select id="inputCourseLevel" class="form-select form-select-sm py-0 px-2 bg-white text-dark" style="width: auto; font-size: 12px;">
-                                        <option value="BEGINNER" ${course.level === 'BEGINNER' ? 'selected' : ''}>Người mới bắt đầu</option>
-                                        <option value="INTERMEDIATE" ${course.level === 'INTERMEDIATE' ? 'selected' : ''}>Trung bình</option>
-                                        <option value="ADVANCED" ${course.level === 'ADVANCED' ? 'selected' : ''}>Nâng cao</option>
-                                    </select>
-                                    <button class="btn btn-sm btn-success py-0 px-2" onclick="saveCourseField('level')"><i class="bi bi-check-lg"></i></button>
-                                    <button class="btn btn-sm btn-light py-0 px-2" onclick="toggleEditField('courseLevel')"><i class="bi bi-x-lg"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-light">
+                    <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2" style="font-size: 14px;">
+                        <i class="bi bi-headset text-primary"></i>
+                        <span>Kênh hỗ trợ học tập</span>
+                    </h6>
+                    <p class="text-muted small mb-0" style="font-size: 12px; line-height: 1.5;">
+                        Nếu gặp khó khăn trong quá trình học tập hoặc làm bài tập, sinh viên có thể đặt câu hỏi trong phòng học hoặc liên hệ trực tiếp giảng viên phụ trách.
+                    </p>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <div class="container mb-5">
-                <div class="row">
-                    ${mainLayoutHtml}
-                </div>
-            </div>
-            `;
-            document.getElementById('appContainer').innerHTML = html;
-            document.title = course.title + " - UTELearn";
+<script th:inline="javascript">
+    const currentCourseId = /*[[${course.id}]]*/ 0;
+    const slug = /*[[${courseSlug}]]*/ 'default-slug';
+    const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
 
-            if (hasAccessRole) {
-                const editToggle = document.getElementById('courseDetailEditModeToggle');
-                const editToolbar = document.getElementById('courseInstructorEditToolbar');
-                const savedEdit = localStorage.getItem('utelearn_course_edit_mode_' + slug);
-                if (savedEdit === 'true' && editToggle) {
-                    editToggle.checked = true;
-                    if (editToolbar) editToolbar.classList.remove('d-none');
+    document.addEventListener("DOMContentLoaded", () => {
+        initModuleSortable();
+
+        if (hasAccessRole) {
+            const editToggle = document.getElementById('courseDetailEditModeToggle');
+            const editToolbar = document.getElementById('courseInstructorEditToolbar');
+            const savedEdit = localStorage.getItem('utelearn_course_edit_mode_' + slug);
+            if (savedEdit === 'true' && editToggle) {
+                editToggle.checked = true;
+                if (editToolbar) {
+                    editToolbar.classList.remove('d-none');
                     editToolbar.classList.add('d-flex');
-                    document.body.classList.add('moodle-edit-mode-active');
                 }
-                if (editToggle) {
-                    editToggle.addEventListener('change', function() {
-                        if (this.checked) {
-                            if (editToolbar) {
-                                editToolbar.classList.remove('d-none');
-                                editToolbar.classList.add('d-flex');
-                            }
-                            document.body.classList.add('moodle-edit-mode-active');
-                            localStorage.setItem('utelearn_course_edit_mode_' + slug, 'true');
-                            showToast('Chế độ chỉnh sửa khóa học đã BẬT', 'success');
-                        } else {
-                            if (editToolbar) {
-                                editToolbar.classList.add('d-none');
-                                editToolbar.classList.remove('d-flex');
-                            }
-                            document.body.classList.remove('moodle-edit-mode-active');
-                            localStorage.setItem('utelearn_course_edit_mode_' + slug, 'false');
-                            showToast('Chế độ xem học viên đã BẬT', 'warning');
-                        }
-                    });
-                }
+                document.body.classList.add('moodle-edit-mode-active');
             }
-
-        } catch (error) {
-            document.getElementById('appContainer').innerHTML = `
-                <div class="text-center py-5 my-5 text-danger">
-                    <i class="bi bi-exclamation-triangle display-1"></i>
-                    <h2 class="mt-3">Không tìm thấy khóa học</h2>
-                    <a href="/courses" class="btn btn-primary mt-3">Quay lại danh sách</a>
-                </div>
-            `;
+            if (editToggle) {
+                editToggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        if (editToolbar) {
+                            editToolbar.classList.remove('d-none');
+                            editToolbar.classList.add('d-flex');
+                        }
+                        document.body.classList.add('moodle-edit-mode-active');
+                        localStorage.setItem('utelearn_course_edit_mode_' + slug, 'true');
+                        showToast('Chế độ chỉnh sửa khóa học đã BẬT', 'success');
+                    } else {
+                        if (editToolbar) {
+                            editToolbar.classList.add('d-none');
+                            editToolbar.classList.remove('d-flex');
+                        }
+                        document.body.classList.remove('moodle-edit-mode-active');
+                        localStorage.setItem('utelearn_course_edit_mode_' + slug, 'false');
+                        showToast('Chế độ xem học viên đã BẬT', 'warning');
+                    }
+                });
+            }
         }
     });
 
@@ -1049,7 +794,7 @@
                     }
                     toggleEditField('courseObjectives');
                 } else if (fieldKey === 'description') {
-                    if (displayEl) displayEl.innerHTML = updated.description || 'Chưa có mô tả chi tiết.';
+                    if (displayEl) displayEl.textContent = updated.description || 'Chưa có mô tả chi tiết.';
                     toggleEditField('courseDescription');
                 }
                 showToast('Đã lưu thay đổi thành công!', 'success');
@@ -1193,6 +938,75 @@
         }
     }
 
+    function initModuleSortable() {
+        if (typeof Sortable === 'undefined') return;
+        const container = document.getElementById('curriculumAccordion');
+        if (container) {
+            Sortable.create(container, {
+                handle: '.module-drag-handle',
+                animation: 180,
+                ghostClass: 'bg-light-subtle',
+                onEnd: function() {
+                    saveModuleOrder();
+                }
+            });
+        }
+    }
+
+    function moveModule(btn, direction, event) {
+        if (event) event.stopPropagation();
+        const item = btn.closest('.accordion-item');
+        if (!item) return;
+        const container = document.getElementById('curriculumAccordion');
+        if (!container) return;
+        if (direction === -1) {
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('accordion-item')) {
+                container.insertBefore(item, prev);
+                saveModuleOrder();
+            }
+        } else if (direction === 1) {
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('accordion-item')) {
+                container.insertBefore(next, item);
+                saveModuleOrder();
+            }
+        }
+    }
+
+    async function saveModuleOrder() {
+        const container = document.getElementById('curriculumAccordion');
+        if (!container) return;
+        const items = Array.from(container.querySelectorAll('.accordion-item[data-module-id]'));
+        const moduleIds = items.map(el => Number(el.getAttribute('data-module-id'))).filter(id => id > 0);
+
+        items.forEach((item, idx) => {
+            const badge = item.querySelector('.module-order-badge');
+            if (badge) badge.textContent = 'Module ' + (idx + 1);
+            const bodyBadge = item.querySelector('.accordion-body .badge.bg-primary');
+            if (bodyBadge) bodyBadge.textContent = 'Module ' + (idx + 1);
+        });
+
+        try {
+            const res = await fetch(`/api/instructor/courses/${currentCourseId}/modules/reorder`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(moduleIds)
+            });
+            if (res.ok) {
+                showToast('Đã cập nhật thứ tự module!', 'success');
+            } else {
+                showToast('Lỗi khi lưu thứ tự module', 'error');
+            }
+        } catch(e) {
+            showToast('Lỗi kết nối máy chủ', 'error');
+        }
+    }
+
+    function addNewModuleDirect() {
+        window.location.href = `/instructor/courses/${currentCourseId}/modules/create`;
+    }
+
     function showToast(message, type) {
         let iconHtml = '';
         if (type === 'success') {
@@ -1227,16 +1041,11 @@
         });
         toast.showToast();
     }
-
-    function notifyOjPhase2(event) {
-        if (event) {
-            event.preventDefault();
-        }
-        showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong Phase 2!', 'warning');
-    }
 </script>
+
 <footer th:replace="~{fragments/footer :: footer}"></footer>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS cohort_messages CASCADE;
+DROP TABLE IF EXISTS lesson_completions CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS moderation_tasks CASCADE;
 DROP TABLE IF EXISTS moderator_attendances CASCADE;
@@ -171,6 +172,8 @@ CREATE TABLE cohorts (
     thumbnail_url TEXT,
     description TEXT,
     objectives TEXT,
+    announcement_title VARCHAR(255),
+    announcement_content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT chk_enrollment_period CHECK (enrollment_start IS NULL OR enrollment_end IS NULL OR enrollment_start < enrollment_end),
@@ -207,6 +210,18 @@ CREATE TABLE cohort_schedules (
     
     CONSTRAINT uq_cohort_lesson UNIQUE (cohort_id, lesson_id)
 );
+
+CREATE TABLE lesson_completions (
+    id BIGSERIAL PRIMARY KEY,
+    cohort_id BIGINT NOT NULL REFERENCES cohorts(id) ON DELETE CASCADE,
+    lesson_id BIGINT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_lesson_cohort_user UNIQUE (cohort_id, lesson_id, user_id)
+);
+
+CREATE INDEX idx_lesson_completions_cohort_user ON lesson_completions(cohort_id, user_id);
+CREATE INDEX idx_lesson_completions_lesson ON lesson_completions(lesson_id);
 
 CREATE INDEX idx_cohorts_course ON cohorts(course_id);
 CREATE INDEX idx_cohorts_creator ON cohorts(created_by);

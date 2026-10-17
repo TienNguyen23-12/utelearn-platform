@@ -38,6 +38,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.time.Instant;
 
 @Slf4j
@@ -155,9 +158,39 @@ public class InstructorCourseController {
             return "redirect:/instructor/courses";
         }
 
+        List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(id);
+        List<Cohort> modules = new ArrayList<>(cohortRepository.findByCourseIdOrdered(id));
+
+        Map<Long, List<vn.edu.ute.utelearn.entity.Section>> sectionsByCohort = new LinkedHashMap<>();
+        List<vn.edu.ute.utelearn.entity.Section> standaloneSections = new ArrayList<>();
+        for (vn.edu.ute.utelearn.entity.Section s : sections) {
+            if (s.getCohort() != null) {
+                sectionsByCohort.computeIfAbsent(s.getCohort().getId(), k -> new ArrayList<>()).add(s);
+            } else {
+                standaloneSections.add(s);
+            }
+        }
+
+        for (Map.Entry<Long, List<vn.edu.ute.utelearn.entity.Section>> entry : sectionsByCohort.entrySet()) {
+            boolean alreadyInModules = modules.stream().anyMatch(m -> m.getId().equals(entry.getKey()));
+            if (!alreadyInModules) {
+                cohortRepository.findById(entry.getKey()).ifPresent(modules::add);
+            }
+        }
+
+        List<Map<String, Object>> moduleGroups = new ArrayList<>();
+        for (Cohort m : modules) {
+            Map<String, Object> group = new LinkedHashMap<>();
+            group.put("module", m);
+            group.put("sections", sectionsByCohort.getOrDefault(m.getId(), Collections.emptyList()));
+            moduleGroups.add(group);
+        }
+
         model.addAttribute("course", course);
-        model.addAttribute("sections", sectionService.getSectionsByCourseId(id));
-        model.addAttribute("modules", cohortRepository.findByCourseIdOrderByCreatedAtAsc(id));
+        model.addAttribute("sections", sections);
+        model.addAttribute("modules", modules);
+        model.addAttribute("moduleGroups", moduleGroups);
+        model.addAttribute("standaloneSections", standaloneSections);
         return "instructor/courses/curriculum";
     }
 
@@ -301,6 +334,8 @@ public class InstructorCourseController {
                 .price(sourceCohort.getPrice() != null ? sourceCohort.getPrice() : java.math.BigDecimal.ZERO)
                 .description(sourceCohort.getDescription())
                 .objectives(sourceCohort.getObjectives())
+                .announcementTitle(sourceCohort.getAnnouncementTitle())
+                .announcementContent(sourceCohort.getAnnouncementContent())
                 .thumbnailUrl(finalThumbnail)
                 .status("ENROLLING")
                 .visibility("COURSE_INTERNAL")
@@ -504,6 +539,8 @@ public class InstructorCourseController {
             @RequestParam(required = false) java.math.BigDecimal price,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String objectives,
+            @RequestParam(required = false) String announcementTitle,
+            @RequestParam(required = false) String announcementContent,
             @RequestParam(required = false) String thumbnailUrl,
             @RequestParam(required = false, defaultValue = "PUBLIC") String visibility,
             @RequestParam(required = false) List<Long> lessonIds,
@@ -527,6 +564,8 @@ public class InstructorCourseController {
         cohort.setVisibility(visibility != null && !visibility.isBlank() ? visibility : "PUBLIC");
         cohort.setDescription(description);
         cohort.setObjectives(parseObjectives(objectives));
+        cohort.setAnnouncementTitle(announcementTitle);
+        cohort.setAnnouncementContent(announcementContent);
         String finalThumbnail = thumbnailUrl;
         if (finalThumbnail == null || finalThumbnail.trim().isEmpty()) {
             finalThumbnail = (course.getThumbnailUrl() != null && !course.getThumbnailUrl().isBlank())

@@ -93,13 +93,11 @@ public class HomeController {
     public String showCohortDetailRedirect(@PathVariable Long id) {
         try {
             vn.edu.ute.utelearn.entity.Cohort cohort = cohortService.getCohortById(id);
-            if (cohort != null && cohort.getCourse() != null) {
-                String courseKey = (cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+            if (cohort != null) {
+                String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
                         ? cohort.getCourse().getSlug()
-                        : String.valueOf(cohort.getCourse().getId());
+                        : "standalone";
                 return "redirect:/courses/" + courseKey + "/modules/" + id;
-            } else if (cohort != null) {
-                return "redirect:/checkout/" + id;
             }
         } catch (Exception e) {
             log.warn("Không tìm thấy cohort id: {}", id);
@@ -111,10 +109,10 @@ public class HomeController {
     public String showCohortLearnRedirect(@PathVariable Long id) {
         try {
             vn.edu.ute.utelearn.entity.Cohort cohort = cohortService.getCohortById(id);
-            if (cohort != null && cohort.getCourse() != null) {
-                String courseKey = (cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+            if (cohort != null) {
+                String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
                         ? cohort.getCourse().getSlug()
-                        : String.valueOf(cohort.getCourse().getId());
+                        : "standalone";
                 return "redirect:/courses/" + courseKey + "/modules/" + id + "/learn";
             }
         } catch (Exception e) {
