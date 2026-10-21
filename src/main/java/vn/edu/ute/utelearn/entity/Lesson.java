@@ -53,7 +53,20 @@ public class Lesson {
     @Builder.Default
     private Boolean isPublicForCohorts = false;
 
+    @Column(length = 30)
+    @Builder.Default
+    private String status = "DRAFT";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public String getStatus() {
+        return (status == null || status.isBlank()) ? "PUBLISHED" : status;
+    }
+
+    @Transient
+    public boolean isPublished() {
+        return "PUBLISHED".equalsIgnoreCase(getStatus());
+    }
 }

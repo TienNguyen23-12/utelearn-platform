@@ -239,6 +239,12 @@
             padding: 16px 20px;
         }
 
+        .announcement-box p,
+        #moduleAnnouncementContentText {
+            white-space: pre-line;
+            word-break: break-word;
+        }
+
         .instructor-edit-ctrl {
             display: none !important;
         }
@@ -447,7 +453,7 @@
                                 <i class="bi bi-pencil-square me-1"></i>Sửa thông báo
                             </button>
                         </div>
-                        <p class="text-secondary small mb-0 lh-base" id="moduleAnnouncementContentText" th:text="${module.effectiveAnnouncementContent}">
+                        <p class="text-secondary small mb-0 lh-base" style="white-space: pre-line; word-break: break-word;" id="moduleAnnouncementContentText" th:text="${module.effectiveAnnouncementContent}">
                             Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.
                         </p>
                     </div>
@@ -461,7 +467,7 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label fw-semibold small text-dark mb-1">Nội dung thông báo:</label>
-                            <textarea id="inputModuleAnnouncementContent" class="form-control rounded-3" rows="3" 
+                            <textarea id="inputModuleAnnouncementContent" class="form-control rounded-3" rows="5" 
                                       placeholder="Nội dung thông báo..." 
                                       th:text="${module.announcementContent != null ? module.announcementContent : 'Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.'}"></textarea>
                         </div>
@@ -492,7 +498,7 @@
 
                 <div id="moduleObjectivesEditWrap" class="d-none mb-3 bg-light p-3 rounded-4 border">
                     <label class="form-label fw-semibold small text-dark mb-1">Mỗi mục tiêu học tập viết trên một dòng:</label>
-                    <textarea id="inputModuleObjectives" class="form-control rounded-3 mb-2" rows="4" th:text="${module.objectives}"></textarea>
+                    <textarea id="inputModuleObjectives" class="form-control rounded-3 mb-2" rows="5" th:text="${module.objectivesAsLines}"></textarea>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="saveModuleObjectivesInline()">
                             <i class="bi bi-check-lg me-1"></i>Lưu mục tiêu
@@ -1668,6 +1674,66 @@
                 if (contentEl) contentEl.textContent = rawContent || 'Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.';
                 toggleEditModuleAnnouncement();
                 Toastify({text: 'Đã cập nhật thông báo Module thành công!', style: {background: '#059669'}}).showToast();
+            } else {
+                const err = await res.text();
+                Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();
+            }
+        } catch (e) {
+            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+        }
+    }
+
+    function toggleEditModuleObjectives() {
+        const viewEl = document.getElementById('moduleObjectivesViewWrap');
+        const editEl = document.getElementById('moduleObjectivesEditWrap');
+        if (!viewEl || !editEl) return;
+        if (editEl.classList.contains('d-none')) {
+            editEl.classList.remove('d-none');
+            viewEl.classList.add('d-none');
+            const input = document.getElementById('inputModuleObjectives');
+            if (input) input.focus();
+        } else {
+            editEl.classList.add('d-none');
+            viewEl.classList.remove('d-none');
+        }
+    }
+
+    async function saveModuleObjectivesInline() {
+        const input = document.getElementById('inputModuleObjectives');
+        const raw = input ? input.value : '';
+        try {
+            const res = await fetch(`/api/instructor/courses/modules/${currentModuleId}/inline`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ objectives: raw })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const viewWrap = document.getElementById('moduleObjectivesViewWrap');
+                if (viewWrap && data.objectives) {
+                    const list = Array.isArray(data.objectives) ? data.objectives : [];
+                    if (list.length > 0) {
+                        viewWrap.innerHTML = '';
+                        const container = document.createElement('div');
+                        container.className = 'd-flex flex-column gap-2.5';
+                        list.forEach(item => {
+                            const row = document.createElement('div');
+                            row.className = 'd-flex align-items-start gap-3 p-2.5 rounded-3 bg-light';
+                            const icon = document.createElement('i');
+                            icon.className = 'bi bi-check-circle-fill text-success fs-5 mt-0.5 flex-shrink-0';
+                            const span = document.createElement('span');
+                            span.className = 'text-dark fw-medium lh-base';
+                            span.textContent = item;
+                            row.appendChild(icon);
+                            row.appendChild(span);
+                            container.appendChild(row);
+                        });
+                        viewWrap.appendChild(container);
+                    }
+                }
+                toggleEditModuleObjectives();
+                Toastify({text: 'Đã cập nhật mục tiêu học phần!', style: {background: '#059669'}}).showToast();
             } else {
                 const err = await res.text();
                 Toastify({text: 'Lỗi: ' + err, style: {background: '#dc3545'}}).showToast();

@@ -24,7 +24,12 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="fw-bold mb-1 text-danger">Hàng đợi Admin (Vượt cấp)</h3>
-                <p class="text-muted mb-0">Các nội dung khó do Moderator chuyển lên</p>
+                <p class="text-muted mb-0">Các nội dung khó do Moderator chuyển lên cần Quản trị viên xử lý</p>
+            </div>
+            <div>
+                <a th:href="@{/moderator/queue}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Hàng đợi kiểm duyệt thông thường
+                </a>
             </div>
         </div>
 
@@ -34,29 +39,43 @@
                     <thead class="bg-light text-muted" style="font-size: 13px;">
                     <tr>
                         <th class="fw-semibold ps-4">Mã Task</th>
+                        <th class="fw-semibold">Loại</th>
                         <th class="fw-semibold">Tác giả</th>
                         <th class="fw-semibold">Người chuyển</th>
-                        <th class="fw-semibold">Lý do chuyển</th>
+                        <th class="fw-semibold">Lý do chuyển cấp</th>
+                        <th class="fw-semibold">Thời gian</th>
                         <th class="fw-semibold text-center">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody class="border-top-0">
                     <tr th:if="${#lists.isEmpty(tasks)}">
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="bi bi-shield-check fs-1 d-block mb-3 text-success"></i>
-                            Không có yêu cầu vượt cấp nào.
+                            Tuyệt vời! Không có yêu cầu vượt cấp nào đang chờ xử lý.
                         </td>
                     </tr>
                     <tr th:each="task : ${tasks}">
                         <td class="ps-4 fw-medium text-dark">#<span th:text="${task.id}">1</span></td>
-                        <td th:text="${task.author?.fullName}">Giảng viên</td>
-                        <td th:text="${task.escalatedBy?.fullName}">Moderator</td>
                         <td>
-                            <small class="text-muted" th:text="${task.escalationReason}">Lý do...</small>
+                            <span th:if="${task.itemType == 'COURSE'}" class="badge bg-primary-subtle text-primary border"><i class="bi bi-book me-1"></i>Khóa học</span>
+                            <span th:if="${task.itemType == 'COHORT'}" class="badge bg-success-subtle text-success border"><i class="bi bi-collection me-1"></i>Module lẻ</span>
+                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
+                        </td>
+                        <td th:text="${task.author?.fullName}">Giảng viên</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-person-fill text-muted me-1"></i><span th:text="${task.escalatedBy?.fullName}">Moderator</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-danger fw-semibold" th:text="${task.escalationReason}">Lý do...</span>
+                        </td>
+                        <td>
+                            <span th:if="${task.createdAt != null}" class="text-muted small" th:text="${#dates.format(T(java.util.Date).from(task.createdAt), 'HH:mm dd/MM/yyyy')}"></span>
                         </td>
                         <td class="text-center">
-                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-danger rounded-pill px-3">
-                                <i class="bi bi-hammer me-1"></i> Xử lý
+                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-hammer me-1"></i> Xử lý ngay
                             </a>
                         </td>
                     </tr>

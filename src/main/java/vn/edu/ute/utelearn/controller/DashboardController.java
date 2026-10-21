@@ -48,7 +48,6 @@ public class DashboardController {
             return "redirect:/home?error=admin_only";
         }
 
-        // Calculate time ranges
         java.time.Instant start = null;
         java.time.Instant end = null;
         java.time.LocalDate startD = null;
@@ -79,17 +78,18 @@ public class DashboardController {
         long totalStudents;
         long totalCourses;
         long pendingModerationTasks;
+        long escalatedModerationTasks;
         long totalAttendances;
 
         java.util.List<String> studentRoles = java.util.Arrays.asList("STUDENT", "LEARNER", "USER");
 
         if (start != null && end != null) {
             totalRevenue = orderRepository.calculateTotalRevenueBetween(start, end);
-            totalUsers = userRepository.count(); // Users usually aren't filtered by date for overall dashboard stats, or maybe they are? The user says "số học viên". I'll filter it.
-            // Wait, let's keep total users as total all time if we don't have countByCreatedAtBetween, but I didn't add countByCreatedAtBetween to UserRepository. I'll just keep totalUsers as all time, but totalStudents filtered.
+            totalUsers = userRepository.count();
             totalStudents = userRepository.countByRolesCodeInAndCreatedAtBetween(studentRoles, start, end);
             totalCourses = courseRepository.countByCreatedAtBetween(start, end);
             pendingModerationTasks = moderationTaskRepository.countByStatusAndCreatedAtBetween("PENDING", start, end);
+            escalatedModerationTasks = moderationTaskRepository.countByStatusAndCreatedAtBetween("ESCALATED", start, end);
             totalAttendances = moderatorAttendanceRepository.countByWorkDateBetween(startD, endD);
         } else {
             totalRevenue = orderRepository.calculateTotalRevenue();
@@ -97,6 +97,7 @@ public class DashboardController {
             totalStudents = userRepository.countByRolesCodeIn(studentRoles);
             totalCourses = courseRepository.count();
             pendingModerationTasks = moderationTaskRepository.countByStatus("PENDING");
+            escalatedModerationTasks = moderationTaskRepository.countByStatus("ESCALATED");
             totalAttendances = moderatorAttendanceRepository.count();
         }
 
@@ -110,6 +111,7 @@ public class DashboardController {
         model.addAttribute("totalCourses", totalCourses);
         model.addAttribute("totalRevenue", totalRevenue);
         model.addAttribute("pendingModerationTasks", pendingModerationTasks);
+        model.addAttribute("escalatedModerationTasks", escalatedModerationTasks);
         model.addAttribute("totalAttendances", totalAttendances);
         model.addAttribute("currentFilter", filter);
         

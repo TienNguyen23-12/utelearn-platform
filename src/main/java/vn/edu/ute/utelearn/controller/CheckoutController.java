@@ -134,6 +134,7 @@ public class CheckoutController {
                     .code(course.getCode() + "-ALL")
                     .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
                     .status("ENROLLING")
+                    .moderationStatus("APPROVED")
                     .maxCapacity(1000)
                     .currentEnrolled(0)
                     .enrollmentStart(Instant.now())

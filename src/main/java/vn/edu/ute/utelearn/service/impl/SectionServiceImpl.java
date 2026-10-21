@@ -150,6 +150,7 @@ public class SectionServiceImpl implements SectionService {
                 .orderIndex(orderIndex);
 
         Section saved = sectionRepository.save(builder.build());
+        revertCohortToDraftIfApproved(saved.getCohort());
         log.info("[SectionService] Đã tạo thành công chương ID: {}", saved.getId());
         return saved;
     }
@@ -174,6 +175,7 @@ public class SectionServiceImpl implements SectionService {
         }
 
         Section saved = sectionRepository.save(section);
+        revertCohortToDraftIfApproved(saved.getCohort());
         log.info("[SectionService] Đã cập nhật thành công chương ID: {}", saved.getId());
         return saved;
     }
@@ -187,6 +189,7 @@ public class SectionServiceImpl implements SectionService {
             throw new RuntimeException("Bạn không có quyền xóa chương này");
         }
 
+        revertCohortToDraftIfApproved(section.getCohort());
         sectionRepository.delete(section);
         log.info("[SectionService] Đã xóa thành công chương ID: {}", sectionId);
     }
@@ -202,6 +205,14 @@ public class SectionServiceImpl implements SectionService {
                 s.setOrderIndex(i + 1);
                 sectionRepository.save(s);
             }
+        }
+    }
+
+    private void revertCohortToDraftIfApproved(Cohort cohort) {
+        if (cohort != null && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+            cohort.setModerationStatus("DRAFT");
+            cohortRepository.save(cohort);
+            log.info("[SectionService] Chuyển module độc lập id: {} về DRAFT do cập nhật chương", cohort.getId());
         }
     }
 }

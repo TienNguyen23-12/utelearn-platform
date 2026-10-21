@@ -216,6 +216,7 @@ public class CohortLessonProgressTest {
         assertNotNull(created);
         assertNull(created.getCourse());
         assertEquals("Module Độc Lập", created.getName());
+        assertEquals("DRAFT", created.getModerationStatus());
     }
 
     @Test
@@ -232,5 +233,43 @@ public class CohortLessonProgressTest {
         assertNotNull(updated);
         assertNull(updated.getCourse());
         assertEquals("Module Độc Lập Updated", updated.getName());
+    }
+
+    @Test
+    void testUpdateStandaloneCohort_RevertsToDraftWhenApproved() {
+        Cohort approvedCohort = Cohort.builder()
+                .id(2L)
+                .code("MOD-APPROVED")
+                .name("Module Approved")
+                .moderationStatus("APPROVED")
+                .build();
+
+        when(cohortRepository.findByIdAndInstructorId(2L, 100L)).thenReturn(Optional.of(approvedCohort));
+        when(cohortRepository.save(any(Cohort.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        vn.edu.ute.utelearn.dto.CohortRequestDTO dto = new vn.edu.ute.utelearn.dto.CohortRequestDTO();
+        dto.setName("Module Approved Renamed");
+        dto.setCode("MOD-APPROVED");
+        dto.setCourseId(null);
+
+        Cohort updated = cohortServiceImpl.updateCohort(2L, dto, sampleUser);
+        assertNotNull(updated);
+        assertEquals("DRAFT", updated.getModerationStatus());
+    }
+
+    @Test
+    void testRevertToDraftIfApproved_UpdatesStatusWhenApproved() {
+        Cohort approvedCohort = Cohort.builder()
+                .id(3L)
+                .code("MOD-APPROVED-2")
+                .moderationStatus("APPROVED")
+                .build();
+
+        when(cohortRepository.findById(3L)).thenReturn(Optional.of(approvedCohort));
+
+        cohortServiceImpl.revertToDraftIfApproved(3L);
+
+        assertEquals("DRAFT", approvedCohort.getModerationStatus());
+        verify(cohortRepository).save(approvedCohort);
     }
 }

@@ -158,6 +158,25 @@
             </div>
         </div>
 
+        <div th:if="${course.status == 'PENDING_MODERATOR' or course.status == 'PENDING_ADMIN'}" class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+            <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+            <div>
+                <strong>Khóa học đang trong quá trình kiểm duyệt.</strong> Mọi thay đổi giáo trình lúc này sẽ được cập nhật trực tiếp vào bản xem xét của Kiểm duyệt viên.
+            </div>
+        </div>
+
+        <div th:if="${course.status == 'REJECTED'}" class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                <div>
+                    <strong>Khóa học đã bị từ chối kiểm duyệt.</strong> Vui lòng cập nhật lại nội dung theo yêu cầu và bấm gửi duyệt lại.
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" th:onclick="'showModerationFeedbackModal(\'COURSE\', ' + ${course.id} + ')'">
+                <i class="bi bi-chat-square-quote me-1"></i> Xem nhận xét
+            </button>
+        </div>
+
         <div id="curriculumList">
             <div class="module-group card mb-4 border-0 shadow-sm rounded-4 overflow-hidden" 
                  th:each="grp : ${moduleGroups}">
@@ -930,6 +949,11 @@
                 moduleBadge = `<span class="badge bg-light text-secondary border me-2" style="font-size: 11px;"><i class="bi bi-file-earmark me-1"></i>Ngoài module</span>`;
             }
 
+            const isDraft = l.status === 'DRAFT';
+            const statusBadge = isDraft
+                ? '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-1 me-1"><i class="bi bi-clock-history me-1"></i>Bản nháp (Chờ duyệt)</span>'
+                : '<span class="badge bg-success-subtle text-success border border-success-subtle px-1 me-1"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>';
+
             const lessonJson = JSON.stringify(l).replace(/'/g, "&apos;");
             const actionButtons = `
                 <button class="btn btn-light text-primary border me-1" 
@@ -951,7 +975,7 @@
                         <div class="lesson-icon ${bgClass}"><i class="bi ${iconClass}"></i></div>
                         <div>
                             <p class="lesson-title">${moduleBadge}${idx + 1}. ${l.title}</p>
-                            <small class="text-muted" style="font-size: 12px;">${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success-subtle text-success border border-success-subtle px-1"><i class="bi bi-play-circle me-1"></i>Học thử</span>' : ''}</small>
+                            <small class="text-muted" style="font-size: 12px;">${statusBadge}${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success-subtle text-success border border-success-subtle px-1"><i class="bi bi-play-circle me-1"></i>Học thử</span>' : ''}</small>
                         </div>
                     </div>
                     <div class="action-btns">

@@ -24,8 +24,35 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="fw-bold mb-1">Hàng đợi Kiểm duyệt</h3>
-                <p class="text-muted mb-0">Các nội dung đang chờ bạn duyệt</p>
+                <p class="text-muted mb-0">Các nội dung đang chờ kiểm duyệt theo cam kết chất lượng SLA</p>
             </div>
+            <div class="d-flex align-items-center gap-2">
+                <a th:if="${@rbac.hasRole('ADMIN')}" th:href="@{/admin/moderation}" class="btn btn-sm btn-outline-danger rounded-pill px-3 position-relative">
+                    <i class="bi bi-shield-check me-1"></i> Hàng đợi vượt cấp
+                    <span th:if="${escalatedTaskCount != null && escalatedTaskCount > 0}" class="badge bg-danger rounded-pill ms-1" th:text="${escalatedTaskCount}">1</span>
+                </a>
+                <span th:if="${isCheckedIn}" class="badge bg-success-subtle text-success border px-3 py-2 rounded-pill">
+                    <i class="bi bi-patch-check-fill me-1"></i> Đang trong ca trực
+                </span>
+                <a th:href="@{/moderator/attendance}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-clock-history me-1"></i> Ca trực
+                </a>
+            </div>
+        </div>
+
+        <div th:if="${escalatedTaskCount != null && escalatedTaskCount > 0 && @rbac.hasRole('ADMIN')}" class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center justify-content-between p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper bg-danger text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                    <i class="bi bi-shield-exclamation fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-danger">Có <span th:text="${escalatedTaskCount}">0</span> yêu cầu duyệt vượt cấp đang chờ Admin xử lý!</h6>
+                    <p class="mb-0 small text-muted">Các nội dung này đã được Moderator chuyển cấp lên Quản trị viên để đưa ra phán quyết cuối cùng.</p>
+                </div>
+            </div>
+            <a th:href="@{/admin/moderation}" class="btn btn-sm btn-danger rounded-pill px-3 py-2 fw-semibold text-nowrap">
+                <i class="bi bi-shield-check me-1"></i> Đi tới Hàng đợi Vượt cấp
+            </a>
         </div>
 
         <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden">
@@ -36,13 +63,14 @@
                         <th class="fw-semibold ps-4">Mã Task</th>
                         <th class="fw-semibold">Loại</th>
                         <th class="fw-semibold">Tác giả</th>
-                        <th class="fw-semibold">Thời gian tạo</th>
+                        <th class="fw-semibold">Thời gian gửi</th>
+                        <th class="fw-semibold">Hạn xử lý (SLA)</th>
                         <th class="fw-semibold text-center">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody class="border-top-0">
                     <tr th:if="${#lists.isEmpty(tasks)}">
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                             Tuyệt vời! Không có nội dung nào đang chờ duyệt.
                         </td>
@@ -50,10 +78,22 @@
                     <tr th:each="task : ${tasks}">
                         <td class="ps-4 fw-medium text-dark">#<span th:text="${task.id}">1</span></td>
                         <td>
-                            <span class="badge bg-primary-subtle text-primary border" th:text="${task.itemType}">COURSE</span>
+                            <span th:if="${task.itemType == 'COURSE'}" class="badge bg-primary-subtle text-primary border"><i class="bi bi-book me-1"></i>Khóa học</span>
+                            <span th:if="${task.itemType == 'COHORT'}" class="badge bg-success-subtle text-success border"><i class="bi bi-collection me-1"></i>Module lẻ</span>
+                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
+                            <span th:if="${task.assignedTo != null}" class="badge bg-info-subtle text-info border ms-1" title="Được chỉ định cụ thể"><i class="bi bi-person-check-fill me-1"></i><span th:text="${task.assignedTo.fullName}"></span></span>
                         </td>
                         <td th:text="${task.author?.fullName}">Giảng viên</td>
-                        <td th:text="${task.createdAt}">Ngay tao</td>
+                        <td>
+                            <span th:if="${task.createdAt != null}" class="text-muted small" th:text="${#dates.format(T(java.util.Date).from(task.createdAt), 'HH:mm dd/MM/yyyy')}"></span>
+                        </td>
+                        <td>
+                            <span th:if="${task.deadlineAt != null}" class="badge bg-info-subtle text-info border">
+                                <i class="bi bi-clock me-1"></i>
+                                <span th:text="${#dates.format(T(java.util.Date).from(task.deadlineAt), 'HH:mm dd/MM/yyyy')}"></span>
+                            </span>
+                            <span th:if="${task.deadlineAt == null}" class="badge bg-secondary-subtle text-secondary border">Tiêu chuẩn 48h</span>
+                        </td>
                         <td class="text-center">
                             <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-primary rounded-pill px-3">
                                 <i class="bi bi-eye me-1"></i> Xem chi tiết

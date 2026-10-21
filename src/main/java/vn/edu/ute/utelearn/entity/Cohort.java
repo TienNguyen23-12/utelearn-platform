@@ -61,6 +61,10 @@ public class Cohort {
     @Builder.Default
     private String status = "UPCOMING";
 
+    @Column(name = "moderation_status", length = 30)
+    @Builder.Default
+    private String moderationStatus = "DRAFT";
+
     @Column(length = 30)
     @Builder.Default
     private String visibility = "PUBLIC";
@@ -131,6 +135,12 @@ public class Cohort {
     }
 
     @Transient
+    public String getObjectivesAsLines() {
+        java.util.List<String> list = getParsedObjectives();
+        return list.isEmpty() ? "" : String.join("\n", list);
+    }
+
+    @Transient
     public String getFormattedEnrollmentStart() {
         if (enrollmentStart == null) return "Chưa thiết lập";
         return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
@@ -177,4 +187,46 @@ public class Cohort {
         }
         return "Khóa học được thiết kế theo chuẩn sư phạm tích cực. Sinh viên vui lòng hoàn thành bài giảng lý thuyết trước khi làm bài tập thực hành và kiểm tra trắc nghiệm.";
     }
+
+    public String calculateDynamicStatus() {
+        if ("COMPLETED".equalsIgnoreCase(this.status)) {
+            return "COMPLETED";
+        }
+        Instant now = Instant.now();
+        if (studyEnd != null && now.isAfter(studyEnd)) {
+            return "COMPLETED";
+        }
+        if (studyStart != null && !now.isBefore(studyStart)) {
+            return "IN_PROGRESS";
+        }
+        if (enrollmentEnd != null && now.isAfter(enrollmentEnd)) {
+            if (studyStart != null && now.isBefore(studyStart)) {
+                return "UPCOMING";
+            }
+            return "COMPLETED";
+        }
+        if (enrollmentStart != null) {
+            if (now.isBefore(enrollmentStart)) {
+                return "UPCOMING";
+            }
+            return "ENROLLING";
+        }
+        return (this.status != null && !this.status.isBlank()) ? this.status : "UPCOMING";
+    }
+
+    @PostLoad
+    public void syncDynamicStatus() {
+        this.status = calculateDynamicStatus();
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateDynamicStatusBeforeSave() {
+        this.status = calculateDynamicStatus();
+    }
+
+    public String getStatus() {
+        return calculateDynamicStatus();
+    }
 }
+

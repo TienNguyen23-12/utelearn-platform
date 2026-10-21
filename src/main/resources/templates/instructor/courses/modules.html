@@ -142,6 +142,7 @@
                         </td>
                         <td>
                             <span th:if="${m.status == 'ENROLLING'}" class="badge bg-success-subtle text-success border">Đang mở</span>
+                            <span th:if="${m.status == 'IN_PROGRESS'}" class="badge bg-primary-subtle text-primary border">Đang học</span>
                             <span th:if="${m.status == 'UPCOMING'}" class="badge bg-warning-subtle text-warning border">Sắp mở</span>
                             <span th:if="${m.status == 'COMPLETED'}" class="badge bg-secondary">Đã đóng</span>
                         </td>
