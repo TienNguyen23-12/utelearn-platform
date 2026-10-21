@@ -414,7 +414,7 @@
                                         </button>
                                     </div>
                                     <div th:id="'modDescViewWrap_' + ${courseMod.id}">
-                                        <p class="text-muted small mb-0 lh-base" th:id="'modDescText_' + ${courseMod.id}" th:text="${courseMod.description != null && !courseMod.description.isBlank() ? courseMod.description : 'Chưa có mô tả cho module này.'}">Mô tả</p>
+                                        <p class="text-muted small mb-0 lh-base" style="white-space: pre-line; word-break: break-word;" th:id="'modDescText_' + ${courseMod.id}" th:text="${courseMod.description != null && !courseMod.description.isBlank() ? courseMod.description : 'Chưa có mô tả cho module này.'}">Mô tả</p>
                                     </div>
                                     <div th:if="${hasAccessRole}" th:id="'modDescEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
                                         <label class="form-label fw-semibold small text-dark mb-1">Nội dung mô tả Module:</label>

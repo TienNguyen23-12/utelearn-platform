@@ -74,6 +74,8 @@
                         <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
                                 href="/admin/roles"><i class="bi bi-shield-lock-fill me-2 text-warning"></i>Phân quyền
                                 Hệ thống</a></li>
+                        <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/admin/categories"><i class="bi bi-tags-fill me-2 text-success"></i>Danh mục Khóa học</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>

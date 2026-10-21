@@ -58,10 +58,16 @@ public class DataSeeder implements CommandLineRunner {
                 jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS objectives TEXT");
                 jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id) ON DELETE SET NULL");
                 jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS visibility VARCHAR(30) DEFAULT 'PUBLIC'");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(30) DEFAULT 'APPROVED'");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS announcement_title VARCHAR(255)");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS announcement_content TEXT");
+                jdbcTemplate.execute("ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS order_index INT DEFAULT 1");
                 jdbcTemplate.execute("ALTER TABLE cohorts ALTER COLUMN course_id DROP NOT NULL");
-                jdbcTemplate.execute("UPDATE cohorts SET created_by = 2");
+                jdbcTemplate.execute("UPDATE cohorts c SET created_by = COALESCE((SELECT co.created_by FROM courses co WHERE co.id = c.course_id), 2) WHERE c.created_by IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL");
-                jdbcTemplate.execute("UPDATE cohorts SET name = REGEXP_REPLACE(name, '^Module\\s*[0-9]+[:\\.\\-]\\s*', '', 'i') WHERE name ~* '^Module\\s*[0-9]+'");
+                jdbcTemplate.execute("UPDATE cohorts SET moderation_status = 'APPROVED' WHERE moderation_status IS NULL");
+                jdbcTemplate.execute("UPDATE cohorts SET order_index = 1 WHERE order_index IS NULL");
+                jdbcTemplate.execute("UPDATE cohorts SET name = REGEXP_REPLACE(name, '^Module\\s*[0-9]+[:\\.\\-]\\s*', '', 'i') WHERE code IN ('MOD-WEB-01', 'MOD-WEB-02', 'MOD-WEB-03', 'MOD-JAVA-01', 'MOD-JAVA-02', 'MOD-JAVA-03', 'MOD-OJ-01', 'MOD-OJ-02') AND name ~* '^Module\\s*[0-9]+'");
                 seedCohortObjectives();
                 if (isTablePresent("cohort_members")) {
                     jdbcTemplate.execute("UPDATE cohorts c SET current_enrolled = (SELECT COUNT(*) FROM cohort_members cm WHERE cm.cohort_id = c.id)");

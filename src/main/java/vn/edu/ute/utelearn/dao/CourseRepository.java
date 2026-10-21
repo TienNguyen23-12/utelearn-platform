@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import vn.edu.ute.utelearn.entity.Course;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +20,8 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     Optional<Course> findById(Long id);
 
     long countByCreatedAtBetween(java.time.Instant start, java.time.Instant end);
+
+    long countByCategoryId(Long categoryId);
+
+    List<Course> findByCategoryId(Long categoryId);
 }

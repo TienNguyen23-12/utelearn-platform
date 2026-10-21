@@ -112,3 +112,62 @@ function showToast(message, type) {
     });
     toast.showToast();
 }
+
+function showModerationFeedbackModal(itemType, itemId) {
+    let feedbackModalEl = document.getElementById('globalFeedbackModal');
+    if (!feedbackModalEl) {
+        const modalHtml = `
+        <div class="modal fade" id="globalFeedbackModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow rounded-4">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-octagon-fill"></i> Lý do từ chối kiểm duyệt
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3 d-flex justify-content-between align-items-center text-muted small">
+                            <span><i class="bi bi-person-badge me-1"></i>Kiểm duyệt viên: <strong class="text-dark" id="feedbackModeratorName">---</strong></span>
+                            <span id="feedbackCreatedAt">---</span>
+                        </div>
+                        <div class="alert alert-danger bg-danger-subtle border-danger-subtle text-danger-emphasis rounded-3 mb-3">
+                            <div class="fw-semibold mb-1"><i class="bi bi-chat-left-dots-fill me-1"></i> Nhận xét từ kiểm duyệt viên:</div>
+                            <div id="feedbackContent" style="white-space: pre-wrap;" class="mt-2 text-dark"></div>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-info-circle me-1"></i> Bạn có thể cập nhật lại nội dung giáo trình/thông tin và nhấn nút <strong>"Gửi duyệt"</strong> để kiểm duyệt lại.
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        feedbackModalEl = document.getElementById('globalFeedbackModal');
+    }
+
+    fetch('/api/moderator/tasks/feedback?itemType=' + encodeURIComponent(itemType) + '&itemId=' + encodeURIComponent(itemId))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Không thể tải thông tin phản hồi');
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('feedbackModeratorName').innerText = data.moderatorName || 'Kiểm duyệt viên';
+            document.getElementById('feedbackCreatedAt').innerText = data.createdAt ? new Date(data.createdAt).toLocaleString('vi-VN') : '';
+            document.getElementById('feedbackContent').innerText = data.feedback || 'Không có ghi chú chi tiết nào được ghi lại.';
+            const modal = bootstrap.Modal.getOrCreateInstance(feedbackModalEl);
+            modal.show();
+        })
+        .catch(err => {
+            if (typeof showToast === 'function') {
+                showToast(err.message || 'Lỗi khi tải phản hồi', 'error');
+            } else {
+                alert(err.message || 'Lỗi khi tải phản hồi');
+            }
+        });
+}

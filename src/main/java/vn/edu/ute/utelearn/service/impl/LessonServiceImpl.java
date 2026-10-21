@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.ute.utelearn.dao.LessonRepository;
 import vn.edu.ute.utelearn.dto.LessonRequestDTO;
+import vn.edu.ute.utelearn.entity.Cohort;
+import vn.edu.ute.utelearn.entity.CohortSchedule;
 import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.Section;
 import vn.edu.ute.utelearn.entity.User;
@@ -114,6 +116,7 @@ public class LessonServiceImpl implements LessonService {
                 .isFreePreview(request.getIsFreePreview() != null ? request.getIsFreePreview() : false)
                 .isPublicForCohorts(request.getIsPublicForCohorts() != null ? request.getIsPublicForCohorts() : false)
                 .orderIndex(orderIndex)
+                .status("DRAFT")
                 .build();
 
         Lesson savedLesson = lessonRepository.save(lesson);
@@ -131,7 +134,10 @@ public class LessonServiceImpl implements LessonService {
                         .unlockAt(java.time.Instant.now())
                         .build();
                 cohortScheduleRepository.save(schedule);
+                revertCohortToDraftIfApproved(cohort);
             });
+        } else if (section != null && section.getCohort() != null) {
+            revertCohortToDraftIfApproved(section.getCohort());
         }
 
         log.info("[LessonService] Đã tạo thành công bài học ID: {}", savedLesson.getId());
@@ -171,6 +177,7 @@ public class LessonServiceImpl implements LessonService {
         if (request.getOrderIndex() != null) {
             lesson.setOrderIndex(request.getOrderIndex());
         }
+        lesson.setStatus("DRAFT");
 
         Lesson savedLesson = lessonRepository.save(lesson);
 
@@ -188,8 +195,13 @@ public class LessonServiceImpl implements LessonService {
                             .unlockAt(java.time.Instant.now())
                             .build();
                     cohortScheduleRepository.save(schedule);
+                    revertCohortToDraftIfApproved(cohort);
                 });
+            } else {
+                revertCohortToDraftIfApproved(targetCohortId);
             }
+        } else if (section != null && section.getCohort() != null) {
+            revertCohortToDraftIfApproved(section.getCohort());
         }
 
         log.info("[LessonService] Đã cập nhật thành công bài học ID: {}", savedLesson.getId());
@@ -204,6 +216,16 @@ public class LessonServiceImpl implements LessonService {
 
         if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
+        }
+
+        if (section != null && section.getCohort() != null) {
+            revertCohortToDraftIfApproved(section.getCohort());
+        }
+        List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
+        for (CohortSchedule cs : schedules) {
+            if (cs.getCohort() != null) {
+                revertCohortToDraftIfApproved(cs.getCohort());
+            }
         }
 
         cohortScheduleRepository.deleteByLessonId(lessonId);
@@ -226,6 +248,20 @@ public class LessonServiceImpl implements LessonService {
                 }
                 lessonRepository.save(l);
             }
+        }
+    }
+
+    private void revertCohortToDraftIfApproved(Cohort cohort) {
+        if (cohort != null && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+            cohort.setModerationStatus("DRAFT");
+            cohortRepository.save(cohort);
+            log.info("[LessonService] Chuyển module độc lập id: {} về DRAFT do cập nhật bài học", cohort.getId());
+        }
+    }
+
+    private void revertCohortToDraftIfApproved(Long cohortId) {
+        if (cohortId != null) {
+            cohortRepository.findById(cohortId).ifPresent(this::revertCohortToDraftIfApproved);
         }
     }
 }

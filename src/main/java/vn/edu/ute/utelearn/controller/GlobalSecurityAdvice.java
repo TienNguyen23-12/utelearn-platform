@@ -9,16 +9,13 @@ import vn.edu.ute.utelearn.security.RbacHelper;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * GlobalSecurityAdvice: Tự động cung cấp danh sách vai trò và quyền hạn của người dùng
- * hiện tại vào tất cả các View Thymeleaf (dưới dạng List Java và chuỗi JSON)
- */
 @ControllerAdvice
 @RequiredArgsConstructor
 public class GlobalSecurityAdvice {
 
     private final RbacHelper rbacHelper;
     private final vn.edu.ute.utelearn.service.AuthService authService;
+    private final vn.edu.ute.utelearn.dao.ModerationTaskRepository moderationTaskRepository;
 
     @ModelAttribute
     public void addSecurityAttributesToModel(Model model) {
@@ -32,6 +29,11 @@ public class GlobalSecurityAdvice {
             model.addAttribute("currentUserPermissionsJson", toJsonArray(userPermissions));
 
             authService.getCurrentAuthenticatedUser().ifPresent(u -> model.addAttribute("currentUser", u));
+
+            if (rbacHelper.hasRole("ADMIN")) {
+                long escalatedCount = moderationTaskRepository.countByStatus("ESCALATED");
+                model.addAttribute("escalatedTaskCount", escalatedCount);
+            }
         } else {
             model.addAttribute("currentUserRoles", List.of());
             model.addAttribute("currentUserPermissions", List.of());

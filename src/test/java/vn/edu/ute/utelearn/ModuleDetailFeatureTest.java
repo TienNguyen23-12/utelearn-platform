@@ -32,7 +32,9 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import vn.edu.ute.utelearn.controller.InstructorCohortController;
 
 @ExtendWith(MockitoExtension.class)
 public class ModuleDetailFeatureTest {
@@ -40,6 +42,7 @@ public class ModuleDetailFeatureTest {
     private MockMvc courseMvc;
     private MockMvc homeMvc;
     private MockMvc apiMvc;
+    private MockMvc instructorCohortMvc;
 
     @Mock
     private AuthService authService;
@@ -80,6 +83,9 @@ public class ModuleDetailFeatureTest {
     @InjectMocks
     private CourseApiController courseApiController;
 
+    @InjectMocks
+    private InstructorCohortController instructorCohortController;
+
     private Course sampleCourse;
     private Cohort sampleCohort;
 
@@ -96,6 +102,7 @@ public class ModuleDetailFeatureTest {
         courseMvc = MockMvcBuilders.standaloneSetup(courseController).setViewResolvers(courseResolver).build();
         homeMvc = MockMvcBuilders.standaloneSetup(homeController).setViewResolvers(homeResolver).build();
         apiMvc = MockMvcBuilders.standaloneSetup(courseApiController).build();
+        instructorCohortMvc = MockMvcBuilders.standaloneSetup(instructorCohortController).build();
 
         sampleCourse = Course.builder()
                 .id(1L)
@@ -356,5 +363,98 @@ public class ModuleDetailFeatureTest {
 
         org.mockito.Mockito.verify(cohortRepository).delete(cohort);
         org.mockito.Mockito.verify(cohortScheduleRepository).deleteByCohortId(15L);
+    }
+
+    @Test
+    void testInstructorCohortDeleteSuccess() throws Exception {
+        User instructor = User.builder().id(2L).build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(instructor));
+
+        instructorCohortMvc.perform(post("/instructor/cohorts/15/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/instructor/cohorts"))
+                .andExpect(flash().attribute("successMessage", "Xóa Module thành công!"));
+
+        org.mockito.Mockito.verify(cohortService).deleteCohort(15L, instructor);
+    }
+
+    @Test
+    void testInstructorCohortDeleteFailureWhenEnrolled() throws Exception {
+        User instructor = User.builder().id(2L).build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(instructor));
+        org.mockito.Mockito.doThrow(new RuntimeException("Không thể xóa Module đã có 1 học viên đăng ký!"))
+                .when(cohortService).deleteCohort(15L, instructor);
+
+        instructorCohortMvc.perform(post("/instructor/cohorts/15/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/instructor/cohorts"))
+                .andExpect(flash().attribute("errorMessage", "Không thể xóa Module: Không thể xóa Module đã có 1 học viên đăng ký!"));
+    }
+
+    @Test
+    void testShowCreateCohortForm() throws Exception {
+        User instructor = User.builder().id(2L).build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(instructor));
+        when(courseService.getCoursesByInstructor(org.mockito.ArgumentMatchers.eq(2L), any())).thenReturn(org.springframework.data.domain.Page.empty());
+
+        instructorCohortMvc.perform(get("/instructor/cohorts/create"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("instructor/cohorts/form"))
+                .andExpect(model().attributeExists("cohortDto", "courses"));
+    }
+
+    @Test
+    void testShowEditCohortFormWithParsedObjectives() throws Exception {
+        User instructor = User.builder().id(2L).build();
+        Cohort cohort = Cohort.builder()
+                .id(15L)
+                .code("MOD-15")
+                .name("Module Test")
+                .objectives("[\"Mục tiêu 1\", \"Mục tiêu 2\"]")
+                .description("Mô tả test")
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(instructor));
+        when(cohortService.getCohortByIdAndInstructor(15L, 2L)).thenReturn(cohort);
+        when(courseService.getCoursesByInstructor(org.mockito.ArgumentMatchers.eq(2L), any())).thenReturn(org.springframework.data.domain.Page.empty());
+
+        instructorCohortMvc.perform(get("/instructor/cohorts/15/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("instructor/cohorts/form"))
+                .andExpect(model().attributeExists("cohortDto", "cohortId", "cohort"))
+                .andExpect(result -> {
+                    vn.edu.ute.utelearn.dto.CohortRequestDTO dto = (vn.edu.ute.utelearn.dto.CohortRequestDTO) result.getModelAndView().getModel().get("cohortDto");
+                    org.junit.jupiter.api.Assertions.assertEquals("Mục tiêu 1\nMục tiêu 2", dto.getObjectives());
+                    org.junit.jupiter.api.Assertions.assertEquals("Mô tả test", dto.getDescription());
+                });
+    }
+
+    @Test
+    void testShowStandaloneModuleDetailSuccess() throws Exception {
+        Cohort standaloneCohort = Cohort.builder()
+                .id(19L)
+                .code("MOD-STANDALONE-19")
+                .name("Chuyên đề Độc lập")
+                .course(null)
+                .price(BigDecimal.valueOf(150000))
+                .build();
+
+        when(cohortRepository.findById(19L)).thenReturn(Optional.of(standaloneCohort));
+        when(cohortScheduleRepository.findByCohortIdWithDetails(19L)).thenReturn(Collections.emptyList());
+        when(sectionRepository.findSectionsForCohort(19L)).thenReturn(Collections.emptyList());
+
+        courseMvc.perform(get("/courses/standalone/modules/19"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("courses/module-detail"))
+                .andExpect(model().attributeExists("course", "module", "moduleLessons"));
+    }
+
+    @Test
+    void testShowStandaloneModuleDetailNotFoundRedirects() throws Exception {
+        when(cohortRepository.findById(999L)).thenReturn(Optional.empty());
+
+        courseMvc.perform(get("/courses/standalone/modules/999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/cohorts"));
     }
 }

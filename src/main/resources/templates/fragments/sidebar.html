@@ -89,10 +89,22 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link sidebar-item"
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'categories'} ? ' active' : ''"
+                        href="/admin/categories">
+                        <i class="bi bi-tags-fill text-success"></i>
+                        <span>Danh mục Khóa học</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item d-flex align-items-center justify-content-between"
                         th:classappend="${activePage == 'admin_moderation'} ? ' active' : ''" href="/admin/moderation">
-                        <i class="bi bi-shield-check text-danger"></i>
-                        <span>Duyệt Vượt Cấp</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-check text-danger"></i>
+                            <span>Duyệt Vượt Cấp</span>
+                        </div>
+                        <span class="badge bg-danger rounded-pill px-2 py-1" style="font-size: 11px;"
+                            th:if="${escalatedTaskCount != null && escalatedTaskCount > 0}"
+                            th:text="${escalatedTaskCount}">1</span>
                     </a>
                 </li>
             </ul>

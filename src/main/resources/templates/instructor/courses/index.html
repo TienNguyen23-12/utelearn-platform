@@ -78,8 +78,9 @@
                         </td>
                         <td>
                             <span th:if="${course.status == 'DRAFT'}" class="badge bg-secondary">Nháp</span>
-                            <span th:if="${course.status == 'PENDING_REVIEW'}" class="badge bg-warning text-dark">Chờ duyệt</span>
+                            <span th:if="${course.status == 'PENDING_REVIEW' or course.status == 'PENDING_MODERATOR' or course.status == 'PENDING_ADMIN'}" class="badge bg-warning text-dark">Chờ duyệt</span>
                             <span th:if="${course.status == 'PUBLISHED'}" class="badge bg-success">Đã xuất bản</span>
+                            <span th:if="${course.status == 'REJECTED'}" class="badge bg-danger">Bị từ chối</span>
                         </td>
                         <td class="text-center">
                             <a th:if="${@rbac.hasPermission('COURSE_CREATE')}" th:href="@{/instructor/courses/{id}/curriculum(id=${course.id})}" class="btn btn-sm btn-outline-info rounded-pill px-3">
@@ -101,6 +102,9 @@
                                     <i class="bi bi-send-check me-1"></i> Gửi duyệt
                                 </button>
                             </form>
+                            <button th:if="${course.status == 'REJECTED'}" type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-1" th:onclick="'showModerationFeedbackModal(\'COURSE\', ' + ${course.id} + ')'">
+                                <i class="bi bi-chat-square-quote me-1"></i> Lý do
+                            </button>
                             <div class="dropdown d-inline-block ms-1" th:if="${@rbac.hasRole('ADMIN') or @rbac.hasPermission('CONTENT_APPROVE')}">
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-arrow-left-right me-1"></i> Trạng thái

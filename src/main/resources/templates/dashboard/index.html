@@ -64,6 +64,21 @@
         </div>
 
                 <!-- Time Filter -->
+        <div th:if="${escalatedModerationTasks != null && escalatedModerationTasks > 0}" class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center justify-content-between p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper bg-danger text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="bi bi-shield-exclamation fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-danger">Có <span th:text="${escalatedModerationTasks}">0</span> yêu cầu duyệt vượt cấp đang chờ Admin xử lý!</h6>
+                    <small class="text-muted">Các nội dung khó đã được Moderator chuyển cấp lên Quản trị viên để đưa ra phán quyết cuối cùng.</small>
+                </div>
+            </div>
+            <a th:href="@{/admin/moderation}" class="btn btn-danger btn-sm rounded-pill px-3 py-2 fw-semibold text-nowrap">
+                <i class="bi bi-hammer me-1"></i> Xử lý ngay
+            </a>
+        </div>
+
         <div class="d-flex justify-content-end align-items-center mb-3">
             <span class="text-muted small fw-semibold me-3"><i class="bi bi-funnel-fill me-1"></i>Lọc dữ liệu:</span>
             <div class="d-inline-flex flex-wrap gap-2 ">
@@ -125,14 +140,18 @@
                 </div>
             </div>
 
-            <!-- Stat 4: Task Moderation -->
             <div class="col-sm-6 col-xl-3">
                 <div class="stat-widget d-flex align-items-center justify-content-between h-100">
                     <div>
                         <div class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">Task Đang Chờ</div>
-                        <div class="fs-2 fw-extrabold text-warning mt-1" th:text="${pendingModerationTasks != null ? pendingModerationTasks : '0'}">0</div>
-                        <div class="text-warning small fw-semibold mt-1">
-                            <i class="bi bi-shield-exclamation me-1"></i>Cần kiểm duyệt
+                        <div class="fs-2 fw-extrabold text-warning mt-1" th:text="${(pendingModerationTasks != null ? pendingModerationTasks : 0) + (escalatedModerationTasks != null ? escalatedModerationTasks : 0)}">0</div>
+                        <div class="small fw-semibold mt-1">
+                            <span th:if="${escalatedModerationTasks != null && escalatedModerationTasks > 0}" class="text-danger">
+                                <i class="bi bi-exclamation-octagon-fill me-1"></i><span th:text="${escalatedModerationTasks}">0</span> task vượt cấp
+                            </span>
+                            <span th:unless="${escalatedModerationTasks != null && escalatedModerationTasks > 0}" class="text-warning">
+                                <i class="bi bi-shield-exclamation me-1"></i>Cần kiểm duyệt
+                            </span>
                         </div>
                     </div>
                     <div class="stat-icon-wrapper bg-warning-subtle text-warning">
@@ -195,6 +214,22 @@
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">Vai trò & Phân quyền</div>
                                     <small class="text-muted" style="font-size: 12px;">Tạo mới vai trò và phân quyền</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted small"></i>
+                            </a>
+                        </div>
+
+                        <div class="col-md-6 col-xl-3" th:if="${@rbac.hasRole('ADMIN')}">
+                            <a th:href="@{/admin/moderation}" class="d-flex align-items-center gap-3 p-3 rounded-4 text-decoration-none border bg-white h-100" style="border-color: #f1f5f9; transition: all 0.2s ease;">
+                                <div class="stat-icon-wrapper bg-danger-subtle text-danger" style="width: 46px; height: 46px; font-size: 20px;">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fw-bold text-dark small">Duyệt Vượt Cấp</span>
+                                        <span th:if="${escalatedModerationTasks != null && escalatedModerationTasks > 0}" class="badge bg-danger rounded-pill" style="font-size: 10px;" th:text="${escalatedModerationTasks} + ' chờ'">1</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 12px;">Hàng đợi Admin cần phê duyệt</small>
                                 </div>
                                 <i class="bi bi-chevron-right text-muted small"></i>
                             </a>

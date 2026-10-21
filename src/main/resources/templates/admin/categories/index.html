@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Danh mục Khóa học - UTELearn Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('categories')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Quản trị Danh mục Khóa học')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper bg-success-subtle text-success" style="width: 48px; height: 48px; font-size: 22px;">
+                    <i class="bi bi-tags-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Quản lý Danh mục Khóa học (Categories)</h3>
+                    <p class="text-muted small mb-0">Quản trị viên có thể thêm mới, chỉnh sửa thông tin, phân cấp danh mục cha - con và gán phân loại cho khóa học</p>
+                </div>
+            </div>
+            <a th:href="@{/admin/categories/create}" class="btn btn-gradient-primary">
+                <i class="bi bi-plus-circle-fill me-2"></i>Thêm danh mục mới
+            </a>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-sm-6 col-xl-4">
+                <div class="stat-widget d-flex align-items-center gap-3 h-100">
+                    <div class="stat-icon-wrapper bg-primary-subtle text-primary">
+                        <i class="bi bi-folder2-open"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold" style="font-size: 13px;">Tổng số danh mục</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" th:text="${totalCount != null ? totalCount : (categories != null ? categories.size() : 0)}">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-4">
+                <div class="stat-widget d-flex align-items-center gap-3 h-100">
+                    <div class="stat-icon-wrapper bg-success-subtle text-success">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold" style="font-size: 13px;">Danh mục gốc (Cấp 1)</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" th:text="${rootCount != null ? rootCount : (categories != null ? #lists.size(categories.?[parent == null]) : 0)}">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-4">
+                <div class="stat-widget d-flex align-items-center gap-3 h-100">
+                    <div class="stat-icon-wrapper bg-info-subtle text-info">
+                        <i class="bi bi-journal-bookmark"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold" style="font-size: 13px;">Chuyên đề con (Cấp 2+)</div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" th:text="${subCount != null ? subCount : (categories != null ? #lists.size(categories.?[parent != null]) : 0)}">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-custom p-4">
+            <div th:if="${categories == null || categories.isEmpty()}" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h5 class="fw-bold text-dark">Chưa có danh mục nào trong hệ thống</h5>
+                <p class="small text-muted mb-3">Tạo danh mục để phân loại các khóa học theo chủ đề kiến thức.</p>
+                <a th:href="@{/admin/categories/create}" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-plus-circle me-1"></i>Tạo danh mục đầu tiên
+                </a>
+            </div>
+
+            <div th:if="${categories != null && !categories.isEmpty()}" class="table-responsive rounded-3">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">STT</th>
+                            <th style="min-width: 220px;">Tên danh mục</th>
+                            <th style="min-width: 180px;">Đường dẫn tĩnh (Slug)</th>
+                            <th style="min-width: 180px;">Danh mục cha</th>
+                            <th style="width: 120px;" class="text-center">Số khóa học</th>
+                            <th style="width: 160px;" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="cat, iter : ${categories}">
+                            <td class="text-muted fw-semibold" th:text="${iter.count}">1</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-tag-fill text-primary"></i>
+                                    <span class="fw-bold text-dark" th:text="${cat.name}">Tên danh mục</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-primary border border-primary-subtle font-monospace px-2.5 py-1" style="font-size: 12px;" th:text="${cat.slug}">slug-name</span>
+                            </td>
+                            <td>
+                                <span th:if="${cat.parent != null}" class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
+                                    <i class="bi bi-arrow-return-right me-1"></i><span th:text="${cat.parent.name}">Danh mục cha</span>
+                                </span>
+                                <span th:unless="${cat.parent != null}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                    <i class="bi bi-check-circle me-1"></i>Danh mục gốc
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1 fw-bold" th:text="${courseCountMap.get(cat.id) != null ? courseCountMap.get(cat.id) + ' khóa' : '0 khóa'}">
+                                    0 khóa
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center align-items-center gap-2">
+                                    <a th:href="@{'/admin/categories/' + ${cat.id} + '/edit'}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1" title="Chỉnh sửa danh mục">
+                                        <i class="bi bi-pencil-square me-1"></i>Sửa
+                                    </a>
+                                    <form th:id="'deleteCategoryForm_' + ${cat.id}" th:action="@{'/admin/categories/' + ${cat.id} + '/delete'}" method="post" class="d-inline">
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1" title="Xóa danh mục" th:data-id="${cat.id}" th:data-name="${cat.name}" onclick="confirmDeleteCategory(this)">
+                                            <i class="bi bi-trash3 me-1"></i>Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-body p-4 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-3" style="width: 64px; height: 64px; font-size: 28px;">
+                    <i class="bi bi-trash3-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Xác nhận xóa danh mục</h5>
+                <p class="text-muted small mb-2">Bạn có chắc chắn muốn xóa danh mục <span class="fw-bold text-dark" id="deleteCategoryNameTarget"></span> không?</p>
+                <div class="alert alert-warning border-0 rounded-3 py-2 px-3 small text-start mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 text-warning"></i>
+                    <span>Các khóa học thuộc danh mục này sẽ được chuyển về trạng thái <strong>Không phân loại</strong>.</span>
+                </div>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" id="confirmDeleteCategoryBtn">
+                        <i class="bi bi-trash3 me-1"></i>Xóa danh mục
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+
+<script th:inline="javascript">
+    let targetDeleteForm = null;
+
+    function confirmDeleteCategory(button) {
+        var id = button.getAttribute('data-id');
+        var name = button.getAttribute('data-name');
+        targetDeleteForm = document.getElementById('deleteCategoryForm_' + id);
+
+        var nameEl = document.getElementById('deleteCategoryNameTarget');
+        if (nameEl) {
+            nameEl.textContent = '“' + name + '”';
+        }
+
+        var modalEl = document.getElementById('deleteCategoryModal');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var confirmBtn = document.getElementById('confirmDeleteCategoryBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                if (targetDeleteForm) {
+                    targetDeleteForm.submit();
+                }
+            });
+        }
+
+        var errorMsg = /*[[${errorMessage}]]*/ null;
+        var successMsg = /*[[${successMessage}]]*/ null;
+        
+        if (errorMsg && typeof Toastify === 'function') {
+            Toastify({
+                text: errorMsg,
+                duration: 4000,
+                gravity: 'top',
+                position: 'right',
+                style: {
+                    background: '#ef4444',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+                }
+            }).showToast();
+        }
+        if (successMsg && typeof Toastify === 'function') {
+            Toastify({
+                text: successMsg,
+                duration: 3500,
+                gravity: 'top',
+                position: 'right',
+                style: {
+                    background: '#10b981',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
+                }
+            }).showToast();
+        }
+    });
+</script>
+
+</body>
+</html>

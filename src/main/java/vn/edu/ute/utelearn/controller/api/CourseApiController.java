@@ -151,6 +151,9 @@ public class CourseApiController {
 
                 List<Map<String, Object>> lessonDtos = new java.util.ArrayList<>();
                 for (vn.edu.ute.utelearn.entity.Lesson l : lessonService.getLessonsBySectionId(s.getId())) {
+                    if (!isPrivileged && !l.isPublished()) {
+                        continue;
+                    }
                     Map<String, Object> lDto = new HashMap<>();
                     lDto.put("id", l.getId());
                     lDto.put("title", l.getTitle());
@@ -234,8 +237,14 @@ public class CourseApiController {
                 return ResponseEntity.status(403).body(Map.of("message", "Chưa được cấp quyền truy cập module này"));
             }
 
+            boolean isPrivilegedUser = currentUserOpt.isPresent() && currentUserOpt.get().getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN") ||
+                    r.getCode().equals("MODERATOR") ||
+                    r.getCode().equals("INSTRUCTOR"));
+
             List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
-            List<Map<String, Object>> lessons = schedules.stream().map(cs -> {
+            List<Map<String, Object>> lessons = schedules.stream()
+                    .filter(cs -> isPrivilegedUser || cs.getLesson().isPublished())
+                    .map(cs -> {
                 vn.edu.ute.utelearn.entity.Lesson l = cs.getLesson();
                 Map<String, Object> lMap = new HashMap<>();
                 lMap.put("id", l.getId());
