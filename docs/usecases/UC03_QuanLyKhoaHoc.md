@@ -103,12 +103,14 @@ graph LR
 |------------|----------------|
 | **Mã Use Case** | UC-14 |
 | **Tên Use Case** | Chỉnh sửa thông tin khóa học (Edit Course Metadata) |
-| **Actor chính** | Instructor (chủ sở hữu khóa học) |
+| **Actor chính** | Instructor (chủ sở hữu khóa học - `isOwner`) |
+| **Actor phụ** | Admin (Quản trị viên toàn hệ thống) |
 | **Quyền hạn (Permission)** | `COURSE_CREATE` |
-| **Tiền điều kiện** | Khóa học tồn tại và thuộc quyền sở hữu của Giảng viên đăng nhập. |
-| **Mô tả** | Cập nhật thông tin tổng thể của Course (tiêu đề, mô tả, ảnh đại diện, danh mục, cấp độ, mục tiêu). |
-| **Luồng sự kiện chính** | 1. Giảng viên truy cập `/instructor/courses`.<br/>2. Chọn khóa học cần chỉnh sửa -> vào `/instructor/courses/{id}/edit`.<br/>3. Thay đổi các thông tin cần thiết.<br/>4. Nhấn **"Cập nhật"**.<br/>5. Hệ thống cập nhật bảng `courses` và thông báo cập nhật thành công qua Flash message. |
-| **Luồng ngoại lệ** | - **Giảng viên không phải chủ sở hữu**: Hệ thống từ chối truy cập (HTTP 403 Forbidden).<br/>- **Khóa học đang ở trạng thái `PENDING_REVIEW`**: Khóa chỉnh sửa thông tin quan trọng để chờ kết quả kiểm duyệt. |
+| **Tiền điều kiện** | Khóa học tồn tại và thuộc quyền sở hữu của Giảng viên đăng nhập (hoặc tài khoản Admin). |
+| **Mô tả** | Cập nhật thông tin tổng thể của Course (tiêu đề, mô tả, ảnh đại diện, danh mục, cấp độ, mục tiêu) thông qua form biên soạn hoặc chế độ chỉnh sửa trực tiếp tại chỗ (Inline Edit). |
+| **Luồng sự kiện chính** | 1. **Cách 1 - Chỉnh sửa qua Form quản trị:**<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Giảng viên truy cập `/instructor/courses` -> chọn khóa học -> vào `/instructor/courses/{id}/edit`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thay đổi các thông tin và nhấn "Cập nhật".<br/>2. **Cách 2 - Chỉnh sửa trực tiếp tại chỗ (Inline Edit):**<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Người có quyền (`canEdit = true`) xem trang chi tiết `/courses/{slug}`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Bật công tắc *"Quyền Giảng viên / Quản trị - Bật chế độ chỉnh sửa"* (`courseDetailEditModeToggle`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Bấm icon bút chì để sửa trực tiếp tiêu đề, mô tả ngắn, mục tiêu, cấp độ, mô tả chi tiết và lưu qua API inline.<br/>3. Hệ thống cập nhật bảng `courses` và đồng bộ giao diện tức thì. |
+| **Ràng buộc nghiệp vụ** | 1. **Nguyên tắc Phân định Sở hữu (`canEdit`)**: Chỉ Giảng viên tác giả (`isOwner`) hoặc Quản trị viên (`ADMIN`) mới có quyền bật/tắt chế độ chỉnh sửa và gọi API cập nhật inline.<br/>2. **Chế độ Thẩm định của Moderator**: Kiểm duyệt viên (Moderator) khi xem demo khóa học chỉ có quyền xem xét (`hasAccessRole = true`, `canEdit = false`); hệ thống ẩn toàn bộ công tắc edit mode và chặn các API chỉnh sửa. |
+| **Luồng ngoại lệ** | - **Giảng viên không phải chủ sở hữu hoặc Moderator cố tình gọi API sửa**: Hệ thống từ chối truy cập (HTTP 403 Forbidden).<br/>- **Khóa học đang ở trạng thái `PENDING_REVIEW` / `PENDING_MODERATOR`**: Khóa chỉnh sửa thông tin quan trọng để chờ kết quả kiểm duyệt. |
 | **Hậu điều kiện** | Thông tin khóa học được cập nhật thành công. |
 
 ---

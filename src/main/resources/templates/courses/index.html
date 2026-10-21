@@ -264,6 +264,16 @@
                     </div>
                 </div>
             </div>
+
+            <div class="text-center mt-5" id="loadMoreCourseSection" style="display: none;">
+                <button id="loadMoreCourseBtn" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="loadMoreCourses()">
+                    <span id="loadMoreCourseBtnText"><i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học</span>
+                    <span id="loadMoreCourseSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status"></span>
+                </button>
+                <div id="allCoursesLoadedMessage" class="text-muted small mt-3" style="display: none;">
+                    <i class="bi bi-check-circle-fill text-success me-1"></i>Bạn đã xem toàn bộ danh mục khóa học
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -278,6 +288,11 @@
         category: '',
         level: 'ALL_LEVELS'
     };
+
+    let currentCoursePage = 0;
+    let totalCoursePages = 1;
+    let isCourseLoading = false;
+    let isCourseLoadingMore = false;
 
     document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -324,98 +339,191 @@
         }
     }
 
+    function createCourseCardHtml(course) {
+        const img = course.thumbnailUrl || '/images/courses/default-cover.png';
+        const priceFormatted = (course.price && course.price > 0)
+            ? new Intl.NumberFormat('vi-VN').format(course.price) + ' VNĐ'
+            : 'Miễn phí';
+
+        const originalFormatted = (course.originalPrice && course.originalPrice > course.price)
+            ? new Intl.NumberFormat('vi-VN').format(course.originalPrice) + ' VNĐ'
+            : null;
+
+        let levelBadgeText = 'Tất cả cấp độ';
+        if (course.level === 'BEGINNER') levelBadgeText = 'Người mới bắt đầu';
+        else if (course.level === 'INTERMEDIATE') levelBadgeText = 'Trung bình';
+        else if (course.level === 'ADVANCED') levelBadgeText = 'Nâng cao';
+
+        const typeBadge = (course.price && course.price > 0)
+            ? '<span class="badge bg-primary-subtle text-primary ms-2 border border-primary-subtle">Trọn gói</span>'
+            : '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Miễn phí</span>';
+
+        const modulesLabel = (course.modulesCount && course.modulesCount > 0)
+            ? course.modulesCount + ' Module học phần'
+            : 'Trọn bộ bài giảng';
+
+        return `
+        <div class="col-md-6 col-lg-4">
+            <div class="course-card">
+                <div class="course-image-wrapper">
+                    <img src="${img}" alt="${course.title}" loading="lazy">
+                    <span class="cohort-badge"><i class="bi bi-mortarboard-fill me-1"></i>${levelBadgeText}</span>
+                </div>
+                <div class="p-4 d-flex flex-column flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${course.categoryName || 'Khóa học'}</span>
+                        ${typeBadge}
+                    </div>
+                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-layers-fill me-1 text-primary"></i>Lộ trình: ${modulesLabel}</div>
+                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">
+                        <a href="/courses/${course.slug}" class="text-dark text-decoration-none">${course.title}</a>
+                    </h6>
+                    <div class="text-muted small mb-3">
+                        <i class="bi bi-person-fill text-secondary me-1"></i><span>${course.instructorName}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
+                        <span><i class="bi bi-people-fill me-1"></i>${course.enrolledCount || 0} học viên</span>
+                        <span><i class="bi bi-tag-fill me-1"></i>Mã: ${course.code || 'N/A'}</span>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <small class="text-muted d-block" style="font-size: 11px;">Học phí trọn gói khóa học:</small>
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            ${originalFormatted ? `<span class="text-muted text-decoration-line-through small" style="font-size: 13px;">${originalFormatted}</span>` : ''}
+                            <span class="fw-bold text-success fs-6">${priceFormatted}</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 w-100">
+                        <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill w-100 fw-semibold btn-sm py-2">
+                            <i class="bi bi-info-circle me-1"></i>Chi tiết
+                        </a>
+                        <form action="/courses/${course.slug}/enroll-all" method="post" class="w-100 mt-2">
+                            <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2">
+                                <i class="bi bi-cart-plus me-1"></i>Đăng ký
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    async function fetchCoursesPage(pageNumber) {
+        const params = new URLSearchParams();
+        if (currentFilters.q) params.append('q', currentFilters.q.trim());
+        if (currentFilters.category) params.append('category', currentFilters.category);
+        if (currentFilters.level && currentFilters.level !== 'ALL_LEVELS') params.append('level', currentFilters.level);
+        params.append('page', pageNumber);
+        params.append('size', '6');
+
+        const res = await fetch('/api/courses?' + params.toString());
+        if (!res.ok) throw new Error("Failed to fetch");
+        return await res.json();
+    }
+
     async function loadCourses() {
+        if (isCourseLoading) return;
+        isCourseLoading = true;
+        currentCoursePage = 0;
+
+        const grid = document.getElementById('courseGrid');
+        const loadMoreSection = document.getElementById('loadMoreCourseSection');
+        const allLoadedMessage = document.getElementById('allCoursesLoadedMessage');
+
+        loadMoreSection.style.display = 'none';
+        allLoadedMessage.style.display = 'none';
+        grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách khóa học...</p></div>';
+
         try {
-            const grid = document.getElementById('courseGrid');
-            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách khóa học...</p></div>';
-
-            const params = new URLSearchParams();
-            if (currentFilters.q) params.append('q', currentFilters.q);
-            if (currentFilters.category) params.append('category', currentFilters.category);
-            if (currentFilters.level && currentFilters.level !== 'ALL_LEVELS') params.append('level', currentFilters.level);
-
-            const res = await fetch('/api/courses?' + params.toString());
-            if (!res.ok) throw new Error("Failed to fetch");
-            const data = await res.json();
+            const data = await fetchCoursesPage(0);
+            totalCoursePages = data.totalPages || 1;
+            currentCoursePage = data.currentPage || 0;
 
             if (!data.content || data.content.length === 0) {
-                grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p>Không tìm thấy khóa học nào phù hợp.</p></div>';
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Không tìm thấy khóa học nào phù hợp.</p></div>';
                 return;
             }
 
             let html = '';
             data.content.forEach(course => {
-                const img = course.thumbnailUrl || '/images/courses/default-cover.png';
-                const priceFormatted = (course.price && course.price > 0)
-                    ? new Intl.NumberFormat('vi-VN').format(course.price) + ' VNĐ'
-                    : 'Miễn phí';
-
-                const originalFormatted = (course.originalPrice && course.originalPrice > course.price)
-                    ? new Intl.NumberFormat('vi-VN').format(course.originalPrice) + ' VNĐ'
-                    : null;
-
-                let levelBadgeText = 'Tất cả cấp độ';
-                if (course.level === 'BEGINNER') levelBadgeText = 'Người mới bắt đầu';
-                else if (course.level === 'INTERMEDIATE') levelBadgeText = 'Trung bình';
-                else if (course.level === 'ADVANCED') levelBadgeText = 'Nâng cao';
-
-                const typeBadge = (course.price && course.price > 0)
-                    ? '<span class="badge bg-primary-subtle text-primary ms-2 border border-primary-subtle">Trọn gói</span>'
-                    : '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Miễn phí</span>';
-
-                const modulesLabel = (course.modulesCount && course.modulesCount > 0)
-                    ? course.modulesCount + ' Module học phần'
-                    : 'Trọn bộ bài giảng';
-
-                html += `
-                <div class="col-md-6 col-lg-4">
-                    <div class="course-card">
-                        <div class="course-image-wrapper">
-                            <img src="${img}" alt="${course.title}">
-                            <span class="cohort-badge"><i class="bi bi-mortarboard-fill me-1"></i>${levelBadgeText}</span>
-                        </div>
-                        <div class="p-4 d-flex flex-column flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${course.categoryName || 'Khóa học'}</span>
-                                ${typeBadge}
-                            </div>
-                            <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-layers-fill me-1 text-primary"></i>Lộ trình: ${modulesLabel}</div>
-                            <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">
-                                <a href="/courses/${course.slug}" class="text-dark text-decoration-none">${course.title}</a>
-                            </h6>
-                            <div class="text-muted small mb-3">
-                                <i class="bi bi-person-fill text-secondary me-1"></i><span>${course.instructorName}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                                <span><i class="bi bi-people-fill me-1"></i>${course.enrolledCount || 0} học viên</span>
-                                <span><i class="bi bi-tag-fill me-1"></i>Mã: ${course.code || 'N/A'}</span>
-                            </div>
-                            <div class="mt-2 text-center">
-                                <small class="text-muted d-block" style="font-size: 11px;">Học phí trọn gói khóa học:</small>
-                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                    ${originalFormatted ? `<span class="text-muted text-decoration-line-through small" style="font-size: 13px;">${originalFormatted}</span>` : ''}
-                                    <span class="fw-bold text-success fs-6">${priceFormatted}</span>
-                                </div>
-                            </div>
-                            <div class="mt-3 w-100">
-                                <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill w-100 fw-semibold btn-sm py-2">
-                                    <i class="bi bi-info-circle me-1"></i>Chi tiết
-                                </a>
-                                <form action="/courses/${course.slug}/enroll-all" method="post" class="w-100 mt-2">
-                                    <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2">
-                                        <i class="bi bi-cart-plus me-1"></i>Đăng ký
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                `;
+                html += createCourseCardHtml(course);
             });
             grid.innerHTML = html;
+
+            updateLoadMoreCourseControls();
         } catch (error) {
             console.error(error);
-            document.getElementById('courseGrid').innerHTML = '<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><p>Có lỗi xảy ra khi tải danh sách khóa học.</p></div>';
+            grid.innerHTML = `
+                <div class="col-12 text-center text-danger py-5">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <p class="mt-2">Có lỗi xảy ra khi tải danh sách khóa học.</p>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadCourses()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+                    </button>
+                </div>
+            `;
+        } finally {
+            isCourseLoading = false;
+        }
+    }
+
+    async function loadMoreCourses() {
+        if (isCourseLoadingMore || currentCoursePage + 1 >= totalCoursePages) return;
+        isCourseLoadingMore = true;
+
+        const loadMoreBtn = document.getElementById('loadMoreCourseBtn');
+        const loadMoreBtnText = document.getElementById('loadMoreCourseBtnText');
+        const loadMoreSpinner = document.getElementById('loadMoreCourseSpinner');
+
+        loadMoreBtn.disabled = true;
+        loadMoreBtnText.textContent = "Đang tải...";
+        loadMoreSpinner.style.display = "inline-block";
+
+        try {
+            const nextPage = currentCoursePage + 1;
+            const data = await fetchCoursesPage(nextPage);
+            totalCoursePages = data.totalPages || 1;
+            currentCoursePage = data.currentPage || nextPage;
+
+            if (data.content && data.content.length > 0) {
+                const grid = document.getElementById('courseGrid');
+                let newHtml = '';
+                data.content.forEach(course => {
+                    newHtml += createCourseCardHtml(course);
+                });
+                grid.insertAdjacentHTML('beforeend', newHtml);
+            }
+
+            updateLoadMoreCourseControls();
+        } catch (error) {
+            console.error(error);
+            showToast('Không thể tải thêm khóa học. Vui lòng thử lại!', 'error');
+            loadMoreBtn.disabled = false;
+            loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học';
+            loadMoreSpinner.style.display = "none";
+        } finally {
+            isCourseLoadingMore = false;
+        }
+    }
+
+    function updateLoadMoreCourseControls() {
+        const loadMoreSection = document.getElementById('loadMoreCourseSection');
+        const loadMoreBtn = document.getElementById('loadMoreCourseBtn');
+        const loadMoreBtnText = document.getElementById('loadMoreCourseBtnText');
+        const loadMoreSpinner = document.getElementById('loadMoreCourseSpinner');
+        const allLoadedMessage = document.getElementById('allCoursesLoadedMessage');
+
+        loadMoreSection.style.display = 'block';
+        loadMoreBtn.disabled = false;
+        loadMoreSpinner.style.display = 'none';
+        loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học';
+
+        if (currentCoursePage + 1 < totalCoursePages) {
+            loadMoreBtn.style.display = 'inline-block';
+            allLoadedMessage.style.display = 'none';
+        } else {
+            loadMoreBtn.style.display = 'none';
+            allLoadedMessage.style.display = 'block';
         }
     }
 

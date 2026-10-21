@@ -201,60 +201,62 @@
                 <p class="mt-2">Đang tải danh sách module...</p>
             </div>
         </div>
+
+        <div class="text-center mt-5" id="loadMoreSection" style="display: none;">
+            <button id="loadMoreBtn" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="loadMoreCohorts()">
+                <span id="loadMoreBtnText"><i class="bi bi-chevron-double-down me-1"></i>Xem thêm module</span>
+                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status"></span>
+            </button>
+            <div id="allLoadedMessage" class="text-muted small mt-3" style="display: none;">
+                <i class="bi bi-check-circle-fill text-success me-1"></i>Bạn đã xem toàn bộ danh sách module học tập
+            </div>
+        </div>
     </section>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let currentPage = 0;
+        let totalPages = 1;
+        let isLoading = false;
+        let isLoadingMore = false;
+
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('q')) {
                 document.getElementById('cohortSearchInput').value = urlParams.get('q');
             }
 
-            loadCohorts();
+            loadInitialCohorts();
 
             document.getElementById('cohortSearchInput').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
-                    loadCohorts();
+                    loadInitialCohorts();
                 }
             });
         });
 
-        async function loadCohorts() {
-            try {
-                const grid = document.getElementById('cohortsGrid');
-                grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách module...</p></div>';
+        function loadCohorts() {
+            loadInitialCohorts();
+        }
 
-                const q = document.getElementById('cohortSearchInput').value;
-                const category = document.getElementById('cohortCategoryFilter').value;
+        function createCohortCardHtml(cohort) {
+            const img = cohort.thumbnailUrl || '/images/courses/default-cover.png';
+            const priceFormatted = cohort.price > 0 ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí';
+            const courseTitle = cohort.courseTitle ? cohort.courseTitle : 'Module độc lập';
+            const badgeIcon = cohort.courseTitle ? 'bi bi-journal-bookmark' : 'bi bi-box-seam';
+            const detailUrl = cohort.courseSlug ? `/courses/${cohort.courseSlug}/modules/${cohort.id}` : `/cohorts/${cohort.id}`;
+            const enrollUrl = cohort.courseSlug ? `/courses/${cohort.courseSlug}/enroll/${cohort.id}` : `/checkout/${cohort.id}`;
+            const enrollMethod = cohort.courseSlug ? 'post' : 'get';
 
-                const params = new URLSearchParams();
-                if (q) params.append('q', q);
-                if (category) params.append('category', category);
-
-                const res = await fetch('/api/cohorts?' + params.toString());
-                if (!res.ok) throw new Error("Failed to fetch");
-                const data = await res.json();
-
-                if (!data.content || data.content.length === 0) {
-                    grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p>Không tìm thấy module nào phù hợp.</p></div>';
-                    return;
-                }
-
-                let html = '';
-                data.content.forEach(cohort => {
-                    const img = cohort.thumbnailUrl || '/images/courses/default-cover.png';
-                    const priceFormatted = cohort.price > 0 ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí';
-
-                    html += `
+            return `
                 <div class="col-lg-3 col-md-6">
                     <div class="course-card">
                         <div class="course-image-wrapper">
-                            <img src="${img}" alt="${cohort.name}">
+                            <img src="${img}" alt="${cohort.name}" loading="lazy">
                             <span class="cohort-badge text-truncate" style="max-width: 88%;" title="${cohort.courseTitle ? 'Thuộc khóa: ' + cohort.courseTitle : 'Module độc lập'}">
-                                <i class="${cohort.courseTitle ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} me-1"></i>${cohort.courseTitle ? cohort.courseTitle : 'Module độc lập'}
+                                <i class="${badgeIcon} me-1"></i>${courseTitle}
                             </span>
                         </div>
                         <div class="p-4 d-flex flex-column flex-grow-1">
@@ -276,10 +278,10 @@
                                 <span class="fw-bold text-success fs-6">${priceFormatted}</span>
                             </div>
                             <div class="d-flex gap-2 mt-3 w-100">
-                                <a href="${cohort.courseSlug ? `/courses/${cohort.courseSlug}/modules/${cohort.id}` : `/cohorts/${cohort.id}`}" class="btn btn-outline-primary rounded-pill w-50 fw-semibold btn-sm py-2">
+                                <a href="${detailUrl}" class="btn btn-outline-primary rounded-pill w-50 fw-semibold btn-sm py-2">
                                     <i class="bi bi-info-circle me-1"></i>Chi tiết
                                 </a>
-                                <form action="${cohort.courseSlug ? `/courses/${cohort.courseSlug}/enroll/${cohort.id}` : `/checkout/${cohort.id}`}" method="${cohort.courseSlug ? 'post' : 'get'}" class="w-50">
+                                <form action="${enrollUrl}" method="${enrollMethod}" class="w-50">
                                     <button type="submit" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2">
                                         <i class="bi bi-cart-plus me-1"></i>Đăng ký
                                     </button>
@@ -293,12 +295,127 @@
                         </div>
                     </div>
                 </div>
-                `;
+            `;
+        }
+
+        async function fetchCohortsPage(pageNumber) {
+            const q = document.getElementById('cohortSearchInput').value.trim();
+            const category = document.getElementById('cohortCategoryFilter').value;
+
+            const params = new URLSearchParams();
+            if (q) params.append('q', q);
+            if (category) params.append('category', category);
+            params.append('page', pageNumber);
+            params.append('size', '8');
+
+            const res = await fetch('/api/cohorts?' + params.toString());
+            if (!res.ok) throw new Error("Failed to fetch");
+            return await res.json();
+        }
+
+        async function loadInitialCohorts() {
+            if (isLoading) return;
+            isLoading = true;
+            currentPage = 0;
+
+            const grid = document.getElementById('cohortsGrid');
+            const loadMoreSection = document.getElementById('loadMoreSection');
+            const allLoadedMessage = document.getElementById('allLoadedMessage');
+
+            loadMoreSection.style.display = 'none';
+            allLoadedMessage.style.display = 'none';
+            grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách module...</p></div>';
+
+            try {
+                const data = await fetchCohortsPage(0);
+                totalPages = data.totalPages || 1;
+                currentPage = data.currentPage || 0;
+
+                if (!data.content || data.content.length === 0) {
+                    grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Không tìm thấy module nào phù hợp.</p></div>';
+                    return;
+                }
+
+                let html = '';
+                data.content.forEach(cohort => {
+                    html += createCohortCardHtml(cohort);
                 });
                 grid.innerHTML = html;
+
+                updateLoadMoreControls();
             } catch (error) {
                 console.error(error);
-                document.getElementById('cohortsGrid').innerHTML = '<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><p>Có lỗi xảy ra khi tải danh sách module.</p></div>';
+                grid.innerHTML = `
+                    <div class="col-12 text-center text-danger py-5">
+                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                        <p class="mt-2">Có lỗi xảy ra khi tải danh sách module.</p>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadInitialCohorts()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
+                        </button>
+                    </div>
+                `;
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function loadMoreCohorts() {
+            if (isLoadingMore || currentPage + 1 >= totalPages) return;
+            isLoadingMore = true;
+
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const loadMoreBtnText = document.getElementById('loadMoreBtnText');
+            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+
+            loadMoreBtn.disabled = true;
+            loadMoreBtnText.textContent = "Đang tải...";
+            loadMoreSpinner.style.display = "inline-block";
+
+            try {
+                const nextPage = currentPage + 1;
+                const data = await fetchCohortsPage(nextPage);
+                totalPages = data.totalPages || 1;
+                currentPage = data.currentPage || nextPage;
+
+                if (data.content && data.content.length > 0) {
+                    const grid = document.getElementById('cohortsGrid');
+                    let newHtml = '';
+                    data.content.forEach(cohort => {
+                        newHtml += createCohortCardHtml(cohort);
+                    });
+                    grid.insertAdjacentHTML('beforeend', newHtml);
+                }
+
+                updateLoadMoreControls();
+            } catch (error) {
+                console.error(error);
+                alert("Không thể tải thêm module. Vui lòng thử lại!");
+                loadMoreBtn.disabled = false;
+                loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm module';
+                loadMoreSpinner.style.display = "none";
+            } finally {
+                isLoadingMore = false;
+            }
+        }
+
+        function updateLoadMoreControls() {
+            const loadMoreSection = document.getElementById('loadMoreSection');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const loadMoreBtnText = document.getElementById('loadMoreBtnText');
+            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+            const allLoadedMessage = document.getElementById('allLoadedMessage');
+
+            loadMoreSection.style.display = 'block';
+            loadMoreBtn.disabled = false;
+            loadMoreSpinner.style.display = 'none';
+            loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm module';
+
+            if (currentPage + 1 < totalPages) {
+                loadMoreBtn.style.display = 'inline-block';
+                allLoadedMessage.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'none';
+                allLoadedMessage.style.display = 'block';
             }
         }
     </script>

@@ -320,7 +320,7 @@
             <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1.5 rounded-pill fw-semibold" th:if="${!isModEnrolled && !hasAccessRole && module.price > 0}">
                 Chuyên đề mở rộng
             </span>
-            <a th:if="${hasAccessRole}" th:href="@{'/instructor/cohorts/' + ${module.id} + '/edit'}" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 instructor-edit-ctrl">
+            <a th:if="${canEdit}" th:href="@{'/instructor/cohorts/' + ${module.id} + '/edit'}" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 instructor-edit-ctrl">
                 <i class="bi bi-gear-fill me-1"></i>Cài đặt Module
             </a>
         </div>
@@ -392,7 +392,7 @@
         </div>
         
         <div class="py-2 d-flex align-items-center gap-2">
-            <div th:if="${hasAccessRole}" class="form-check form-switch mb-0 px-3 py-1.5 rounded-pill border bg-warning-subtle border-warning-subtle shadow-xs d-flex align-items-center gap-2">
+            <div th:if="${canEdit}" class="form-check form-switch mb-0 px-3 py-1.5 rounded-pill border bg-warning-subtle border-warning-subtle shadow-xs d-flex align-items-center gap-2">
                 <input class="form-check-input ms-0 me-1" type="checkbox" id="moodleEditModeToggle" role="switch" style="cursor: pointer;">
                 <label class="form-check-label fw-bold small text-dark" for="moodleEditModeToggle" style="cursor: pointer;">
                     <i class="bi bi-pencil-square text-primary me-1"></i>Chế độ chỉnh sửa
@@ -421,7 +421,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <div class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm">
+    <div th:if="${canEdit}" class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm">
         <div class="d-flex align-items-center gap-2">
             <i class="bi bi-cone-striped text-warning-emphasis fs-4"></i>
             <div>
@@ -1117,6 +1117,7 @@
     const currentCourseId = /*[[${course.id}]]*/ 0;
     const totalLessonsCount = /*[[${moduleLessons != null ? moduleLessons.size() : 0}]]*/ 0;
     const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
+    const canEdit = /*[[${canEdit != null ? canEdit : false}]]*/ false;
 
     let activityChooserModal;
     let sectionModal;
@@ -1127,7 +1128,7 @@
     let pendingSectionId = null;
 
     document.addEventListener("DOMContentLoaded", function() {
-        if (hasAccessRole) {
+        if (canEdit) {
             setupInstructorEditMode();
         }
 

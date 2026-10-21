@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CourseService;
@@ -40,6 +41,8 @@ public class CourseController {
     private final CohortScheduleRepository cohortScheduleRepository;
     private final LessonRepository lessonRepository;
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.security.RbacHelper rbacHelper;
 
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
@@ -169,6 +172,7 @@ public class CourseController {
         vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO summary = cohortService.getUserEnrollmentSummary(user);
         model.addAttribute("enrolledCourses", summary.getEnrolledCourses());
         model.addAttribute("enrolledModules", summary.getEnrolledModules());
+        model.addAttribute("upsellSuggestions", summary.getUpsellSuggestions());
         model.addAttribute("myCourses", cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user));
         return "courses/my-courses";
     }
@@ -184,6 +188,7 @@ public class CourseController {
 
         boolean isEnrolled = false;
         boolean hasAccessRole = false;
+        boolean canEdit = false;
         java.util.Set<Long> enrolledCohortIds = new java.util.HashSet<>();
         if (currentUserOpt.isPresent()) {
             User user = currentUserOpt.get();
@@ -191,12 +196,8 @@ public class CourseController {
             List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
             enrolledCohortIds = userMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
             isEnrolled = !enrolledCohortIds.isEmpty();
-            boolean isOwner = (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
-            hasAccessRole = isOwner || user.getRoles().stream().anyMatch(r -> 
-                    "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
-                    "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()) ||
-                    "INSTRUCTOR".equals(r.getCode()) || "ROLE_INSTRUCTOR".equals(r.getCode()) ||
-                    "TEACHER".equals(r.getCode()));
+            canEdit = checkCanEdit(user, course, null);
+            hasAccessRole = checkHasAccessRole(user, course, null);
         }
 
         List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusInOrdered(course.getId(),
@@ -319,6 +320,7 @@ public class CourseController {
         model.addAttribute("remainingCoursePrice", remainingCoursePrice);
         model.addAttribute("unenrolledCount", unenrolledCount);
         model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("canEdit", canEdit);
         model.addAttribute("objectivesList", parseJsonStringList(course.getObjectives()));
         model.addAttribute("requirementsList", parseJsonStringList(course.getRequirements()));
         model.addAttribute("courseModules", courseModulesData);
@@ -399,15 +401,12 @@ public class CourseController {
 
         boolean isModEnrolled = false;
         boolean hasAccessRole = false;
+        boolean canEdit = false;
         if (currentUserOpt.isPresent()) {
             User user = currentUserOpt.get();
             isModEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(module.getId(), user.getId());
-            boolean isOwner = (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
-            hasAccessRole = isOwner || user.getRoles().stream().anyMatch(r -> 
-                    "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
-                    "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()) ||
-                    "INSTRUCTOR".equals(r.getCode()) || "ROLE_INSTRUCTOR".equals(r.getCode()) ||
-                    "TEACHER".equals(r.getCode()));
+            canEdit = checkCanEdit(user, course, module);
+            hasAccessRole = checkHasAccessRole(user, course, module);
         }
 
         long enrolledCount = cohortMemberRepository.countByCohort_Id(module.getId());
@@ -506,6 +505,7 @@ public class CourseController {
         model.addAttribute("moduleSections", moduleSections);
         model.addAttribute("isModEnrolled", isModEnrolled);
         model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("canEdit", canEdit);
         model.addAttribute("completedLessonIds", completedLessonIds);
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("progressPercent", progressPercent);
@@ -597,8 +597,12 @@ public class CourseController {
         }
 
         User user = currentUserOpt.get();
-        List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
-                List.of("ENROLLING", "UPCOMING"));
+        List<Cohort> cohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
+                List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
+        List<Cohort> realModules = cohorts.stream()
+                .filter(c -> !isFullCourseCohort(c))
+                .collect(java.util.stream.Collectors.toList());
+        List<Cohort> availableCohorts = !realModules.isEmpty() ? realModules : cohorts;
 
         if (availableCohorts.isEmpty()) {
             Cohort defaultCohort = Cohort.builder()
@@ -607,6 +611,7 @@ public class CourseController {
                     .code(course.getCode() + "-ALL")
                     .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
                     .status("ENROLLING")
+                    .visibility("PRIVATE")
                     .moderationStatus("APPROVED")
                     .maxCapacity(1000)
                     .currentEnrolled(0)
@@ -708,9 +713,8 @@ public class CourseController {
 
         User user = currentUserOpt.get();
         boolean isEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(module.getId(), user.getId());
-        boolean hasAccessRole = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN") ||
-                r.getCode().equals("MODERATOR") ||
-                r.getCode().equals("INSTRUCTOR"));
+        boolean hasAccessRole = checkHasAccessRole(user, course, module);
+        boolean canEdit = checkCanEdit(user, course, module);
 
         if (!isEnrolled && !hasAccessRole) {
             redirectAttributes.addFlashAttribute("error", "Bạn cần đăng ký module này để vào phòng học.");
@@ -817,13 +821,17 @@ public class CourseController {
         model.addAttribute("completedLessonIds", completedLessonIds);
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("progressPercent", progressPercent);
+        model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("canEdit", canEdit);
         model.addAttribute("otherEnrolledModules", otherEnrolledModules);
         model.addAttribute("initialLessonId", initialLessonId);
         return "courses/module-learn";
     }
 
     @GetMapping({"/{slug}/learn", "/{slug}/learning"})
-    public String showCourseContent(@PathVariable String slug, RedirectAttributes redirectAttributes) {
+    public String showCourseContent(@PathVariable String slug,
+            @RequestParam(required = false) Long lesson,
+            RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
             return "redirect:/login";
@@ -850,23 +858,67 @@ public class CourseController {
                     .orElse(userMemberships.get(0));
 
             Long targetModuleId = latestMember.getCohort().getId();
-            if (latestMember.getLastLesson() != null) {
-                return "redirect:/courses/" + slug + "/modules/" + targetModuleId + "/learn?lesson=" + latestMember.getLastLesson().getId();
+            Long targetLessonId = (lesson != null) ? lesson : (latestMember.getLastLesson() != null ? latestMember.getLastLesson().getId() : null);
+            if (targetLessonId != null) {
+                return "redirect:/courses/" + slug + "/modules/" + targetModuleId + "/learn?lesson=" + targetLessonId;
             }
             return "redirect:/courses/" + slug + "/modules/" + targetModuleId + "/learn";
         }
 
-        boolean hasAccessRole = user.getRoles().stream().anyMatch(r -> r.getCode().equals("ADMIN") ||
-                r.getCode().equals("MODERATOR") ||
-                r.getCode().equals("INSTRUCTOR"));
+        boolean hasAccessRole = checkHasAccessRole(user, course, null);
         if (hasAccessRole) {
             List<Cohort> cohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
+            if (cohorts.isEmpty()) {
+                cohorts = cohortRepository.findByCourseIdOrdered(course.getId());
+            }
             if (!cohorts.isEmpty()) {
-                return "redirect:/courses/" + slug + "/modules/" + cohorts.get(0).getId() + "/learn";
+                String lessonParam = lesson != null ? "?lesson=" + lesson : "";
+                return "redirect:/courses/" + slug + "/modules/" + cohorts.get(0).getId() + "/learn" + lessonParam;
             }
         }
 
         redirectAttributes.addFlashAttribute("info", "Bạn chưa đăng ký module nào của khóa học này.");
         return "redirect:/courses/" + slug;
+    }
+
+    private boolean isFullCourseCohort(Cohort c) {
+        if (c == null) {
+            return false;
+        }
+        boolean isCodeAll = c.getCode() != null && c.getCode().endsWith("-ALL");
+        boolean isNameAll = c.getName() != null && c.getName().toLowerCase().startsWith("toàn bộ khóa học");
+        return isCodeAll || isNameAll;
+    }
+
+    private boolean checkHasAccessRole(User user, Course course, Cohort module) {
+        if (user == null) {
+            return false;
+        }
+        if (checkCanEdit(user, course, module)) {
+            return true;
+        }
+        boolean hasRbacRole = rbacHelper != null && rbacHelper.hasAnyRole("MODERATOR", "ROLE_MODERATOR", "INSTRUCTOR", "ROLE_INSTRUCTOR", "TEACHER", "ADMIN", "ROLE_ADMIN");
+        boolean hasEntityRole = user.getRoles() != null && user.getRoles().stream().anyMatch(r -> {
+            String c = r.getCode();
+            String n = r.getName();
+            return "MODERATOR".equalsIgnoreCase(c) || "ROLE_MODERATOR".equalsIgnoreCase(c)
+                    || "INSTRUCTOR".equalsIgnoreCase(c) || "ROLE_INSTRUCTOR".equalsIgnoreCase(c)
+                    || "TEACHER".equalsIgnoreCase(c) || "ADMIN".equalsIgnoreCase(c) || "ROLE_ADMIN".equalsIgnoreCase(c)
+                    || "MODERATOR".equalsIgnoreCase(n) || "INSTRUCTOR".equalsIgnoreCase(n);
+        });
+        return hasRbacRole || hasEntityRole;
+    }
+
+    private boolean checkCanEdit(User user, Course course, Cohort module) {
+        if (user == null) {
+            return false;
+        }
+        boolean isOwner = (course != null && course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()))
+                || (module != null && module.getCreatedBy() != null && module.getCreatedBy().getId().equals(user.getId()));
+        boolean hasAdminRole = (rbacHelper != null && rbacHelper.hasAnyRole("ADMIN", "ROLE_ADMIN"))
+                || (user.getRoles() != null && user.getRoles().stream().anyMatch(r ->
+                "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode())
+                        || "ADMIN".equalsIgnoreCase(r.getName())));
+        return isOwner || hasAdminRole;
     }
 }

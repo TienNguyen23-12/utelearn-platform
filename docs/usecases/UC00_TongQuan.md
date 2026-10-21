@@ -171,7 +171,7 @@ graph TB
 | **UC-22** | Đăng ký / Ghi danh theo Đợt học | Học trực tuyến | Student | Chọn Đợt học (Cohort) phù hợp và thanh toán |
 | **UC-23** | Học bài giảng theo lịch trình Cohort | Học trực tuyến | Student, TA | Video, tài liệu, mở bài theo Drip Content |
 | **UC-24** | Làm bài kiểm tra theo Cohort | Học trực tuyến | Student | Trắc nghiệm tính giờ, hạn chót theo Cohort |
-| **UC-25** | Xem tiến độ học tập cá nhân | Học trực tuyến | Student | Theo dõi % hoàn thành các bài học trong lớp |
+| **UC-25** | Xem tiến độ học tập cá nhân | Học trực tuyến | Student | Theo dõi % hoàn thành các bài học & Gợi ý nâng cấp trọn gói (Upsell) |
 | **UC-26** | Xem đề bài lập trình OJ | Online Judge | Student | **Định hướng phát triển** |
 | **UC-27** | Nộp bài mã nguồn chấm tự động | Online Judge | Student | **Định hướng phát triển** |
 | **UC-28** | Xem kết quả chấm test case | Online Judge | Student | **Định hướng phát triển** |
