@@ -13,11 +13,11 @@ graph TD
         Queue["Nhiệm vụ kiểm duyệt trong hàng đợi<br/>(ModerationTask - Status: PENDING / SLA: 48h)"] --> ModSelect["Moderator có ca trực mở nhận nhiệm vụ<br/>(Anti-Self-Moderation: authorId != moderatorId)"]
     end
 
-    subgraph Inspection["3. Thẩm định Nội dung chi tiết"]
+    subgraph Inspection["3. Thẩm định Nội dung chi tiết (Chế độ Read-Only)"]
         ModSelect --> CheckType{"Phân loại nội dung<br/>(item_type)"}
         
-        CheckType -->|"item_type = COURSE"| InspectCourse["Thẩm định Khóa học lớn:<br/>1. Thông tin chung & Giá Full Course<br/>2. Danh sách các Cohort thành phần<br/>3. Toàn bộ cây giáo trình (Video, Tài liệu, Quiz)"]
-        CheckType -->|"item_type = COHORT"| InspectCohort["Thẩm định Module độc lập:<br/>1. Thông tin chuyên đề, Học phí lẻ, Sĩ số<br/>2. Lịch học & Lộ trình Drip Content<br/>3. Cây giáo trình của Module (Video, Tài liệu, Quiz)"]
+        CheckType -->|"item_type = COURSE"| InspectCourse["Thẩm định Khóa học lớn (Read-Only):<br/>1. Thông tin chung & Giá Full Course<br/>2. Danh sách các Cohort thành phần<br/>3. Toàn bộ cây giáo trình (Video, Tài liệu, Quiz)<br/><i>*Ẩn công tắc & công cụ Edit Mode</i>"]
+        CheckType -->|"item_type = COHORT"| InspectCohort["Thẩm định Module độc lập (Read-Only):<br/>1. Thông tin chuyên đề, Học phí lẻ, Sĩ số<br/>2. Lịch học & Lộ trình Drip Content<br/>3. Cây giáo trình của Module (Video, Tài liệu, Quiz)<br/><i>*Ẩn công tắc & công cụ Edit Mode</i>"]
     end
 
     InspectCourse --> Decision{"Đánh giá chất lượng"}
@@ -117,7 +117,7 @@ graph LR
 | **Tiền điều kiện** | Moderator đang mở nhiệm vụ kiểm duyệt cụ thể (`task.id`). |
 | **Mô tả** | Đánh giá toàn diện nội dung (Course hoặc Cohort độc lập) bao gồm cây giáo trình, video, bài giảng và đề kiểm tra, đưa ra quyết định duyệt để mở bán công khai hoặc từ chối kèm góp ý. |
 | **Luồng sự kiện chính** | 1. Moderator xem trang chi tiết kiểm duyệt (`/moderator/review/{taskId}`):<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Nếu là Khóa học lớn (`item_type = COURSE`)**: Kiểm tra thông tin giới thiệu, ảnh thumbnail, học phí combo Full Course, danh sách các Cohort thành phần và cây giáo trình toàn bộ khóa học.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Nếu là Module độc lập (`item_type = COHORT`)**: Kiểm tra tên module, học phí bán lẻ, sức chứa tối đa, hạn ghi danh, cấu hình Drip Content và các bài học/quiz riêng của Module.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Xem trực tiếp nội dung bài học: Video player, tài liệu đính kèm, cấu trúc câu hỏi trắc nghiệm.<br/>2. Đưa ra quyết định thẩm định:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Trường hợp Phê duyệt (Approve)**: Nhấn "Phê duyệt" -> Trạng thái nội dung chuyển thành `PUBLISHED` (Course) hoặc `APPROVED / ENROLLING` (Cohort). Nội dung lập tức hiển thị công khai trên hệ thống để học viên đăng ký.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Trường hợp Từ chối (Reject)**: Nhấn "Từ chối" -> Kích hoạt UC-20 để nhập lý do và hướng dẫn sửa đổi.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Trường hợp Chuyển cấp (Escalate)**: Khi nội dung phức tạp hoặc có tranh chấp bản quyền -> Chuyển nhiệm vụ lên Admin (`escalation_level = 2`).<br/>3. Hệ thống cập nhật bảng `moderation_tasks` sang `APPROVED` hoặc `REJECTED`, ghi nhận thời gian hoàn tất và cộng điểm năng suất ca trực của Moderator. |
-| **Ràng buộc nghiệp vụ** | **Chống tự kiểm duyệt (Anti-Self-Moderation)**: Giảng viên không được phép tự kiểm duyệt nội dung do chính mình tạo ra (`author_id <> assigned_to`). |
+| **Ràng buộc nghiệp vụ** | 1. **Chống tự kiểm duyệt (Anti-Self-Moderation)**: Giảng viên không được phép tự kiểm duyệt nội dung do chính mình tạo ra (`author_id <> assigned_to`).<br/>2. **Thẩm định Chỉ đọc & Phân định Trách nhiệm (Read-Only Inspection & Separation of Duties)**: Moderator chỉ có quyền thẩm định, đánh giá chất lượng (`canEdit = false`). Hệ thống tự động ẩn toàn bộ công tắc chỉnh sửa (Edit Mode Toggle), các nút inline edit và chặn các API cập nhật trực tiếp. Moderator tuyệt đối không được tự ý sửa nội dung/giáo trình của Giảng viên mà bắt buộc phải từ chối kèm phản hồi chi tiết (UC-20) để Giảng viên tự hoàn thiện. |
 | **Hậu điều kiện** | Trạng thái nội dung được cập nhật chính xác trên toàn hệ thống và đồng bộ với bảng danh mục. |
 
 ---

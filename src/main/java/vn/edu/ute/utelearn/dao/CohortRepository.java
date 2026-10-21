@@ -14,14 +14,16 @@ import java.util.Optional;
 public interface CohortRepository extends JpaRepository<Cohort, Long> {
     Page<Cohort> findByCourseId(Long courseId, Pageable pageable);
     
-    @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))",
-           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))")
+    @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%'))",
+           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%'))")
     Page<Cohort> findByInstructorId(@Param("instructorId") Long instructorId, Pageable pageable);
 
     @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')")
     Page<Cohort> searchCohortsByInstructor(@Param("instructorId") Long instructorId, @Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
@@ -29,20 +31,23 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category LEFT JOIN FETCH c.createdBy WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cr IS NOT NULL AND cr.category IS NOT NULL AND cr.category.slug = :categorySlug))",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.category cat WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cat IS NOT NULL AND cat.slug = :categorySlug))")
     Page<Cohort> searchPublicCohorts(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, Pageable pageable);
 
-    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId))")
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%'))")
     java.util.List<Cohort> findShareableCohorts(@Param("instructorId") Long instructorId);
 
     @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE " +
            "(c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "ORDER BY c.createdAt DESC")
     java.util.List<Cohort> searchShareableCohorts(@Param("instructorId") Long instructorId, @Param("keyword") String keyword);

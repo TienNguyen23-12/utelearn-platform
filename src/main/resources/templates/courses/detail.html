@@ -251,7 +251,7 @@
     <div class="row">
         <div class="col-lg-8">
             <div class="content-card">
-                <div th:if="${hasAccessRole}" class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm w-100">
+                <div th:if="${canEdit}" class="alert alert-warning border-warning rounded-4 d-flex align-items-center justify-content-between mb-4 instructor-edit-ctrl shadow-sm w-100">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-cone-striped text-warning-emphasis fs-4"></i>
                         <div>
@@ -338,7 +338,7 @@
                             Khóa học bao gồm <strong th:text="${totalModulesCount}">0</strong> module chuyên môn với tổng cộng <strong th:text="${totalLessonsCount}">0</strong> bài học.
                         </div>
                     </div>
-                    <div th:if="${hasAccessRole}" class="instructor-edit-ctrl">
+                    <div th:if="${canEdit}" class="instructor-edit-ctrl">
                         <button class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="addNewModuleDirect()">
                             <i class="bi bi-plus-circle me-1"></i>Thêm Module mới
                         </button>
@@ -353,7 +353,7 @@
 
                     <div th:each="courseMod, mStat : ${courseModules}" class="accordion-item border-0 rounded-3 mb-3 shadow-sm overflow-hidden bg-white" th:attr="data-module-id=${courseMod.id}">
                         <h2 class="accordion-header d-flex align-items-center" th:id="'modHeading' + ${mStat.index}">
-                            <div th:if="${hasAccessRole}" class="instructor-edit-ctrl align-items-center gap-1 ps-3 pe-1 py-2">
+                            <div th:if="${canEdit}" class="instructor-edit-ctrl align-items-center gap-1 ps-3 pe-1 py-2">
                                 <span class="btn btn-xs btn-light border text-muted px-2 py-1 module-drag-handle" title="Kéo thả đổi thứ tự module" style="cursor: grab;">
                                     <i class="bi bi-grip-vertical"></i>
                                 </span>
@@ -386,14 +386,14 @@
                                         <span class="fw-bold text-dark fs-6" th:id="'modNameText_' + ${courseMod.id}" th:text="${courseMod.name}">Tên Module</span>
                                         <span class="badge bg-white text-primary border border-primary-subtle" th:text="${courseMod.code}">MOD-01</span>
                                     </div>
-                                    <div th:if="${hasAccessRole}" class="d-flex align-items-center gap-2 instructor-edit-ctrl">
+                                    <div th:if="${canEdit}" class="d-flex align-items-center gap-2 instructor-edit-ctrl">
                                         <button class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 fw-semibold" th:onclick="'toggleEditModule(' + ${courseMod.id} + ')'">
                                             <i class="bi bi-pencil me-1"></i>Sửa tên module
                                         </button>
                                     </div>
                                 </div>
 
-                                <div th:if="${hasAccessRole}" th:id="'modNameEditWrap_' + ${courseMod.id}" class="d-none mb-3 bg-light p-3 rounded-3 border">
+                                <div th:if="${canEdit}" th:id="'modNameEditWrap_' + ${courseMod.id}" class="d-none mb-3 bg-light p-3 rounded-3 border">
                                     <label class="form-label fw-semibold small text-dark mb-1">Chỉnh sửa tên Module / Học phần:</label>
                                     <div class="input-group">
                                         <input type="text" th:id="'inputModName_' + ${courseMod.id}" class="form-control rounded-start-3 fw-bold" th:value="${courseMod.name}">
@@ -409,14 +409,14 @@
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="fw-semibold text-dark small"><i class="bi bi-info-circle text-primary me-2"></i>Mô tả học phần:</span>
-                                        <button th:if="${hasAccessRole}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleDesc(' + ${courseMod.id} + ')'" style="font-size: 11px;">
+                                        <button th:if="${canEdit}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleDesc(' + ${courseMod.id} + ')'" style="font-size: 11px;">
                                             <i class="bi bi-pencil me-1"></i>Sửa mô tả
                                         </button>
                                     </div>
                                     <div th:id="'modDescViewWrap_' + ${courseMod.id}">
                                         <p class="text-muted small mb-0 lh-base" style="white-space: pre-line; word-break: break-word;" th:id="'modDescText_' + ${courseMod.id}" th:text="${courseMod.description != null && !courseMod.description.isBlank() ? courseMod.description : 'Chưa có mô tả cho module này.'}">Mô tả</p>
                                     </div>
-                                    <div th:if="${hasAccessRole}" th:id="'modDescEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
+                                    <div th:if="${canEdit}" th:id="'modDescEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
                                         <label class="form-label fw-semibold small text-dark mb-1">Nội dung mô tả Module:</label>
                                         <textarea th:id="'inputModDesc_' + ${courseMod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="3" th:text="${courseMod.description}"></textarea>
                                         <div class="d-flex gap-2">
@@ -433,7 +433,7 @@
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <span class="fw-semibold text-dark small"><i class="bi bi-bullseye text-primary me-2"></i>Mục tiêu học phần:</span>
-                                        <button th:if="${hasAccessRole}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleObj(' + ${courseMod.id} + ')'" style="font-size: 11px;">
+                                        <button th:if="${canEdit}" class="btn btn-xs btn-outline-primary rounded-pill px-2.5 py-0.5 instructor-edit-ctrl" th:onclick="'toggleEditModuleObj(' + ${courseMod.id} + ')'" style="font-size: 11px;">
                                             <i class="bi bi-pencil me-1"></i>Sửa mục tiêu
                                         </button>
                                     </div>
@@ -449,7 +449,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div th:if="${hasAccessRole}" th:id="'modObjEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
+                                    <div th:if="${canEdit}" th:id="'modObjEditWrap_' + ${courseMod.id}" class="d-none mt-2 bg-light p-3 rounded-3 border">
                                         <label class="form-label fw-semibold small text-dark mb-1">Mỗi mục tiêu học phần viết trên một dòng:</label>
                                         <textarea th:id="'inputModObj_' + ${courseMod.id}" class="form-control form-control-sm rounded-3 mb-2" rows="4" th:text="${#strings.listJoin(courseMod.objectivesList, '&#10;')}"></textarea>
                                         <div class="d-flex gap-2">
@@ -472,10 +472,10 @@
                                         <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id}}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold">
                                             <i class="bi bi-box-arrow-up-right me-1"></i>Xem chi tiết Module
                                         </a>
-                                        <a th:if="${hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id}}" class="btn btn-warning btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
+                                        <a th:if="${canEdit}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id}}" class="btn btn-warning btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
                                             <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa cấu trúc Module
                                         </a>
-                                        <a th:if="${hasAccessRole}" th:href="@{'/instructor/cohorts/' + ${courseMod.id} + '/edit'}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
+                                        <a th:if="${canEdit}" th:href="@{'/instructor/cohorts/' + ${courseMod.id} + '/edit'}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold instructor-edit-ctrl">
                                             <i class="bi bi-gear-fill me-1"></i>Cài đặt Module
                                         </a>
                                         <a th:if="${courseMod.isEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseMod.id} + '/learn'}" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold">
@@ -562,7 +562,7 @@
                 <div class="enroll-card shadow-sm border-0 rounded-4 overflow-hidden bg-white">
                     <img th:src="${course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="enroll-img w-100" alt="Course Image">
                     <div class="p-3.5 p-md-4">
-                        <div th:if="${hasAccessRole}" class="card border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-3 p-3 mb-3 shadow-xs">
+                        <div th:if="${canEdit}" class="card border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-3 p-3 mb-3 shadow-xs">
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="bi bi-shield-check fs-5 text-warning-emphasis"></i>
@@ -673,11 +673,12 @@
     const currentCourseId = /*[[${course.id}]]*/ 0;
     const slug = /*[[${courseSlug}]]*/ 'default-slug';
     const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
+    const canEdit = /*[[${canEdit != null ? canEdit : false}]]*/ false;
 
     document.addEventListener("DOMContentLoaded", () => {
         initModuleSortable();
 
-        if (hasAccessRole) {
+        if (canEdit) {
             const editToggle = document.getElementById('courseDetailEditModeToggle');
             const editToolbar = document.getElementById('courseInstructorEditToolbar');
             const savedEdit = localStorage.getItem('utelearn_course_edit_mode_' + slug);

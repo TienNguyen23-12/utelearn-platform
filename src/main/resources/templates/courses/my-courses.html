@@ -72,6 +72,7 @@
                             <button class="nav-link" id="subtab-modules-btn" data-bs-toggle="pill" data-bs-target="#subtab-modules-pane" type="button" role="tab">
                                 <i class="bi bi-layers-fill me-1"></i>Module & Học phần lẻ
                                 <span class="badge bg-secondary-subtle text-secondary border rounded-pill ms-1" th:text="${enrolledModules != null ? enrolledModules.size() : 0}">0</span>
+                                <span th:if="${upsellSuggestions != null && !upsellSuggestions.isEmpty()}" class="badge bg-warning text-dark border border-warning rounded-pill ms-1" title="Có ưu đãi nâng cấp trọn gói"><i class="bi bi-stars"></i></span>
                             </button>
                         </li>
                     </ul>
@@ -94,7 +95,7 @@
                                     <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
                                         <div class="position-relative">
                                             <img th:src="${item.course.thumbnailUrl != null && !item.course.thumbnailUrl.isBlank() ? item.course.thumbnailUrl : '/images/courses/default-cover.png'}"
-                                                 class="card-img-top" alt="Course thumbnail" style="height: 165px; object-fit: cover;">
+                                                 class="card-img-top" alt="Course thumbnail" style="aspect-ratio: 16 / 9; width: 100%; object-fit: cover;">
                                             <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white shadow-sm rounded-pill px-3 py-1">
                                                 <i class="bi bi-patch-check-fill me-1"></i>Trọn gói khóa học
                                             </span>
@@ -124,6 +125,62 @@
                         </div>
 
                         <div class="tab-pane fade" id="subtab-modules-pane" role="tabpanel">
+                            <div th:if="${upsellSuggestions != null && !upsellSuggestions.isEmpty()}" class="mb-4">
+                                <div th:each="upsell : ${upsellSuggestions}" class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden" style="background: linear-gradient(135deg, #eff6ff 0%, #ecfdf5 50%, #fffbeb 100%); border: 1px solid rgba(59, 130, 246, 0.2) !important;">
+                                    <div class="card-body p-4">
+                                        <div class="row align-items-center g-3">
+                                            <div class="col-md-3 col-lg-3 d-none d-md-block text-center">
+                                                <img th:src="${upsell.course.thumbnailUrl != null && !upsell.course.thumbnailUrl.isBlank() ? upsell.course.thumbnailUrl : '/images/courses/default-cover.png'}"
+                                                     class="img-fluid rounded-4 shadow-sm w-100" alt="Course Thumbnail" style="aspect-ratio: 16 / 9; object-fit: cover;">
+                                            </div>
+                                            <div class="col-md-5 col-lg-5">
+                                                <div class="d-flex align-items-center gap-2 mb-2">
+                                                    <span class="badge bg-warning text-dark border border-warning shadow-sm rounded-pill px-3 py-1 fw-bold">
+                                                        <i class="bi bi-stars me-1 text-danger"></i>Gợi ý Nâng cấp trọn gói (Upgrade Upsell)
+                                                    </span>
+                                                    <span th:if="${upsell.savingsAmount != null && upsell.savingsAmount > 0}" class="badge bg-danger text-white rounded-pill px-2 py-1 small">
+                                                        <i class="bi bi-tag-fill me-1"></i>Tiết kiệm <span th:text="${#numbers.formatDecimal(upsell.savingsAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                                    </span>
+                                                </div>
+                                                <h5 class="fw-bold text-dark mb-1" th:text="${upsell.course.title}">Tên khóa học</h5>
+                                                <p class="text-muted small mb-2">
+                                                    Bạn đã hoàn thành đăng ký <strong class="text-primary" th:text="${upsell.enrolledModulesCount}"></strong> / <strong th:text="${upsell.totalModules}"></strong> module. Hãy nâng cấp lên Full Course để mở khóa toàn bộ giáo trình và tài nguyên!
+                                                </p>
+                                                <div class="progress rounded-pill bg-white border mb-2" style="height: 8px;">
+                                                    <div class="progress-bar bg-gradient bg-primary" role="progressbar" th:style="'width: ' + (${upsell.enrolledModulesCount} * 100 / ${upsell.totalModules}) + '%'"></div>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 align-items-center">
+                                                    <small class="text-muted me-1">Module còn lại:</small>
+                                                    <span th:each="rc : ${upsell.remainingCohorts}" class="badge bg-white text-secondary border rounded-pill px-2 py-1 small">
+                                                        <i class="bi bi-lock-fill text-warning me-1"></i><span th:text="${rc.name}"></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 col-lg-4 text-md-end border-start-md ps-md-4">
+                                                <div class="mb-2">
+                                                    <div class="text-muted small">
+                                                        Giá Full Course: <span class="text-decoration-line-through fw-semibold" th:text="${#numbers.formatDecimal(upsell.coursePrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                                    </div>
+                                                    <div class="text-success small fw-semibold">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>Đã trừ module cũ: <span th:text="'- ' + ${#numbers.formatDecimal(upsell.totalPaidAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                                    </div>
+                                                    <div class="text-muted small mt-1">Chỉ bù chênh lệch:</div>
+                                                    <div class="fw-bold text-danger fs-4 mb-0" th:text="${#numbers.formatDecimal(upsell.upgradePrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</div>
+                                                </div>
+                                                <div class="d-flex flex-column flex-sm-row justify-content-md-end align-items-stretch align-items-sm-center gap-2">
+                                                    <a th:href="@{'/courses/' + ${upsell.course.slug}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-2 d-inline-flex align-items-center justify-content-center text-center">
+                                                        <i class="bi bi-journal-text me-1"></i><span>Lộ trình</span>
+                                                    </a>
+                                                    <a th:href="@{'/checkout/course/' + ${upsell.course.slug}}" class="btn btn-sm btn-primary btn-gradient rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center justify-content-center text-center">
+                                                        <i class="bi bi-stars me-1"></i><span>Nâng cấp ngay</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div th:if="${enrolledModules == null || enrolledModules.isEmpty()}" class="text-center py-5 text-muted">
                                 <i class="bi bi-layers display-4 mb-3 d-block text-secondary opacity-50"></i>
                                 <h6>Không có module đăng ký lẻ nào.</h6>
@@ -138,7 +195,7 @@
                                     <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
                                         <div class="position-relative">
                                             <img th:src="${cm.cohort.thumbnailUrl != null && !cm.cohort.thumbnailUrl.isBlank() ? cm.cohort.thumbnailUrl : (cm.cohort.course != null && cm.cohort.course.thumbnailUrl != null && !cm.cohort.course.thumbnailUrl.isBlank() ? cm.cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}"
-                                                 class="card-img-top" alt="Module thumbnail" style="height: 165px; object-fit: cover;">
+                                                 class="card-img-top" alt="Module thumbnail" style="aspect-ratio: 16 / 9; width: 100%; object-fit: cover;">
                                             <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white shadow-sm rounded-pill px-3 py-1" th:text="${cm.cohort.code}">
                                                 MOD-WEB-01
                                             </span>

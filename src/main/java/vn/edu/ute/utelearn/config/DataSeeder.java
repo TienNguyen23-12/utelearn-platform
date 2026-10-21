@@ -65,6 +65,7 @@ public class DataSeeder implements CommandLineRunner {
                 jdbcTemplate.execute("ALTER TABLE cohorts ALTER COLUMN course_id DROP NOT NULL");
                 jdbcTemplate.execute("UPDATE cohorts c SET created_by = COALESCE((SELECT co.created_by FROM courses co WHERE co.id = c.course_id), 2) WHERE c.created_by IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL");
+                jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PRIVATE' WHERE code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%'");
                 jdbcTemplate.execute("UPDATE cohorts SET moderation_status = 'APPROVED' WHERE moderation_status IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET order_index = 1 WHERE order_index IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET name = REGEXP_REPLACE(name, '^Module\\s*[0-9]+[:\\.\\-]\\s*', '', 'i') WHERE code IN ('MOD-WEB-01', 'MOD-WEB-02', 'MOD-WEB-03', 'MOD-JAVA-01', 'MOD-JAVA-02', 'MOD-JAVA-03', 'MOD-OJ-01', 'MOD-OJ-02') AND name ~* '^Module\\s*[0-9]+'");

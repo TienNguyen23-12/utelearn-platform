@@ -31,10 +31,11 @@ public class AssetDownloadController {
 
             InstructorAsset asset = assetService.getAssetById(id);
 
-            // Kiem tra quyen
             boolean hasPermission = false;
 
-            if (currentUser.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) )) {
+            if (currentUser.getRoles().stream().anyMatch(r -> 
+                    "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()) ||
+                    "MODERATOR".equalsIgnoreCase(r.getCode()) || "ROLE_MODERATOR".equalsIgnoreCase(r.getCode()))) {
                 hasPermission = true;
             } else if (asset.getInstructor().getId().equals(currentUser.getId())) {
                 hasPermission = true;
