@@ -148,5 +148,10 @@ utelearn:
   seeder:
     enabled: true
     seed-sample-users: true
-    default-password: 123456
+    default-password: Pass@123
+
+  render:
+    keep-alive-url: ${RENDER_EXTERNAL_URL:https://utelearn-platform.onrender.com}
+    keep-alive-enabled: ${RENDER_KEEP_ALIVE_ENABLED:true}
+
 
