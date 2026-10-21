@@ -271,7 +271,7 @@ public class InstructorCurriculumApiController {
 
     @PutMapping("/{courseId}/inline")
     @Transactional
-    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN', 'MODERATOR', 'ROLE_MODERATOR') or @rbac.hasPermission('COURSE_CREATE')")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> updateCourseInline(
             @PathVariable Long courseId,
             @RequestBody Map<String, Object> payload) {
@@ -281,8 +281,7 @@ public class InstructorCurriculumApiController {
 
         boolean isOwner = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(currentUser.getId());
         boolean hasAdminRole = currentUser.getRoles().stream().anyMatch(r ->
-                "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
-                "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()));
+                "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()));
 
         if (!isOwner && !hasAdminRole) {
             return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền chỉnh sửa khóa học này"));
@@ -352,7 +351,7 @@ public class InstructorCurriculumApiController {
 
     @PutMapping("/modules/{cohortId}/inline")
     @Transactional
-    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN', 'MODERATOR', 'ROLE_MODERATOR') or @rbac.hasPermission('COURSE_CREATE')")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> updateCohortInline(
             @PathVariable Long cohortId,
             @RequestBody Map<String, Object> payload) {
@@ -363,8 +362,7 @@ public class InstructorCurriculumApiController {
         boolean isModuleCreator = cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(currentUser.getId());
         boolean isCourseOwner = cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(currentUser.getId());
         boolean hasAdminRole = currentUser.getRoles().stream().anyMatch(r ->
-                "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
-                "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()));
+                "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()));
 
         if (!isCourseOwner && !isModuleCreator && !hasAdminRole) {
             return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền chỉnh sửa module này"));

@@ -57,6 +57,8 @@ graph LR
 
     UC24 -.->|"<<includes>>"| UC24a["Chấm điểm trắc nghiệm tự động"]
     UC24 -.->|"<<includes>>"| UC24b["Lưu lịch sử bài nộp Quiz"]
+
+    UC25 -.->|"<<extend>>"| UC25a["Gợi ý nâng cấp Full Course (Upsell)"]
 ```
 
 ---
@@ -128,6 +130,7 @@ graph LR
 | **Mã Use Case** | UC-25 |
 | **Tên Use Case** | Xem tiến độ học tập cá nhân (View Learning Progress) |
 | **Actor chính** | Student |
-| **Mô tả** | Học viên theo dõi tổng quan các khóa học và đợt học mình đã tham gia tại `/courses/my-courses`. |
-| **Luồng sự kiện chính** | 1. Học viên truy cập trang cá nhân hoặc menu **"Khóa học của tôi"** (`/courses/my-courses`).<br/>2. Hệ thống liệt kê tất cả các Đợt học mà học viên đã ghi danh kèm thông tin Khóa học cha, thời gian học, tiến độ hoàn thành bài giảng.<br/>3. Học viên nhấn **"Tiếp tục học"** để chuyển thẳng vào bài học đang dở dang. |
-| **Hậu điều kiện** | Học viên nắm bắt tiến độ học tập của bản thân qua từng đợt học. |
+| **Mô tả** | Học viên theo dõi tổng quan các khóa học và đợt học mình đã tham gia tại `/courses/my-courses`. Đối với các khóa học mới mua một số module lẻ, hệ thống hiển thị khối gợi ý Upsell nâng cấp trọn gói khóa học với chính sách chỉ bù phần tiền chênh lệch. |
+| **Luồng sự kiện chính** | 1. Học viên truy cập trang cá nhân hoặc menu **"Khóa học của tôi"** (`/courses/my-courses`).<br/>2. Hệ thống phân chia hiển thị theo 2 tab: "Trọn gói Khóa học" và "Module & Học phần lẻ" kèm thời gian học, tiến độ hoàn thành bài giảng.<br/>3. Học viên nhấn **"Tiếp tục học"** để chuyển thẳng vào bài học đang dở dang. |
+| **Luồng mở rộng (Extension - Upsell)** | **2a. Gợi ý nâng cấp Full Course (Upsell):**<br/>- Tại tab "Module & Học phần lẻ", với mỗi khóa học mẹ mà học viên mới sở hữu một số module, hệ thống hiển thị khối thẻ ưu đãi Nâng cấp trọn gói (Upgrade Upsell).<br/>- Hệ thống tự động tính toán số tiền chênh lệch: `Số tiền nâng cấp = Giá Full Course - Tổng số tiền đã thanh toán cho các Cohort trước đó`.<br/>- Hiển thị trực quan: Số module đã sở hữu / Tổng số module, số tiền đã khấu trừ 100%, số tiền bù thêm ưu đãi và số tiền tiết kiệm được so với mua lẻ.<br/>- Học viên bấm **"Nâng cấp trọn gói ngay"** -> Hệ thống chuyển hướng sang trang thanh toán `/checkout/course/{slug}` áp dụng đúng mức giá chênh lệch.<br/>- Sau khi xác nhận thanh toán thành công, toàn bộ các module còn lại của khóa học được tự động kích hoạt vào tài khoản học viên và chuyển khóa học sang tab "Trọn gói Khóa học". |
+| **Hậu điều kiện** | Học viên nắm bắt tiến độ học tập của bản thân và có thể dễ dàng nâng cấp lên trọn gói khóa học tiết kiệm chi phí. |

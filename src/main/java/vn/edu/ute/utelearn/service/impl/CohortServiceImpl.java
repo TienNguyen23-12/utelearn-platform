@@ -283,6 +283,15 @@ public class CohortServiceImpl implements CohortService {
         }
     }
 
+    private boolean isFullCourseCohort(Cohort c) {
+        if (c == null) {
+            return false;
+        }
+        boolean isCodeAll = c.getCode() != null && c.getCode().endsWith("-ALL");
+        boolean isNameAll = c.getName() != null && c.getName().toLowerCase().startsWith("toàn bộ khóa học");
+        return isCodeAll || isNameAll;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO getUserEnrollmentSummary(User user) {
@@ -300,6 +309,7 @@ public class CohortServiceImpl implements CohortService {
 
         List<vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO.EnrolledCourseItem> enrolledCourses = new java.util.ArrayList<>();
         List<vn.edu.ute.utelearn.entity.CohortMember> enrolledModules = new java.util.ArrayList<>();
+        List<vn.edu.ute.utelearn.dto.CourseUpsellDTO> upsellSuggestions = new java.util.ArrayList<>();
 
         for (java.util.Map.Entry<Long, List<vn.edu.ute.utelearn.entity.CohortMember>> entry : courseMembershipsMap.entrySet()) {
             Long courseId = entry.getKey();
@@ -307,16 +317,19 @@ public class CohortServiceImpl implements CohortService {
             Course course = courseMap.get(courseId);
 
             List<Cohort> allCohortsOfCourse = cohortRepository.findByCourseIdOrderByCreatedAtAsc(courseId);
+            List<Cohort> realModules = allCohortsOfCourse.stream()
+                    .filter(c -> !isFullCourseCohort(c))
+                    .collect(java.util.stream.Collectors.toList());
+            List<Cohort> modulesToConsider = realModules.isEmpty() ? allCohortsOfCourse : realModules;
+
             java.util.Set<Long> userEnrolledCohortIds = memberships.stream()
                     .map(cm -> cm.getCohort().getId())
                     .collect(java.util.stream.Collectors.toSet());
 
-            boolean hasAllCohort = memberships.stream().anyMatch(cm -> 
-                cm.getCohort().getCode() != null && cm.getCohort().getCode().endsWith("-ALL")
-            );
+            boolean hasAllCohort = memberships.stream().anyMatch(cm -> isFullCourseCohort(cm.getCohort()));
 
-            boolean isAllCohortsEnrolled = !allCohortsOfCourse.isEmpty() && 
-                allCohortsOfCourse.stream().allMatch(c -> userEnrolledCohortIds.contains(c.getId()));
+            boolean isAllCohortsEnrolled = !modulesToConsider.isEmpty() && 
+                modulesToConsider.stream().allMatch(c -> userEnrolledCohortIds.contains(c.getId()));
 
             boolean isFullCourse = hasAllCohort || isAllCohortsEnrolled;
 
@@ -330,17 +343,59 @@ public class CohortServiceImpl implements CohortService {
                 enrolledCourses.add(vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO.EnrolledCourseItem.builder()
                         .course(course)
                         .enrolledAt(earliestEnrolledAt)
-                        .totalModules(allCohortsOfCourse.size())
-                        .enrolledModulesCount(memberships.size())
+                        .totalModules(modulesToConsider.size())
+                        .enrolledModulesCount(modulesToConsider.size())
                         .build());
             } else {
-                enrolledModules.addAll(memberships);
+                List<vn.edu.ute.utelearn.entity.CohortMember> realMemberships = memberships.stream()
+                        .filter(cm -> !isFullCourseCohort(cm.getCohort()))
+                        .collect(java.util.stream.Collectors.toList());
+
+                enrolledModules.addAll(realMemberships);
+
+                List<Cohort> unenrolledCohorts = modulesToConsider.stream()
+                        .filter(c -> !userEnrolledCohortIds.contains(c.getId()))
+                        .collect(java.util.stream.Collectors.toList());
+
+                if (!unenrolledCohorts.isEmpty()) {
+                    java.math.BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO;
+                    java.math.BigDecimal totalPaidAmount = realMemberships.stream()
+                            .map(cm -> cm.getCohort() != null && cm.getCohort().getPrice() != null ? cm.getCohort().getPrice() : java.math.BigDecimal.ZERO)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                    java.math.BigDecimal upgradePrice = coursePrice.subtract(totalPaidAmount);
+                    if (upgradePrice.compareTo(java.math.BigDecimal.ZERO) < 0) {
+                        upgradePrice = java.math.BigDecimal.ZERO;
+                    }
+
+                    java.math.BigDecimal remainingModulesOriginalPrice = unenrolledCohorts.stream()
+                            .map(c -> c.getPrice() != null ? c.getPrice() : java.math.BigDecimal.ZERO)
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                    java.math.BigDecimal savingsAmount = remainingModulesOriginalPrice.compareTo(upgradePrice) > 0
+                            ? remainingModulesOriginalPrice.subtract(upgradePrice)
+                            : java.math.BigDecimal.ZERO;
+
+                    upsellSuggestions.add(vn.edu.ute.utelearn.dto.CourseUpsellDTO.builder()
+                            .course(course)
+                            .totalModules(modulesToConsider.size())
+                            .enrolledModulesCount(realMemberships.size())
+                            .remainingModulesCount(unenrolledCohorts.size())
+                            .coursePrice(coursePrice)
+                            .totalPaidAmount(totalPaidAmount)
+                            .upgradePrice(upgradePrice)
+                            .remainingModulesOriginalPrice(remainingModulesOriginalPrice)
+                            .savingsAmount(savingsAmount)
+                            .remainingCohorts(unenrolledCohorts)
+                            .build());
+                }
             }
         }
 
         return vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO.builder()
                 .enrolledCourses(enrolledCourses)
                 .enrolledModules(enrolledModules)
+                .upsellSuggestions(upsellSuggestions)
                 .build();
     }
 

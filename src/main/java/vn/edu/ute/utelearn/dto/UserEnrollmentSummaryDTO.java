@@ -19,6 +19,7 @@ import java.util.List;
 public class UserEnrollmentSummaryDTO {
     private List<EnrolledCourseItem> enrolledCourses;
     private List<CohortMember> enrolledModules;
+    private List<CourseUpsellDTO> upsellSuggestions;
 
     @Getter
     @Setter

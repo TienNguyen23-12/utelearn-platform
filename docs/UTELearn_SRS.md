@@ -119,6 +119,7 @@ Tài liệu Đặc tả Yêu cầu Phần mềm (SRS) này xác định toàn di
   - **Từ chối (`REJECTED`):** Gửi nhận xét phản hồi chi tiết (`feedback`) để giảng viên chỉnh sửa.
   - **Chuyển cấp (`ESCALATED`):** Đẩy nhiệm vụ phức tạp lên Admin (`/admin/moderation`, `escalation_level = 2`) kèm lý do (`escalation_reason`).
   - Ràng buộc cứng chống tự duyệt bài của chính mình (`author_id <> assigned_to`).
+  - Ràng buộc thẩm định chỉ đọc (Read-Only Inspection & Separation of Duties): Moderator chỉ có quyền thẩm định nội dung, bị vô hiệu hóa toàn bộ công tắc/công cụ chỉnh sửa (`canEdit = false`); không được phép tự ý sửa đổi bài giảng hay cấu trúc của Giảng viên.
 
 ### 1.6.7 Phân hệ 7: Kho Tài nguyên Số Giảng viên (Digital Asset Library - UC-30 đến UC-32)
 * **FR-AST-01 (Direct Signed Upload & Quản lý Kho tài nguyên - UC-30, UC-31):** Tải file trực tiếp lên Cloudinary với chữ ký bảo mật SHA-1, tự động kiểm tra định dạng file theo danh mục và chuẩn hóa phần mở rộng; quản lý theo thư mục ảo và quyền hiển thị (`PRIVATE`, `DEPARTMENT_SHARED`, `COHORT_PUBLIC`).
