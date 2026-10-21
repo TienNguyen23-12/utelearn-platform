@@ -39,7 +39,7 @@ graph TB
         UC08["UC-08: Quản lý tài khoản người dùng"]
         UC09["UC-09: Cấu hình phân quyền động RBAC"]
         UC10["UC-10: Xem Dashboard thống kê toàn diện"]
-        UC11["UC-11: Quản lý danh mục khóa học"]
+        UC11["UC-11: Quản lý danh mục khóa học (Category CRUD)"]
         UC12["UC-12: Quản lý điểm danh Moderator"]
     end
 
@@ -51,12 +51,12 @@ graph TB
         UC17["UC-17: Biên soạn đề kiểm tra Quiz chuẩn"]
     end
 
-    subgraph UC_Cohort["Module 4: Quản lý Đợt học / Lớp học (Cohort)"]
-        UC33["UC-33: Mở Đợt học mới cho Course"]
+    subgraph UC_Cohort["Module 4: Quản lý Đợt học / Module (Cohort)"]
+        UC33["UC-33: Mở Đợt học / Module bán lẻ mới"]
         UC34["UC-34: Đăng ký / Ghi danh vào Đợt học"]
         UC35["UC-35: Chat thảo luận lớp học (WebSocket)"]
         UC36["UC-36: Điều phối lịch mở bài & Deadline"]
-        UC37["UC-37: Quản lý thành viên & Tiến độ lớp học"]
+        UC37["UC-37: Quản lý thành viên & Tiến độ tự động"]
     end
 
     subgraph UC_Student["Module 5: Học trực tuyến (Student)"]

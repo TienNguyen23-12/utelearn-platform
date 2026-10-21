@@ -1,31 +1,32 @@
 # UC08 – Quản lý Đợt học / Lớp học (Cohort Management)
 
-## 1. Mô hình Quan hệ Khóa học (Course) - Đợt học (Cohort)
+## 1. Mô hình Quan hệ Khóa học (Course) - Module / Đợt học (Cohort)
 
 ```mermaid
 graph TD
-    Course["Course: Khóa học lớn (Master Course)<br/>Ví dụ: Lập trình Java Chuyên sâu<br/>Chứa toàn bộ giáo trình chuẩn (Section, Lesson, Quiz)"]
+    subgraph MasterCourseModel["1. Mô hình Đợt học trực thuộc Khóa học Khung (Course-based Cohort)"]
+        Course["Course: Khóa học lớn (Master Course)<br/>Ví dụ: Lập trình Java Chuyên sâu<br/>Chứa khung giáo trình chuẩn (Section, Lesson, Quiz)"]
+        Course -->|"Mở đợt học 1"| Cohort1["Cohort 1: Lớp K24 - Đợt 1 (Mã: K24-JAVA-01)<br/>Học phí: 450.000 VNĐ | Sĩ số: 50 | Khai giảng: 15/10"]
+        Course -->|"Mở đợt học 2"| Cohort2["Cohort 2: Lớp K24 - Đợt 2 (Mã: K24-JAVA-02)<br/>Học phí: 450.000 VNĐ | Sĩ số: 50 | Khai giảng: 01/11"]
+        Course -->|"Mở đợt học 3"| Cohort3["Cohort 3: Lớp K25 - Đợt Đầu năm<br/>Học phí: 500.000 VNĐ | Sĩ số: 40 | Trạng thái: UPCOMING"]
+    end
 
-    Course -->|"Mở đợt học 1"| Cohort1["Cohort 1: Lớp K24 - Đợt 1 (Mã: K24-JAVA-01)<br/>Học phí: 450.000 VNĐ | Sĩ số: 50 | Khai giảng: 15/10"]
-    Course -->|"Mở đợt học 2"| Cohort2["Cohort 2: Lớp K24 - Đợt 2 (Mã: K24-JAVA-02)<br/>Học phí: 450.000 VNĐ | Sĩ số: 50 | Khai giảng: 01/11"]
-    Course -->|"Mở đợt học 3"| Cohort3["Cohort 3: Lớp K25 - Đợt Đầu năm<br/>Học phí: 500.000 VNĐ | Sĩ số: 40 | Trạng thái: UPCOMING"]
+    subgraph StandaloneModel["2. Mô hình Module / Chuyên đề Bán lẻ Độc lập (Standalone Cohort)"]
+        StandaloneCohort["Standalone Module: Chuyên đề Độc lập (course = null)<br/>Ví dụ: Docker & CI/CD cho Lập trình viên Web<br/>Học phí mua lẻ riêng | Giáo trình độc lập | Duyệt nội dung riêng"]
+        StandaloneCohort -->|"Quyền chia sẻ: PUBLIC"| Shared["Cho phép Giảng viên khác tái sử dụng trong Course lớn"]
+        StandaloneCohort -->|"Quyền chia sẻ: PRIVATE"| Exclusive["Độc quyền tác giả tự khai thác và mở bán"]
+    end
 
-    subgraph C1_Operations["Không gian Hoạt động & Điều phối của Cohort 1"]
+    subgraph C1_Operations["Không gian Hoạt động & Điều phối của Cohort"]
         direction TB
         Sched["Lịch trình Lớp (Cohort Schedule):<br/>- Drip Content: Mở bài theo lịch T2-T4-T6<br/>- Deadline nộp Quiz & Code bài tập"]
-        Chat["Phòng Chat Thời gian thực (WebSocket):<br/>- Giảng viên, Trợ giảng, Học viên lớp K24-01"]
-        Members["Danh sách Thành viên (Cohort Members):<br/>- Học viên đã ghi danh vào đợt 1"]
+        Chat["Phòng Chat Thời gian thực (WebSocket):<br/>- Giảng viên, Trợ giảng, Học viên lớp"]
+        Members["Danh sách Thành viên (Cohort Members):<br/>- Học viên đã ghi danh vào đợt"]
+        Lifecycle["Vòng đời Trạng thái Tự động (Lifecycle):<br/>- UPCOMING -> ENROLLING -> IN_PROGRESS -> COMPLETED"]
     end
 
     Cohort1 --> C1_Operations
-
-    subgraph StudentFlow["Quy trình Học viên Đăng ký & Học tập"]
-        Step1["1. Xem thông tin khóa học tổng thể (Course)"]
-        Step2["2. Xem danh sách các Đợt học (Cohorts) đang mở tuyển sinh"]
-        Step3["3. Chọn Đợt học có thời gian phù hợp và tiến hành ghi danh / thanh toán"]
-        Step4["4. Vào học theo lịch mở bài của Cohort & tham gia trao đổi lớp"]
-        Step1 --> Step2 --> Step3 --> Step4
-    end
+    StandaloneCohort --> C1_Operations
 ```
 
 ---
@@ -39,7 +40,7 @@ graph LR
     TA["TA<br/>(Trợ giảng)"]
 
     subgraph UC_Cohort["Quản lý Đợt học / Lớp học (Cohort Management)"]
-        UC33["UC-33: Mở Đợt học mới cho Course"]
+        UC33["UC-33: Mở Đợt học / Module mới"]
         UC34["UC-34: Đăng ký / Ghi danh vào Đợt học"]
         UC35["UC-35: Chat thảo luận lớp học (WebSocket)"]
         UC36["UC-36: Điều phối lịch mở bài & Deadline"]
@@ -54,16 +55,45 @@ graph LR
     TA --> UC35
     Instructor --> UC35
 
-    UC33 -.->|"<<includes>>"| UC33a["Chọn Course cha, nhập tên lớp,<br/>mã code, học phí đợt, sĩ số"]
+    UC33 -.->|"<<includes>>"| UC33a["Chọn Course cha hoặc tạo Module độc lập,<br/>nhập mã code, học phí lẻ, sĩ số"]
+    UC33 -.->|"<<includes>>"| UC33b["Cấu hình quyền chia sẻ<br/>(Public / Private)"]
     UC34 -.->|"<<includes>>"| UC34a["Kiểm tra thời hạn tuyển sinh & sĩ số"]
     UC35 -.->|"<<uses>>"| WSS["WebSocket Server<br/>(STOMP / SockJS)"]
     UC36 -.->|"<<includes>>"| UC36a["Cấu hình unlock_at<br/>& deadline_at cho từng bài học"]
     UC37 -.->|"<<includes>>"| UC37a["Xem danh sách học viên,<br/>theo dõi điểm số và hoàn thành"]
+    UC37 -.->|"<<includes>>"| UC37b["Tự động tính toán & Đồng bộ<br/>trạng thái theo thời gian thực"]
+```
+
+
+---
+
+## 3. Sơ đồ Vòng đời Trạng thái Đợt học / Module (Cohort Lifecycle State Machine Diagram)
+
+```mermaid
+stateDiagram-v2
+    [*] --> UPCOMING: 1. Giảng viên tạo Đợt học / Module (Mặc định hoặc lên lịch trong tương lai)
+    
+    UPCOMING --> ENROLLING: now >= enrollmentStart (Thời gian mở ghi danh đã tới)
+    UPCOMING --> COMPLETED: now >= studyEnd hoặc Đóng thủ công
+    
+    ENROLLING --> IN_PROGRESS: now >= studyStart (Lớp bắt đầu thời gian đào tạo)
+    ENROLLING --> COMPLETED: now >= studyEnd hoặc hết hạn tuyển sinh (không có studyStart)
+    
+    IN_PROGRESS --> COMPLETED: now >= studyEnd (Hoàn tất khóa đào tạo) hoặc Đóng thủ công
+    
+    COMPLETED --> [*]
+    
+    note right of ENROLLING
+        Cơ chế tự động hóa (Realtime Auto-Sync):
+        1. Dynamic Evaluation: getStatus() tính toán động theo Instant.now().
+        2. JPA Lifecycle Callbacks: @PostLoad, @PrePersist, @PreUpdate đồng bộ thuộc tính entity.
+        3. Bulk SQL Auto-Promote Queries: Tự động chạy khi truy vấn danh sách & khởi động ứng dụng.
+    end note
 ```
 
 ---
 
-## 3. Luồng Nghiệp vụ Đăng ký Đợt học (Cohort Enrollment Flow)
+## 4. Luồng Nghiệp vụ Đăng ký Đợt học (Cohort Enrollment Flow)
 
 ```mermaid
 sequenceDiagram
@@ -92,20 +122,20 @@ sequenceDiagram
 
 ---
 
-## 4. Chi tiết Use Case
+## 5. Chi tiết Use Case
 
-### UC-33: Mở Đợt học mới cho Course
+### UC-33: Mở Đợt học / Module mới
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
 | **Mã Use Case** | UC-33 |
-| **Tên Use Case** | Mở Đợt học mới cho Course (Open New Cohort for Course) |
+| **Tên Use Case** | Mở Đợt học / Module mới (Open New Cohort / Standalone Module) |
 | **Actor chính** | Instructor |
-| **Tiền điều kiện** | Khóa học cha (Course) đã được tạo và thuộc sở hữu của Giảng viên. |
-| **Mô tả** | Giảng viên tạo thêm một đợt tuyển sinh / lớp học cụ thể (Cohort) trực thuộc Course cha, định nghĩa học phí của đợt, sĩ số và thời gian đào tạo. |
-| **Luồng sự kiện chính** | 1. Giảng viên vào `/instructor/cohorts/create`.<br/>2. Chọn Khóa học cha (`course_id`) từ danh sách các Course do mình phụ trách.<br/>3. Điền các trường thông tin của đợt học:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Mã lớp (`code` - duy nhất trong hệ thống, VD: `K24-JAVA-01`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tên lớp (`name` - VD: `Lớp Java Chuyên sâu K24 - Đợt 1`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Học phí của đợt (`price` - VNĐ).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời gian mở và đóng đăng ký (`enrollment_start`, `enrollment_end`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời gian bắt đầu và kết thúc học (`study_start`, `study_end`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Sĩ số tối đa (`max_capacity`, mặc định 50).<br/>4. Nhấn **"Lưu lớp học"**.<br/>5. Hệ thống kiểm tra tính hợp lệ dữ liệu (ngày mở < đóng đăng ký, ngày bắt đầu < kết thúc học, mã duy nhất).<br/>6. Hệ thống tạo bản ghi mới trong bảng `cohorts` liên kết với `course_id`. |
+| **Tiền điều kiện** | Giảng viên đã đăng nhập tài khoản có quyền `INSTRUCTOR`. |
+| **Mô tả** | Giảng viên tạo thêm một đợt tuyển sinh / lớp học cụ thể (Cohort) trực thuộc Course cha hoặc tạo **Module chuyên đề bán lẻ độc lập** (`course_id = null`), định nghĩa học phí mua lẻ, sĩ số, lịch mở tuyển sinh & đào tạo, và quyền chia sẻ (`visibility`). |
+| **Luồng sự kiện chính** | 1. Giảng viên vào `/instructor/cohorts/create`.<br/>2. Chọn Khóa học cha (`course_id`) từ danh sách Course do mình phụ trách, HOẶC chọn **"Bán lẻ độc lập (Không thuộc khóa học)"**.<br/>3. Điền các trường thông tin của đợt học / module:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Mã lớp (`code` - hệ thống tự động sinh theo mẫu `{PREFIX}-YYYY-XX` nếu để trống).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tên đợt / module (`name`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Học phí mua lẻ (`price` - VNĐ, nhập 0 nếu miễn phí).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời gian mở và đóng đăng ký (`enrollment_start`, `enrollment_end`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời gian bắt đầu và kết thúc học (`study_start`, `study_end`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Sĩ số tối đa (`max_capacity`, mặc định 50).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Quyền chia sẻ (`visibility`: `PUBLIC` - cho phép giảng viên khác dùng trong khóa học của họ, hoặc `PRIVATE` - độc quyền tác giả).<br/>4. Nhấn **"Lưu đợt học / module"**.<br/>5. Hệ thống kiểm tra tính hợp lệ dữ liệu (ngày mở < đóng đăng ký, ngày bắt đầu < kết thúc học, mã duy nhất).<br/>6. Hệ thống tự động tính toán trạng thái khởi tạo (`calculateDynamicStatus()`), lưu bản ghi vào bảng `cohorts`. Nếu là module độc lập, gán `moderation_status = DRAFT` để chuẩn bị gửi duyệt. |
 | **Luồng ngoại lệ** | - Trùng mã code hoặc khoảng thời gian không hợp lệ -> Hệ thống báo lỗi tương ứng. |
-| **Hậu điều kiện** | Đợt học mới sẵn sàng để tiếp nhận học viên và điều phối lịch học. |
+| **Hậu điều kiện** | Đợt học / module mới sẵn sàng để biên soạn giáo trình, điều phối lịch học hoặc gửi duyệt bán lẻ. |
 
 ---
 
@@ -117,8 +147,8 @@ sequenceDiagram
 | **Tên Use Case** | Đăng ký / Ghi danh vào Đợt học (Cohort Enrollment) |
 | **Actor chính** | Student |
 | **Tiền điều kiện** | Học viên đã đăng nhập tài khoản UTELearn. |
-| **Mô tả** | Học viên chọn một Đợt học cụ thể của khóa học đang mở tuyển sinh để đăng ký tham gia. |
-| **Luồng sự kiện chính** | 1. Học viên vào trang chi tiết khóa học `/courses/{slug}`.<br/>2. Giao diện hiển thị danh sách các Đợt học (Cohorts) đang mở hoặc sắp mở của khóa học đó.<br/>3. Học viên chọn Đợt học mong muốn và bấm **"Ghi danh"**.<br/>4. Nếu lớp có học phí > 0, hệ thống chuyển hướng đến trang thanh toán `/checkout/{cohortId}`.<br/>5. Học viên hoàn tất thanh toán (hoặc ghi danh trực tiếp nếu miễn phí).<br/>6. Hệ thống thêm học viên vào bảng `cohort_members` với vai trò `STUDENT`.<br/>7. Tự động tăng số lượng `current_enrolled` của Cohort đó lên 1. |
+| **Mô tả** | Học viên chọn một Đợt học hoặc Module bán lẻ đang mở tuyển sinh để đăng ký tham gia. |
+| **Luồng sự kiện chính** | 1. Học viên vào trang chi tiết khóa học `/courses/{slug}` hoặc chi tiết module `/cohorts/{id}`.<br/>2. Giao diện hiển thị danh sách các Đợt học đang mở ghi danh (`ENROLLING`) hoặc sắp mở (`UPCOMING`).<br/>3. Học viên chọn Đợt học mong muốn và bấm **"Ghi danh"**.<br/>4. Nếu lớp có học phí > 0, hệ thống chuyển hướng đến trang thanh toán `/checkout/{cohortId}`.<br/>5. Học viên hoàn tất thanh toán (hoặc ghi danh trực tiếp nếu miễn phí).<br/>6. Hệ thống thêm học viên vào bảng `cohort_members` với vai trò `STUDENT`.<br/>7. Tự động tăng số lượng `current_enrolled` của Cohort đó lên 1. |
 | **Luồng ngoại lệ** | - Lớp đã đủ sĩ số tối đa (`current_enrolled >= max_capacity`) -> Thông báo lớp đã đủ số lượng học viên.<br/>- Đã qua thời hạn đăng ký (`enrollment_end`) -> Thông báo đợt đăng ký đã kết thúc. |
 | **Hậu điều kiện** | Học viên sở hữu quyền truy cập nội dung bài học, nộp bài tập và vào phòng chat của Đợt học đã chọn. |
 
@@ -148,18 +178,19 @@ sequenceDiagram
 | **Actor chính** | Instructor |
 | **Actor xem** | Student, TA |
 | **Mô tả** | Thiết lập thời gian mở từng bài học (Lesson Unlock - Drip Content), thời hạn chót nộp bài (Deadline), và chế độ công bố điểm số trong Đợt học. |
-| **Luồng sự kiện chính** | 1. Giảng viên truy cập `/instructor/cohorts/{id}/schedule`.<br/>2. Hệ thống liệt kê toàn bộ các bài học (Lesson) và bài kiểm tra (Quiz) kế thừa từ Course cha.<br/>3. Với từng bài học, Giảng viên cấu hình:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời điểm mở bài (`unlock_at` - học viên chỉ xem được sau thời điểm này).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hạn nộp bài (`deadline_at` - áp dụng cho quiz và bài tập lập trình).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Chế độ xem điểm (`show_score_type`: IMMEDIATELY, AFTER_DEADLINE, MANUAL).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Cho phép xem lại đáp án (`allow_review_answers`).<br/>4. Nhấn **"Lưu lịch học"**.<br/>5. Dữ liệu được lưu vào bảng `cohort_schedules`. Học viên truy cập lớp học sẽ thấy lịch trình mở bài rõ ràng. |
+| **Luồng sự kiện chính** | 1. Giảng viên truy cập `/instructor/cohorts/{id}/schedule`.<br/>2. Hệ thống liệt kê toàn bộ các bài học (Lesson) và bài kiểm tra (Quiz) kế thừa từ Course cha hoặc giáo trình module.<br/>3. Với từng bài học, Giảng viên cấu hình:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời điểm mở bài (`unlock_at` - học viên chỉ xem được sau thời điểm này).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hạn nộp bài (`deadline_at` - áp dụng cho quiz và bài tập lập trình).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Chế độ xem điểm (`show_score_type`: IMMEDIATELY, AFTER_DEADLINE, MANUAL).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Cho phép xem lại đáp án (`allow_review_answers`).<br/>4. Nhấn **"Lưu lịch học"**.<br/>5. Dữ liệu được lưu vào bảng `cohort_schedules`. Học viên truy cập lớp học sẽ thấy lịch trình mở bài rõ ràng. |
 | **Hậu điều kiện** | Bài giảng và bài kiểm tra tự động khóa/mở theo đúng lịch trình của Đợt học. |
 
 ---
 
-### UC-37: Quản lý thành viên & Tiến độ lớp học
+### UC-37: Quản lý thành viên & Tiến độ lớp học (Auto-Sync Lifecycle)
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
 | **Mã Use Case** | UC-37 |
-| **Tên Use Case** | Quản lý thành viên & Tiến độ lớp (Cohort Members & Progress Management) |
+| **Tên Use Case** | Quản lý thành viên & Tiến độ lớp (Cohort Members & Auto-Sync Lifecycle) |
 | **Actor chính** | Instructor |
-| **Mô tả** | Giảng viên theo dõi danh sách học viên đã ghi danh vào Đợt học, kiểm tra tiến độ học bài và kết quả bài thi. |
-| **Luồng sự kiện chính** | 1. Giảng viên mở mục quản lý Đợt học `/instructor/cohorts`.<br/>2. Xem thống kê sĩ số hiện tại (`current_enrolled / max_capacity`) và trạng thái lớp (`UPCOMING`, `ENROLLING`, `IN_PROGRESS`, `COMPLETED`).<br/>3. Xem danh sách thành viên trong bảng `cohort_members` (họ tên, email, ngày ghi danh, kết quả đạt/chưa đạt).<br/>4. Cập nhật trạng thái đợt học khi kết thúc khóa đào tạo. |
-| **Hậu điều kiện** | Giảng viên nắm bắt toàn diện tiến độ của lớp học theo từng đợt. |
+| **Mô tả** | Giảng viên theo dõi danh sách học viên đã ghi danh vào Đợt học, kiểm tra tiến độ học bài và quản lý trạng thái vận hành của lớp học được đồng bộ tự động theo thời gian thực. |
+| **Luồng sự kiện chính** | 1. Giảng viên mở mục quản lý Đợt học `/instructor/cohorts`.<br/>2. Hệ thống tự động kích hoạt đồng bộ hàng loạt trạng thái (`syncCohortStatuses()`): các đợt đã đến thời gian mở ghi danh được tự động nâng cấp thành `ENROLLING`, các đợt đến giờ học thành `IN_PROGRESS`, và đợt kết thúc thành `COMPLETED`.<br/>3. Giảng viên xem thống kê sĩ số hiện tại (`current_enrolled / max_capacity`) và các huy hiệu trạng thái chính xác theo thời gian thực.<br/>4. Giảng viên xem danh sách thành viên trong bảng `cohort_members` (họ tên, email, ngày ghi danh, kết quả đạt/chưa đạt).<br/>5. Giảng viên có thể chủ động đánh dấu hoàn thành/đóng đợt học (`COMPLETED`) bất kỳ lúc nào nếu cần kết thúc sớm. |
+| **Hậu điều kiện** | Trạng thái đợt học luôn phản ánh chính xác tiến trình thực tế của lớp học mà không đòi hỏi thao tác cập nhật thủ công. |
+
