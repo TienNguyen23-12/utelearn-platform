@@ -200,7 +200,7 @@ public class CourseController {
         }
 
         List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusInOrdered(course.getId(),
-                List.of("ENROLLING", "UPCOMING"));
+                List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
         final java.util.Set<Long> finalEnrolledCohortIds = enrolledCohortIds;
         final boolean finalHasAccessRole = hasAccessRole;
         List<java.util.Map<String, Object>> cohortList = availableCohorts.stream().map(c -> {
