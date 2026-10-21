@@ -28,7 +28,6 @@ import java.util.List;
 
 @Slf4j
 @Controller
-@Transactional
 @RequestMapping({"/courses", "/course"})
 @RequiredArgsConstructor
 public class CourseController {
@@ -43,7 +42,7 @@ public class CourseController {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
 
     private Course resolveCourse(String slugOrId) {
-        if (slugOrId == null || slugOrId.isBlank()) {
+        if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
             return null;
         }
         try {
@@ -203,6 +202,7 @@ public class CourseController {
         List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusInOrdered(course.getId(),
                 List.of("ENROLLING", "UPCOMING"));
         final java.util.Set<Long> finalEnrolledCohortIds = enrolledCohortIds;
+        final boolean finalHasAccessRole = hasAccessRole;
         List<java.util.Map<String, Object>> cohortList = availableCohorts.stream().map(c -> {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", c.getId());
@@ -244,6 +244,9 @@ public class CourseController {
 
         List<Cohort> allCourseCohorts = cohortRepository.findByCourseIdOrdered(course.getId());
         List<Lesson> allCourseLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+        if (!hasAccessRole) {
+            allCourseLessons = allCourseLessons.stream().filter(Lesson::isPublished).toList();
+        }
         java.util.Map<Long, Lesson> lessonMap = allCourseLessons.stream()
                 .collect(java.util.stream.Collectors.toMap(Lesson::getId, l -> l, (a, b) -> a));
 
@@ -285,6 +288,7 @@ public class CourseController {
                 List<Lesson> secLessons = lessonRepository.findBySectionIdOrderByOrderIndexAsc(sec.getId())
                         .stream()
                         .filter(l -> !assignedLessonIds.contains(l.getId()))
+                        .filter(l -> finalHasAccessRole || l.isPublished())
                         .toList();
                 if (!secLessons.isEmpty()) {
                     java.util.Map<String, Object> sMap = new java.util.LinkedHashMap<>();
@@ -421,6 +425,9 @@ public class CourseController {
         } else {
             moduleLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
         }
+        if (!hasAccessRole) {
+            moduleLessons = moduleLessons.stream().filter(Lesson::isPublished).toList();
+        }
 
         List<java.util.Map<String, Object>> moduleSections = new java.util.ArrayList<>();
         java.util.Map<Long, java.util.Map<String, Object>> sectionMap = new java.util.LinkedHashMap<>();
@@ -507,6 +514,7 @@ public class CourseController {
         return "courses/module-detail";
     }
 
+    @Transactional
     @PostMapping("/{slug}/enroll/{cohortId}")
     public String enrollCourse(@PathVariable String slug, @PathVariable Long cohortId,
             RedirectAttributes redirectAttributes) {
@@ -573,6 +581,7 @@ public class CourseController {
         return "redirect:/courses/" + slug + "/modules/" + activeCohort.getId() + "/learn";
     }
 
+    @Transactional
     @PostMapping("/{slug}/enroll-all")
     public String enrollAll(@PathVariable String slug, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -598,6 +607,7 @@ public class CourseController {
                     .code(course.getCode() + "-ALL")
                     .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
                     .status("ENROLLING")
+                    .moderationStatus("APPROVED")
                     .maxCapacity(1000)
                     .currentEnrolled(0)
                     .enrollmentStart(java.time.Instant.now())
@@ -713,6 +723,9 @@ public class CourseController {
             rawLessons = schedules.stream().map(CohortSchedule::getLesson).toList();
         } else {
             rawLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
+        }
+        if (!hasAccessRole) {
+            rawLessons = rawLessons.stream().filter(Lesson::isPublished).toList();
         }
 
         List<Lesson> lessons = new java.util.ArrayList<>(rawLessons);

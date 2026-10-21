@@ -169,6 +169,39 @@
             </div>
         </div>
 
+        <div th:if="${module.course == null and module.moderationStatus == 'DRAFT'}" class="alert alert-secondary border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-pencil-square fs-5 text-secondary"></i>
+                <div>
+                    <strong>Module đang ở trạng thái Nháp.</strong> Sau khi hoàn tất cập nhật giáo trình, bạn hãy bấm gửi duyệt để Kiểm duyệt viên thẩm định.
+                </div>
+            </div>
+            <form th:action="@{/instructor/cohorts/{id}/submit-review(id=${module.id})}" method="post" class="m-0">
+                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3" onclick="return showConfirmModal(event, this.form, 'Bạn có chắc chắn muốn gửi duyệt Module này không? Module sẽ được đưa vào hàng đợi của Moderator.');">
+                    <i class="bi bi-send-check me-1"></i> Gửi duyệt ngay
+                </button>
+            </form>
+        </div>
+
+        <div th:if="${module.course == null and (module.moderationStatus == 'PENDING_MODERATOR' or module.moderationStatus == 'PENDING_ADMIN')}" class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+            <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+            <div>
+                <strong>Module đang trong quá trình kiểm duyệt.</strong> Mọi thay đổi bài học lúc này sẽ được cập nhật trực tiếp vào bản xem xét của Kiểm duyệt viên.
+            </div>
+        </div>
+
+        <div th:if="${module.course == null and module.moderationStatus == 'REJECTED'}" class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                <div>
+                    <strong>Module đã bị từ chối kiểm duyệt.</strong> Vui lòng cập nhật lại nội dung theo yêu cầu và bấm gửi duyệt lại.
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" th:onclick="'showModerationFeedbackModal(\'COHORT\', ' + ${module.id} + ')'">
+                <i class="bi bi-chat-square-quote me-1"></i> Xem nhận xét
+            </button>
+        </div>
+
         <div id="curriculumList">
             <div th:each="section, sStat : ${sections}" class="section-card" th:id="'section-' + ${section.id}">
                 <div class="section-header" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
@@ -710,13 +743,18 @@
             else if(l.lessonType === 'CODE_PRACTICE') { iconClass = 'bi-code-square'; bgClass = 'icon-code'; }
             else if(l.lessonType === 'ANNOUNCEMENT') { iconClass = 'bi-megaphone-fill'; bgClass = 'icon-doc'; }
 
+            const isDraft = l.status === 'DRAFT';
+            const statusBadge = isDraft
+                ? '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-1 me-1"><i class="bi bi-clock-history me-1"></i>Bản nháp (Chờ duyệt)</span>'
+                : '<span class="badge bg-success-subtle text-success border border-success-subtle px-1 me-1"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>';
+
             html += `
                 <div class="lesson-item">
                     <div class="d-flex align-items-center">
                         <div class="lesson-icon ${bgClass}"><i class="bi ${iconClass}"></i></div>
                         <div>
                             <p class="lesson-title">${idx + 1}. ${l.title}</p>
-                            <small class="text-muted" style="font-size: 12px;">${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success-subtle text-success border border-success-subtle px-1"><i class="bi bi-play-circle me-1"></i>Học thử</span>' : ''}</small>
+                            <small class="text-muted" style="font-size: 12px;">${statusBadge}${l.lessonType} ${l.isFreePreview ? ' • <span class="badge bg-success-subtle text-success border border-success-subtle px-1"><i class="bi bi-play-circle me-1"></i>Học thử</span>' : ''}</small>
                         </div>
                     </div>
                     <div class="action-btns">

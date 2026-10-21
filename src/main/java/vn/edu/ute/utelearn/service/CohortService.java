@@ -41,4 +41,11 @@ public interface CohortService {
     List<Long> getCompletedLessonIds(Long cohortId, Long userId);
 
     java.util.Map<String, Object> getCohortProgress(Long cohortId, Long userId);
+
+    void revertToDraftIfApproved(Long cohortId);
+
+    void revertToDraftIfApproved(Cohort cohort);
+
+    void syncCohortStatuses();
 }
+

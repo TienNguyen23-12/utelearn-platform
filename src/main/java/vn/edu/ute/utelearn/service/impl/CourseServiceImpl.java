@@ -26,6 +26,8 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final vn.edu.ute.utelearn.dao.CategoryRepository categoryRepository;
     private final vn.edu.ute.utelearn.dao.UserRepository userRepository;
+    private final vn.edu.ute.utelearn.service.ModerationService moderationService;
+    private final vn.edu.ute.utelearn.service.AuthService authService;
 
     @Override
     public Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Pageable pageable) {
@@ -162,6 +164,11 @@ public class CourseServiceImpl implements CourseService {
         Course course = getCourseById(courseId);
         course.setStatus(status);
         courseRepository.save(course);
+
+        vn.edu.ute.utelearn.entity.User currentUser = authService != null ? authService.getCurrentAuthenticatedUser().orElse(null) : null;
+        if (moderationService != null) {
+            moderationService.syncStatusFromExternalChange("COURSE", courseId, status, currentUser);
+        }
     }
 
     @Override

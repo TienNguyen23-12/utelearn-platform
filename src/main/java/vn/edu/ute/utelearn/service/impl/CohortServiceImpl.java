@@ -18,6 +18,7 @@ import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CohortService;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -37,16 +38,19 @@ public class CohortServiceImpl implements CohortService {
 
     @Override
     public Page<Cohort> getAllCohorts(Pageable pageable) {
+        syncCohortStatuses();
         return cohortRepository.findAll(pageable);
     }
 
     @Override
     public Page<Cohort> getCohortsByInstructor(Long instructorId, Pageable pageable) {
+        syncCohortStatuses();
         return cohortRepository.findByInstructorId(instructorId, pageable);
     }
 
     @Override
     public Page<Cohort> searchCohortsByInstructor(Long instructorId, String keyword, String status, Pageable pageable) {
+        syncCohortStatuses();
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
         String safeStatus = (status == null) ? "" : status.trim();
         return cohortRepository.searchCohortsByInstructor(instructorId, safeKeyword, safeStatus, pageable);
@@ -54,6 +58,7 @@ public class CohortServiceImpl implements CohortService {
 
     @Override
     public Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable) {
+        syncCohortStatuses();
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
         String safeCategory = (categorySlug == null) ? "" : categorySlug.trim();
         return cohortRepository.searchPublicCohorts(safeKeyword, safeCategory, pageable);
@@ -107,6 +112,8 @@ public class CohortServiceImpl implements CohortService {
             finalThumbnail = finalThumbnail.trim();
         }
 
+        String initialModerationStatus = (course == null) ? "DRAFT" : "APPROVED";
+
         Cohort cohort = Cohort.builder()
                 .course(course)
                 .createdBy(instructor)
@@ -119,10 +126,11 @@ public class CohortServiceImpl implements CohortService {
                 .maxCapacity(dto.getMaxCapacity())
                 .price(dto.getPrice())
                 .status(dto.getStatus())
+                .moderationStatus(initialModerationStatus)
                 .visibility(dto.getVisibility() != null && !dto.getVisibility().isBlank() ? dto.getVisibility() : "PUBLIC")
                 .thumbnailUrl(finalThumbnail)
                 .description(dto.getDescription())
-                .objectives(dto.getObjectives())
+                .objectives(formatObjectives(dto.getObjectives()))
                 .announcementTitle(dto.getAnnouncementTitle())
                 .announcementContent(dto.getAnnouncementContent())
                 .build();
@@ -152,9 +160,17 @@ public class CohortServiceImpl implements CohortService {
                     throw new RuntimeException("Not authorized to assign this course");
                 }
                 cohort.setCourse(course);
+                cohort.setModerationStatus("APPROVED");
             }
         } else {
-            cohort.setCourse(null);
+            if (cohort.getCourse() != null) {
+                cohort.setCourse(null);
+            }
+        }
+
+        if (cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+            cohort.setModerationStatus("DRAFT");
+            log.info("[CohortService] Chuyển module độc lập id: {} về DRAFT do cập nhật thông tin", id);
         }
 
         cohort.setCode(dto.getCode());
@@ -168,7 +184,7 @@ public class CohortServiceImpl implements CohortService {
         cohort.setStatus(dto.getStatus());
         cohort.setVisibility(dto.getVisibility() != null && !dto.getVisibility().isBlank() ? dto.getVisibility() : "PUBLIC");
         cohort.setDescription(dto.getDescription());
-        cohort.setObjectives(dto.getObjectives());
+        cohort.setObjectives(formatObjectives(dto.getObjectives()));
         cohort.setAnnouncementTitle(dto.getAnnouncementTitle());
         cohort.setAnnouncementContent(dto.getAnnouncementContent());
 
@@ -446,4 +462,61 @@ public class CohortServiceImpl implements CohortService {
         response.put("completedLessonIds", completedIds != null ? completedIds : java.util.Collections.emptyList());
         return response;
     }
+
+    private String formatObjectives(String objectivesStr) {
+        if (objectivesStr == null || objectivesStr.trim().isEmpty()) {
+            return "[]";
+        }
+        if (objectivesStr.trim().startsWith("[")) {
+            return objectivesStr.trim();
+        }
+        List<String> list = java.util.Arrays.stream(objectivesStr.split("\n"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list);
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    @Override
+    @Transactional
+    public void revertToDraftIfApproved(Long cohortId) {
+        if (cohortId == null) {
+            return;
+        }
+        cohortRepository.findById(cohortId).ifPresent(this::revertToDraftIfApproved);
+    }
+
+    @Override
+    @Transactional
+    public void revertToDraftIfApproved(Cohort cohort) {
+        if (cohort != null && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+            cohort.setModerationStatus("DRAFT");
+            cohortRepository.save(cohort);
+            log.info("[CohortService] Tự động chuyển trạng thái Module độc lập id: {} về DRAFT do có thay đổi nội dung", cohort.getId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void syncCohortStatuses() {
+        Instant now = Instant.now();
+        int enrolledCount = cohortRepository.autoPromoteUpcomingToEnrolling(now);
+        int inProgressCount = cohortRepository.autoPromoteToInProgress(now);
+        int completedCount = cohortRepository.autoPromoteToCompleted(now);
+        int expiredCount = cohortRepository.autoCloseExpiredEnrollmentWithoutStudy(now);
+        if (enrolledCount > 0 || inProgressCount > 0 || completedCount > 0 || expiredCount > 0) {
+            log.info("[CohortService] Dong bo trang thai dot hoc: {} mo ghi danh, {} dang hoc, {} hoan thanh, {} het han",
+                    enrolledCount, inProgressCount, completedCount, expiredCount);
+        }
+    }
+
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        syncCohortStatuses();
+    }
 }
+

@@ -21,8 +21,7 @@ public class AdminModerationController {
     @GetMapping
     @PreAuthorize("@rbac.hasRole('ADMIN')")
     public String viewEscalatedQueue(Model model) {
-        // Admin views ESCALATED tasks
-        List<ModerationTask> tasks = taskRepository.findByStatusAndEscalationLevelGreaterThanOrderByCreatedAtAsc("ESCALATED", 1);
+        List<ModerationTask> tasks = taskRepository.findByStatusOrderByCreatedAtAsc("ESCALATED");
         model.addAttribute("tasks", tasks);
         return "admin/moderation_queue";
     }

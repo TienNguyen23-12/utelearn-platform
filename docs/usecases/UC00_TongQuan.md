@@ -69,7 +69,8 @@ graph TB
 
     subgraph UC_Moderation["Module 6: Kiểm duyệt Nội dung"]
         UC18["UC-18: Xem hàng đợi duyệt nội dung"]
-        UC19["UC-19: Phê duyệt / Từ chối khóa học"]
+        UC19["UC-19: Phê duyệt / Từ chối khóa học & module"]
+        UC19b["UC-19b: Chuyển giao duyệt lại cho Moderator"]
         UC20["UC-20: Gửi nhận xét phản hồi kiểm duyệt"]
     end
 
@@ -136,6 +137,7 @@ graph TB
     Admin --> UC10
     Admin --> UC11
     Admin --> UC12
+    Admin --> UC19b
 ```
 
 ---
@@ -162,7 +164,8 @@ graph TB
 | **UC-16** | Soạn giáo trình chuẩn Course | Quản lý Khóa học | Instructor | Xây dựng Section, Lesson trực thuộc Course |
 | **UC-17** | Biên soạn đề kiểm tra Quiz chuẩn | Quản lý Khóa học | Instructor | Tạo Quiz, câu hỏi trắc nghiệm gắn với bài học |
 | **UC-18** | Xem hàng đợi duyệt nội dung | Kiểm duyệt Nội dung | Moderator | Lọc task, phân bổ tải |
-| **UC-19** | Phê duyệt / Từ chối khóa học | Kiểm duyệt Nội dung | Moderator | Quyết định PUBLISHED hoặc REJECTED |
+| **UC-19** | Phê duyệt / Từ chối khóa học & module | Kiểm duyệt Nội dung | Moderator | Quyết định PUBLISHED hoặc REJECTED |
+| **UC-19b** | Chuyển giao duyệt lại cho Moderator | Kiểm duyệt Nội dung | Admin | Chỉ định Moderator hoặc trả về hàng đợi chung |
 | **UC-20** | Gửi nhận xét phản hồi kiểm duyệt | Kiểm duyệt Nội dung | Moderator | Phản hồi chi tiết cho Giảng viên |
 | **UC-21** | Duyệt / Tìm kiếm Course & Cohort | Học trực tuyến | Guest, Student | Xem thông tin chi tiết và các đợt mở |
 | **UC-22** | Đăng ký / Ghi danh theo Đợt học | Học trực tuyến | Student | Chọn Đợt học (Cohort) phù hợp và thanh toán |

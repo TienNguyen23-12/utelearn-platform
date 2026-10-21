@@ -9,8 +9,13 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"roles"})
     Optional<User> findByUsername(String username);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"roles"})
     Optional<User> findByEmail(String email);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"roles"})
     Optional<User> findByUsernameOrEmail(String username, String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
@@ -20,4 +25,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.code IN :roleCodes AND u.createdAt BETWEEN :start AND :end")
     long countByRolesCodeInAndCreatedAtBetween(@org.springframework.data.repository.query.Param("roleCodes") java.util.Collection<String> roleCodes, @org.springframework.data.repository.query.Param("start") java.time.Instant start, @org.springframework.data.repository.query.Param("end") java.time.Instant end);
+
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE UPPER(r.code) = 'MODERATOR' AND (u.isActive IS NULL OR u.isActive = true)")
+    java.util.List<User> findActiveModerators();
 }

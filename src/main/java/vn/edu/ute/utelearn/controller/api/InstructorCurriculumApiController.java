@@ -44,6 +44,7 @@ public class InstructorCurriculumApiController {
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
+    private final vn.edu.ute.utelearn.dao.LessonRepository lessonRepository;
 
     @PostMapping("/{courseId}/sections")
     @Transactional
@@ -105,6 +106,7 @@ public class InstructorCurriculumApiController {
                     map.put("title", l.getTitle());
                     map.put("lessonType", l.getLessonType());
                     map.put("isFreePreview", l.getIsFreePreview());
+                    map.put("status", l.getStatus());
 
                     if (cohortId != null) {
                         cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, l.getId()).ifPresent(cs -> {
@@ -150,6 +152,7 @@ public class InstructorCurriculumApiController {
                 map.put("title", l.getTitle());
                 map.put("lessonType", l.getLessonType());
                 map.put("isFreePreview", l.getIsFreePreview());
+                map.put("status", l.getStatus());
                 map.put("durationSeconds", l.getDurationSeconds() != null ? l.getDurationSeconds() : 0);
                 map.put("videoUrl", l.getVideoUrl());
                 map.put("assetUrl", l.getAssetUrl());
@@ -357,12 +360,13 @@ public class InstructorCurriculumApiController {
         Cohort cohort = cohortRepository.findById(cohortId)
                 .orElseThrow(() -> new RuntimeException("Module không tồn tại"));
 
+        boolean isModuleCreator = cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(currentUser.getId());
         boolean isCourseOwner = cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(currentUser.getId());
         boolean hasAdminRole = currentUser.getRoles().stream().anyMatch(r ->
                 "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()) ||
                 "MODERATOR".equals(r.getCode()) || "ROLE_MODERATOR".equals(r.getCode()));
 
-        if (!isCourseOwner && !hasAdminRole) {
+        if (!isCourseOwner && !isModuleCreator && !hasAdminRole) {
             return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền chỉnh sửa module này"));
         }
 
@@ -384,7 +388,20 @@ public class InstructorCurriculumApiController {
         if (payload.containsKey("objectives")) {
             Object obj = payload.get("objectives");
             if (obj != null) {
-                cohort.setObjectives(obj.toString());
+                String raw = obj.toString().trim();
+                if (raw.startsWith("[")) {
+                    cohort.setObjectives(raw);
+                } else {
+                    List<String> list = java.util.Arrays.stream(raw.split("\n"))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .toList();
+                    try {
+                        cohort.setObjectives(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list));
+                    } catch (Exception e) {
+                        cohort.setObjectives(raw);
+                    }
+                }
             }
         }
         if (payload.containsKey("price")) {
@@ -400,6 +417,11 @@ public class InstructorCurriculumApiController {
             cohort.setAnnouncementContent((String) payload.get("announcementContent"));
         }
 
+        if (cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+            cohort.setModerationStatus("DRAFT");
+            log.info("[InstructorCurriculumApiController] Chuyển module độc lập id: {} về DRAFT do sửa inline", cohortId);
+        }
+
         Cohort saved = cohortRepository.save(cohort);
         log.info("[InstructorCurriculumApiController] Cập nhật inline module id: {}, user: {}", cohortId, currentUser.getEmail());
 
@@ -408,9 +430,11 @@ public class InstructorCurriculumApiController {
         resp.put("name", saved.getName());
         resp.put("code", saved.getCode());
         resp.put("description", saved.getDescription());
+        resp.put("objectives", saved.getParsedObjectives());
         resp.put("price", saved.getPrice());
         resp.put("announcementTitle", saved.getAnnouncementTitle());
         resp.put("announcementContent", saved.getAnnouncementContent());
+        resp.put("moderationStatus", saved.getModerationStatus());
         return ResponseEntity.ok(resp);
     }
 

@@ -21,6 +21,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
 @Controller
 @RequestMapping("/instructor/cohorts")
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class InstructorCohortController {
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.service.SectionService sectionService;
+    private final vn.edu.ute.utelearn.service.ModerationService moderationService;
 
     @GetMapping
     public String listCohorts(
@@ -127,7 +133,11 @@ public class InstructorCohortController {
             if (cohort.getStudyEnd() != null)
                 dto.setStudyEnd(LocalDateTime.ofInstant(cohort.getStudyEnd(), ZoneId.systemDefault()));
             dto.setDescription(cohort.getDescription());
-            dto.setObjectives(cohort.getObjectives());
+            if (cohort.getObjectives() != null && !cohort.getObjectives().isBlank()) {
+                dto.setObjectives(String.join("\n", cohort.getParsedObjectives()));
+            } else {
+                dto.setObjectives("");
+            }
             dto.setAnnouncementTitle(cohort.getAnnouncementTitle());
             dto.setAnnouncementContent(cohort.getAnnouncementContent());
             dto.setThumbnailUrl(cohort.getThumbnailUrl());
@@ -228,6 +238,7 @@ public class InstructorCohortController {
             }
         }
 
+        cohortService.revertToDraftIfApproved(cohort);
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật lộ trình module thành công!");
         return "redirect:/instructor/cohorts/" + id + "/schedule";
     }
@@ -243,6 +254,7 @@ public class InstructorCohortController {
         cohortScheduleRepository.findById(scheduleId).ifPresent(cs -> {
             if (cs.getCohort().getId().equals(cohort.getId())) {
                 cohortScheduleRepository.delete(cs);
+                cohortService.revertToDraftIfApproved(cohort);
             }
         });
         redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ bài học khỏi module!");
@@ -265,5 +277,43 @@ public class InstructorCohortController {
         model.addAttribute("module", cohort);
         model.addAttribute("sections", sections);
         return "instructor/courses/module-curriculum";
+    }
+
+    @PostMapping("/{id}/delete")
+    @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
+    @Transactional
+    public String deleteCohort(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        try {
+            cohortService.deleteCohort(id, currentUser);
+            log.info("[InstructorCohortController] Xóa module id: {} thành công bởi user: {}", id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa Module thành công!");
+        } catch (Exception e) {
+            log.error("[InstructorCohortController] Lỗi khi xóa module id {}: {}", id, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa Module: " + e.getMessage());
+        }
+        return "redirect:/instructor/cohorts";
+    }
+
+    @GetMapping("/{id}/delete")
+    public String deleteCohortGetRedirect() {
+        return "redirect:/instructor/cohorts";
+    }
+
+    @PostMapping("/{id}/submit-review")
+    @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
+    public String submitCohortForReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
+        if (!cohort.getCreatedBy().getId().equals(currentUser.getId())) {
+            return "redirect:/instructor/cohorts";
+        }
+
+        moderationService.createCohortModerationTask(id, currentUser.getId());
+        log.info("[InstructorCohortController] Gửi duyệt module id: {}, user: {}", id, currentUser.getEmail());
+        redirectAttributes.addFlashAttribute("successMessage", "Module đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.");
+        return "redirect:/instructor/cohorts";
     }
 }

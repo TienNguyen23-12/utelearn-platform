@@ -28,4 +28,6 @@ public class LessonRequestDTO {
     private Boolean isPublicForCohorts = false;
 
     private Long cohortId;
+
+    private String status;
 }

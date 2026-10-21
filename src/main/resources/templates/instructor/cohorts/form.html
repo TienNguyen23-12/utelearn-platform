@@ -77,6 +77,17 @@
                             <small class="text-muted" style="font-size: 11px;">Nếu không nhập link ảnh bìa, hệ thống sẽ tự động dùng ảnh bìa mặc định của UTELearn.</small>
                         </div>
                     </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold">Mô tả ngắn gọn về Module</label>
+                        <textarea class="form-control" th:field="*{description}" rows="2" placeholder="VD: Khám phá toàn diện nền tảng xây dựng giao diện Web hiện đại..."></textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold">Mục tiêu học phần (Mỗi dòng 1 mục tiêu)</label>
+                        <textarea class="form-control" th:field="*{objectives}" rows="3" placeholder="VD:&#10;Hiểu sâu cấu trúc DOM và các thẻ ngữ nghĩa HTML5&#10;Làm chủ CSS3: Typography, Flexbox và Grid Layout&#10;Tự tay xây dựng hoàn chỉnh giao diện Landing Page"></textarea>
+                        <div class="form-text" style="font-size: 11px;">Nhập các gạch đầu dòng mục tiêu để hiển thị trong lộ trình khóa học và trang chi tiết của module.</div>
+                    </div>
                     
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Bắt đầu Ghi danh</label>
@@ -142,7 +153,7 @@
 
                     <div class="col-md-12">
                         <label class="form-label fw-semibold">Nội dung thông báo hiển thị trong Module</label>
-                        <textarea class="form-control" th:field="*{announcementContent}" rows="2" placeholder="Mặc định: Khóa học được thiết kế theo chuẩn sư phạm tích cực..."></textarea>
+                        <textarea class="form-control" th:field="*{announcementContent}" rows="5" placeholder="Mặc định: Khóa học được thiết kế theo chuẩn sư phạm tích cực..."></textarea>
                     </div>
                 </div>
 

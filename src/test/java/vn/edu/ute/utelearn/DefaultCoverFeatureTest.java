@@ -117,6 +117,7 @@ public class DefaultCoverFeatureTest {
 
         Assertions.assertEquals("https://example.com/course-cover.png", saved.getThumbnailUrl());
         Assertions.assertEquals("https://example.com/course-cover.png", saved.getEffectiveThumbnailUrl());
+        Assertions.assertEquals("APPROVED", saved.getModerationStatus());
     }
 
     @Test

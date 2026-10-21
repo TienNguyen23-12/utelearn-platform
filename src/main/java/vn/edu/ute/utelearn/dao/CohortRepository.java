@@ -69,4 +69,25 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
 
     @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE c.course.id = :courseId AND c.status IN :statuses ORDER BY COALESCE(c.orderIndex, 9999) ASC, c.createdAt ASC")
     java.util.List<Cohort> findByCourseIdAndStatusInOrdered(@Param("courseId") Long courseId, @Param("statuses") java.util.List<String> statuses);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("UPDATE Cohort c SET c.status = 'ENROLLING' WHERE c.status = 'UPCOMING' AND c.enrollmentStart IS NOT NULL AND c.enrollmentStart <= :now AND (c.enrollmentEnd IS NULL OR c.enrollmentEnd > :now) AND (c.studyStart IS NULL OR c.studyStart > :now)")
+    int autoPromoteUpcomingToEnrolling(@Param("now") java.time.Instant now);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("UPDATE Cohort c SET c.status = 'IN_PROGRESS' WHERE (c.status = 'ENROLLING' OR c.status = 'UPCOMING') AND c.studyStart IS NOT NULL AND c.studyStart <= :now AND (c.studyEnd IS NULL OR c.studyEnd > :now)")
+    int autoPromoteToInProgress(@Param("now") java.time.Instant now);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("UPDATE Cohort c SET c.status = 'COMPLETED' WHERE c.status <> 'COMPLETED' AND c.studyEnd IS NOT NULL AND c.studyEnd <= :now")
+    int autoPromoteToCompleted(@Param("now") java.time.Instant now);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("UPDATE Cohort c SET c.status = 'COMPLETED' WHERE c.status = 'ENROLLING' AND c.studyStart IS NULL AND c.enrollmentEnd IS NOT NULL AND c.enrollmentEnd <= :now")
+    int autoCloseExpiredEnrollmentWithoutStudy(@Param("now") java.time.Instant now);
 }
+
