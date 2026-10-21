@@ -28,12 +28,12 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
 
     @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category LEFT JOIN FETCH c.createdBy WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
-           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
+           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cr IS NOT NULL AND cr.category IS NOT NULL AND cr.category.slug = :categorySlug))",
-           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.createdBy LEFT JOIN cr.category cat WHERE " +
+           countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.category cat WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
-           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING') " +
+           "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cat IS NOT NULL AND cat.slug = :categorySlug))")
     Page<Cohort> searchPublicCohorts(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, Pageable pageable);

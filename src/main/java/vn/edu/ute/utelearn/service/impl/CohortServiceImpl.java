@@ -501,16 +501,20 @@ public class CohortServiceImpl implements CohortService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void syncCohortStatuses() {
-        Instant now = Instant.now();
-        int enrolledCount = cohortRepository.autoPromoteUpcomingToEnrolling(now);
-        int inProgressCount = cohortRepository.autoPromoteToInProgress(now);
-        int completedCount = cohortRepository.autoPromoteToCompleted(now);
-        int expiredCount = cohortRepository.autoCloseExpiredEnrollmentWithoutStudy(now);
-        if (enrolledCount > 0 || inProgressCount > 0 || completedCount > 0 || expiredCount > 0) {
-            log.info("[CohortService] Dong bo trang thai dot hoc: {} mo ghi danh, {} dang hoc, {} hoan thanh, {} het han",
-                    enrolledCount, inProgressCount, completedCount, expiredCount);
+        try {
+            Instant now = Instant.now();
+            int enrolledCount = cohortRepository.autoPromoteUpcomingToEnrolling(now);
+            int inProgressCount = cohortRepository.autoPromoteToInProgress(now);
+            int completedCount = cohortRepository.autoPromoteToCompleted(now);
+            int expiredCount = cohortRepository.autoCloseExpiredEnrollmentWithoutStudy(now);
+            if (enrolledCount > 0 || inProgressCount > 0 || completedCount > 0 || expiredCount > 0) {
+                log.info("[CohortService] Dong bo trang thai dot hoc: {} mo ghi danh, {} dang hoc, {} hoan thanh, {} het han",
+                        enrolledCount, inProgressCount, completedCount, expiredCount);
+            }
+        } catch (Exception e) {
+            log.warn("[CohortService] Khong the dong bo trang thai dot hoc: {}", e.getMessage());
         }
     }
 
