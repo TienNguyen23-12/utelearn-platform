@@ -272,4 +272,32 @@ public class CohortLessonProgressTest {
         assertEquals("DRAFT", approvedCohort.getModerationStatus());
         verify(cohortRepository).save(approvedCohort);
     }
+
+    @Test
+    void testGetPublicCohorts_ReturnsOkWithCohortList() throws Exception {
+        Cohort cohort = Cohort.builder()
+                .id(1L)
+                .code("MOD-01")
+                .name("Module Java Web")
+                .status("ENROLLING")
+                .visibility("PUBLIC")
+                .price(java.math.BigDecimal.valueOf(150000))
+                .build();
+
+        org.springframework.data.domain.Page<Cohort> page = new org.springframework.data.domain.PageImpl<>(
+                List.of(cohort),
+                org.springframework.data.domain.PageRequest.of(0, 8),
+                1
+        );
+
+        when(cohortService.searchPublicCohorts(any(), any(), any())).thenReturn(page);
+        when(cohortMemberRepository.countByCohort_Id(1L)).thenReturn(5L);
+
+        mockMvc.perform(get("/api/cohorts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Module Java Web"))
+                .andExpect(jsonPath("$.content[0].currentEnrolled").value(5))
+                .andExpect(jsonPath("$.totalItems").value(1));
+    }
 }
