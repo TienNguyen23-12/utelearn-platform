@@ -148,7 +148,14 @@ utelearn:
   seeder:
     enabled: true
     seed-sample-users: true
-    default-password: Pass@123
+    default-password: ${DEFAULT_SEED_PASSWORD:Abc@123}
+
+  payment:
+    bank-id: ${VIETQR_BANK_ID:Vietcombank}
+    account-no: ${VIETQR_ACCOUNT_NO:}
+    account-name: ${VIETQR_ACCOUNT_NAME:}
+    template: ${VIETQR_TEMPLATE:compact2}
+    sepay-api-key: ${SEPAY_API_KEY:}
 
   render:
     keep-alive-url: ${RENDER_EXTERNAL_URL:https://utelearn-platform.onrender.com}

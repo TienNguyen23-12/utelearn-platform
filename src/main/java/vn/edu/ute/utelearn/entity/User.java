@@ -58,6 +58,21 @@ public class User {
     private Instant updatedAt;
 
     @Builder.Default
+    @Column(name = "balance", precision = 15, scale = 2)
+    private java.math.BigDecimal balance = java.math.BigDecimal.ZERO;
+
+    public java.math.BigDecimal getBalance() {
+        return balance != null ? balance : java.math.BigDecimal.ZERO;
+    }
+
+    public String getFormattedBalance() {
+        if (balance == null) {
+            return "0 VNĐ";
+        }
+        return String.format("%,d VNĐ", balance.longValue());
+    }
+
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",

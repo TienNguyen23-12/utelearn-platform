@@ -15,7 +15,7 @@
 | **4. Kiểm duyệt Nội dung (Moderation)** | `UC-18`, `UC-19`, `UC-20`: Điểm danh Check-in/Check-out ca trực Moderator, Hàng đợi duyệt khóa học theo SLA, Chống tự kiểm duyệt, Phê duyệt (`PUBLISHED`), Từ chối kèm nhận xét (`REJECTED`), Chuyển cấp lên Admin (`ESCALATED`), Tự động cập nhật năng suất ca trực, Phân định triệt để quyền biên tập (`canEdit`) và quyền thanh tra (`hasAccessRole`), Cấp quyền thẩm định nội dung bài học và tài liệu mà không yêu cầu ghi danh. | `ModeratorController`, `ModeratorApiController`, `ModerationServiceImpl`, `AttendanceServiceImpl`, `CourseController`, `AssetDownloadController`, `templates/moderator/` | **100% Hoàn thành** |
 | **5. Khóa học lớn & Module thành phần (Course - Cohort)** | `UC-13` -> `UC-17`, `UC-33`: Tạo/Sửa/Xóa Course lớn, CRUD Module (Cohort) cho Giảng viên, Quản lý Section & Lesson phân nhóm theo Module, Cấu hình giá Full Course & giá lẻ Module, Server-Side Rendering (Thymeleaf SSR), Chế độ chỉnh sửa trực tiếp tại chỗ (Inline Editing). | `CourseController`, `InstructorCourseController`, `InstructorCohortController`, `CohortServiceImpl`, `CourseServiceImpl`, `SectionServiceImpl`, `LessonServiceImpl`, `detail.html`, `templates/instructor/` | **100% Hoàn thành** |
 | **6. Học tập số & Tiến độ (Learning & Drip Content)** | `UC-21`, `UC-23`, `UC-25`, `UC-36`: Học Video đa nguồn (YouTube, Vimeo, Google Drive, Cloudinary MP4 qua Plyr) & Đọc tài liệu (PDF, Office Viewer), Khóa bài theo lịch mở (Drip Content `unlock_at` - wipe media URL server-side), Quản lý lịch mở & hạn nộp bài (`schedule.html`), Lưu trữ tiến độ học vào DB PostgreSQL (`lesson_completions`), Nút hoàn thành bài học tương tác tức thì, Widget tiến độ % và hạn nộp sắp tới, Khối gợi ý Nâng cấp trọn bộ Full Course (Upsell) tự động tính bù chênh lệch trên `my-courses`. | `LessonCompletion`, `LessonCompletionRepository`, `CohortScheduleRepository`, `CohortServiceImpl`, `CheckoutController`, `CourseUpsellDTO`, `module-learn.html`, `my-courses.html`, `checkout/index.html` | **100% Hoàn thành** |
-| **7. Ghi danh & Thanh toán cơ sở (Checkout & Enrollment)** | `UC-22`, `UC-34`: Luồng đăng ký mua lẻ từng Module hoặc mua trọn gói Full Course ưu đãi combo (tự động tính tổng giá lẻ, trừ chiết khấu combo `discountAmount`), Trang Checkout hiển thị tóm tắt đơn hàng và thanh toán giả lập kích hoạt trực tiếp `CohortMember`. | `CheckoutController`, `checkout/index.html`, `detail.html`, `CohortMemberRepository` | **~75% Hoàn thành** *(Đã xong luồng nghiệp vụ giả lập; chưa nối cổng VNPay/VietQR và chưa lưu bảng Order)* |
+| **7. Ghi danh & Thanh toán Đơn hàng (Checkout, Order & VietQR SePay)** | `UC-22`, `UC-34`: Luồng đăng ký mua lẻ từng Module hoặc mua trọn gói Full Course ưu đãi combo, lưu vết bảng `orders` (`orderCode`, `totalAmount`, `status = PENDING`, `items` JSONB), tích hợp thanh toán VietQR tự động qua SePay Webhook IPN, kích hoạt `CohortMember` & `Enrollment` khi thành công, Lịch sử đơn hàng học viên (`/orders`, `/orders/{orderCode}`), và Trang quản trị đối soát phê duyệt thủ công cho Admin & Finance (`/admin/orders`). | `Order`, `OrderRepository`, `OrderService`, `OrderServiceImpl`, `CheckoutController`, `OrderController`, `AdminOrderController`, `SepayWebhookApiController`, `templates/checkout/payment.html`, `templates/orders/`, `templates/admin/orders/` | **100% Hoàn thành** |
 | **8. Bảo vệ Giao diện Online Judge (UI Guard)** | `UC-26` -> `UC-29`: Điều hướng an toàn mục Online Judge trên Sidebar và Navbar, hiển thị badge `Coming Soon` và trang Roadmap Phase 2 chống lỗi 404 khi demo/bảo vệ đồ án. | `OjController`, `oj/problems.html`, `fragments/sidebar.html`, `fragments/navbar.html`, `system-menus.json` | **100% Hoàn thành** |
 
 ---
@@ -25,19 +25,24 @@
 ---
 
 ### 🔴 MỨC ĐỘ 1: QUAN TRỌNG CAO – NGHIỆP VỤ TRỌNG TÂM CHUẨN DOANH NGHIỆP (HIGH / P1)
-*Lý do quan trọng: Khép kín toàn diện luồng doanh thu thương mại điện tử bằng bản ghi Đơn hàng (`Order`) thực tế và hoàn thiện phân hệ Đánh giá Học tập (`Quiz`).*
+*Lý do quan trọng: Hoàn thiện phân hệ Đánh giá Học tập (`Quiz & Question`) chuẩn chỉnh theo Use Case.*
 
-#### 1.1. Hệ thống Đơn hàng (Order) & Cổng Thanh toán Điện tử (`UC-22`, `UC-34`)
-- **Hiện trạng trong code:**
-  - Đã có Entity `Order.java` (lưu `orderCode`, `totalAmount`, `status`, `paymentMethod`, `transactionId`, `items` JSONB) và `OrderRepository.java` (có sẵn hàm truy vấn tính doanh thu cho Admin Dashboard).
-  - Đã có `CheckoutController.java` (`/checkout/{cohortId}` và `/checkout/course/{slug}`) xử lý tính toán số tiền và kích hoạt `CohortMember` dưới hình thức thanh toán giả lập.
-  - **Chưa có:** `OrderService.java`, `OrderController.java` (hoặc nâng cấp `CheckoutController` kết nối với `OrderService`), và chưa tích hợp cổng thanh toán trực tuyến (VNPay Sandbox / VietQR Webhook IPN).
-- **Cần code những gì:**
-  1. Xây dựng `OrderService` & hoàn thiện luồng đơn hàng:
-     - Khởi tạo đơn hàng `Order` với trạng thái `PENDING`, lưu danh sách các module mua vào cột `items` JSONB kèm mã đơn hàng duy nhất `orderCode`.
-     - Tích hợp cổng thanh toán trực tuyến chuẩn doanh nghiệp (VNPay Sandbox URL redirect hoặc VietQR kèm IPN Webhook tự động đối soát).
-     - Khi thanh toán thành công (`status = SUCCESS`): Ghi nhận `transactionId`, kích hoạt bản ghi `CohortMember` và `Enrollment`, tự động cập nhật doanh thu thực tế lên Admin Dashboard (`/dashboard`).
-  2. Tạo trang Lịch sử Đơn hàng cho người dùng (`/orders` hoặc tab Đơn hàng trong trang Hồ sơ cá nhân).
+#### 1.1. Hệ thống Đơn hàng (Order) & Cổng Thanh toán Điện tử VietQR SePay (`UC-22`, `UC-34`) - [ĐÃ HOÀN THÀNH 100%]
+- **Kết quả thực hiện:**
+  - `Order.java` & `OrderRepository.java`: Mở rộng trường `paidAt`, định dạng tiền tệ VNĐ và thời gian hiển thị; bổ sung các phương thức truy vấn `findByOrderCode`, `findByUserOrderByCreatedAtDesc`, `findByStatusOrderByCreatedAtDesc`, và cập nhật tính tổng doanh thu tính cả trạng thái `SUCCESS` và `COMPLETED`.
+  - `OrderService.java` & `OrderServiceImpl.java`: 
+    - Sinh mã đơn hàng duy nhất dạng `UTE...` ngắn gọn, an toàn cho cú pháp chuyển khoản ngân hàng.
+    - Lưu cấu trúc `items` chuẩn JSONB cho cả mua lẻ Module và mua trọn gói Full Course (hỗ trợ tính toán bù trừ chênh lệch Upsell).
+    - Tạo đơn hàng trạng thái `PENDING`, hỗ trợ đơn miễn phí (`FREE`) kích hoạt ngay `SUCCESS`.
+    - Xử lý Webhook SePay IPN: Kiểm tra API Key bảo mật, trích xuất mã đơn hàng qua biểu thức chính quy Regex, kiểm tra đối soát số tiền và tự động chuyển trạng thái `SUCCESS`.
+    - Cơ chế kích hoạt tự động: Tự động ghi danh học viên vào `CohortMember`, cập nhật sĩ số lớp học `currentEnrolled`, và tạo bản ghi `Enrollment` khóa học (đảm bảo tính lũy kế Idempotent không ghi danh trùng).
+    - Sinh liên kết mã VietQR tự động qua SePay QuickLink chuẩn ngân hàng.
+  - `CheckoutController.java`: Nâng cấp điều hướng chọn phương thức thanh toán VietQR (`/{cohortId}/initiate`, `/course/{slug}/initiate`), màn hình thanh toán VietQR (`/payment/{orderCode}`) với trình thăm dò trạng thái thời gian thực qua AJAX (Realtime Polling 3s/lần) tự động chuyển hướng khi hoàn tất, và nút mô phỏng thanh toán (Test Demo Mode).
+  - `SepayWebhookApiController.java`: REST API `/api/webhooks/sepay` tiếp nhận IPN từ SePay và `/api/orders/{orderCode}/status` phục vụ polling.
+  - `OrderController.java`: Màn hình Lịch sử Đơn hàng học viên (`/orders`) và Chi tiết Hóa đơn in ấn điện tử (`/orders/{orderCode}`).
+  - `AdminOrderController.java`: Phân hệ Quản trị Đơn hàng & Đối soát dành cho `ADMIN` và vai trò mới `FINANCE` (`/admin/orders`) có thống kê doanh thu, lọc trạng thái, tìm kiếm, modal Xác nhận thanh toán thủ công (`manualConfirmPayment`) và Hủy đơn hàng.
+  - `DataSeeder.java` & `SecurityConfig.java`: Cấp quyền `ORDER_MANAGE`, tạo vai trò `FINANCE`, tài khoản mẫu `finance@utelearn.edu.vn`, và whitelist an toàn webhook endpoint.
+  - Kiểm thử: `OrderFeatureTest.java` (10/10 unit tests passed); toàn bộ test suite dự án 104/104 tests passed.
 
 #### 1.2. Hệ thống Bài kiểm tra Trắc nghiệm – Quiz & Question (`UC-24`, `UC-37`)
 - **Hiện trạng trong code:**
