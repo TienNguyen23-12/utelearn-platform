@@ -17,6 +17,16 @@ public class UtelearnProperties {
     private Moderation moderation = new Moderation();
     private Websocket websocket = new Websocket();
     private Seeder seeder = new Seeder();
+    private Payment payment = new Payment();
+
+    @Data
+    public static class Payment {
+        private String bankId = "Vietcombank";
+        private String accountNo = "";
+        private String accountName = "";
+        private String template = "compact2";
+        private String sepayApiKey = "";
+    }
 
     @Data
     public static class Jwt {
@@ -54,6 +64,6 @@ public class UtelearnProperties {
     public static class Seeder {
         private boolean enabled = true;
         private boolean seedSampleUsers = true;
-        private String defaultPassword = "Pass@123";
+        private String defaultPassword = "Abc@123";
     }
 }

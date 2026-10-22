@@ -19,7 +19,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -43,7 +43,55 @@ public class Order {
     @Builder.Default
     private String items = "[]";
 
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public String getFormattedTotalAmount() {
+        if (totalAmount == null) {
+            return "0 VNĐ";
+        }
+        return java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(totalAmount) + " VNĐ";
+    }
+
+    public String getFormattedCreatedAt() {
+        if (createdAt == null) {
+            return "";
+        }
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(createdAt);
+    }
+
+    public String getStatusBadgeClass() {
+        if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
+            return "bg-success";
+        }
+        if ("PENDING".equalsIgnoreCase(status)) {
+            return "bg-warning text-dark";
+        }
+        if ("CANCELLED".equalsIgnoreCase(status) || "FAILED".equalsIgnoreCase(status)) {
+            return "bg-danger";
+        }
+        return "bg-secondary";
+    }
+
+    public String getStatusDisplayName() {
+        if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
+            return "Thành công";
+        }
+        if ("PENDING".equalsIgnoreCase(status)) {
+            return "Chờ thanh toán";
+        }
+        if ("CANCELLED".equalsIgnoreCase(status)) {
+            return "Đã hủy";
+        }
+        if ("FAILED".equalsIgnoreCase(status)) {
+            return "Thất bại";
+        }
+        return status != null ? status : "Không xác định";
+    }
 }

@@ -37,10 +37,14 @@
                         th:text="${currentUser.fullName}">Quản trị viên</div>
                     <div class="text-muted text-truncate" style="font-size: 11px;" th:text="${currentUser.email}">
                         admin@utelearn.edu.vn</div>
-                    <div class="mt-1">
+                    <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
                         <span th:each="r : ${currentUser.roles}"
                             class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill"
                             style="font-size: 10px; font-weight: 700;" th:text="${r.name}">ADMIN</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill"
+                            style="font-size: 10px; font-weight: 700;">
+                            <i class="bi bi-wallet2 me-1"></i><span th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -70,32 +74,46 @@
                         <span>Khóa học của tôi</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'orders'} ? ' active' : ''"
+                        href="/orders">
+                        <i class="bi bi-receipt text-info"></i>
+                        <span>Đơn hàng của tôi</span>
+                    </a>
+                </li>
             </ul>
 
-            <div class="sidebar-heading" th:if="${@rbac.hasRole('ADMIN')}">QUẢN TRỊ HỆ THỐNG</div>
-            <ul class="nav flex-column mb-2" th:if="${@rbac.hasRole('ADMIN')}">
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">QUẢN TRỊ & TÀI CHÍNH</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
                 <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_orders'} ? ' active' : ''"
+                        href="/admin/orders">
+                        <i class="bi bi-credit-card-2-front text-primary"></i>
+                        <span>Quản lý Đơn hàng</span>
+                    </a>
+                </li>
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'users'} ? ' active' : ''"
                         href="/admin/users">
                         <i class="bi bi-people-fill text-info"></i>
                         <span>Quản lý Tài khoản</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'roles'} ? ' active' : ''"
                         href="/admin/roles">
                         <i class="bi bi-shield-lock-fill text-warning"></i>
                         <span>Vai trò & Phân quyền</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'categories'} ? ' active' : ''"
                         href="/admin/categories">
                         <i class="bi bi-tags-fill text-success"></i>
                         <span>Danh mục Khóa học</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item d-flex align-items-center justify-content-between"
                         th:classappend="${activePage == 'admin_moderation'} ? ' active' : ''" href="/admin/moderation">
                         <div class="d-flex align-items-center gap-2">
