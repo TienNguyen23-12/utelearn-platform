@@ -450,11 +450,33 @@ public class ModuleDetailFeatureTest {
     }
 
     @Test
-    void testShowStandaloneModuleDetailNotFoundRedirects() throws Exception {
-        when(cohortRepository.findById(999L)).thenReturn(Optional.empty());
+    void testShowCourseDetailExcludesFullCourseCohortFromModules() throws Exception {
+        Cohort allCohort = Cohort.builder()
+                .id(99L)
+                .code("CS-JAVA-01-ALL")
+                .name("Toàn bộ khóa học: Kiến Trúc Java Backend & Spring Boot Doanh Nghiệp")
+                .course(sampleCourse)
+                .price(BigDecimal.valueOf(990000))
+                .status("IN_PROGRESS")
+                .build();
 
-        courseMvc.perform(get("/courses/standalone/modules/999"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cohorts"));
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findByCourseIdAndStatusInOrdered(anyLong(), anyList()))
+                .thenReturn(List.of(sampleCohort, allCohort));
+        when(cohortRepository.findByCourseIdOrdered(anyLong()))
+                .thenReturn(List.of(sampleCohort, allCohort));
+
+        courseMvc.perform(get("/courses/lap-trinh-web-co-ban"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("courses/detail"))
+                .andExpect(model().attribute("totalModulesCount", 1))
+                .andExpect(result -> {
+                    List<?> modules = (List<?>) result.getModelAndView().getModel().get("courseModules");
+                    org.junit.jupiter.api.Assertions.assertEquals(1, modules.size());
+                    List<?> available = (List<?>) result.getModelAndView().getModel().get("availableCohorts");
+                    org.junit.jupiter.api.Assertions.assertEquals(1, available.size());
+                });
     }
 }
+

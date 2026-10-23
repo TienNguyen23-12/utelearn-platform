@@ -146,7 +146,7 @@ public class CheckoutController {
             return course != null ? "redirect:/courses/" + course.getSlug() : "redirect:/cohorts";
         }
 
-        if (List.of("ENROLLING", "UPCOMING").contains(cohort.getStatus())) {
+        if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(cohort.getStatus())) {
             if (cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
                 redirectAttributes.addFlashAttribute("error", "Module đã đủ số lượng học viên.");
                 return course != null ? "redirect:/courses/" + course.getSlug() : "redirect:/cohorts";

@@ -75,6 +75,15 @@ body {
 .sidebar-brand-wrapper {
     padding: 24px 24px 18px;
     border-bottom: 1px solid var(--sidebar-border);
+    text-align: center;
+}
+
+.sidebar-brand-wrapper img {
+    transition: transform 0.2s ease;
+}
+
+.sidebar-brand-wrapper a:hover img {
+    transform: scale(1.02);
 }
 
 .brand-logo-badge {

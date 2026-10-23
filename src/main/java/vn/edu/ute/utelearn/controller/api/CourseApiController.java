@@ -179,7 +179,9 @@ public class CourseApiController {
             }
             map.put("curriculum", curriculum);
 
-            List<vn.edu.ute.utelearn.entity.Cohort> courseModules = cohortRepository.findByCourseIdOrdered(course.getId());
+            List<vn.edu.ute.utelearn.entity.Cohort> courseModules = cohortRepository.findByCourseIdOrdered(course.getId()).stream()
+                    .filter(c -> c != null && !c.isFullCourseCohort())
+                    .toList();
             List<Map<String, Object>> moduleDtos = new java.util.ArrayList<>();
             for (vn.edu.ute.utelearn.entity.Cohort cm : courseModules) {
                 Map<String, Object> mDto = new HashMap<>();

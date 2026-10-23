@@ -39,6 +39,17 @@
     color: #2563eb;
 }
 
+.navbar-brand img {
+    max-height: 38px;
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover img {
+    transform: scale(1.02);
+}
+
 .nav-link {
     font-weight: 600;
     font-size: 14px;

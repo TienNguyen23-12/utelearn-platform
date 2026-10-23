@@ -8,17 +8,11 @@
 <body>
 
     <aside th:fragment="sidebar(activePage)" id="appSidebar" class="app-sidebar">
-        <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-between">
-            <a href="/home" class="d-flex align-items-center gap-3 text-decoration-none">
-                <span class="brand-logo-badge">
-                    <i class="bi bi-mortarboard-fill"></i>
-                </span>
-                <div>
-                    <div class="brand-title">UTE<span class="text-primary">Learn</span></div>
-                    <div class="brand-sub">Platform Management</div>
-                </div>
+        <div class="sidebar-brand-wrapper d-flex align-items-center justify-content-center position-relative">
+            <a href="/home" class="d-inline-flex align-items-center justify-content-center text-decoration-none">
+                <img src="/images/brand/logo-text.png" alt="UTELearn" height="32" class="d-block">
             </a>
-            <button class="btn btn-sm btn-light d-lg-none text-muted" type="button" onclick="toggleSidebar()">
+            <button class="btn btn-sm btn-light d-lg-none text-muted position-absolute end-0 me-3" type="button" onclick="toggleSidebar()">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>

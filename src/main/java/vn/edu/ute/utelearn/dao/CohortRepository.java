@@ -69,10 +69,14 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "createdBy"})
     java.util.List<Cohort> findByCourseIdOrderByCreatedAtAsc(Long courseId);
 
-    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE c.course.id = :courseId ORDER BY COALESCE(c.orderIndex, 9999) ASC, c.createdAt ASC")
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE c.course.id = :courseId " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
+           "ORDER BY COALESCE(c.orderIndex, 9999) ASC, c.createdAt ASC")
     java.util.List<Cohort> findByCourseIdOrdered(@Param("courseId") Long courseId);
 
-    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE c.course.id = :courseId AND c.status IN :statuses ORDER BY COALESCE(c.orderIndex, 9999) ASC, c.createdAt ASC")
+    @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE c.course.id = :courseId AND c.status IN :statuses " +
+           "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
+           "ORDER BY COALESCE(c.orderIndex, 9999) ASC, c.createdAt ASC")
     java.util.List<Cohort> findByCourseIdAndStatusInOrdered(@Param("courseId") Long courseId, @Param("statuses") java.util.List<String> statuses);
 
     @org.springframework.data.jpa.repository.Modifying
