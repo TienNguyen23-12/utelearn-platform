@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
+    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${course.title + ' - UTELearn'}">Chi tiết khóa học - UTELearn</title>
@@ -247,6 +249,21 @@
     </div>
 </div>
 
+<div class="container mt-3" th:if="${error != null || success != null || info != null}">
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${info}" class="alert alert-info alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i><span th:text="${info}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</div>
+
 <div class="container mb-5">
     <div class="row">
         <div class="col-lg-8">
@@ -484,9 +501,12 @@
                                         <span th:if="${!courseMod.isEnrolled && !hasAccessRole && courseMod.isFull}" class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">
                                             Đã đủ sĩ số
                                         </span>
-                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull}" th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${courseMod.id}}" method="post" class="d-inline">
+                                        <a th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && courseMod.price != null && courseMod.price > 0}" th:href="@{'/checkout/' + ${courseMod.id}}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                                            <i class="bi bi-plus-circle me-1"></i>Ghi danh module (<span th:text="${#numbers.formatDecimal(courseMod.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">0 VNĐ</span>)
+                                        </a>
+                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && (courseMod.price == null || courseMod.price <= 0)}" th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${courseMod.id}}" method="post" class="d-inline">
                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
-                                                <i class="bi bi-plus-circle me-1"></i>Ghi danh module (<span th:text="${courseMod.price != null && courseMod.price > 0 ? #numbers.formatDecimal(courseMod.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>)
+                                                <i class="bi bi-plus-circle me-1"></i>Ghi danh module (Miễn phí)
                                             </button>
                                         </form>
                                     </div>

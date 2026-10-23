@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
+    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'Hóa đơn #' + ${order.orderCode} + ' - UTELearn'">Hóa đơn - UTELearn</title>
@@ -45,14 +47,9 @@
 
             <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white invoice-card">
                 <div class="d-flex align-items-center justify-content-between border-bottom pb-4 mb-4 flex-wrap gap-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="brand-logo-badge fs-4 text-primary">
-                            <i class="bi bi-mortarboard-fill"></i>
-                        </span>
-                        <div>
-                            <h4 class="fw-bold text-dark mb-0">UTE<span class="text-primary">Learn</span></h4>
-                            <small class="text-muted">Nền tảng Học tập & Đào tạo số</small>
-                        </div>
+                    <div>
+                        <img src="/images/brand/logo-text.png" alt="UTELearn" height="28" class="d-block mb-1">
+                        <small class="text-muted">Nền tảng Học tập & Đào tạo số</small>
                     </div>
                     <div class="text-md-end">
                         <span class="badge rounded-pill px-3 py-2 fs-6 mb-1" th:classappend="${order.statusBadgeClass}" th:text="${order.statusDisplayName}">Thành công</span>

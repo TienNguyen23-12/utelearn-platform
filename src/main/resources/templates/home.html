@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
+    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
+    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UTELearn - Nền tảng Học tập số & Khóa học theo đợt HCM-UTE</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -18,11 +22,13 @@
         html {
             overflow-y: scroll;
         }
+
         :root {
             --primary-color: #2563eb;
             --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
             --body-bg: #f8fafc;
         }
+
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--body-bg);
@@ -31,6 +37,7 @@
             padding: 0;
             overflow-x: hidden;
         }
+
         /* Navbar */
         .site-navbar {
             background: #ffffff;
@@ -41,6 +48,7 @@
             backdrop-filter: blur(12px);
             background-color: rgba(255, 255, 255, 0.95);
         }
+
         .brand-logo-badge {
             width: 40px;
             height: 40px;
@@ -53,6 +61,7 @@
             font-size: 20px;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
+
         .brand-title {
             font-weight: 800;
             font-size: 20px;
@@ -60,9 +69,11 @@
             letter-spacing: -0.5px;
             line-height: 1;
         }
+
         .brand-title span {
             color: #2563eb;
         }
+
         .nav-link {
             font-weight: 600;
             font-size: 14px;
@@ -71,29 +82,23 @@
             border-radius: 8px;
             transition: all 0.2s;
         }
+
         .nav-link:hover {
             color: #2563eb;
             background-color: #eff6ff;
         }
-        /* Hero Section */
+
         .hero-section {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e1b4b 100%);
+            background-color: #0b1120;
             color: #ffffff;
-            padding: 80px 0 90px;
+            padding: 90px 0 100px;
+            min-height: 540px;
+            display: flex;
+            align-items: center;
             position: relative;
             overflow: hidden;
         }
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: -30%;
-            right: -10%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(15, 23, 42, 0) 70%);
-            border-radius: 50%;
-            pointer-events: none;
-        }
+
         .btn-gradient {
             background: var(--primary-gradient);
             color: #ffffff;
@@ -107,12 +112,14 @@
             align-items: center;
             gap: 8px;
         }
+
         .btn-gradient:hover {
             background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
             color: #ffffff;
             transform: translateY(-2px);
             box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6);
         }
+
         /* Course Cards */
         .course-card {
             background: #ffffff;
@@ -125,25 +132,30 @@
             flex-direction: column;
             box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.04);
         }
+
         .course-card:hover {
             transform: translateY(-6px);
             box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1);
             border-color: #cbd5e1;
         }
+
         .course-image-wrapper {
             height: 190px;
             position: relative;
             overflow: hidden;
         }
+
         .course-image-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: transform 0.4s ease;
         }
+
         .course-card:hover .course-image-wrapper img {
             transform: scale(1.05);
         }
+
         .cohort-badge {
             position: absolute;
             top: 14px;
@@ -157,6 +169,7 @@
             border-radius: 20px;
             letter-spacing: 0.3px;
         }
+
         .user-avatar-placeholder {
             background: var(--primary-gradient);
             color: #ffffff;
@@ -166,227 +179,449 @@
             align-items: center;
             justify-content: center;
         }
-    </style>
-</head>
-<body>
 
-<nav th:replace="~{fragments/navbar :: siteNavbar('home')}"></nav>
-
-<section class="hero-section">
-    <div class="container position-relative">
-        <div class="row align-items-center">
-            <div class="col-lg-7">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-3 fw-bold" style="font-size: 12px;">
-                    <i class="bi bi-stars me-1"></i>HCM-UTE Digital Learning Platform
-                </span>
-                <h1 class="display-5 fw-extrabold mb-3 lh-sm">
-                    Nền tảng Học tập số theo đợt & Luyện thuật toán <span class="text-primary">HCM-UTE</span>
-                </h1>
-                <p class="lead text-slate-300 opacity-90 mb-4 fs-6" style="max-width: 580px; line-height: 1.7;">
-                    Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến và rèn luyện tư duy thuật toán đỉnh cao trên hệ thống chấm tự động Online Judge.
-                </p>
-                <div class="d-flex flex-wrap align-items-center gap-3">
-                    <a href="/cohorts" class="btn btn-gradient">
-                        <i class="bi bi-rocket-takeoff-fill"></i>
-                        <span>Khám phá các đợt học</span>
-                    </a>
-                    <a th:if="${currentUser == null}" href="/register" class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold">
-                        <span>Tạo tài khoản học viên</span>
-                    </a>
-                    <a th:if="${currentUser != null}" href="/profile" class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold">
-                        <i class="bi bi-person-gear me-1"></i>Hồ sơ cá nhân
-                    </a>
-                </div>
-            </div>
-
-            <div class="col-lg-5 mt-5 mt-lg-0">
-                <div class="card border-0 rounded-4 shadow-lg p-4" style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-award-fill text-warning me-2"></i>Điểm nổi bật của UTELearn</h5>
-                    <div class="d-flex flex-column gap-3">
-                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle bg-primary-subtle text-primary fs-4 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
-                                <i class="bi bi-calendar2-week-fill"></i>
-                            </div>
-                            <div>
-                                <div class="text-white fw-bold">Khóa học theo đợt (Cohorts)</div>
-                                <small class="text-white-50">Học có lộ trình, tương tác trực tiếp với Giảng viên và Trợ giảng</small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle bg-success-subtle text-success fs-4 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
-                                <i class="bi bi-code-slash"></i>
-                            </div>
-                            <div>
-                                <div class="text-white fw-bold">Chấm bài Online Judge (OJ)</div>
-                                <small class="text-white-50">Nộp code, biên dịch và nhận phản hồi tức thì với hàng trăm testcase</small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(255, 255, 255, 0.05);">
-                            <div class="rounded-circle bg-info-subtle text-info fs-4 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 52px; height: 52px;">
-                                <i class="bi bi-patch-check-fill"></i>
-                            </div>
-                            <div>
-                                <div class="text-white fw-bold">Chứng chỉ số HCM-UTE</div>
-                                <small class="text-white-50">Cấp chứng chỉ hoàn thành đợt học có mã định danh xác thực</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section th:if="${currentUser != null}" class="container my-5">
-    <div class="card border-0 shadow-sm rounded-4 p-4" style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border: 1px solid #bfdbfe;">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <span class="badge bg-primary text-white rounded-pill px-3 py-1">Không gian học tập cá nhân</span>
-                    <span class="text-muted small">Tài khoản học viên đang hoạt động</span>
-                </div>
-                <h3 class="fw-bold text-dark mb-1">
-                    Chào mừng bạn, <span class="text-primary" th:text="${currentUser.fullName}">Học viên</span>! 🎓
-                </h3>
-                <p class="text-muted mb-0 small">
-                    Chúc bạn có một buổi học tập hiệu quả. Bạn có thể cập nhật thông tin cá nhân hoặc tiếp tục các bài học đang dang dở.
-                </p>
-            </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="/profile" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
-                    <i class="bi bi-person-gear me-2"></i>Quản lý Hồ sơ cá nhân
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="cohorts" class="container my-5 py-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
-        <div>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold" style="font-size: 11px;">
-                HỌC PHẦN & CHUYÊN ĐỀ NỔI BẬT
-            </span>
-            <h2 class="fw-bold text-dark mb-0">Chuyên đề & Module học tập nổi bật</h2>
-        </div>
-        <div class="text-muted small">
-            Học lẻ từng kỹ năng • Học phí linh hoạt • Tích lũy lộ trình
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-12" th:if="${latestCohorts == null || latestCohorts.empty}">
-            <div class="text-center text-muted py-5">
-                <i class="bi bi-inbox fs-1"></i>
-                <p>Chưa có module nào nổi bật lúc này.</p>
-            </div>
-        </div>
-        <div th:each="cohort : ${latestCohorts}" class="col-lg-3 col-md-6">
-            <div class="course-card">
-                <div class="course-image-wrapper">
-                    <img th:src="${cohort.thumbnailUrl != null && !cohort.thumbnailUrl.isBlank() ? cohort.thumbnailUrl : (cohort.course != null && cohort.course.thumbnailUrl != null && !cohort.course.thumbnailUrl.isBlank() ? cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}" th:alt="${cohort.name}">
-                    <span class="cohort-badge text-truncate" style="max-width: 88%;" th:title="${cohort.course != null ? 'Thuộc khóa: ' + cohort.course.title : 'Module độc lập'}">
-                        <i th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i><span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa học</span>
-                    </span>
-                </div>
-                <div class="p-4 d-flex flex-column flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small" th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên đề</span>
-                        <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học lẻ</span>
-                    </div>
-
-                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-puzzle me-1 text-primary"></i>Học phần / Chuyên đề:</div>
-                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.name}">Tên Module</h6>
-
-                    <div class="text-muted small mb-3">
-                        <i class="bi bi-person-fill text-secondary me-1"></i><span th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                        <span><i class="bi bi-people-fill me-1"></i><span th:text="${cohort.currentEnrolled} + ' học viên'">0 học viên</span></span>
-                        <span><i class="bi bi-tag-fill me-1"></i>Mã: <span th:text="${cohort.code}"></span></span>
-                    </div>
-
-                    <div class="mt-2 text-center">
-                        <small class="text-muted d-block" style="font-size: 11px;">Học phí mua lẻ:</small>
-                        <span class="fw-bold text-success fs-6" th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
-                    </div>
-
-                    <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug + '/modules/' + cohort.id : '/courses/standalone/modules/' + cohort.id}" class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
-                        <span>Khám phá module</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-<script th:inline="javascript">
-        function showToast(message, type) {
-        let iconHtml = '';
-        if (type === 'success') {
-            iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
-        } else if (type === 'warning') {
-            iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
-        } else {
-            iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+        .hero-bg-carousel {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
         }
 
-        let toast = Toastify({
-            text: `<div style="display: flex; align-items: center; gap: 10px;">
+        .hero-bg-carousel .carousel-inner,
+        .hero-bg-carousel .carousel-item {
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero-banner-bg-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center right;
+            transform: scale(1);
+            transition: transform 6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .carousel-item.active .hero-banner-bg-img {
+            transform: scale(1.06);
+        }
+
+        .hero-gradient-overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background: linear-gradient(to right, #0b1120 0%, #0b1120 28%, rgba(11, 17, 32, 0.94) 44%, rgba(11, 17, 32, 0.65) 62%, rgba(11, 17, 32, 0.18) 82%, rgba(11, 17, 32, 0) 100%);
+        }
+
+        @media (max-width: 991.98px) {
+            .hero-gradient-overlay {
+                background: linear-gradient(to bottom, rgba(11, 17, 32, 0.96) 0%, rgba(11, 17, 32, 0.88) 55%, rgba(11, 17, 32, 0.55) 100%);
+            }
+        }
+
+        .hero-content-layer {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+        }
+
+        .hero-bg-carousel .carousel-indicators {
+            position: absolute;
+            bottom: 24px;
+            right: 32px;
+            left: auto;
+            margin: 0;
+            z-index: 4;
+            display: flex;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .hero-bg-carousel .carousel-indicators button {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .hero-bg-carousel .carousel-indicators button.active {
+            width: 28px;
+            background-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+        }
+
+        @media (max-width: 991.98px) {
+            .hero-bg-carousel .carousel-indicators {
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+                bottom: 16px;
+            }
+        }
+
+        .hero-highlights-section {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .highlight-item-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+            height: 100%;
+        }
+
+        .highlight-item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 30px -8px rgba(15, 23, 42, 0.08);
+            border-color: #cbd5e1;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav th:replace="~{fragments/navbar :: siteNavbar('home')}"></nav>
+
+    <section class="hero-section">
+        <div id="heroBgCarousel" class="carousel slide carousel-fade hero-bg-carousel" data-bs-ride="carousel"
+            data-bs-interval="4000" data-bs-pause="false">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="0" class="active"
+                    aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="1"
+                    aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="2"
+                    aria-label="Slide 3"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="3"
+                    aria-label="Slide 4"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="4"
+                    aria-label="Slide 5"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="5"
+                    aria-label="Slide 6"></button>
+                <button type="button" data-bs-target="#heroBgCarousel" data-bs-slide-to="6"
+                    aria-label="Slide 7"></button>
+            </div>
+            <div class="carousel-inner h-100 w-100">
+                <div class="carousel-item active h-100 w-100">
+                    <img src="/images/banners/hero-banner-1.jpg" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 1">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-2.png" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 2">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-3.jpg" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 3">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-4.jpg" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 4">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-5.jpg" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 5">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-6.webp" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 6">
+                </div>
+                <div class="carousel-item h-100 w-100">
+                    <img src="/images/banners/hero-banner-7.png" class="d-block w-100 h-100 hero-banner-bg-img"
+                        alt="UTELearn Hero Banner 7">
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-gradient-overlay"></div>
+
+        <div class="container hero-content-layer">
+            <div class="row align-items-center">
+                <div class="col-lg-7 col-xl-6 py-2">
+                    <span
+                        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-3 fw-bold"
+                        style="font-size: 12px;">
+                        <i class="bi bi-stars me-1"></i>HCM-UTE Digital Learning Platform
+                    </span>
+                    <h1 class="display-5 fw-extrabold mb-3 lh-sm text-white">
+                        Nền tảng Học tập số theo đợt & Luyện thuật toán <span class="text-primary">HCM-UTE</span>
+                    </h1>
+                    <p class="lead text-light opacity-90 mb-4 fs-6"
+                        style="max-width: 580px; line-height: 1.7; color: #cbd5e1;">
+                        Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến và rèn luyện
+                        tư duy thuật toán đỉnh cao trên hệ thống chấm tự động Online Judge.
+                    </p>
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <a href="/cohorts" class="btn btn-gradient">
+                            <i class="bi bi-rocket-takeoff-fill"></i>
+                            <span>Khám phá các đợt học</span>
+                        </a>
+                        <a th:if="${currentUser == null}" href="/register"
+                            class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold">
+                            <span>Tạo tài khoản học viên</span>
+                        </a>
+                        <a th:if="${currentUser != null}" href="/profile"
+                            class="btn btn-outline-light rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-person-gear me-1"></i>Hồ sơ cá nhân
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="hero-highlights-section py-5">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+                <div>
+                    <span class="badge rounded-pill px-3 py-1 mb-2 fw-bold"
+                        style="font-size: 11px; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+                        <i class="bi bi-award-fill me-1" style="color: #d97706;"></i>GIÁ TRỊ CỐT LÕI
+                    </span>
+                    <h3 class="fw-bold text-dark mb-0">Điểm nổi bật của UTELearn</h3>
+                </div>
+                <div class="text-muted small">
+                    Hệ sinh thái học tập công nghệ toàn diện dành riêng cho sinh viên & lập trình viên HCM-UTE
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="highlight-item-card">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-primary-subtle text-primary fs-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                style="width: 56px; height: 56px;">
+                                <i class="bi bi-calendar2-week-fill"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-0">Khóa học theo đợt (Cohorts)</h5>
+                        </div>
+                        <p class="text-secondary small mb-0 lh-base">
+                            Học có lộ trình, tương tác trực tiếp với Giảng viên và Trợ giảng. Theo dõi tiến độ học tập
+                            sát sao theo từng tuần.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="highlight-item-card">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success-subtle text-success fs-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                style="width: 56px; height: 56px;">
+                                <i class="bi bi-code-slash"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-0">Chấm bài Online Judge (OJ)</h5>
+                        </div>
+                        <p class="text-secondary small mb-0 lh-base">
+                            Nộp code, biên dịch và nhận phản hồi tức thì với hàng trăm testcase chuẩn Olympic Tin học và
+                            phỏng vấn Big Tech.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-12">
+                    <div class="highlight-item-card">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-info-subtle text-info fs-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                style="width: 56px; height: 56px;">
+                                <i class="bi bi-patch-check-fill"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-0">Chứng chỉ số HCM-UTE</h5>
+                        </div>
+                        <p class="text-secondary small mb-0 lh-base">
+                            Cấp chứng chỉ hoàn thành đợt học có mã định danh xác thực số, tích hợp hồ sơ năng lực cá
+                            nhân và nhà tuyển dụng.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section th:if="${currentUser != null}" class="container my-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4"
+            style="background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border: 1px solid #bfdbfe;">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <span class="badge bg-primary text-white rounded-pill px-3 py-1">Không gian học tập cá
+                            nhân</span>
+                        <span class="text-muted small">Tài khoản học viên đang hoạt động</span>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">
+                        Chào mừng bạn, <span class="text-primary" th:text="${currentUser.fullName}">Học viên</span>! 🎓
+                    </h3>
+                    <p class="text-muted mb-0 small">
+                        Chúc bạn có một buổi học tập hiệu quả. Bạn có thể cập nhật thông tin cá nhân hoặc tiếp tục các
+                        bài học đang dang dở.
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="/profile" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-person-gear me-2"></i>Quản lý Hồ sơ cá nhân
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="cohorts" class="container my-5 py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+            <div>
+                <span
+                    class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold"
+                    style="font-size: 11px;">
+                    HỌC PHẦN & CHUYÊN ĐỀ NỔI BẬT
+                </span>
+                <h2 class="fw-bold text-dark mb-0">Chuyên đề & Module học tập nổi bật</h2>
+            </div>
+            <div class="text-muted small">
+                Học lẻ từng kỹ năng • Học phí linh hoạt • Tích lũy lộ trình
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12" th:if="${latestCohorts == null || latestCohorts.empty}">
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p>Chưa có module nào nổi bật lúc này.</p>
+                </div>
+            </div>
+            <div th:each="cohort : ${latestCohorts}" class="col-lg-3 col-md-6">
+                <div class="course-card">
+                    <div class="course-image-wrapper">
+                        <img th:src="${cohort.thumbnailUrl != null && !cohort.thumbnailUrl.isBlank() ? cohort.thumbnailUrl : (cohort.course != null && cohort.course.thumbnailUrl != null && !cohort.course.thumbnailUrl.isBlank() ? cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}"
+                            th:alt="${cohort.name}">
+                        <span class="cohort-badge text-truncate" style="max-width: 88%;"
+                            th:title="${cohort.course != null ? 'Thuộc khóa: ' + cohort.course.title : 'Module độc lập'}">
+                            <i
+                                th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i><span
+                                th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa
+                                học</span>
+                        </span>
+                    </div>
+                    <div class="p-4 d-flex flex-column flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small"
+                                th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên
+                                đề</span>
+                            <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học
+                                lẻ</span>
+                        </div>
+
+                        <div class="text-muted small mb-1" style="font-size: 11.5px;"><i
+                                class="bi bi-puzzle me-1 text-primary"></i>Học phần / Chuyên đề:</div>
+                        <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1" th:text="${cohort.name}">Tên Module</h6>
+
+                        <div class="text-muted small mb-3">
+                            <i class="bi bi-person-fill text-secondary me-1"></i><span
+                                th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng
+                                viên</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
+                            <span><i class="bi bi-people-fill me-1"></i><span
+                                    th:text="${cohort.currentEnrolled} + ' học viên'">0 học viên</span></span>
+                            <span><i class="bi bi-tag-fill me-1"></i>Mã: <span th:text="${cohort.code}"></span></span>
+                        </div>
+
+                        <div class="mt-2 text-center">
+                            <small class="text-muted d-block" style="font-size: 11px;">Học phí mua lẻ:</small>
+                            <span class="fw-bold text-success fs-6"
+                                th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0
+                                VNĐ</span>
+                        </div>
+
+                        <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug + '/modules/' + cohort.id : '/courses/standalone/modules/' + cohort.id}"
+                            class="btn btn-outline-primary rounded-pill w-100 mt-3 fw-semibold">
+                            <span>Khám phá module</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script th:inline="javascript">
+        function showToast(message, type) {
+            let iconHtml = '';
+            if (type === 'success') {
+                iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+            } else if (type === 'warning') {
+                iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+            } else {
+                iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+            }
+
+            let toast = Toastify({
+                text: `<div style="display: flex; align-items: center; gap: 10px;">
                     ${iconHtml}
                     <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
                    </div>`,
-            escapeMarkup: false,
-            duration: 3000,
-            close: false,
-            gravity: "top",
-            position: "right",
-            style: {
-                background: "white",
-                borderRadius: "30px",
-                boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
-                padding: "10px 20px 10px 12px",
-                border: "1px solid #f0f0f0",
-                cursor: "pointer"
-            },
-            onClick: function() {
-                toast.hideToast();
+                escapeMarkup: false,
+                duration: 3000,
+                close: false,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: "white",
+                    borderRadius: "30px",
+                    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                    padding: "10px 20px 10px 12px",
+                    border: "1px solid #f0f0f0",
+                    cursor: "pointer"
+                },
+                onClick: function () {
+                    toast.hideToast();
+                }
+            });
+            toast.showToast();
+        }
+
+        function notifyOjPhase2(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong Phase 2!', 'warning');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('loginSuccess')) {
+                showToast('Đăng nhập thành công!', 'success');
+
+                // Remove loginSuccess param from URL
+                urlParams.delete('loginSuccess');
+                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, document.title, newUrl);
+            }
+
+            var adminWarning = /*[[${adminOnlyMessage}]]*/ null;
+            if (adminWarning) {
+                showToast(`<b>Thông báo Phân quyền</b><br/><span style="font-size: 13px; color: #555;">${adminWarning}</span>`, 'warning');
             }
         });
-        toast.showToast();
-    }
-
-    function notifyOjPhase2(event) {
-        if (event) {
-            event.preventDefault();
-        }
-        showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong Phase 2!', 'warning');
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('loginSuccess')) {
-            showToast('Đăng nhập thành công!', 'success');
-            
-            // Remove loginSuccess param from URL
-            urlParams.delete('loginSuccess');
-            const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
-            window.history.replaceState({}, document.title, newUrl);
-        }
-
-        var adminWarning = /*[[${adminOnlyMessage}]]*/ null;
-        if (adminWarning) {
-            showToast(`<b>Thông báo Phân quyền</b><br/><span style="font-size: 13px; color: #555;">${adminWarning}</span>`, 'warning');
-        }
-    });
-</script>
+    </script>
 </body>
+
 </html>
