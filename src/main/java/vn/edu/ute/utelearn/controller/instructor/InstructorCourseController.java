@@ -159,7 +159,9 @@ public class InstructorCourseController {
         }
 
         List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(id);
-        List<Cohort> modules = new ArrayList<>(cohortRepository.findByCourseIdOrdered(id));
+        List<Cohort> modules = cohortRepository.findByCourseIdOrdered(id).stream()
+                .filter(c -> c != null && !c.isFullCourseCohort())
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         Map<Long, List<vn.edu.ute.utelearn.entity.Section>> sectionsByCohort = new LinkedHashMap<>();
         List<vn.edu.ute.utelearn.entity.Section> standaloneSections = new ArrayList<>();

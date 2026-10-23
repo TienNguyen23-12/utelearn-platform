@@ -62,6 +62,8 @@ public class SecurityConfig {
                                 "/vendor/**",
                                 "/webjars/**",
                                 "/favicon.ico",
+                                "/favicon.png",
+                                "/apple-touch-icon.png",
                                 "/error",
                                 "/api/health",
                                 "/api/ping",

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
+    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${module != null ? module.code + ' - ' + module.name + ' | UTELearn' : 'Học tập Module | UTELearn'}">Học tập Module | UTELearn</title>
@@ -43,13 +45,13 @@
             z-index: 1030;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 16px;
             box-sizing: border-box;
         }
 
         .btn-circle-back {
-            width: 38px;
-            height: 38px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
@@ -379,56 +381,100 @@
         .moodle-nav-footer {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 16px 20px;
-            display: flex;
+            border-radius: 18px;
+            padding: 14px 20px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-            margin-top: 24px;
+            gap: 16px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+            margin-top: 28px;
+        }
+
+        .nav-step-btn {
+            max-width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .nav-step-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
         }
 
         .activity-jump-select {
-            max-width: 380px;
-            font-size: 13.5px;
+            width: 100%;
+            max-width: 320px;
+            font-size: 13px;
             font-weight: 600;
+            color: #1e293b;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 7px 32px 7px 16px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .activity-jump-select:hover {
+            border-color: #94a3b8;
+            background-color: #ffffff;
+        }
+
+        .activity-jump-select:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .moodle-nav-footer {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                padding: 12px 14px;
+            }
+
+            .nav-footer-center {
+                grid-column: 1 / -1;
+                order: -1;
+            }
+
+            .activity-jump-select {
+                max-width: 100%;
+            }
+
+            .nav-step-text {
+                max-width: 130px !important;
+            }
         }
     </style>
 </head>
 <body>
 
 <header class="learn-header justify-content-between">
-    <div class="d-flex align-items-center gap-2 overflow-hidden">
+    <div class="d-flex align-items-center gap-2 overflow-hidden me-2" style="min-width: 0;">
         <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id}}" class="btn-circle-back" title="Quay lại chi tiết Module">
             <i class="bi bi-chevron-left"></i>
         </a>
-        <div class="brand-logo-badge brand-logo-mini">
-            <i class="bi bi-mortarboard-fill"></i>
-        </div>
-        <div class="d-none d-sm-block brand-title brand-title-mini me-1">
-            UTE<span>Learn</span>
-        </div>
-        <div class="vr d-none d-md-block mx-1 opacity-25" style="height: 24px;"></div>
-        <nav aria-label="breadcrumb" class="d-flex align-items-center overflow-hidden">
-            <ol class="breadcrumb mb-0 align-items-center flex-nowrap small text-nowrap" style="font-size: 12px;">
-                <li class="breadcrumb-item d-none d-md-inline text-truncate" style="max-width: 180px;">
+        <a href="/home" class="d-flex align-items-center text-decoration-none flex-shrink-0" title="Trang chủ UTELearn">
+            <img src="/images/brand/logo-text.png" alt="UTELearn" height="22" class="d-inline-block">
+        </a>
+        <div class="vr d-none d-lg-block mx-1 opacity-25" style="height: 20px;"></div>
+        <nav aria-label="breadcrumb" class="d-flex align-items-center overflow-hidden" style="min-width: 0;">
+            <ol class="breadcrumb mb-0 align-items-center flex-nowrap small text-nowrap" style="font-size: 12.5px;">
+                <li class="breadcrumb-item d-none d-xxl-inline text-truncate" style="max-width: 150px;">
                     <a th:href="@{'/courses/' + ${course.slug}}" class="text-decoration-none text-muted" th:text="${course.title}">Khóa học</a>
                 </li>
-                <li class="breadcrumb-item text-truncate" style="max-width: 220px;">
-                    <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id}}" class="text-decoration-none fw-semibold text-primary" th:text="${module.code + ': ' + module.name}">Module</a>
+                <li class="breadcrumb-item text-truncate fw-semibold text-primary" style="max-width: 260px;">
+                    <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id}}" class="text-decoration-none text-primary" th:text="${module.code + ': ' + module.name}">Module</a>
                 </li>
-                <li class="breadcrumb-item active d-none d-lg-inline text-truncate fw-bold text-dark" style="max-width: 260px;" id="learnBreadcrumbLessonTitle" aria-current="page">
+                <li class="breadcrumb-item active d-none d-xxl-inline text-truncate fw-bold text-dark" style="max-width: 200px;" id="learnBreadcrumbLessonTitle" aria-current="page">
                     Đang tải bài học...
                 </li>
             </ol>
         </nav>
     </div>
 
-    <div class="d-flex align-items-center gap-2 gap-md-3">
+    <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
         <div class="dropdown d-none d-md-block" th:if="${otherEnrolledModules != null && !otherEnrolledModules.isEmpty()}">
-            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-layers me-1"></i>Đổi Module
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 260px;">
@@ -442,49 +488,74 @@
             </ul>
         </div>
 
-        <div class="d-none d-lg-flex align-items-center gap-2 px-3 py-1 bg-light rounded-pill border">
-            <i class="bi bi-trophy-fill text-warning"></i>
-            <span class="small fw-semibold text-secondary">
-                Tiến độ: <strong class="text-primary" id="progressPercent">0%</strong> 
-                (<span id="completedCount">0</span>/<span id="totalCount">0</span> bài)
+        <div class="d-none d-lg-flex align-items-center gap-2 px-2.5 py-1 bg-light rounded-pill border" title="Tiến độ học tập module">
+            <i class="bi bi-trophy-fill text-warning" style="font-size: 13px;"></i>
+            <span class="small fw-semibold text-secondary" style="font-size: 12px;">
+                <strong class="text-primary" id="progressPercent">0%</strong> 
+                <span class="d-none d-xxl-inline text-muted" style="font-size: 11px;">(<span id="completedCount">0</span>/<span id="totalCount">0</span>)</span>
             </span>
-            <div class="progress" style="width: 80px; height: 6px; background-color: #e2e8f0;">
+            <div class="progress" style="width: 50px; height: 5px; background-color: #e2e8f0;">
                 <div class="progress-bar bg-primary rounded-pill" id="progressBar" style="width: 0%"></div>
             </div>
         </div>
 
-        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-flex align-items-center gap-1" id="toggleSidebarBtn" title="Đóng/Mở giáo trình">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" id="toggleSidebarBtn" title="Đóng/Mở giáo trình">
             <i class="bi bi-layout-sidebar-reverse"></i>
             <span class="d-none d-md-inline small fw-semibold">Bài học</span>
         </button>
 
-        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-flex align-items-center gap-1" id="btnToggleFocusMode" title="Chế độ tập trung (Phím F)">
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" id="btnToggleFocusMode" title="Chế độ tập trung (Phím F)">
             <i class="bi bi-aspect-ratio" id="focusModeIcon"></i>
             <span class="d-none d-md-inline small fw-semibold" id="focusModeText">Tập trung</span>
         </button>
 
         <div class="dropdown" th:if="${currentUser != null}">
-            <button class="btn btn-light d-flex align-items-center gap-2 border-0 py-1 px-2 px-md-3 rounded-pill" style="background-color: #f1f5f9;" type="button" data-bs-toggle="dropdown">
-                <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden" style="width: 32px; height: 32px;">
+            <button class="btn btn-light d-flex align-items-center gap-1.5 border-0 py-1 px-1.5 px-md-2 rounded-pill" style="background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" title="Menu tài khoản">
+                <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden flex-shrink-0" style="width: 32px; height: 32px;">
                     <img th:src="${currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
                 </div>
-                <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder" style="width: 32px; height: 32px; font-size: 13px;" th:text="${currentUser.fullName != null and !currentUser.fullName.isEmpty() ? #strings.substring(currentUser.fullName, 0, 1) : 'U'}">U</div>
-                <div class="d-none d-md-block text-start pe-1">
-                    <div class="fw-bold text-dark lh-1" style="font-size: 13px;" th:text="${currentUser.fullName}">Người dùng</div>
-                </div>
-                <i class="bi bi-chevron-down text-muted" style="font-size: 11px;"></i>
+                <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder flex-shrink-0" style="width: 32px; height: 32px; font-size: 12.5px;" th:text="${currentUser.fullName != null and !currentUser.fullName.isEmpty() ? #strings.substring(currentUser.fullName, 0, 1) : 'U'}">U</div>
+                <span class="d-none d-xl-inline fw-semibold text-dark text-truncate ms-1" style="font-size: 12.5px; max-width: 110px;" th:text="${currentUser.fullName}">Người dùng</span>
+                <i class="bi bi-chevron-down text-muted" style="font-size: 10px;"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 240px;">
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-4 mt-2 p-2" style="min-width: 250px;">
                 <li class="px-3 py-2 border-bottom">
                     <div class="fw-bold text-dark small" th:text="${currentUser.fullName}">Người dùng</div>
-                    <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">student@utelearn.edu.vn</div>
+                    <div class="text-muted" style="font-size: 11px;" th:text="${currentUser.email}">user@utelearn.edu.vn</div>
+                    <div class="mt-1">
+                        <span th:each="r : ${currentUser.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 me-1" style="font-size: 10px;" th:text="${r.name}">Học viên</span>
+                    </div>
+                </li>
+                <li th:if="${currentUser != null}" class="px-3 py-2 bg-light border-bottom rounded-3 my-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small"><i class="bi bi-wallet2 me-1 text-success"></i>Ví UTELearn:</span>
+                        <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                    </div>
                 </li>
                 <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
-                <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
-                <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
-                <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3" href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi Kiểm duyệt</a></li>
-                <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
+                    <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/admin/orders">
+                        <i class="bi bi-credit-card-2-front me-2"></i>Quản lý Đơn hàng
+                    </a>
+                </li>
+                <li th:if="${@rbac.hasRole('ADMIN')}">
+                    <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/dashboard">
+                        <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
+                    </a>
+                </li>
+                <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                    <a class="dropdown-item py-2 small rounded-3 text-success fw-semibold" href="/instructor/courses">
+                        <i class="bi bi-easel-fill me-2"></i>Quản lý Đào tạo
+                    </a>
+                </li>
+                <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
+                    <a class="dropdown-item py-2 small rounded-3 text-danger fw-semibold" href="/moderator/queue">
+                        <i class="bi bi-check2-circle me-2"></i>Hàng đợi Kiểm duyệt
+                    </a>
+                </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <a class="dropdown-item py-2 small rounded-3 text-danger" href="/logout">
@@ -492,6 +563,15 @@
                     </a>
                 </li>
             </ul>
+        </div>
+
+        <div th:unless="${currentUser != null}" class="d-flex align-items-center gap-2">
+            <a href="/login" class="btn btn-light rounded-pill px-3 py-1 fw-semibold text-dark border">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+            </a>
+            <a href="/register" class="btn btn-gradient rounded-pill px-3 py-1 text-white">
+                <span>Đăng ký</span>
+            </a>
         </div>
     </div>
 </header>
@@ -950,19 +1030,38 @@
         const footerNext = document.getElementById('footerBtnNext');
         const footerPrevTitle = document.getElementById('footerPrevTitle');
         const footerNextTitle = document.getElementById('footerNextTitle');
+        const footerNextIcon = document.getElementById('footerNextIcon');
         const jumpSelect = document.getElementById('jumpLessonSelect');
 
         if (footerPrev) {
-            footerPrev.disabled = (currentLessonIndex <= 0);
+            const isFirst = (currentLessonIndex <= 0);
+            footerPrev.disabled = isFirst;
             if (footerPrevTitle) {
-                footerPrevTitle.textContent = currentLessonIndex > 0 ? ('Bài trước: ' + moduleLessons[currentLessonIndex - 1].title) : 'Bài đầu tiên';
+                const prevText = !isFirst ? ('Bài trước: ' + moduleLessons[currentLessonIndex - 1].title) : 'Bài đầu tiên';
+                footerPrevTitle.textContent = prevText;
+                footerPrev.title = prevText;
             }
         }
 
         if (footerNext) {
-            footerNext.disabled = (currentLessonIndex >= moduleLessons.length - 1);
+            const isLast = (currentLessonIndex >= moduleLessons.length - 1);
             if (footerNextTitle) {
-                footerNextTitle.textContent = currentLessonIndex < moduleLessons.length - 1 ? ('Bài tiếp: ' + moduleLessons[currentLessonIndex + 1].title) : 'Hoàn tất module';
+                const nextText = !isLast ? ('Bài tiếp: ' + moduleLessons[currentLessonIndex + 1].title) : 'Hoàn tất module';
+                footerNextTitle.textContent = nextText;
+                footerNext.title = nextText;
+            }
+            if (isLast) {
+                footerNext.classList.remove('btn-primary');
+                footerNext.classList.add('btn-success');
+                if (footerNextIcon) {
+                    footerNextIcon.className = 'bi bi-check-circle-fill flex-shrink-0';
+                }
+            } else {
+                footerNext.classList.remove('btn-success');
+                footerNext.classList.add('btn-primary');
+                if (footerNextIcon) {
+                    footerNextIcon.className = 'bi bi-arrow-right flex-shrink-0';
+                }
             }
         }
 
@@ -1356,15 +1455,21 @@
             </div>
 
             <div class="moodle-nav-footer">
-                <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" 
-                        id="footerBtnPrev" 
-                        onclick="stepLesson(-1)">
-                    <i class="bi bi-arrow-left"></i>
-                    <span id="footerPrevTitle">Bài trước</span>
-                </button>
+                <div class="d-flex align-items-center justify-content-start" style="min-width: 0;">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 nav-step-btn" 
+                            id="footerBtnPrev" 
+                            onclick="stepLesson(-1)"
+                            title="Bài trước">
+                        <i class="bi bi-arrow-left flex-shrink-0"></i>
+                        <span class="text-truncate nav-step-text" id="footerPrevTitle" style="max-width: 240px;">Bài trước</span>
+                    </button>
+                </div>
 
-                <div class="d-flex align-items-center gap-2 flex-grow-1 justify-content-center">
-                    <select class="form-select form-select-sm rounded-pill activity-jump-select" id="jumpLessonSelect" onchange="loadLessonById(Number(this.value))">
+                <div class="d-flex align-items-center justify-content-center nav-footer-center" style="min-width: 0;">
+                    <select class="form-select form-select-sm rounded-pill activity-jump-select" 
+                            id="jumpLessonSelect" 
+                            title="Chuyển nhanh bài học"
+                            onchange="loadLessonById(Number(this.value))">
                         ${moduleLessons.map((l, idx) => `
                             <option value="${l.id}" ${l.id === lesson.id ? 'selected' : ''}>
                                 ${idx + 1}. ${l.title}
@@ -1373,12 +1478,15 @@
                     </select>
                 </div>
 
-                <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-flex align-items-center gap-2" 
-                        id="footerBtnNext" 
-                        onclick="stepLesson(1)">
-                    <span id="footerNextTitle">Bài kế tiếp</span>
-                    <i class="bi bi-arrow-right"></i>
-                </button>
+                <div class="d-flex align-items-center justify-content-end" style="min-width: 0;">
+                    <button class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 nav-step-btn" 
+                            id="footerBtnNext" 
+                            onclick="stepLesson(1)"
+                            title="Bài tiếp">
+                        <span class="text-truncate nav-step-text" id="footerNextTitle" style="max-width: 240px;">Bài kế tiếp</span>
+                        <i class="bi bi-arrow-right flex-shrink-0" id="footerNextIcon"></i>
+                    </button>
+                </div>
             </div>
         `;
 
@@ -1459,6 +1567,20 @@
         const newIndex = currentLessonIndex + direction;
         if (newIndex >= 0 && newIndex < moduleLessons.length) {
             loadLessonByIndex(newIndex);
+        } else if (direction > 0 && currentLessonIndex === moduleLessons.length - 1) {
+            if (typeof Toastify === 'function') {
+                Toastify({
+                    text: 'Chúc mừng bạn đã hoàn thành bài học cuối cùng trong module!',
+                    duration: 3500,
+                    gravity: 'top',
+                    position: 'right',
+                    style: {
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)'
+                    }
+                }).showToast();
+            }
         }
     }
 </script>

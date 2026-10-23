@@ -66,6 +66,22 @@ public class DataSeeder implements CommandLineRunner {
                 jdbcTemplate.execute("UPDATE cohorts c SET created_by = COALESCE((SELECT co.created_by FROM courses co WHERE co.id = c.course_id), 2) WHERE c.created_by IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PUBLIC' WHERE visibility IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PRIVATE' WHERE code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%'");
+                try {
+                    if (isTablePresent("cohort_members")) {
+                        jdbcTemplate.execute("INSERT INTO cohort_members (cohort_id, user_id, enrolled_at, status, progress_percent, role) " +
+                                "SELECT real_c.id, cm.user_id, cm.enrolled_at, cm.status, cm.progress_percent, cm.role " +
+                                "FROM cohort_members cm " +
+                                "JOIN cohorts dummy_c ON cm.cohort_id = dummy_c.id " +
+                                "JOIN cohorts real_c ON real_c.course_id = dummy_c.course_id AND real_c.id <> dummy_c.id AND real_c.code NOT LIKE '%-ALL' " +
+                                "WHERE (dummy_c.code LIKE '%-ALL' OR dummy_c.name ILIKE 'Toàn bộ khóa học%') " +
+                                "ON CONFLICT DO NOTHING");
+                        jdbcTemplate.execute("DELETE FROM cohort_members WHERE cohort_id IN (SELECT id FROM cohorts WHERE (code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%') AND course_id IN (SELECT DISTINCT c2.course_id FROM cohorts c2 WHERE c2.code NOT LIKE '%-ALL' AND (c2.name IS NULL OR c2.name NOT ILIKE 'Toàn bộ khóa học%') AND c2.course_id IS NOT NULL))");
+                    }
+                    if (isTablePresent("cohort_schedules")) {
+                        jdbcTemplate.execute("DELETE FROM cohort_schedules WHERE cohort_id IN (SELECT id FROM cohorts WHERE (code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%') AND course_id IN (SELECT DISTINCT c2.course_id FROM cohorts c2 WHERE c2.code NOT LIKE '%-ALL' AND (c2.name IS NULL OR c2.name NOT ILIKE 'Toàn bộ khóa học%') AND c2.course_id IS NOT NULL))");
+                    }
+                    jdbcTemplate.execute("DELETE FROM cohorts WHERE (code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%') AND course_id IN (SELECT DISTINCT c2.course_id FROM cohorts c2 WHERE c2.code NOT LIKE '%-ALL' AND (c2.name IS NULL OR c2.name NOT ILIKE 'Toàn bộ khóa học%') AND c2.course_id IS NOT NULL)");
+                } catch (Exception ignored) {}
                 jdbcTemplate.execute("UPDATE cohorts SET moderation_status = 'APPROVED' WHERE moderation_status IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET order_index = 1 WHERE order_index IS NULL");
                 jdbcTemplate.execute("UPDATE cohorts SET name = REGEXP_REPLACE(name, '^Module\\s*[0-9]+[:\\.\\-]\\s*', '', 'i') WHERE code IN ('MOD-WEB-01', 'MOD-WEB-02', 'MOD-WEB-03', 'MOD-JAVA-01', 'MOD-JAVA-02', 'MOD-JAVA-03', 'MOD-OJ-01', 'MOD-OJ-02') AND name ~* '^Module\\s*[0-9]+'");

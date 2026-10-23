@@ -201,7 +201,10 @@ public class CourseController {
         }
 
         List<Cohort> availableCohorts = cohortRepository.findByCourseIdAndStatusInOrdered(course.getId(),
-                List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
+                List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"))
+                .stream()
+                .filter(c -> c != null && !c.isFullCourseCohort())
+                .toList();
         final java.util.Set<Long> finalEnrolledCohortIds = enrolledCohortIds;
         final boolean finalHasAccessRole = hasAccessRole;
         List<java.util.Map<String, Object>> cohortList = availableCohorts.stream().map(c -> {
@@ -243,7 +246,10 @@ public class CourseController {
 
         long unenrolledCount = availableCohorts.stream().filter(c -> !finalEnrolledCohortIds.contains(c.getId())).count();
 
-        List<Cohort> allCourseCohorts = cohortRepository.findByCourseIdOrdered(course.getId());
+        List<Cohort> allCourseCohorts = cohortRepository.findByCourseIdOrdered(course.getId())
+                .stream()
+                .filter(c -> c != null && !c.isFullCourseCohort())
+                .toList();
         List<Lesson> allCourseLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
         if (!hasAccessRole) {
             allCourseLessons = allCourseLessons.stream().filter(Lesson::isPublished).toList();
@@ -553,7 +559,7 @@ public class CourseController {
             return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
         }
 
-        if (List.of("ENROLLING", "UPCOMING").contains(activeCohort.getStatus())) {
+        if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(activeCohort.getStatus())) {
             if (activeCohort.getCurrentEnrolled() >= activeCohort.getMaxCapacity()) {
                 redirectAttributes.addFlashAttribute("error", "Lớp học đã đủ số lượng học viên.");
                 return "redirect:/courses/" + slug;
@@ -867,9 +873,13 @@ public class CourseController {
 
         boolean hasAccessRole = checkHasAccessRole(user, course, null);
         if (hasAccessRole) {
-            List<Cohort> cohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
+            List<Cohort> cohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId()).stream()
+                    .filter(c -> c != null && !c.isFullCourseCohort())
+                    .toList();
             if (cohorts.isEmpty()) {
-                cohorts = cohortRepository.findByCourseIdOrdered(course.getId());
+                cohorts = cohortRepository.findByCourseIdOrdered(course.getId()).stream()
+                        .filter(c -> c != null && !c.isFullCourseCohort())
+                        .toList();
             }
             if (!cohorts.isEmpty()) {
                 String lessonParam = lesson != null ? "?lesson=" + lesson : "";

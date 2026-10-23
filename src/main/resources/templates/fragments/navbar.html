@@ -109,11 +109,8 @@
 
     <nav th:fragment="siteNavbar(activePage)" class="site-navbar navbar navbar-expand-lg py-3">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="/home">
-                <span class="brand-logo-badge">
-                    <i class="bi bi-mortarboard-fill"></i>
-                </span>
-                <span class="brand-title">UTE<span>Learn</span></span>
+            <a class="navbar-brand d-flex align-items-center" href="/home">
+                <img src="/images/brand/logo-text.png" alt="UTELearn" height="32" class="d-inline-block">
             </a>
 
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#siteNav"
@@ -192,11 +189,17 @@
                             </li>
                             <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i
                                         class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i
-                                        class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
                             <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1"
                                     href="/courses/my-courses"><i
                                         class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a>
+                            </li>
+                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i
+                                        class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                            <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
+                                <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
+                                    href="/admin/orders">
+                                    <i class="bi bi-credit-card-2-front me-2"></i>Quản lý Đơn hàng
+                                </a>
                             </li>
                             <li th:if="${@rbac.hasRole('ADMIN')}">
                                 <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
@@ -257,7 +260,7 @@
                         }
                     }).showToast();
                 } else {
-                    alert('Tính năng Luyện thi Online Judge đang được hoàn thiện trong Phase 2!');
+                    alert('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!');
                 }
             }
         </script>
