@@ -25,6 +25,8 @@ import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.OrderService;
+import vn.edu.ute.utelearn.util.CurrencyUtils;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -277,7 +279,7 @@ public class AdminOrderController {
                     "name", c.getName(),
                     "code", c.getCode() != null ? c.getCode() : "",
                     "price", price,
-                    "formattedPrice", String.format("%,d VNĐ", price.longValue())
+                    "formattedPrice", CurrencyUtils.formatVnd(price)
             ));
         }
 
@@ -292,7 +294,7 @@ public class AdminOrderController {
                 "name", c.getTitle(),
                 "slug", c.getSlug(),
                 "price", price,
-                "formattedPrice", String.format("%,d VNĐ", price.longValue())
+                "formattedPrice", CurrencyUtils.formatVnd(price)
         ));
     }
 }

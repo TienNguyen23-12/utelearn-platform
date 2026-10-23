@@ -11,6 +11,8 @@ import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.OrderService;
+import vn.edu.ute.utelearn.util.CurrencyUtils;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -107,7 +109,7 @@ public class CheckoutApiController {
                     "message", "Thanh toán bằng Ví UTELearn thành công!",
                     "targetLearnUrl", dto.getTargetLearnUrl(),
                     "newBalance", newBalance,
-                    "formattedBalance", String.format("%,d VNĐ", newBalance.longValue())
+                    "formattedBalance", CurrencyUtils.formatVnd(newBalance)
             ));
         } catch (Exception ex) {
             log.warn("[CheckoutApiController] Lỗi thanh toán ví cohort: {}", ex.getMessage());
@@ -135,7 +137,7 @@ public class CheckoutApiController {
                     "message", "Thanh toán bằng Ví UTELearn thành công!",
                     "targetLearnUrl", dto.getTargetLearnUrl(),
                     "newBalance", newBalance,
-                    "formattedBalance", String.format("%,d VNĐ", newBalance.longValue())
+                    "formattedBalance", CurrencyUtils.formatVnd(newBalance)
             ));
         } catch (Exception ex) {
             log.warn("[CheckoutApiController] Lỗi thanh toán ví course: {}", ex.getMessage());
@@ -184,7 +186,7 @@ public class CheckoutApiController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "balance", balance,
-                "formattedBalance", String.format("%,d VNĐ", balance.longValue())
+                "formattedBalance", CurrencyUtils.formatVnd(balance)
         ));
     }
 
@@ -207,8 +209,7 @@ public class CheckoutApiController {
 
         Order existingOrder = orderOpt.get();
         boolean isOwner = existingOrder.getUser() != null && existingOrder.getUser().getId().equals(currentUser.getId());
-        boolean isAdmin = currentUser.getRoles() != null && currentUser.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdminOrFinance(currentUser);
 
         if (!isOwner && !isAdmin) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", "Bạn không có quyền thao tác trên đơn hàng này."));
@@ -224,7 +225,7 @@ public class CheckoutApiController {
                     "status", order.getStatus(),
                     "redirectUrl", dto.getTargetLearnUrl(),
                     "newBalance", currentBalance,
-                    "formattedBalance", String.format("%,d VNĐ", currentBalance.longValue())
+                    "formattedBalance", CurrencyUtils.formatVnd(currentBalance)
             ));
         } catch (Exception e) {
             log.error("[CheckoutApiController] Lỗi mô phỏng thanh toán: {}", e.getMessage());

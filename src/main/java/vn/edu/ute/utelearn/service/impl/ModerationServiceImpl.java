@@ -15,6 +15,7 @@ import vn.edu.ute.utelearn.entity.ModerationTask;
 import vn.edu.ute.utelearn.entity.ModeratorAttendance;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.ModerationService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -183,8 +184,7 @@ public class ModerationServiceImpl implements ModerationService {
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        boolean isAdmin = admin.getRoles() != null && admin.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdmin(admin);
         if (!isAdmin) {
             throw new IllegalStateException("Chỉ Quản trị viên (Admin) mới có quyền chuyển giao việc duyệt.");
         }
@@ -229,8 +229,7 @@ public class ModerationServiceImpl implements ModerationService {
         User moderator = userRepository.findById(moderatorId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        boolean isAdmin = moderator.getRoles() != null && moderator.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdmin(moderator);
 
         if (isAdmin) {
             return;

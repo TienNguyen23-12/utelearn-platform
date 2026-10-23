@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.time.Instant;
 
 import vn.edu.ute.utelearn.service.OrderService;
+import vn.edu.ute.utelearn.util.CurrencyUtils;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import vn.edu.ute.utelearn.config.UtelearnProperties;
 import vn.edu.ute.utelearn.dao.OrderRepository;
@@ -114,7 +116,7 @@ public class CheckoutController {
         model.addAttribute("totalPrice", cohort.getPrice());
         model.addAttribute("currentUser", user);
         model.addAttribute("userBalance", userBalance);
-        model.addAttribute("formattedUserBalance", String.format("%,d VNĐ", userBalance.longValue()));
+        model.addAttribute("formattedUserBalance", CurrencyUtils.formatVnd(userBalance));
         return "checkout/index";
     }
 
@@ -334,7 +336,7 @@ public class CheckoutController {
         model.addAttribute("discountAmount", discountAmount);
         model.addAttribute("currentUser", user);
         model.addAttribute("userBalance", userBalance);
-        model.addAttribute("formattedUserBalance", String.format("%,d VNĐ", userBalance.longValue()));
+        model.addAttribute("formattedUserBalance", CurrencyUtils.formatVnd(userBalance));
         return "checkout/index";
     }
 
@@ -556,8 +558,7 @@ public class CheckoutController {
         }
 
         boolean isOwner = existingOrder.getUser() != null && existingOrder.getUser().getId().equals(currentUser.getId());
-        boolean isAdmin = currentUser.getRoles() != null && currentUser.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdminOrFinance(currentUser);
 
         if (!isOwner && !isAdmin) {
             redirectAttributes.addFlashAttribute("error", "Bạn không có quyền thao tác trên đơn hàng này.");

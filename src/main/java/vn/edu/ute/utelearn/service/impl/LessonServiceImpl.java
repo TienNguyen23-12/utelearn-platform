@@ -13,6 +13,7 @@ import vn.edu.ute.utelearn.entity.Section;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.LessonService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 import vn.edu.ute.utelearn.service.SectionService;
 
 import java.util.List;
@@ -37,9 +38,7 @@ public class LessonServiceImpl implements LessonService {
         }
         User user = userRepository.findById(instructorId).orElse(null);
         if (user != null && user.getRoles() != null) {
-            boolean hasAdminOrMod = user.getRoles().stream().anyMatch(r ->
-                    "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()) ||
-                    "MODERATOR".equalsIgnoreCase(r.getCode()) || "ROLE_MODERATOR".equalsIgnoreCase(r.getCode()));
+            boolean hasAdminOrMod = SecurityUtils.hasRole(user, "ADMIN", "MODERATOR");
             if (hasAdminOrMod) {
                 return true;
             }

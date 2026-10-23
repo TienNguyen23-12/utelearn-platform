@@ -14,6 +14,7 @@ import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.OrderService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import org.springframework.web.bind.annotation.RequestParam;
 import java.math.BigDecimal;
@@ -174,7 +175,7 @@ public class OrderController {
         }
 
         boolean isOwner = order.getUser() != null && order.getUser().getId().equals(user.getId());
-        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdminOrFinance(user);
         if (!isOwner && !isAdmin) {
             redirectAttributes.addFlashAttribute("error", "Bạn không có quyền truy cập đơn hàng này.");
             return "redirect:/orders";
