@@ -70,10 +70,18 @@
                     </div>
                     <div class="col-sm-6 text-sm-end">
                         <h6 class="text-uppercase text-muted fw-bold small mb-2">Chi tiết thanh toán</h6>
-                        <div class="small text-muted">Phương thức: <span class="fw-semibold text-dark" th:text="${order.paymentMethod}">VIETQR_SEPAY</span></div>
-                        <div class="small text-muted" th:if="${order.transactionId}">Mã giao dịch: <span class="fw-semibold text-dark font-monospace" th:text="${order.transactionId}">TX123456</span></div>
+                        <div class="small text-muted">Phương thức: <span class="fw-semibold text-dark" th:text="${order.paymentMethodDisplayName}">VIETQR_SEPAY</span></div>
+                        <div class="small text-muted" th:if="${order.confirmedBy != null && !order.confirmedBy.isBlank()}">Thu ngân / Người duyệt: <span class="fw-semibold text-dark" th:text="${order.confirmedBy}">thu_ngan</span></div>
+                        <div class="small text-muted" th:if="${order.transactionId}">Mã biên nhận / Giao dịch: <span class="fw-semibold text-dark font-monospace" th:text="${order.transactionId}">TX123456</span></div>
                         <div class="small text-muted" th:if="${order.paidAt}">Thời gian thanh toán: <span class="fw-semibold text-dark" th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                        <div class="small text-danger" th:if="${order.status == 'PENDING' && order.formattedExpiresAt != null && !order.formattedExpiresAt.isBlank()}">Hạn nộp tiền: <span class="fw-bold" th:text="${order.formattedExpiresAt}"></span></div>
                     </div>
+                </div>
+
+                <div th:if="${order.status == 'PENDING' && order.offline}" class="alert alert-warning rounded-3 p-3 mb-4">
+                    <h6 class="fw-bold text-dark mb-1"><i class="bi bi-shop-window me-1 text-warning"></i>Hướng dẫn thanh toán tại Quầy thu ngân:</h6>
+                    <p class="small text-muted mb-2">Học viên vui lòng xuất trình Mã đơn hàng: <strong class="text-danger font-monospace fs-6" th:text="${order.orderCode}">ORD123</strong> tại <strong>Phòng Kế hoạch - Tài chính (A1-01), Trường ĐH Sư phạm Kỹ thuật TP.HCM</strong>.</p>
+                    <div class="small text-danger fw-semibold"><i class="bi bi-shield-check me-1"></i>Lưu ý: Yêu cầu Thu ngân xuất Phiếu biên nhận hoặc kiểm tra Email Biên nhận xác nhận kích hoạt thành công trên điện thoại trước khi rời quầy.</div>
                 </div>
 
                 <div class="table-responsive mb-4">

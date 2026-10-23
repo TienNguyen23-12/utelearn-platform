@@ -156,6 +156,7 @@ utelearn:
     account-name: ${VIETQR_ACCOUNT_NAME:}
     template: ${VIETQR_TEMPLATE:compact2}
     sepay-api-key: ${SEPAY_API_KEY:}
+    simulation-enabled: ${PAYMENT_SIMULATION_ENABLED:true}
 
   render:
     keep-alive-url: ${RENDER_EXTERNAL_URL:https://utelearn-platform.onrender.com}

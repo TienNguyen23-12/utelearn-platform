@@ -46,9 +46,26 @@ public class Order {
     @Column(name = "paid_at")
     private Instant paidAt;
 
+    @Column(name = "confirmed_by", length = 100)
+    private String confirmedBy;
+
+    @Column(name = "payment_note", length = 500)
+    private String paymentNote;
+
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public boolean isOffline() {
+        return paymentMethod != null && paymentMethod.toUpperCase().contains("OFFLINE");
+    }
+
+    public boolean isExpired() {
+        return "PENDING".equalsIgnoreCase(status) && expiresAt != null && Instant.now().isAfter(expiresAt);
+    }
 
     public String getFormattedTotalAmount() {
         if (totalAmount == null) {
@@ -66,7 +83,19 @@ public class Order {
                 .format(createdAt);
     }
 
+    public String getFormattedExpiresAt() {
+        if (expiresAt == null) {
+            return "";
+        }
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(expiresAt);
+    }
+
     public String getStatusBadgeClass() {
+        if (isExpired()) {
+            return "bg-secondary";
+        }
         if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
             return "bg-success";
         }
@@ -80,10 +109,16 @@ public class Order {
     }
 
     public String getStatusDisplayName() {
+        if (isExpired()) {
+            return "Đã quá hạn";
+        }
         if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
             return "Thành công";
         }
         if ("PENDING".equalsIgnoreCase(status)) {
+            if (isOffline()) {
+                return "Chờ thu tiền tại quầy";
+            }
             return "Chờ thanh toán";
         }
         if ("CANCELLED".equalsIgnoreCase(status)) {
@@ -93,5 +128,31 @@ public class Order {
             return "Thất bại";
         }
         return status != null ? status : "Không xác định";
+    }
+
+    public String getPaymentMethodDisplayName() {
+        if (paymentMethod == null) {
+            return "Chưa xác định";
+        }
+        switch (paymentMethod.toUpperCase()) {
+            case "OFFLINE_COUNTER":
+                return "Tại quầy thu ngân (Chờ thanh toán)";
+            case "OFFLINE_CASH":
+                return "Tiền mặt tại quầy";
+            case "OFFLINE_BANK_TRANSFER":
+                return "Chuyển khoản tại quầy";
+            case "VIETQR_SEPAY":
+            case "VIETQR":
+                return "Chuyển khoản VietQR 24/7";
+            case "WALLET":
+                return "Ví điện tử UTELearn";
+            case "FREE":
+                return "Miễn phí";
+            case "DEMO_SIMULATION":
+            case "VIETQR_TEST":
+                return "Mô phỏng thử nghiệm";
+            default:
+                return paymentMethod;
+        }
     }
 }

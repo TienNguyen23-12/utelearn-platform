@@ -125,6 +125,11 @@ public class CheckoutController {
             return "redirect:/login";
         }
 
+        if (properties != null && properties.getPayment() != null && !properties.getPayment().isSimulationEnabled()) {
+            redirectAttributes.addFlashAttribute("error", "Chức năng thanh toán thử nghiệm đã bị vô hiệu hóa.");
+            return "redirect:/checkout/" + cohortId;
+        }
+
         Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
         if (cohort == null) {
             redirectAttributes.addFlashAttribute("error", "Module không tồn tại.");
@@ -193,6 +198,23 @@ public class CheckoutController {
                 return "redirect:/cohorts/" + cohortId + "/learn";
             }
             return "redirect:/checkout/payment/" + order.getOrderCode();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/checkout/" + cohortId;
+        }
+    }
+
+    @PostMapping("/{cohortId}/offline")
+    public String initiateCohortOfflinePayment(@PathVariable Long cohortId, RedirectAttributes redirectAttributes) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        User user = currentUserOpt.get();
+        try {
+            Order order = orderService.createOfflineCohortOrder(user, cohortId, "Học viên đăng ký thanh toán tại quầy");
+            redirectAttributes.addFlashAttribute("success", "Đã tạo đơn hàng #" + order.getOrderCode() + "! Hướng dẫn thanh toán đã được gửi tới email của bạn. Vui lòng mang mã đơn đến quầy thu ngân.");
+            return "redirect:/orders/" + order.getOrderCode();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/checkout/" + cohortId;
@@ -346,6 +368,25 @@ public class CheckoutController {
         }
     }
 
+    @PostMapping("/course/{slug}/offline")
+    public String initiateCourseOfflinePayment(@PathVariable String slug,
+                                               @RequestParam(required = false) List<Long> cohortIds,
+                                               RedirectAttributes redirectAttributes) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        User user = currentUserOpt.get();
+        try {
+            Order order = orderService.createOfflineCourseOrder(user, slug, cohortIds, "Học viên đăng ký thanh toán trọn gói tại quầy");
+            redirectAttributes.addFlashAttribute("success", "Đã tạo đơn hàng #" + order.getOrderCode() + "! Hướng dẫn thanh toán đã được gửi tới email của bạn. Vui lòng mang mã đơn đến quầy thu ngân.");
+            return "redirect:/orders/" + order.getOrderCode();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/checkout/course/" + slug;
+        }
+    }
+
     @PostMapping("/course/{slug}/process")
     public String processCoursePayment(@PathVariable String slug,
                                        @RequestParam(required = false) List<Long> cohortIds,
@@ -353,6 +394,11 @@ public class CheckoutController {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
             return "redirect:/login";
+        }
+
+        if (properties != null && properties.getPayment() != null && !properties.getPayment().isSimulationEnabled()) {
+            redirectAttributes.addFlashAttribute("error", "Chức năng thanh toán thử nghiệm đã bị vô hiệu hóa.");
+            return "redirect:/checkout/course/" + slug;
         }
 
         Course course = courseRepository.findBySlug(slug).orElse(null);
@@ -504,6 +550,28 @@ public class CheckoutController {
         if (currentUserOpt.isEmpty()) {
             return "redirect:/login";
         }
+
+        if (properties != null && properties.getPayment() != null && !properties.getPayment().isSimulationEnabled()) {
+            redirectAttributes.addFlashAttribute("error", "Chức năng mô phỏng thanh toán đã bị vô hiệu hóa.");
+            return "redirect:/checkout/payment/" + orderCode;
+        }
+
+        User currentUser = currentUserOpt.get();
+        Order existingOrder = orderService.findByOrderCode(orderCode).orElse(null);
+        if (existingOrder == null) {
+            redirectAttributes.addFlashAttribute("error", "Đơn hàng không tồn tại.");
+            return "redirect:/orders";
+        }
+
+        boolean isOwner = existingOrder.getUser() != null && existingOrder.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRoles() != null && currentUser.getRoles().stream()
+                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode()));
+
+        if (!isOwner && !isAdmin) {
+            redirectAttributes.addFlashAttribute("error", "Bạn không có quyền thao tác trên đơn hàng này.");
+            return "redirect:/orders";
+        }
+
         try {
             Order order = orderService.fulfillOrder(orderCode, "DEMO_SIM_" + System.currentTimeMillis(), "VIETQR_TEST");
             redirectAttributes.addFlashAttribute("success", "Mô phỏng thanh toán VietQR thành công! Đã kích hoạt quyền học.");

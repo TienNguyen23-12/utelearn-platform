@@ -194,10 +194,30 @@ public class CheckoutApiController {
         if (currentUserOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "message", "Vui lòng đăng nhập"));
         }
+
+        if (!properties.getPayment().isSimulationEnabled()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Chức năng mô phỏng thanh toán đã bị vô hiệu hóa."));
+        }
+
+        User currentUser = currentUserOpt.get();
+        Optional<Order> orderOpt = orderService.findByOrderCode(orderCode);
+        if (orderOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("success", false, "message", "Không tìm thấy đơn hàng."));
+        }
+
+        Order existingOrder = orderOpt.get();
+        boolean isOwner = existingOrder.getUser() != null && existingOrder.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRoles() != null && currentUser.getRoles().stream()
+                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode()));
+
+        if (!isOwner && !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", "Bạn không có quyền thao tác trên đơn hàng này."));
+        }
+
         try {
             Order order = orderService.fulfillOrder(orderCode, "DEMO_SIM_" + System.currentTimeMillis(), "VIETQR_TEST");
             OrderResponseDTO dto = orderService.toResponseDTO(order);
-            BigDecimal currentBalance = orderService.getUserBalance(currentUserOpt.get());
+            BigDecimal currentBalance = orderService.getUserBalance(currentUser);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "orderCode", order.getOrderCode(),
@@ -208,6 +228,59 @@ public class CheckoutApiController {
             ));
         } catch (Exception e) {
             log.error("[CheckoutApiController] Lỗi mô phỏng thanh toán: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/checkout/offline-cohort")
+    public ResponseEntity<?> initiateOfflineCohort(@RequestParam Long cohortId,
+                                                   @RequestParam(required = false) String note) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "message", "Vui lòng đăng nhập"));
+        }
+        try {
+            User user = currentUserOpt.get();
+            Order order = orderService.createOfflineCohortOrder(user, cohortId, note != null ? note : "Đặt đơn thanh toán tại quầy");
+            OrderResponseDTO dto = orderService.toResponseDTO(order);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "orderCode", order.getOrderCode(),
+                    "totalAmount", order.getTotalAmount(),
+                    "formattedTotalAmount", order.getFormattedTotalAmount(),
+                    "expiresAt", dto.getFormattedExpiresAt(),
+                    "orderDetailUrl", "/orders/" + order.getOrderCode(),
+                    "message", "Đặt đơn thành công! Hướng dẫn thanh toán đã được gửi tới email của bạn."
+            ));
+        } catch (Exception e) {
+            log.error("[CheckoutApiController] Lỗi đặt đơn offline cohort: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/checkout/offline-course")
+    public ResponseEntity<?> initiateOfflineCourse(@RequestParam String slug,
+                                                   @RequestParam(required = false) List<Long> cohortIds,
+                                                   @RequestParam(required = false) String note) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "message", "Vui lòng đăng nhập"));
+        }
+        try {
+            User user = currentUserOpt.get();
+            Order order = orderService.createOfflineCourseOrder(user, slug, cohortIds, note != null ? note : "Đặt đơn thanh toán tại quầy");
+            OrderResponseDTO dto = orderService.toResponseDTO(order);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "orderCode", order.getOrderCode(),
+                    "totalAmount", order.getTotalAmount(),
+                    "formattedTotalAmount", order.getFormattedTotalAmount(),
+                    "expiresAt", dto.getFormattedExpiresAt(),
+                    "orderDetailUrl", "/orders/" + order.getOrderCode(),
+                    "message", "Đặt đơn thành công! Hướng dẫn thanh toán đã được gửi tới email của bạn."
+            ));
+        } catch (Exception e) {
+            log.error("[CheckoutApiController] Lỗi đặt đơn offline course: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }

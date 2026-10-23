@@ -18,6 +18,13 @@ public class UtelearnProperties {
     private Websocket websocket = new Websocket();
     private Seeder seeder = new Seeder();
     private Payment payment = new Payment();
+    private Render render = new Render();
+
+    @Data
+    public static class Render {
+        private String keepAliveUrl = "https://utelearn-platform.onrender.com";
+        private boolean keepAliveEnabled = true;
+    }
 
     @Data
     public static class Payment {
@@ -26,6 +33,7 @@ public class UtelearnProperties {
         private String accountName = "";
         private String template = "compact2";
         private String sepayApiKey = "";
+        private boolean simulationEnabled = true;
     }
 
     @Data

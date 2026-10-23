@@ -32,6 +32,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status IN ('COMPLETED', 'SUCCESS')")
     BigDecimal calculateTotalRevenue();
 
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status IN ('COMPLETED', 'SUCCESS') AND UPPER(o.paymentMethod) LIKE 'OFFLINE%'")
+    BigDecimal calculateOfflineRevenue();
+
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status IN ('COMPLETED', 'SUCCESS') AND UPPER(o.paymentMethod) LIKE 'VIETQR%'")
+    BigDecimal calculateOnlineRevenue();
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = 'PENDING' AND UPPER(o.paymentMethod) LIKE 'OFFLINE%'")
+    long countPendingOfflineOrders();
+
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.status IN ('COMPLETED', 'SUCCESS') AND o.createdAt BETWEEN :start AND :end")
     BigDecimal calculateTotalRevenueBetween(@Param("start") Instant start, @Param("end") Instant end);
 }

@@ -24,9 +24,16 @@ public class OrderResponseDTO {
     private String statusDisplayName;
     private String statusBadgeClass;
     private String paymentMethod;
+    private String paymentMethodDisplayName;
     private String transactionId;
+    private String confirmedBy;
+    private String paymentNote;
     private String createdAt;
     private String paidAt;
+    private String expiresAt;
+    private String formattedExpiresAt;
+    private boolean offline;
+    private boolean expired;
     private List<OrderItemDTO> items;
     private String primaryItemName;
     private String targetLearnUrl;
