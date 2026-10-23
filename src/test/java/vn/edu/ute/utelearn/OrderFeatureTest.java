@@ -22,6 +22,7 @@ import vn.edu.ute.utelearn.entity.CohortMember;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.entity.User;
+import vn.edu.ute.utelearn.service.EmailService;
 import vn.edu.ute.utelearn.service.OrderService;
 import vn.edu.ute.utelearn.service.impl.OrderServiceImpl;
 
@@ -64,6 +65,9 @@ public class OrderFeatureTest {
     private UserRepository userRepository;
 
     @Mock
+    private EmailService emailService;
+
+    @Mock
     private vn.edu.ute.utelearn.service.AuthService authService;
 
     @Mock
@@ -98,7 +102,8 @@ public class OrderFeatureTest {
                 lessonRepository,
                 enrollmentRepository,
                 userRepository,
-                properties
+                properties,
+                emailService
         );
 
         orderController = new vn.edu.ute.utelearn.controller.OrderController(orderService, authService);
@@ -145,6 +150,25 @@ public class OrderFeatureTest {
         assertEquals("VIETQR_SEPAY", order.getPaymentMethod());
         assertTrue(order.getItems().contains("MOD-WEB-01"));
         verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    void testCreateCohortOrder_CohortFullThrowsIllegalStateException() {
+        Cohort fullCohort = Cohort.builder()
+                .id(109L)
+                .name("Module Full")
+                .code("MOD-FULL")
+                .price(new BigDecimal("200000"))
+                .maxCapacity(20)
+                .currentEnrolled(20)
+                .course(sampleCourse)
+                .build();
+
+        when(cohortRepository.findById(109L)).thenReturn(Optional.of(fullCohort));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(109L, 1L)).thenReturn(false);
+
+        assertThrows(IllegalStateException.class, () ->
+                orderService.createCohortOrder(sampleUser, 109L, "VIETQR_SEPAY"));
     }
 
     @Test
@@ -515,5 +539,53 @@ public class OrderFeatureTest {
         verify(model, times(1)).addAttribute("order", sampleOrder);
         verify(model, times(1)).addAttribute(eq("orderDTO"), any());
         verify(model, times(1)).addAttribute("currentUser", sampleUser);
+    }
+
+    @Test
+    void testFulfillOrder_ExpiredOrderThrowsExceptionAndMarksCancelled() {
+        Order expiredOrder = Order.builder()
+                .id(105L)
+                .orderCode("UTE999111")
+                .user(sampleUser)
+                .totalAmount(new BigDecimal("200000"))
+                .status("PENDING")
+                .expiresAt(java.time.Instant.now().minus(2, java.time.temporal.ChronoUnit.HOURS))
+                .build();
+
+        when(orderRepository.findByOrderCode("UTE999111")).thenReturn(Optional.of(expiredOrder));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThrows(IllegalStateException.class, () ->
+                orderService.fulfillOrder("UTE999111", "TXN_LATE", "VIETQR_TEST"));
+
+        assertEquals("CANCELLED", expiredOrder.getStatus());
+        verify(orderRepository, times(1)).save(expiredOrder);
+    }
+
+    @Test
+    void testProcessSepayWebhook_ExpiredOrderFailsAndCancels() {
+        Order expiredOrder = Order.builder()
+                .id(106L)
+                .orderCode("UTE999222")
+                .user(sampleUser)
+                .totalAmount(new BigDecimal("300000"))
+                .status("PENDING")
+                .expiresAt(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.HOURS))
+                .build();
+
+        when(orderRepository.findByOrderCode("UTE999222")).thenReturn(Optional.of(expiredOrder));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SepayWebhookDTO payload = SepayWebhookDTO.builder()
+                .id(8888L)
+                .content("Chuyen tien UTE999222")
+                .transferAmount(new BigDecimal("300000"))
+                .build();
+
+        boolean processed = orderService.processSepayWebhook(payload, "Apikey TEST_SEPAY_API_KEY");
+
+        assertFalse(processed);
+        assertEquals("CANCELLED", expiredOrder.getStatus());
+        verify(orderRepository, times(1)).save(expiredOrder);
     }
 }

@@ -26,6 +26,7 @@ import vn.edu.ute.utelearn.entity.Enrollment;
 import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.entity.User;
+import vn.edu.ute.utelearn.service.EmailService;
 import vn.edu.ute.utelearn.service.OrderService;
 
 import java.math.BigDecimal;
@@ -58,6 +59,7 @@ public class OrderServiceImpl implements OrderService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final UtelearnProperties properties;
+    private final EmailService emailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final Pattern ORDER_CODE_PATTERN = Pattern.compile("(?i)(UTENAP[0-9A-Z]{4,12}|UTE[0-9A-Z]{4,12}|ORD[0-9A-Z]{4,12})");
@@ -139,6 +141,11 @@ public class OrderServiceImpl implements OrderService {
 
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
             throw new IllegalStateException("Bạn đã ghi danh module này rồi.");
+        }
+
+        if (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0
+                && cohort.getCurrentEnrolled() != null && cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
+            throw new IllegalStateException("Module này đã đủ số lượng học viên tối đa.");
         }
 
         BigDecimal price = cohort.getPrice() != null ? cohort.getPrice() : BigDecimal.ZERO;
@@ -428,50 +435,62 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order fulfillOrder(String orderCode, String transactionId, String paymentMethod) {
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new IllegalArgumentException("Đơn hàng không tồn tại: " + orderCode));
-
-        if ("SUCCESS".equalsIgnoreCase(order.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getStatus())) {
-            return order;
+        if (orderCode == null || orderCode.isBlank()) {
+            throw new IllegalArgumentException("Mã đơn hàng không hợp lệ");
         }
+        synchronized (orderCode.intern()) {
+            Order order = orderRepository.findByOrderCode(orderCode.trim())
+                    .orElseThrow(() -> new IllegalArgumentException("Đơn hàng không tồn tại: " + orderCode));
 
-        order.setStatus("SUCCESS");
-        if (transactionId != null && !transactionId.isBlank()) {
-            order.setTransactionId(transactionId);
-        }
-        if (paymentMethod != null && !paymentMethod.isBlank()) {
-            order.setPaymentMethod(paymentMethod);
-        }
-        order.setPaidAt(Instant.now());
+            if ("SUCCESS".equalsIgnoreCase(order.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getStatus())) {
+                return order;
+            }
 
-        List<OrderItemDTO> items = deserializeItems(order.getItems());
-        for (OrderItemDTO item : items) {
-            if ("WALLET_DEPOSIT".equalsIgnoreCase(item.getType())) {
-                User user = order.getUser();
-                if (user != null) {
-                    User latestUser = userRepository.findById(user.getId()).orElse(user);
-                    BigDecimal currentBalance = latestUser.getBalance() != null ? latestUser.getBalance() : BigDecimal.ZERO;
-                    latestUser.setBalance(currentBalance.add(order.getTotalAmount()));
-                    userRepository.save(latestUser);
-                }
-            } else if ("COHORT".equalsIgnoreCase(item.getType())) {
-                if (item.getCohortId() != null) {
-                    cohortRepository.findById(item.getCohortId()).ifPresent(c -> enrollCohortDirectly(order.getUser(), c));
-                }
-            } else if ("COURSE".equalsIgnoreCase(item.getType())) {
-                if (item.getCohortIds() != null && !item.getCohortIds().isEmpty()) {
-                    List<Cohort> cohortsToEnroll = cohortRepository.findAllById(item.getCohortIds());
-                    if (item.getCourseId() != null) {
-                        courseRepository.findById(item.getCourseId())
-                                .ifPresent(course -> enrollCourseDirectly(order.getUser(), course, cohortsToEnroll));
-                    } else {
-                        cohortsToEnroll.forEach(c -> enrollCohortDirectly(order.getUser(), c));
+            if (order.isExpired() && (paymentMethod == null || !paymentMethod.toUpperCase().startsWith("MANUAL"))) {
+                order.setStatus("CANCELLED");
+                order.setPaymentNote("Đơn hàng đã hết hạn hiệu lực.");
+                orderRepository.save(order);
+                throw new IllegalStateException("Đơn hàng đã quá hạn thanh toán.");
+            }
+
+            order.setStatus("SUCCESS");
+            if (transactionId != null && !transactionId.isBlank()) {
+                order.setTransactionId(transactionId);
+            }
+            if (paymentMethod != null && !paymentMethod.isBlank()) {
+                order.setPaymentMethod(paymentMethod);
+            }
+            order.setPaidAt(Instant.now());
+
+            List<OrderItemDTO> items = deserializeItems(order.getItems());
+            for (OrderItemDTO item : items) {
+                if ("WALLET_DEPOSIT".equalsIgnoreCase(item.getType())) {
+                    User user = order.getUser();
+                    if (user != null) {
+                        User latestUser = userRepository.findById(user.getId()).orElse(user);
+                        BigDecimal currentBalance = latestUser.getBalance() != null ? latestUser.getBalance() : BigDecimal.ZERO;
+                        latestUser.setBalance(currentBalance.add(order.getTotalAmount()));
+                        userRepository.save(latestUser);
+                    }
+                } else if ("COHORT".equalsIgnoreCase(item.getType())) {
+                    if (item.getCohortId() != null) {
+                        cohortRepository.findById(item.getCohortId()).ifPresent(c -> enrollCohortDirectly(order.getUser(), c));
+                    }
+                } else if ("COURSE".equalsIgnoreCase(item.getType())) {
+                    if (item.getCohortIds() != null && !item.getCohortIds().isEmpty()) {
+                        List<Cohort> cohortsToEnroll = cohortRepository.findAllById(item.getCohortIds());
+                        if (item.getCourseId() != null) {
+                            courseRepository.findById(item.getCourseId())
+                                    .ifPresent(course -> enrollCourseDirectly(order.getUser(), course, cohortsToEnroll));
+                        } else {
+                            cohortsToEnroll.forEach(c -> enrollCohortDirectly(order.getUser(), c));
+                        }
                     }
                 }
             }
-        }
 
-        return orderRepository.save(order);
+            return orderRepository.save(order);
+        }
     }
 
     @Override
@@ -480,8 +499,12 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
 
-        String txId = "MANUAL_BY_" + (adminUsername != null ? adminUsername : "ADMIN");
-        return fulfillOrder(order.getOrderCode(), txId, "MANUAL_ADMIN");
+        order.setConfirmedBy(adminUsername != null ? adminUsername : "ADMIN");
+        orderRepository.save(order);
+        String txId = order.isOffline() ? ("PT-" + order.getId()) : ("MANUAL_BY_" + (adminUsername != null ? adminUsername : "ADMIN"));
+        Order fulfilled = fulfillOrder(order.getOrderCode(), txId, "MANUAL_ADMIN");
+        sendPaymentReceiptEmail(fulfilled);
+        return fulfilled;
     }
 
     @Override
@@ -551,6 +574,14 @@ public class OrderServiceImpl implements OrderService {
             return true;
         }
 
+        if (order.isExpired()) {
+            order.setStatus("CANCELLED");
+            order.setPaymentNote("Chuyển khoản sau khi đơn hàng đã quá hạn 48h. Vui lòng liên hệ quầy thu ngân.");
+            orderRepository.save(order);
+            log.warn("[OrderService] Đơn hàng {} đã quá hạn thanh toán. Đã hủy đơn tự động.", order.getOrderCode());
+            return false;
+        }
+
         if (payload.getTransferAmount() != null && payload.getTransferAmount().compareTo(order.getTotalAmount()) < 0) {
             log.warn("[OrderService] Số tiền chuyển ({}) nhỏ hơn tổng tiền đơn hàng ({}) cho mã: {}",
                     payload.getTransferAmount(), order.getTotalAmount(), order.getOrderCode());
@@ -618,9 +649,16 @@ public class OrderServiceImpl implements OrderService {
                 .statusDisplayName(order.getStatusDisplayName())
                 .statusBadgeClass(order.getStatusBadgeClass())
                 .paymentMethod(order.getPaymentMethod())
+                .paymentMethodDisplayName(order.getPaymentMethodDisplayName())
                 .transactionId(order.getTransactionId())
+                .confirmedBy(order.getConfirmedBy())
+                .paymentNote(order.getPaymentNote())
                 .createdAt(order.getFormattedCreatedAt())
                 .paidAt(order.getPaidAt() != null ? order.getPaidAt().toString() : "")
+                .expiresAt(order.getExpiresAt() != null ? order.getExpiresAt().toString() : "")
+                .formattedExpiresAt(order.getFormattedExpiresAt())
+                .offline(order.isOffline())
+                .expired(order.isExpired())
                 .items(items)
                 .primaryItemName(primaryName)
                 .targetLearnUrl(targetUrl)
@@ -666,6 +704,11 @@ public class OrderServiceImpl implements OrderService {
 
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
             throw new IllegalStateException("Bạn đã ghi danh module này rồi.");
+        }
+
+        if (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0
+                && cohort.getCurrentEnrolled() != null && cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
+            throw new IllegalStateException("Module này đã đủ số lượng học viên tối đa.");
         }
 
         BigDecimal price = cohort.getPrice() != null ? cohort.getPrice() : BigDecimal.ZERO;
@@ -835,5 +878,562 @@ public class OrderServiceImpl implements OrderService {
         return userRepository.findById(user.getId())
                 .map(User::getBalance)
                 .orElse(BigDecimal.ZERO);
+    }
+
+    @Override
+    @Transactional
+    public Order createOfflineCohortOrder(User user, Long cohortId, String note) {
+        Cohort cohort = cohortRepository.findById(cohortId)
+                .orElseThrow(() -> new IllegalArgumentException("Module không tồn tại"));
+
+        if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
+            throw new IllegalStateException("Bạn đã ghi danh module này rồi.");
+        }
+
+        if (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0
+                && cohort.getCurrentEnrolled() != null && cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
+            throw new IllegalStateException("Module này đã đủ số lượng học viên tối đa.");
+        }
+
+        BigDecimal price = cohort.getPrice() != null ? cohort.getPrice() : BigDecimal.ZERO;
+        OrderItemDTO item = OrderItemDTO.builder()
+                .type("COHORT")
+                .courseId(cohort.getCourse() != null ? cohort.getCourse().getId() : null)
+                .courseSlug(cohort.getCourse() != null ? cohort.getCourse().getSlug() : null)
+                .cohortId(cohort.getId())
+                .cohortCode(cohort.getCode())
+                .name(cohort.getName())
+                .price(price)
+                .isUpgrade(false)
+                .cohortIds(List.of(cohort.getId()))
+                .build();
+
+        Order order = Order.builder()
+                .user(user)
+                .orderCode(generateUniqueOrderCode())
+                .totalAmount(price)
+                .status("PENDING")
+                .paymentMethod("OFFLINE_COUNTER")
+                .paymentNote(note)
+                .expiresAt(Instant.now().plus(48, java.time.temporal.ChronoUnit.HOURS))
+                .items(serializeItems(List.of(item)))
+                .build();
+
+        Order saved = orderRepository.save(order);
+        sendOfflinePaymentInstructionEmail(saved);
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order createOfflineCourseOrder(User user, String courseSlug, List<Long> selectedCohortIds, String note) {
+        Course course = courseRepository.findBySlug(courseSlug)
+                .orElseThrow(() -> new IllegalArgumentException("Khóa học không tồn tại"));
+
+        List<Cohort> availableCohorts = getOrCreateAvailableCohorts(course);
+        List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+        List<CohortMember> realUserMemberships = userMemberships.stream()
+                .filter(cm -> !isFullCourseCohort(cm.getCohort()))
+                .collect(Collectors.toList());
+        Set<Long> enrolledCohortIds = realUserMemberships.stream()
+                .map(cm -> cm.getCohort().getId())
+                .collect(Collectors.toSet());
+
+        List<Cohort> unenrolledCohorts = availableCohorts.stream()
+                .filter(c -> !enrolledCohortIds.contains(c.getId()))
+                .collect(Collectors.toList());
+
+        if (unenrolledCohorts.isEmpty()) {
+            throw new IllegalStateException("Bạn đã tham gia tất cả các module của khóa học này.");
+        }
+
+        List<Cohort> targetCohorts;
+        if (selectedCohortIds != null && !selectedCohortIds.isEmpty()) {
+            Set<Long> selectedSet = new HashSet<>(selectedCohortIds);
+            targetCohorts = unenrolledCohorts.stream()
+                    .filter(c -> selectedSet.contains(c.getId()))
+                    .collect(Collectors.toList());
+            if (targetCohorts.isEmpty()) {
+                throw new IllegalArgumentException("Vui lòng chọn ít nhất một module để thanh toán.");
+            }
+        } else {
+            targetCohorts = unenrolledCohorts;
+        }
+
+        boolean isAllUnenrolledSelected = targetCohorts.size() == unenrolledCohorts.size();
+        boolean isUpgrade = !realUserMemberships.isEmpty();
+
+        BigDecimal sumOfTargetCohorts = targetCohorts.stream()
+                .map(Cohort::getPrice)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO;
+        BigDecimal totalPaidAmount = realUserMemberships.stream()
+                .map(cm -> cm.getCohort() != null && cm.getCohort().getPrice() != null ? cm.getCohort().getPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPrice;
+        if (isAllUnenrolledSelected) {
+            if (isUpgrade) {
+                BigDecimal diff = coursePrice.subtract(totalPaidAmount);
+                totalPrice = diff.compareTo(BigDecimal.ZERO) > 0 ? diff : BigDecimal.ZERO;
+                if (sumOfTargetCohorts.compareTo(BigDecimal.ZERO) > 0 && sumOfTargetCohorts.compareTo(totalPrice) < 0) {
+                    totalPrice = sumOfTargetCohorts;
+                }
+            } else {
+                totalPrice = (coursePrice.compareTo(BigDecimal.ZERO) > 0) ? coursePrice : sumOfTargetCohorts;
+            }
+        } else {
+            totalPrice = sumOfTargetCohorts;
+            if (isUpgrade) {
+                BigDecimal diff = coursePrice.subtract(totalPaidAmount);
+                if (diff.compareTo(BigDecimal.ZERO) > 0 && totalPrice.compareTo(diff) > 0) {
+                    totalPrice = diff;
+                }
+            } else if (coursePrice.compareTo(BigDecimal.ZERO) > 0 && totalPrice.compareTo(coursePrice) > 0) {
+                totalPrice = coursePrice;
+            }
+        }
+
+        List<Long> targetCohortIdsList = targetCohorts.stream().map(Cohort::getId).collect(Collectors.toList());
+        String itemName = isAllUnenrolledSelected
+                ? "Toàn bộ khóa học: " + course.getTitle()
+                : (targetCohorts.size() == 1 ? targetCohorts.get(0).getName() : "Các module đã chọn (" + targetCohorts.size() + "): " + course.getTitle());
+
+        OrderItemDTO item = OrderItemDTO.builder()
+                .type("COURSE")
+                .courseId(course.getId())
+                .courseSlug(course.getSlug())
+                .name(itemName)
+                .price(totalPrice)
+                .isUpgrade(isUpgrade && isAllUnenrolledSelected)
+                .cohortIds(targetCohortIdsList)
+                .build();
+
+        Order order = Order.builder()
+                .user(user)
+                .orderCode(generateUniqueOrderCode())
+                .totalAmount(totalPrice)
+                .status("PENDING")
+                .paymentMethod("OFFLINE_COUNTER")
+                .paymentNote(note)
+                .expiresAt(Instant.now().plus(48, java.time.temporal.ChronoUnit.HOURS))
+                .items(serializeItems(List.of(item)))
+                .build();
+
+        Order saved = orderRepository.save(order);
+        sendOfflinePaymentInstructionEmail(saved);
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order createCashierOrder(String studentIdentifier, String productType, Long productId, List<Long> cohortIds, String paymentMethod, boolean paidImmediately, String note, String cashierUsername) {
+        if (studentIdentifier == null || studentIdentifier.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng cung cấp email hoặc tên đăng nhập của học viên.");
+        }
+        String ident = studentIdentifier.trim();
+        User student = userRepository.findByEmail(ident)
+                .or(() -> userRepository.findByUsername(ident))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học viên với email hoặc tài khoản: " + ident));
+
+        String resolvedMethod = (paymentMethod != null && !paymentMethod.isBlank()) ? paymentMethod : "OFFLINE_CASH";
+
+        if ("COHORT".equalsIgnoreCase(productType)) {
+            Cohort cohort = cohortRepository.findById(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy module ID: " + productId));
+
+            if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), student.getId())) {
+                throw new IllegalStateException("Học viên này đã ghi danh vào module: " + cohort.getName());
+            }
+
+            if (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0
+                    && cohort.getCurrentEnrolled() != null && cohort.getCurrentEnrolled() >= cohort.getMaxCapacity()) {
+                throw new IllegalStateException("Module này đã đủ số lượng học viên tối đa.");
+            }
+
+            BigDecimal price = cohort.getPrice() != null ? cohort.getPrice() : BigDecimal.ZERO;
+            OrderItemDTO item = OrderItemDTO.builder()
+                    .type("COHORT")
+                    .courseId(cohort.getCourse() != null ? cohort.getCourse().getId() : null)
+                    .courseSlug(cohort.getCourse() != null ? cohort.getCourse().getSlug() : null)
+                    .cohortId(cohort.getId())
+                    .cohortCode(cohort.getCode())
+                    .name(cohort.getName())
+                    .price(price)
+                    .isUpgrade(false)
+                    .cohortIds(List.of(cohort.getId()))
+                    .build();
+
+            String status = paidImmediately ? "SUCCESS" : "PENDING";
+            Order order = Order.builder()
+                    .user(student)
+                    .orderCode(generateUniqueOrderCode())
+                    .totalAmount(price)
+                    .status(status)
+                    .paymentMethod(paidImmediately ? resolvedMethod : "OFFLINE_COUNTER")
+                    .confirmedBy(cashierUsername != null ? cashierUsername : "CASHIER")
+                    .paymentNote(note)
+                    .paidAt(paidImmediately ? Instant.now() : null)
+                    .expiresAt(Instant.now().plus(48, java.time.temporal.ChronoUnit.HOURS))
+                    .items(serializeItems(List.of(item)))
+                    .build();
+
+            Order saved = orderRepository.save(order);
+            if (paidImmediately) {
+                saved.setTransactionId("PT-" + saved.getId());
+                saved = orderRepository.save(saved);
+                enrollCohortDirectly(student, cohort);
+                sendPaymentReceiptEmail(saved);
+            } else {
+                sendOfflinePaymentInstructionEmail(saved);
+            }
+            return saved;
+        }
+
+        Course course = courseRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học ID: " + productId));
+
+        List<Cohort> availableCohorts = getOrCreateAvailableCohorts(course);
+        List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), student.getId());
+        List<CohortMember> realUserMemberships = userMemberships.stream()
+                .filter(cm -> !isFullCourseCohort(cm.getCohort()))
+                .collect(Collectors.toList());
+        Set<Long> enrolledCohortIds = realUserMemberships.stream()
+                .map(cm -> cm.getCohort().getId())
+                .collect(Collectors.toSet());
+
+        List<Cohort> unenrolledCohorts = availableCohorts.stream()
+                .filter(c -> !enrolledCohortIds.contains(c.getId()))
+                .collect(Collectors.toList());
+
+        if (unenrolledCohorts.isEmpty()) {
+            throw new IllegalStateException("Học viên đã tham gia toàn bộ các module của khóa học này.");
+        }
+
+        List<Cohort> targetCohorts;
+        if (cohortIds != null && !cohortIds.isEmpty()) {
+            Set<Long> selectedSet = new HashSet<>(cohortIds);
+            targetCohorts = unenrolledCohorts.stream()
+                    .filter(c -> selectedSet.contains(c.getId()))
+                    .collect(Collectors.toList());
+            if (targetCohorts.isEmpty()) {
+                throw new IllegalArgumentException("Vui lòng chọn ít nhất một module để ghi danh.");
+            }
+        } else {
+            targetCohorts = unenrolledCohorts;
+        }
+
+        boolean isAllUnenrolledSelected = targetCohorts.size() == unenrolledCohorts.size();
+        boolean isUpgrade = !realUserMemberships.isEmpty();
+
+        BigDecimal sumOfTargetCohorts = targetCohorts.stream()
+                .map(Cohort::getPrice)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO;
+        BigDecimal totalPaidAmount = realUserMemberships.stream()
+                .map(cm -> cm.getCohort() != null && cm.getCohort().getPrice() != null ? cm.getCohort().getPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPrice;
+        if (isAllUnenrolledSelected) {
+            if (isUpgrade) {
+                BigDecimal diff = coursePrice.subtract(totalPaidAmount);
+                totalPrice = diff.compareTo(BigDecimal.ZERO) > 0 ? diff : BigDecimal.ZERO;
+                if (sumOfTargetCohorts.compareTo(BigDecimal.ZERO) > 0 && sumOfTargetCohorts.compareTo(totalPrice) < 0) {
+                    totalPrice = sumOfTargetCohorts;
+                }
+            } else {
+                totalPrice = (coursePrice.compareTo(BigDecimal.ZERO) > 0) ? coursePrice : sumOfTargetCohorts;
+            }
+        } else {
+            totalPrice = sumOfTargetCohorts;
+            if (isUpgrade) {
+                BigDecimal diff = coursePrice.subtract(totalPaidAmount);
+                if (diff.compareTo(BigDecimal.ZERO) > 0 && totalPrice.compareTo(diff) > 0) {
+                    totalPrice = diff;
+                }
+            } else if (coursePrice.compareTo(BigDecimal.ZERO) > 0 && totalPrice.compareTo(coursePrice) > 0) {
+                totalPrice = coursePrice;
+            }
+        }
+
+        List<Long> targetCohortIdsList = targetCohorts.stream().map(Cohort::getId).collect(Collectors.toList());
+        String itemName = isAllUnenrolledSelected
+                ? "Toàn bộ khóa học: " + course.getTitle()
+                : (targetCohorts.size() == 1 ? targetCohorts.get(0).getName() : "Các module đã chọn (" + targetCohorts.size() + "): " + course.getTitle());
+
+        OrderItemDTO item = OrderItemDTO.builder()
+                .type("COURSE")
+                .courseId(course.getId())
+                .courseSlug(course.getSlug())
+                .name(itemName)
+                .price(totalPrice)
+                .isUpgrade(isUpgrade && isAllUnenrolledSelected)
+                .cohortIds(targetCohortIdsList)
+                .build();
+
+        String status = paidImmediately ? "SUCCESS" : "PENDING";
+        Order order = Order.builder()
+                .user(student)
+                .orderCode(generateUniqueOrderCode())
+                .totalAmount(totalPrice)
+                .status(status)
+                .paymentMethod(paidImmediately ? resolvedMethod : "OFFLINE_COUNTER")
+                .confirmedBy(cashierUsername != null ? cashierUsername : "CASHIER")
+                .paymentNote(note)
+                .paidAt(paidImmediately ? Instant.now() : null)
+                .expiresAt(Instant.now().plus(48, java.time.temporal.ChronoUnit.HOURS))
+                .items(serializeItems(List.of(item)))
+                .build();
+
+        Order saved = orderRepository.save(order);
+        if (paidImmediately) {
+            saved.setTransactionId("PT-" + saved.getId());
+            saved = orderRepository.save(saved);
+            enrollCourseDirectly(student, course, targetCohorts);
+            sendPaymentReceiptEmail(saved);
+        } else {
+            sendOfflinePaymentInstructionEmail(saved);
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Order cashierConfirmPayment(Long orderId, String cashierUsername, String paymentMethod, String note) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + orderId));
+
+        if ("SUCCESS".equalsIgnoreCase(order.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getStatus())) {
+            return order;
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(order.getStatus())) {
+            throw new IllegalStateException("Đơn hàng này đã bị hủy, không thể xác nhận thanh toán.");
+        }
+
+        String resolvedMethod = (paymentMethod != null && !paymentMethod.isBlank()) ? paymentMethod : "OFFLINE_CASH";
+        String autoReceiptNumber = "PT-" + order.getId();
+
+        order.setStatus("SUCCESS");
+        order.setPaidAt(Instant.now());
+        order.setConfirmedBy(cashierUsername != null ? cashierUsername : "CASHIER");
+        order.setPaymentMethod(resolvedMethod);
+        order.setTransactionId(autoReceiptNumber);
+        if (note != null && !note.isBlank()) {
+            order.setPaymentNote(note);
+        }
+
+        List<OrderItemDTO> items = deserializeItems(order.getItems());
+        for (OrderItemDTO item : items) {
+            if ("WALLET_DEPOSIT".equalsIgnoreCase(item.getType())) {
+                User user = order.getUser();
+                if (user != null) {
+                    User latestUser = userRepository.findById(user.getId()).orElse(user);
+                    BigDecimal currentBalance = latestUser.getBalance() != null ? latestUser.getBalance() : BigDecimal.ZERO;
+                    latestUser.setBalance(currentBalance.add(order.getTotalAmount()));
+                    userRepository.save(latestUser);
+                }
+            } else if ("COHORT".equalsIgnoreCase(item.getType())) {
+                if (item.getCohortId() != null) {
+                    cohortRepository.findById(item.getCohortId()).ifPresent(c -> enrollCohortDirectly(order.getUser(), c));
+                }
+            } else if ("COURSE".equalsIgnoreCase(item.getType())) {
+                if (item.getCohortIds() != null && !item.getCohortIds().isEmpty()) {
+                    List<Cohort> cohortsToEnroll = cohortRepository.findAllById(item.getCohortIds());
+                    if (item.getCourseId() != null) {
+                        courseRepository.findById(item.getCourseId())
+                                .ifPresent(course -> enrollCourseDirectly(order.getUser(), course, cohortsToEnroll));
+                    } else {
+                        cohortsToEnroll.forEach(c -> enrollCohortDirectly(order.getUser(), c));
+                    }
+                }
+            }
+        }
+
+        Order saved = orderRepository.save(order);
+        sendPaymentReceiptEmail(saved);
+        return saved;
+    }
+
+    @Override
+    public void sendOfflinePaymentInstructionEmail(Order order) {
+        if (order == null || order.getUser() == null || order.getUser().getEmail() == null || order.getUser().getEmail().isBlank()) {
+            return;
+        }
+
+        String recipientEmail = order.getUser().getEmail().trim();
+        String studentName = order.getUser().getFullName() != null ? order.getUser().getFullName() : order.getUser().getUsername();
+        String subject = "[UTELearn] Hướng dẫn thanh toán đơn hàng Offline #" + order.getOrderCode();
+
+        List<OrderItemDTO> items = deserializeItems(order.getItems());
+        StringBuilder itemsHtml = new StringBuilder();
+        for (OrderItemDTO item : items) {
+            itemsHtml.append("<tr>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b;\"><strong>").append(item.getName()).append("</strong></td>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #0284c7; font-weight: bold;\">")
+                    .append(item.getPrice() != null ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(item.getPrice()) + " VNĐ" : "0 VNĐ")
+                    .append("</td>")
+                    .append("</tr>");
+        }
+
+        String htmlBody = "<div style=\"font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;\">"
+                + "<div style=\"background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 24px; text-align: center; color: #ffffff;\">"
+                + "<h2 style=\"margin: 0; font-size: 24px;\">UTE<span style=\"color: #93c5fd;\">Learn</span> Platform</h2>"
+                + "<p style=\"margin: 6px 0 0; font-size: 14px; opacity: 0.9;\">Hướng dẫn thanh toán đơn hàng Offline tại Quầy thu ngân</p>"
+                + "</div>"
+                + "<div style=\"padding: 24px;\">"
+                + "<p style=\"font-size: 15px; color: #334155; margin-top: 0;\">Xin chào <strong>" + studentName + "</strong>,</p>"
+                + "<p style=\"font-size: 14px; color: #475569; line-height: 1.6;\">Bạn vừa tạo đơn hàng thanh toán offline trên hệ thống UTELearn. Vui lòng xem thông tin chi tiết và hoàn tất nộp tiền theo hướng dẫn dưới đây:</p>"
+                + "<div style=\"background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0;\">"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Mã đơn hàng:</span> "
+                + "<strong style=\"color: #dc2626; font-size: 18px; font-family: monospace;\">" + order.getOrderCode() + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Tổng tiền thanh toán:</span> "
+                + "<strong style=\"color: #16a34a; font-size: 18px;\">" + order.getFormattedTotalAmount() + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Thời hạn thanh toán:</span> "
+                + "<strong style=\"color: #d97706; font-size: 13px;\">" + order.getFormattedExpiresAt() + " (Trong vòng 48h)</strong>"
+                + "</div>"
+                + "</div>"
+                + "<table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;\">"
+                + "<thead><tr style=\"background-color: #f1f5f9;\">"
+                + "<th style=\"padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;\">Sản phẩm đăng ký</th>"
+                + "<th style=\"padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;\">Số tiền</th>"
+                + "</tr></thead>"
+                + "<tbody>" + itemsHtml + "</tbody>"
+                + "</table>"
+                + "<div style=\"background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 4px; margin-bottom: 20px;\">"
+                + "<h4 style=\"margin: 0 0 8px; color: #1e3a8a; font-size: 15px;\">Địa điểm và cách thức thanh toán:</h4>"
+                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>1. Quầy thu ngân:</strong> Phòng Kế hoạch - Tài chính (A1-01), Trường ĐH Sư phạm Kỹ thuật TP.HCM</p>"
+                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>2. Địa chỉ:</strong> Số 1 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh</p>"
+                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>3. Thời gian làm việc:</strong> Thứ 2 - Thứ 6 (07:30 - 16:30)</p>"
+                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>4. Hình thức chấp nhận:</strong> Tiền mặt hoặc Quét mã chuyển khoản trực tiếp tại quầy</p>"
+                + "</div>"
+                + "<div style=\"background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; margin-bottom: 20px;\">"
+                + "<h4 style=\"margin: 0 0 6px; color: #991b1b; font-size: 14px;\">&#9888; LƯU Ý BẢO VỆ QUYỀN LỢI & CHỐNG THẤT THOÁT:</h4>"
+                + "<ul style=\"margin: 0; padding-left: 20px; font-size: 13px; color: #7f1d1d; line-height: 1.5;\">"
+                + "<li>Học viên xuất trình chính xác <strong>Mã đơn hàng: " + order.getOrderCode() + "</strong> cho thu ngân tại quầy.</li>"
+                + "<li><strong>Yêu cầu thu ngân in Phiếu biên nhận hoặc kiểm tra Email Biên nhận xác nhận kích hoạt thành công</strong> ngay tại quầy trước khi rời đi.</li>"
+                + "<li>Khóa học sẽ tự động được mở trên tài khoản của bạn ngay khi thu ngân bấm xác nhận trên hệ thống.</li>"
+                + "</ul>"
+                + "</div>"
+                + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5;\">Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ Ban Đào tạo qua Hotline: (028) 38968641 hoặc gửi email tới support@utelearn.edu.vn.</p>"
+                + "</div>"
+                + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
+                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM &bull; Hệ thống đào tạo trực tuyến"
+                + "</div>"
+                + "</div>";
+
+        if (emailService != null) {
+            try {
+                emailService.sendHtmlEmail(recipientEmail, subject, htmlBody);
+            } catch (Exception e) {
+                log.error("[OrderService] Không thể gửi email hướng dẫn offline: {}", e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void sendPaymentReceiptEmail(Order order) {
+        if (order == null || order.getUser() == null || order.getUser().getEmail() == null || order.getUser().getEmail().isBlank()) {
+            return;
+        }
+
+        String recipientEmail = order.getUser().getEmail().trim();
+        String studentName = order.getUser().getFullName() != null ? order.getUser().getFullName() : order.getUser().getUsername();
+        String subject = "[UTELearn] Biên nhận thanh toán thành công đơn hàng #" + order.getOrderCode();
+
+        List<OrderItemDTO> items = deserializeItems(order.getItems());
+        StringBuilder itemsHtml = new StringBuilder();
+        for (OrderItemDTO item : items) {
+            itemsHtml.append("<tr>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b;\"><strong>").append(item.getName()).append("</strong></td>")
+                    .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #16a34a; font-weight: bold;\">")
+                    .append(item.getPrice() != null ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(item.getPrice()) + " VNĐ" : "0 VNĐ")
+                    .append("</td>")
+                    .append("</tr>");
+        }
+
+        String targetUrl = properties.getRender().getKeepAliveUrl() + "/home";
+        if (!items.isEmpty()) {
+            OrderItemDTO first = items.get(0);
+            if ("COHORT".equalsIgnoreCase(first.getType()) && first.getCohortId() != null) {
+                targetUrl = properties.getRender().getKeepAliveUrl() + (first.getCourseSlug() != null
+                        ? "/courses/" + first.getCourseSlug() + "/modules/" + first.getCohortId() + "/learn"
+                        : "/cohorts/" + first.getCohortId() + "/learn");
+            } else if ("COURSE".equalsIgnoreCase(first.getType()) && first.getCourseSlug() != null) {
+                targetUrl = properties.getRender().getKeepAliveUrl() + "/courses/" + first.getCourseSlug();
+            }
+        }
+
+        String htmlBody = "<div style=\"font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;\">"
+                + "<div style=\"background: linear-gradient(135deg, #15803d, #22c55e); padding: 24px; text-align: center; color: #ffffff;\">"
+                + "<h2 style=\"margin: 0; font-size: 24px;\">&#10004; BIÊN NHẬN THANH TOÁN ĐIỆN TỬ</h2>"
+                + "<p style=\"margin: 6px 0 0; font-size: 14px; opacity: 0.9;\">UTELearn Platform &bull; Xác nhận thanh toán thành công</p>"
+                + "</div>"
+                + "<div style=\"padding: 24px;\">"
+                + "<p style=\"font-size: 15px; color: #334155; margin-top: 0;\">Kính gửi học viên <strong>" + studentName + "</strong>,</p>"
+                + "<p style=\"font-size: 14px; color: #475569; line-height: 1.6;\">Hệ thống UTELearn xin thông báo đơn hàng của bạn đã được xác nhận thanh toán thành công. Toàn bộ quyền truy cập bài học và tài liệu đã được kích hoạt ngay tức thì.</p>"
+                + "<div style=\"background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0;\">"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Mã đơn hàng:</span> "
+                + "<strong style=\"color: #1e293b; font-size: 16px; font-family: monospace;\">" + order.getOrderCode() + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Mã biên lai / giao dịch:</span> "
+                + "<strong style=\"color: #0284c7; font-size: 14px; font-family: monospace;\">" + (order.getTransactionId() != null ? order.getTransactionId() : "N/A") + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Phương thức thanh toán:</span> "
+                + "<strong style=\"color: #334155; font-size: 13px;\">" + order.getPaymentMethodDisplayName() + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Người xác nhận / Thu ngân:</span> "
+                + "<strong style=\"color: #334155; font-size: 13px;\">" + (order.getConfirmedBy() != null ? order.getConfirmedBy() : "Hệ thống tự động") + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 13px;\">Thời gian thanh toán:</span> "
+                + "<strong style=\"color: #334155; font-size: 13px;\">" + order.getFormattedCreatedAt() + "</strong>"
+                + "</div>"
+                + "<div style=\"display: flex; justify-content: space-between; border-top: 1px dashed #cbd5e1; padding-top: 8px; margin-top: 8px;\">"
+                + "<span style=\"color: #64748b; font-size: 14px; font-weight: bold;\">Tổng số tiền đã nộp:</span> "
+                + "<strong style=\"color: #16a34a; font-size: 20px;\">" + order.getFormattedTotalAmount() + "</strong>"
+                + "</div>"
+                + "</div>"
+                + "<table style=\"width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;\">"
+                + "<thead><tr style=\"background-color: #f1f5f9;\">"
+                + "<th style=\"padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1;\">Khóa học / Module kích hoạt</th>"
+                + "<th style=\"padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1;\">Học phí</th>"
+                + "</tr></thead>"
+                + "<tbody>" + itemsHtml + "</tbody>"
+                + "</table>"
+                + "<div style=\"text-align: center; margin: 30px 0;\">"
+                + "<a href=\"" + targetUrl + "\" style=\"background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 50px; font-weight: bold; font-size: 15px; display: inline-block;\">BẮT ĐẦU VÀO HỌC NGAY &rarr;</a>"
+                + "</div>"
+                + "<div style=\"background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #166534;\">"
+                + "<strong>Xác thực đối soát:</strong> Biên nhận này là chứng từ điện tử có giá trị chính thức ghi nhận học phí giữa Học viên và Nhà trường. Dữ liệu được đồng bộ trực tiếp vào sổ cái đối soát của Phòng Kế toán."
+                + "</div>"
+                + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5;\">Chúc bạn có những trải nghiệm học tập tuyệt vời tại UTELearn Platform!</p>"
+                + "</div>"
+                + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
+                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM &bull; Số 1 Võ Văn Ngân, TP. Thủ Đức, TP.HCM"
+                + "</div>"
+                + "</div>";
+
+        if (emailService != null) {
+            try {
+                emailService.sendHtmlEmail(recipientEmail, subject, htmlBody);
+            } catch (Exception e) {
+                log.error("[OrderService] Không thể gửi email biên nhận thanh toán: {}", e.getMessage());
+            }
+        }
     }
 }

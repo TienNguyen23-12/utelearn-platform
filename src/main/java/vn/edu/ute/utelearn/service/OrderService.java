@@ -52,4 +52,16 @@ public interface OrderService {
     Order payCourseWithWallet(User user, String courseSlug, List<Long> selectedCohortIds);
 
     BigDecimal getUserBalance(User user);
+
+    Order createOfflineCohortOrder(User user, Long cohortId, String note);
+
+    Order createOfflineCourseOrder(User user, String courseSlug, List<Long> selectedCohortIds, String note);
+
+    Order createCashierOrder(String studentIdentifier, String productType, Long productId, List<Long> cohortIds, String paymentMethod, boolean paidImmediately, String note, String cashierUsername);
+
+    Order cashierConfirmPayment(Long orderId, String cashierUsername, String paymentMethod, String note);
+
+    void sendOfflinePaymentInstructionEmail(Order order);
+
+    void sendPaymentReceiptEmail(Order order);
 }
