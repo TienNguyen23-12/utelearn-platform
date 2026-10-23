@@ -1,4 +1,4 @@
-package vn.edu.ute.utelearn.controller;
+package vn.edu.ute.utelearn.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
