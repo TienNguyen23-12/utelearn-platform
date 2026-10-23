@@ -12,6 +12,7 @@ import vn.edu.ute.utelearn.entity.InstructorAsset;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.InstructorAssetService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -27,8 +28,7 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Override
     @Transactional(readOnly = true)
     public Page<InstructorAsset> getAssetsByInstructor(User instructor, String keyword, String type, Pageable pageable) {
-        boolean isAdmin = instructor.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) );
+        boolean isAdmin = SecurityUtils.isAdmin(instructor);
                 
         if (isAdmin) {
             if (keyword != null && !keyword.trim().isEmpty()) {
@@ -50,8 +50,7 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Override
     @Transactional(readOnly = true)
     public java.util.List<String> getFoldersByInstructor(User instructor) {
-        boolean isAdmin = instructor.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) );
+        boolean isAdmin = SecurityUtils.isAdmin(instructor);
         if (isAdmin) {
             return assetRepository.findAllDistinctFolderPaths();
         }
@@ -84,15 +83,15 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     public void deleteAsset(Long assetId, User instructor) throws IOException {
         InstructorAsset asset = getAssetByIdAndInstructor(assetId, instructor);
         
-        // Extract public_id from cloudinary_url
-        // Example url: https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg
-        // Public ID is usually 'sample' or 'folder/sample'
+        
+        
+        
         try {
             String url = asset.getCloudinaryUrl();
             int uploadIndex = url.indexOf("/upload/");
             if (uploadIndex != -1) {
                 String path = url.substring(uploadIndex + 8);
-                // Remove version like /v1234567/
+                
                 if (path.matches("^v\\d+/.*")) {
                     path = path.replaceFirst("^v\\d+/", "");
                 }
@@ -102,7 +101,7 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
                 
                 String publicId = path;
                 if (!"raw".equals(resourceType)) {
-                    // Remove extension for non-raw files (image/video)
+                    
                     int dotIndex = path.lastIndexOf('.');
                     if (dotIndex != -1) {
                         publicId = path.substring(0, dotIndex);
@@ -121,8 +120,7 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Override
     @Transactional(readOnly = true)
     public InstructorAsset getAssetByIdAndInstructor(Long assetId, User instructor) {
-        boolean isAdmin = instructor.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()) );
+        boolean isAdmin = SecurityUtils.isAdmin(instructor);
         if (isAdmin) {
             return assetRepository.findById(assetId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy tài nguyên"));

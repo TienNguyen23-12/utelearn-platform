@@ -17,6 +17,7 @@ import vn.edu.ute.utelearn.entity.CohortSchedule;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CohortService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -236,7 +237,7 @@ public class CohortServiceImpl implements CohortService {
 
         boolean isOwner = (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(instructor.getId()))
                 || (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(instructor.getId()));
-        boolean isAdmin = instructor.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()));
+        boolean isAdmin = SecurityUtils.isAdmin(instructor);
         if (!isOwner && !isAdmin) {
             throw new RuntimeException("Bạn không có quyền xóa Module này");
         }

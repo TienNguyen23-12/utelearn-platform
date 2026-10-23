@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import vn.edu.ute.utelearn.config.UtelearnProperties;
 import vn.edu.ute.utelearn.dto.OrderItemDTO;
+import vn.edu.ute.utelearn.util.CurrencyUtils;
 import vn.edu.ute.utelearn.entity.Order;
 import vn.edu.ute.utelearn.service.EmailService;
 
@@ -68,7 +69,7 @@ public class EmailServiceImpl implements EmailService {
             itemsHtml.append("<tr>")
                     .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b;\"><strong>").append(item.getName()).append("</strong></td>")
                     .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #0284c7; font-weight: bold;\">")
-                    .append(item.getPrice() != null ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(item.getPrice()) + " VNĐ" : "0 VNĐ")
+                    .append(CurrencyUtils.formatVnd(item.getPrice()))
                     .append("</td>")
                     .append("</tr>");
         }
@@ -143,7 +144,7 @@ public class EmailServiceImpl implements EmailService {
             itemsHtml.append("<tr>")
                     .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b;\"><strong>").append(item.getName()).append("</strong></td>")
                     .append("<td style=\"padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #16a34a; font-weight: bold;\">")
-                    .append(item.getPrice() != null ? java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(item.getPrice()) + " VNĐ" : "0 VNĐ")
+                    .append(CurrencyUtils.formatVnd(item.getPrice()))
                     .append("</td>")
                     .append("</tr>");
         }
