@@ -1,4 +1,4 @@
-package vn.edu.ute.utelearn.controller;
+package vn.edu.ute.utelearn.controller.instructor;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

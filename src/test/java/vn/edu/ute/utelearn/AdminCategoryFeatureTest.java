@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import vn.edu.ute.utelearn.controller.AdminCategoryController;
+import vn.edu.ute.utelearn.controller.admin.AdminCategoryController;
 import vn.edu.ute.utelearn.dao.CategoryRepository;
 import vn.edu.ute.utelearn.dao.CourseRepository;
 import vn.edu.ute.utelearn.dto.CategoryRequestDTO;

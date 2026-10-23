@@ -221,20 +221,12 @@ public class CheckoutController {
         }
     }
 
-    private boolean isFullCourseCohort(Cohort c) {
-        if (c == null) {
-            return false;
-        }
-        boolean isCodeAll = c.getCode() != null && c.getCode().endsWith("-ALL");
-        boolean isNameAll = c.getName() != null && c.getName().toLowerCase().startsWith("toàn bộ khóa học");
-        return isCodeAll || isNameAll;
-    }
 
     private List<Cohort> getOrCreateAvailableCohorts(Course course) {
         List<Cohort> cohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
                 List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
         List<Cohort> realModules = cohorts.stream()
-                .filter(c -> !isFullCourseCohort(c))
+                .filter(c -> !(c != null && c.isFullCourseCohort()))
                 .collect(java.util.stream.Collectors.toList());
         if (!realModules.isEmpty()) {
             return realModules;
@@ -286,7 +278,7 @@ public class CheckoutController {
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         List<CohortMember> realUserMemberships = userMemberships.stream()
-                .filter(cm -> !isFullCourseCohort(cm.getCohort()))
+                .filter(cm -> !(cm.getCohort() != null && cm.getCohort().isFullCourseCohort()))
                 .collect(java.util.stream.Collectors.toList());
         java.util.Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
 
@@ -412,7 +404,7 @@ public class CheckoutController {
 
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         List<CohortMember> realUserMemberships = userMemberships.stream()
-                .filter(cm -> !isFullCourseCohort(cm.getCohort()))
+                .filter(cm -> !(cm.getCohort() != null && cm.getCohort().isFullCourseCohort()))
                 .collect(java.util.stream.Collectors.toList());
         java.util.Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
 
@@ -453,14 +445,14 @@ public class CheckoutController {
         }
 
         List<Cohort> realModules = availableCohorts.stream()
-                .filter(c -> !isFullCourseCohort(c))
+                .filter(c -> !(c != null && c.isFullCourseCohort()))
                 .collect(java.util.stream.Collectors.toList());
         boolean allRealEnrolled = !realModules.isEmpty() && realModules.stream()
                 .allMatch(m -> cohortMemberRepository.existsByCohort_IdAndUser_Id(m.getId(), user.getId()));
 
         if (allRealEnrolled) {
             cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId()).stream()
-                    .filter(this::isFullCourseCohort)
+                    .filter(c -> c != null && c.isFullCourseCohort())
                     .findFirst()
                     .ifPresent(allCohort -> {
                         if (!cohortMemberRepository.existsByCohort_IdAndUser_Id(allCohort.getId(), user.getId())) {

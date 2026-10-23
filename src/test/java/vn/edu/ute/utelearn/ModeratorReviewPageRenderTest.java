@@ -9,7 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
-import vn.edu.ute.utelearn.controller.ModeratorController;
+import vn.edu.ute.utelearn.controller.moderator.ModeratorController;
 import vn.edu.ute.utelearn.dao.CohortRepository;
 import vn.edu.ute.utelearn.dao.ModerationTaskRepository;
 import vn.edu.ute.utelearn.dao.UserRepository;
