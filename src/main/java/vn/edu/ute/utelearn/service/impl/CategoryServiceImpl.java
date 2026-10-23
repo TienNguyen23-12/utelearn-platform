@@ -10,6 +10,7 @@ import vn.edu.ute.utelearn.dto.CategoryRequestDTO;
 import vn.edu.ute.utelearn.entity.Category;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.service.CategoryService;
+import vn.edu.ute.utelearn.util.SlugUtils;
 import vn.edu.ute.utelearn.util.ValidationUtils;
 
 import java.text.Normalizer;
@@ -152,12 +153,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private String generateSlug(String name) {
-        if (name == null) return "";
-        String slug = Normalizer.normalize(name, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
+        String slug = SlugUtils.toSlug(name);
         if (slug.isBlank()) {
             slug = "cat-" + System.currentTimeMillis();
         }
@@ -165,10 +161,6 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private String sanitizeSlug(String rawSlug) {
-        return Normalizer.normalize(rawSlug, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
+        return SlugUtils.toSlug(rawSlug);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import vn.edu.ute.utelearn.dao.CourseRepository;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.service.CourseService;
+import vn.edu.ute.utelearn.util.SlugUtils;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -191,12 +192,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private String generateSlug(String title) {
-        if (title == null) return "";
-        String slug = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
-        return slug + "-" + System.currentTimeMillis() % 10000;
+        String slug = SlugUtils.toSlug(title);
+        return slug + "-" + (System.currentTimeMillis() % 10000);
     }
 }

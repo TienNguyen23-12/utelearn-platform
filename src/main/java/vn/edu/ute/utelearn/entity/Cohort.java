@@ -228,5 +228,11 @@ public class Cohort {
     public String getStatus() {
         return calculateDynamicStatus();
     }
+
+    public boolean isFullCourseCohort() {
+        boolean isCodeAll = this.code != null && this.code.endsWith("-ALL");
+        boolean isNameAll = this.name != null && this.name.toLowerCase().startsWith("toàn bộ khóa học");
+        return isCodeAll || isNameAll;
+    }
 }
 

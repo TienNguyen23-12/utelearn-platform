@@ -22,6 +22,12 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 ms-auto">
+                <a th:if="${currentUser != null}" href="/orders" class="btn btn-light border-0 d-none d-sm-flex align-items-center gap-2 py-1 px-3 rounded-pill text-decoration-none shadow-sm" style="background-color: #f0fdf4;" title="Số dư Ví UTELearn - Bấm để xem đơn hàng & nạp tiền">
+                    <i class="bi bi-wallet2 text-success"></i>
+                    <span class="small text-muted d-none d-md-inline">Ví:</span>
+                    <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                </a>
+
                 <div class="dropdown" th:if="${currentUser != null}">
                     <button class="btn btn-light d-flex align-items-center gap-2 border-0 py-1 px-3 rounded-pill"
                         style="background-color: #f8fafc;" type="button" data-bs-toggle="dropdown">
@@ -52,6 +58,12 @@
                                     style="font-size: 10px;" th:text="${r.name}">Quản trị viên</span>
                             </div>
                         </li>
+                        <li th:if="${currentUser != null}" class="px-3 py-2 bg-light border-bottom rounded-3 my-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small"><i class="bi bi-wallet2 me-1 text-success"></i>Ví UTELearn:</span>
+                                <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                            </div>
+                        </li>
                         <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i
                                     class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
                         <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
@@ -59,6 +71,11 @@
                                 khiển</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i
                                     class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3" href="/orders"><i
+                                    class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                        <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/admin/orders"><i
+                                    class="bi bi-credit-card-2-front me-2 text-primary"></i>Quản lý Đơn hàng</a></li>
                         <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3"
                                 href="/courses/my-courses"><i
                                     class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
@@ -130,6 +147,12 @@
                 </ul>
 
                 <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <a th:if="${currentUser != null}" href="/orders" class="btn btn-light border d-flex align-items-center gap-2 py-1 px-3 rounded-pill text-decoration-none shadow-sm" style="background-color: #f0fdf4;" title="Số dư Ví UTELearn - Bấm để nạp thêm hoặc xem lịch sử">
+                        <i class="bi bi-wallet2 text-success"></i>
+                        <span class="small text-muted d-none d-md-inline">Ví:</span>
+                        <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                    </a>
+
                     <div th:if="${currentUser != null}" class="dropdown">
                         <button class="btn btn-light d-flex align-items-center gap-2 border py-2 px-3 rounded-pill"
                             type="button" data-bs-toggle="dropdown">
@@ -161,8 +184,16 @@
                                         style="font-size: 10px;" th:text="${r.name}">Học viên</span>
                                 </div>
                             </li>
+                            <li th:if="${currentUser != null}" class="px-3 py-2 bg-light border-bottom rounded-3 my-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small"><i class="bi bi-wallet2 me-1 text-success"></i>Ví UTELearn:</span>
+                                    <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
+                                </div>
+                            </li>
                             <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i
                                         class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i
+                                        class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
                             <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1"
                                     href="/courses/my-courses"><i
                                         class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a>

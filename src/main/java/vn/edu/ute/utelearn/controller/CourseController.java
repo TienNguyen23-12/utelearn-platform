@@ -600,7 +600,7 @@ public class CourseController {
         List<Cohort> cohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
                 List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
         List<Cohort> realModules = cohorts.stream()
-                .filter(c -> !isFullCourseCohort(c))
+                .filter(c -> !(c != null && c.isFullCourseCohort()))
                 .collect(java.util.stream.Collectors.toList());
         List<Cohort> availableCohorts = !realModules.isEmpty() ? realModules : cohorts;
 
@@ -881,14 +881,6 @@ public class CourseController {
         return "redirect:/courses/" + slug;
     }
 
-    private boolean isFullCourseCohort(Cohort c) {
-        if (c == null) {
-            return false;
-        }
-        boolean isCodeAll = c.getCode() != null && c.getCode().endsWith("-ALL");
-        boolean isNameAll = c.getName() != null && c.getName().toLowerCase().startsWith("toàn bộ khóa học");
-        return isCodeAll || isNameAll;
-    }
 
     private boolean checkHasAccessRole(User user, Course course, Cohort module) {
         if (user == null) {

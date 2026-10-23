@@ -142,7 +142,8 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"MODERATOR", "Người kiểm duyệt nội dung", "Nhận nhiệm vụ từ hàng đợi để duyệt bài giảng, đề thi và OJ"},
             new Object[]{"INSTRUCTOR", "Giảng viên", "Soạn giáo trình, quản lý kho tài nguyên số, mở lớp theo đợt và chấm bài"},
             new Object[]{"TA", "Trợ giảng", "Hỗ trợ giải đáp lớp học qua WebSocket và trợ giảng"},
-            new Object[]{"STUDENT", "Học viên", "Đăng ký lớp học theo đợt, làm bài tập và luyện code Online Judge"}
+            new Object[]{"STUDENT", "Học viên", "Đăng ký lớp học theo đợt, làm bài tập và luyện code Online Judge"},
+            new Object[]{"FINANCE", "Kế toán / Quản lý thanh toán", "Theo dõi dòng tiền, đối soát giao dịch và duyệt thanh toán đơn hàng"}
         );
 
         for (Object[] role : roles) {
@@ -160,7 +161,8 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"COURSE_CREATE", "Tạo và chỉnh sửa khóa học chuẩn", "COURSE"},
             new Object[]{"CONTENT_APPROVE", "Phê duyệt nội dung bài giảng và đề thi", "MODERATION"},
             new Object[]{"ASSET_MANAGE", "Quản lý kho tài nguyên số cá nhân", "ASSET"},
-            new Object[]{"CODE_SUBMIT", "Nộp bài chấm Online Judge", "OJ"}
+            new Object[]{"CODE_SUBMIT", "Nộp bài chấm Online Judge", "OJ"},
+            new Object[]{"ORDER_MANAGE", "Quản lý và đối soát đơn hàng", "PAYMENT"}
         );
 
         for (Object[] permission : permissions) {
@@ -175,6 +177,13 @@ public class DataSeeder implements CommandLineRunner {
             "INSERT INTO role_permissions (role_id, permission_id) " +
             "SELECT r.id, p.id FROM roles r, permissions p " +
             "WHERE r.code = 'ADMIN' " +
+            "ON CONFLICT DO NOTHING"
+        );
+
+        jdbcTemplate.update(
+            "INSERT INTO role_permissions (role_id, permission_id) " +
+            "SELECT r.id, p.id FROM roles r, permissions p " +
+            "WHERE r.code = 'FINANCE' AND p.code = 'ORDER_MANAGE' " +
             "ON CONFLICT DO NOTHING"
         );
 
@@ -228,6 +237,13 @@ public class DataSeeder implements CommandLineRunner {
                 "role", "MODERATOR"
             ),
             Map.of(
+                "username", "finance",
+                "email", "finance@utelearn.edu.vn",
+                "fullName", "Kế toán viên UTELearn",
+                "phone", "0905678901",
+                "role", "FINANCE"
+            ),
+            Map.of(
                 "username", "student",
                 "email", "student@utelearn.edu.vn",
                 "fullName", "Học viên UTELearn",
@@ -235,6 +251,7 @@ public class DataSeeder implements CommandLineRunner {
                 "role", "STUDENT"
             )
         );
+
 
         for (Map<String, String> user : sampleUsers) {
             String username = user.get("username");
@@ -246,7 +263,7 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.update(
                 "INSERT INTO users (username, email, password_hash, full_name, phone_number, is_active) " +
                 "VALUES (?, ?, ?, ?, ?, true) " +
-                "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash",
+                "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true",
                 username, email, defaultHashedPassword, fullName, phone
             );
 
@@ -259,7 +276,8 @@ public class DataSeeder implements CommandLineRunner {
             );
         }
 
-        log.info("[DataSeeder] Mật khẩu đăng nhập mặc định cho các tài khoản mẫu là: '{}'", defaultRawPassword);
+        int updatedCount = jdbcTemplate.update("UPDATE users SET password_hash = ?", defaultHashedPassword);
+        log.info("[DataSeeder] Đã đồng bộ mật khẩu mặc định '{}' cho toàn bộ {} tài khoản trong hệ thống.", defaultRawPassword, updatedCount);
     }
 
     private void seedCategories() {

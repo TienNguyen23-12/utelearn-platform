@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Hóa đơn #' + ${order.orderCode} + ' - UTELearn'">Hóa đơn - UTELearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .app-content-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .invoice-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div id="sidebarOverlay" class="sidebar-overlay no-print" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('orders')}" class="no-print"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Chi tiết Hóa đơn')}" class="no-print"></header>
+
+    <main class="app-main-content py-4">
+        <div class="container-fluid" style="max-width: 900px;">
+            <div class="d-flex align-items-center justify-content-between mb-4 no-print">
+                <a th:href="@{/orders}" class="btn btn-light rounded-pill px-3 border">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i>In hóa đơn
+                    </button>
+                    <a th:if="${order.status == 'PENDING'}" th:href="@{'/checkout/payment/' + ${order.orderCode}}" class="btn btn-primary rounded-pill px-3">
+                        <i class="bi bi-qr-code me-1"></i>Thanh toán ngay
+                    </a>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white invoice-card">
+                <div class="d-flex align-items-center justify-content-between border-bottom pb-4 mb-4 flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="brand-logo-badge fs-4 text-primary">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </span>
+                        <div>
+                            <h4 class="fw-bold text-dark mb-0">UTE<span class="text-primary">Learn</span></h4>
+                            <small class="text-muted">Nền tảng Học tập & Đào tạo số</small>
+                        </div>
+                    </div>
+                    <div class="text-md-end">
+                        <span class="badge rounded-pill px-3 py-2 fs-6 mb-1" th:classappend="${order.statusBadgeClass}" th:text="${order.statusDisplayName}">Thành công</span>
+                        <div class="text-muted small">Mã hóa đơn: <span class="fw-bold text-dark font-monospace" th:text="${order.orderCode}">ORD123456</span></div>
+                        <div class="text-muted small">Ngày tạo: <span th:text="${order.formattedCreatedAt}">01/01/2026</span></div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-sm-6">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-2">Thông tin người mua</h6>
+                        <div class="fw-bold text-dark fs-6" th:text="${orderDTO.userFullName}">Nguyễn Văn A</div>
+                        <div class="text-muted small" th:text="${orderDTO.userEmail}">user@utelearn.edu.vn</div>
+                        <div class="text-muted small" th:if="${order.user != null && order.user.phoneNumber != null}" th:text="'SĐT: ' + ${order.user.phoneNumber}"></div>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <h6 class="text-uppercase text-muted fw-bold small mb-2">Chi tiết thanh toán</h6>
+                        <div class="small text-muted">Phương thức: <span class="fw-semibold text-dark" th:text="${order.paymentMethodDisplayName}">VIETQR_SEPAY</span></div>
+                        <div class="small text-muted" th:if="${order.confirmedBy != null && !order.confirmedBy.isBlank()}">Thu ngân / Người duyệt: <span class="fw-semibold text-dark" th:text="${order.confirmedBy}">thu_ngan</span></div>
+                        <div class="small text-muted" th:if="${order.transactionId}">Mã biên nhận / Giao dịch: <span class="fw-semibold text-dark font-monospace" th:text="${order.transactionId}">TX123456</span></div>
+                        <div class="small text-muted" th:if="${order.paidAt}">Thời gian thanh toán: <span class="fw-semibold text-dark" th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+                        <div class="small text-danger" th:if="${order.status == 'PENDING' && order.formattedExpiresAt != null && !order.formattedExpiresAt.isBlank()}">Hạn nộp tiền: <span class="fw-bold" th:text="${order.formattedExpiresAt}"></span></div>
+                    </div>
+                </div>
+
+                <div th:if="${order.status == 'PENDING' && order.offline}" class="alert alert-warning rounded-3 p-3 mb-4">
+                    <h6 class="fw-bold text-dark mb-1"><i class="bi bi-shop-window me-1 text-warning"></i>Hướng dẫn thanh toán tại Quầy thu ngân:</h6>
+                    <p class="small text-muted mb-2">Học viên vui lòng xuất trình Mã đơn hàng: <strong class="text-danger font-monospace fs-6" th:text="${order.orderCode}">ORD123</strong> tại <strong>Phòng Kế hoạch - Tài chính (A1-01), Trường ĐH Sư phạm Kỹ thuật TP.HCM</strong>.</p>
+                    <div class="small text-danger fw-semibold"><i class="bi bi-shield-check me-1"></i>Lưu ý: Yêu cầu Thu ngân xuất Phiếu biên nhận hoặc kiểm tra Email Biên nhận xác nhận kích hoạt thành công trên điện thoại trước khi rời quầy.</div>
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle">
+                        <thead class="table-light small text-uppercase">
+                            <tr>
+                                <th>Nội dung khóa học / Module</th>
+                                <th class="text-center">Loại</th>
+                                <th class="text-end">Đơn giá</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${orderDTO.items}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${item.name}">Tên khóa học</div>
+                                    <small class="text-muted" th:if="${item.cohortCode}" th:text="'Mã: ' + ${item.cohortCode}"></small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-secondary border" th:text="${item.type}">COURSE</span>
+                                </td>
+                                <td class="text-end fw-bold text-dark" th:text="${item.price != null ? #numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'}">0 VNĐ</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="text-end border-0 pt-3">Tổng cộng thanh toán:</th>
+                                <th class="text-end border-0 pt-3 fs-5 fw-bold text-success" th:text="${order.formattedTotalAmount}">0 VNĐ</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="border-top pt-4 text-center text-muted small">
+                    <p class="mb-1">Cảm ơn bạn đã tin tưởng và đồng hành cùng UTELearn Platform!</p>
+                    <p class="mb-0">Hóa đơn điện tử được sinh tự động bởi hệ thống.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-package vn.edu.ute.utelearn.controller;
+package vn.edu.ute.utelearn.controller.instructor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

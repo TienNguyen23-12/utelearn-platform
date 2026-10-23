@@ -73,15 +73,18 @@ public class SecurityConfig {
                                 "/api/courses/**",
                                 "/api/cohorts",
                                 "/api/cohorts/**",
+                                "/api/webhooks/**",
+                                "/api/orders/**",
                                 "/oj/**")
                         .permitAll()
 
+                        .requestMatchers("/admin/orders/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
                         .requestMatchers("/admin/**", "/dashboard/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/instructor/**", "/api/instructor/**")
                         .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/moderator/**")
                         .hasAnyAuthority("MODERATOR", "ROLE_MODERATOR", "ADMIN", "ROLE_ADMIN")
-                        .requestMatchers("/student/**", "/profile/**").authenticated()
+                        .requestMatchers("/student/**", "/profile/**", "/orders/**").authenticated()
 
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
