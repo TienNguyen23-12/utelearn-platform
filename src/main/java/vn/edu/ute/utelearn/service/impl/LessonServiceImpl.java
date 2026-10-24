@@ -16,7 +16,11 @@ import vn.edu.ute.utelearn.service.LessonService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 import vn.edu.ute.utelearn.service.SectionService;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,6 +34,7 @@ public class LessonServiceImpl implements LessonService {
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.UserRepository userRepository;
+    private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
     private final CloudinaryService cloudinaryService;
 
     private boolean isAuthorized(Section section, Long instructorId) {
@@ -127,16 +132,30 @@ public class LessonServiceImpl implements LessonService {
 
         if (targetCohortId != null) {
             cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
-                vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                Instant unlockInstant = parseDateTime(request.getUnlockAt());
+                if (unlockInstant == null) {
+                    unlockInstant = Instant.now();
+                }
+                Instant deadlineInstant = parseDateTime(request.getDeadlineAt());
+                String scoreType = (request.getShowScoreType() != null && !request.getShowScoreType().isBlank())
+                        ? request.getShowScoreType() : "IMMEDIATELY";
+                Boolean allowReview = request.getAllowReviewAnswers() != null ? request.getAllowReviewAnswers() : true;
+
+                CohortSchedule schedule = CohortSchedule.builder()
                         .cohort(cohort)
                         .lesson(savedLesson)
-                        .unlockAt(java.time.Instant.now())
+                        .unlockAt(unlockInstant)
+                        .deadlineAt(deadlineInstant)
+                        .showScoreType(scoreType)
+                        .allowReviewAnswers(allowReview)
                         .build();
                 cohortScheduleRepository.save(schedule);
                 revertCohortToDraftIfApproved(cohort);
             });
         } else if (section != null && section.getCohort() != null) {
             revertCohortToDraftIfApproved(section.getCohort());
+        } else if (section != null && section.getCourse() != null) {
+            revertCourseToDraftIfPublished(section.getCourse());
         }
 
         log.info("[LessonService] Đã tạo thành công bài học ID: {}", savedLesson.getId());
@@ -185,22 +204,67 @@ public class LessonServiceImpl implements LessonService {
             targetCohortId = section.getCohort().getId();
         }
         if (targetCohortId != null) {
-            boolean scheduleExists = cohortScheduleRepository.findByCohortIdAndLessonId(targetCohortId, savedLesson.getId()).isPresent();
-            if (!scheduleExists) {
+            Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(targetCohortId, savedLesson.getId());
+            if (scheduleOpt.isPresent()) {
+                CohortSchedule cs = scheduleOpt.get();
+                if (request.getUnlockAt() != null && !request.getUnlockAt().isBlank()) {
+                    Instant unlockInstant = parseDateTime(request.getUnlockAt());
+                    if (unlockInstant != null) {
+                        cs.setUnlockAt(unlockInstant);
+                    }
+                }
+                if (request.getDeadlineAt() != null) {
+                    if (request.getDeadlineAt().isBlank()) {
+                        cs.setDeadlineAt(null);
+                    } else {
+                        Instant deadlineInstant = parseDateTime(request.getDeadlineAt());
+                        cs.setDeadlineAt(deadlineInstant);
+                    }
+                }
+                if (request.getShowScoreType() != null && !request.getShowScoreType().isBlank()) {
+                    cs.setShowScoreType(request.getShowScoreType());
+                }
+                if (request.getAllowReviewAnswers() != null) {
+                    cs.setAllowReviewAnswers(request.getAllowReviewAnswers());
+                }
+                cohortScheduleRepository.save(cs);
+                revertCohortToDraftIfApproved(targetCohortId);
+            } else {
                 cohortRepository.findById(targetCohortId).ifPresent(cohort -> {
-                    vn.edu.ute.utelearn.entity.CohortSchedule schedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                    Instant unlockInstant = parseDateTime(request.getUnlockAt());
+                    if (unlockInstant == null) {
+                        unlockInstant = Instant.now();
+                    }
+                    Instant deadlineInstant = parseDateTime(request.getDeadlineAt());
+                    String scoreType = (request.getShowScoreType() != null && !request.getShowScoreType().isBlank())
+                            ? request.getShowScoreType() : "IMMEDIATELY";
+                    Boolean allowReview = request.getAllowReviewAnswers() != null ? request.getAllowReviewAnswers() : true;
+
+                    CohortSchedule schedule = CohortSchedule.builder()
                             .cohort(cohort)
                             .lesson(savedLesson)
-                            .unlockAt(java.time.Instant.now())
+                            .unlockAt(unlockInstant)
+                            .deadlineAt(deadlineInstant)
+                            .showScoreType(scoreType)
+                            .allowReviewAnswers(allowReview)
                             .build();
                     cohortScheduleRepository.save(schedule);
                     revertCohortToDraftIfApproved(cohort);
                 });
-            } else {
-                revertCohortToDraftIfApproved(targetCohortId);
             }
         } else if (section != null && section.getCohort() != null) {
             revertCohortToDraftIfApproved(section.getCohort());
+        } else {
+            List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
+            if (!schedules.isEmpty()) {
+                for (CohortSchedule cs : schedules) {
+                    if (cs.getCohort() != null) {
+                        revertCohortToDraftIfApproved(cs.getCohort());
+                    }
+                }
+            } else if (section != null && section.getCourse() != null) {
+                revertCourseToDraftIfPublished(section.getCourse());
+            }
         }
 
         log.info("[LessonService] Đã cập nhật thành công bài học ID: {}", savedLesson.getId());
@@ -217,14 +281,17 @@ public class LessonServiceImpl implements LessonService {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
         }
 
-        if (section != null && section.getCohort() != null) {
-            revertCohortToDraftIfApproved(section.getCohort());
-        }
         List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
-        for (CohortSchedule cs : schedules) {
-            if (cs.getCohort() != null) {
-                revertCohortToDraftIfApproved(cs.getCohort());
+        if (!schedules.isEmpty()) {
+            for (CohortSchedule cs : schedules) {
+                if (cs.getCohort() != null) {
+                    revertCohortToDraftIfApproved(cs.getCohort());
+                }
             }
+        } else if (section != null && section.getCohort() != null) {
+            revertCohortToDraftIfApproved(section.getCohort());
+        } else if (section != null && section.getCourse() != null) {
+            revertCourseToDraftIfPublished(section.getCourse());
         }
 
         cohortScheduleRepository.deleteByLessonId(lessonId);
@@ -251,16 +318,42 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private void revertCohortToDraftIfApproved(Cohort cohort) {
-        if (cohort != null && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (cohort != null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
             cohortRepository.save(cohort);
-            log.info("[LessonService] Chuyển module độc lập id: {} về DRAFT do cập nhật bài học", cohort.getId());
+            log.info("[LessonService] Chuyển module id: {} về DRAFT do cập nhật bài học", cohort.getId());
         }
     }
 
     private void revertCohortToDraftIfApproved(Long cohortId) {
         if (cohortId != null) {
             cohortRepository.findById(cohortId).ifPresent(this::revertCohortToDraftIfApproved);
+        }
+    }
+
+    private void revertCourseToDraftIfPublished(vn.edu.ute.utelearn.entity.Course course) {
+        if (course != null && "PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+            course.setStatus("DRAFT");
+            courseRepository.save(course);
+            log.info("[LessonService] Chuyển khóa học id: {} về DRAFT do cập nhật bài học", course.getId());
+        }
+    }
+
+    private Instant parseDateTime(String str) {
+        if (str == null || str.isBlank()) {
+            return null;
+        }
+        try {
+            if (str.length() == 16) {
+                return LocalDateTime.parse(str).atZone(ZoneId.systemDefault()).toInstant();
+            }
+            return Instant.parse(str);
+        } catch (Exception e) {
+            try {
+                return LocalDateTime.parse(str).atZone(ZoneId.systemDefault()).toInstant();
+            } catch (Exception ex) {
+                return null;
+            }
         }
     }
 }

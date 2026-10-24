@@ -44,14 +44,26 @@
   - `DataSeeder.java` & `SecurityConfig.java`: Cấp quyền `ORDER_MANAGE`, tạo vai trò `FINANCE`, tài khoản mẫu `finance@utelearn.edu.vn`, và whitelist an toàn webhook endpoint.
   - Kiểm thử: `OrderFeatureTest.java` (10/10 unit tests passed); toàn bộ test suite dự án 104/104 tests passed.
 
-#### 1.2. Hệ thống Bài kiểm tra Trắc nghiệm – Quiz & Question (`UC-24`, `UC-37`)
-- **Hiện trạng trong code:**
-  - Đã có 3 Entity JPA: `Quiz.java`, `Question.java` (lưu `options` bằng JSONB), `QuizSubmission.java` (lưu `answers` bằng JSONB).
-  - Trong `curriculum.html` và `module-curriculum.html` đã có tùy chọn tạo bài học loại `QUIZ`.
-  - **Chưa có:** `QuizRepository.java`, `QuestionRepository.java`, `QuizSubmissionRepository.java`, `QuizService.java`, giao diện soạn ngân hàng câu hỏi và giao diện làm bài thi trắc nghiệm trên phòng học.
-- **Cần code những gì:**
-  1. **Cho Giảng viên (`UC-37`):** Giao diện cấu hình `Quiz` (thời gian làm bài `durationMinutes`, điểm đạt `passingScore`, số lần làm tối đa `maxAttempts`, trộn đề `shuffleQuestions`) và CRUD danh sách câu hỏi `Question` (`SINGLE_CHOICE`, `MULTI_SELECT`, `FILL_BLANK`).
-  2. **Cho Học viên (`UC-24`):** Màn hình làm bài thi tích hợp trong `module-learn.html` có đồng hồ đếm ngược giờ, tự động khóa nộp bài khi hết giờ, chấm điểm tự động trên máy chủ và lưu kết quả chi tiết vào `quiz_submissions`.
+#### 1.2. Hệ thống Bài kiểm tra Trắc nghiệm – Quiz & Question (`UC-24`, `UC-37`) - [ĐÃ HOÀN THÀNH 100%]
+- **Kết quả thực hiện:**
+  - `QuizRepository.java`, `QuestionRepository.java`, `QuizSubmissionRepository.java`: Đầy đủ các phương thức truy vấn JPA, đếm lượt làm bài, lấy điểm cao nhất và lịch sử bài nộp.
+  - `QuizService.java` & `QuizServiceImpl.java`: 
+    - Quản lý cấu hình `Quiz`: Thời gian làm bài (`durationMinutes`), Điểm đạt (`passingScore`), Số lần làm tối đa (`maxAttempts`), Xáo trộn câu hỏi (`shuffleQuestions`).
+    - Hỗ trợ đầy đủ **4 dạng câu hỏi cốt lõi** lưu trữ linh hoạt bằng `JSONB`:
+      1. Trắc nghiệm 1 đáp án (`SINGLE_CHOICE`).
+      2. Trắc nghiệm nhiều đáp án (`MULTI_SELECT`).
+      3. Đúng / Sai (`TRUE_FALSE`).
+      4. Điền từ vào chỗ trống (`FILL_BLANK`).
+    - Chấm điểm tự động 100% trên Server theo chuẩn thang điểm 10.0, tự động phân tích chi tiết từng câu hỏi đúng/sai, lưu vết bài làm vào `quiz_submissions`.
+    - **Cơ chế tự động hoàn thành bài học:** Khi học viên đạt điểm sàn (`score >= passingScore`), hệ thống tự động ghi nhận vào `lesson_completions` và cập nhật tức thì tiến độ học tập trên giao diện.
+  - `InstructorQuizApiController.java`: REST API `/api/instructor/quizzes/**` phân quyền `INSTRUCTOR`/`ADMIN` cho phép lấy cấu hình, cập nhật tham số bài thi và CRUD ngân hàng câu hỏi.
+  - `QuizApiController.java`: REST API `/api/quizzes/**` phục vụ học viên truy vấn thông tin quiz, bắt đầu bấm giờ làm bài (ẩn cờ `isCorrect`), nộp bài thi, xem lịch sử và tra cứu chi tiết lời giải.
+  - `module-learn.html`: 
+    - Giao diện làm bài thi trực tuyến hiện đại: Tổng quan bài thi, thống kê điểm cao nhất và số lượt làm, đồng hồ đếm ngược thời gian thực, bảng điều hướng câu hỏi nhanh (Palette), form làm bài tương tác trực quan cho từng loại câu hỏi.
+    - Màn hình kết quả vinh danh điểm số, vòng tròn tiến độ đạt/chưa đạt, khối xem lại chi tiết bài làm với đáp án đúng, lựa chọn của học viên và lời giải thích.
+  - `curriculum.html` & `module-curriculum.html`: Nút "Soạn đề" Quiz chuyên dụng, Modal cấu hình tham số bài thi và trình soạn ngân hàng câu hỏi linh hoạt; tính năng tải mẫu Excel, nhập/xuất câu hỏi hàng loạt (.xlsx); tính năng thay đổi thứ tự câu hỏi trực quan bằng kéo thả (SortableJS) hoặc các nút mũi tên Up/Down.
+  - `DataSeeder.java`: Tự động nạp dữ liệu bài kiểm tra mẫu OOP & Java Core với đầy đủ 4 dạng câu hỏi chuẩn mực; tự động migrate cột `order_index`.
+  - Kiểm thử: `QuizFeatureTest.java` (27/27 unit tests passed); toàn bộ test suite dự án 147/147 tests passed.
 
 ---
 

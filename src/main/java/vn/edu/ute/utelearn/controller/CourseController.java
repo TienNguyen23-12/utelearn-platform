@@ -812,9 +812,9 @@ public class CourseController {
                 .orElse(null);
         Long initialLessonId = queryLessonId != null ? queryLessonId : savedLastLessonId;
 
-        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getCode()));
-        boolean isInstructor = user.getRoles().stream().anyMatch(r -> "INSTRUCTOR".equals(r.getCode()) || "TEACHER".equals(r.getCode()));
-        boolean isModerator = user.getRoles().stream().anyMatch(r -> "MODERATOR".equals(r.getCode()));
+        boolean isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(user) || (rbacHelper != null && rbacHelper.hasAnyRole("ADMIN", "ROLE_ADMIN"));
+        boolean isInstructor = vn.edu.ute.utelearn.util.SecurityUtils.isInstructor(user) || (rbacHelper != null && rbacHelper.hasAnyRole("INSTRUCTOR", "ROLE_INSTRUCTOR", "TEACHER"));
+        boolean isModerator = vn.edu.ute.utelearn.util.SecurityUtils.isModerator(user) || (rbacHelper != null && rbacHelper.hasAnyRole("MODERATOR", "ROLE_MODERATOR"));
 
         model.addAttribute("currentUser", user);
         model.addAttribute("isAdmin", isAdmin);

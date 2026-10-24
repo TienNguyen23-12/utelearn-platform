@@ -16,5 +16,5 @@ public class CohortScheduleRequestDTO {
     private LocalDateTime deadlineAt;
     
     private String showScoreType = "IMMEDIATELY";
-    private Boolean allowReviewAnswers = false;
+    private Boolean allowReviewAnswers = true;
 }

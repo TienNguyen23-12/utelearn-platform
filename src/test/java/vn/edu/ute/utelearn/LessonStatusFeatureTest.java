@@ -16,6 +16,7 @@ import vn.edu.ute.utelearn.dao.SectionRepository;
 import vn.edu.ute.utelearn.dao.UserRepository;
 import vn.edu.ute.utelearn.dto.LessonRequestDTO;
 import vn.edu.ute.utelearn.entity.Cohort;
+import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.ModerationTask;
 import vn.edu.ute.utelearn.entity.ModeratorAttendance;
@@ -207,5 +208,35 @@ public class LessonStatusFeatureTest {
         assertEquals("PUBLISHED", draftLesson.getStatus());
         assertTrue(draftLesson.isPublished());
         verify(lessonRepository, atLeastOnce()).saveAll(any());
+    }
+
+    @Test
+    void testCreateLessonInPublishedCourseRevertsCourseToDraft() {
+        when(userRepository.findById(99L)).thenReturn(Optional.of(instructor));
+        Course publishedCourse = Course.builder()
+                .id(10L)
+                .title("Khóa học Java")
+                .status("PUBLISHED")
+                .createdBy(instructor)
+                .build();
+        Section courseSection = Section.builder()
+                .id(2L)
+                .course(publishedCourse)
+                .build();
+
+        when(sectionService.getSectionById(2L)).thenReturn(courseSection);
+        when(lessonRepository.findBySectionIdOrderByOrderIndexAsc(2L)).thenReturn(Collections.emptyList());
+        when(lessonRepository.save(any(Lesson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LessonRequestDTO dto = new LessonRequestDTO();
+        dto.setTitle("Quiz kiểm tra trắc nghiệm");
+        dto.setLessonType("QUIZ");
+
+        Lesson created = lessonServiceImpl.createLesson(2L, dto, instructor.getId());
+
+        assertNotNull(created);
+        assertEquals("DRAFT", created.getStatus());
+        assertEquals("DRAFT", publishedCourse.getStatus());
+        verify(courseRepository, atLeastOnce()).save(publishedCourse);
     }
 }

@@ -198,7 +198,9 @@ public class InstructorCourseController {
 
     @PostMapping("/{id}/submit-review")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
-    public String submitForReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String submitForReview(@PathVariable Long id,
+                                  @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
+                                  RedirectAttributes redirectAttributes) {
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
         Course course = courseService.getCourseById(id);
         if (!course.getCreatedBy().getId().equals(currentUser.getId())) {
@@ -208,6 +210,9 @@ public class InstructorCourseController {
         moderationService.createCourseModerationTask(id, currentUser.getId());
         log.info("[InstructorCourseController] Gửi duyệt khóa học id: {}, user: {}", id, currentUser.getEmail());
         redirectAttributes.addFlashAttribute("successMessage", "Khóa học đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.");
+        if (redirectUrl != null && (redirectUrl.startsWith("/instructor/courses/") || redirectUrl.startsWith("/instructor/cohorts/"))) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/instructor/courses";
     }
 

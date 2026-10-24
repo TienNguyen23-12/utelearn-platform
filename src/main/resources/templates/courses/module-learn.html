@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
-    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${module != null ? module.code + ' - ' + module.name + ' | UTELearn' : 'Học tập Module | UTELearn'}">Học tập Module | UTELearn</title>
@@ -444,6 +444,227 @@
                 max-width: 130px !important;
             }
         }
+
+        .quiz-player-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #ffffff;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .quiz-hero-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 32px;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+
+        .quiz-stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .quiz-sticky-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .quiz-timer-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 15px;
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s ease;
+        }
+
+        .quiz-timer-pill.danger {
+            background: #fef2f2;
+            color: #ef4444;
+            border-color: #fca5a5;
+            animation: quizPulse 1s infinite;
+        }
+
+        @keyframes quizPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.03); }
+        }
+
+        .quiz-palette-pill {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .quiz-palette-pill:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+
+        .quiz-palette-pill.answered {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+        }
+
+        .quiz-question-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .quiz-question-box:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.08);
+        }
+
+        .quiz-option-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background: #ffffff;
+            transition: all 0.15s ease;
+        }
+
+        .quiz-option-container:hover {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+
+        .quiz-option-container.selected {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .quiz-option-container.review-correct {
+            border-color: #10b981 !important;
+            background: #ecfdf5 !important;
+            color: #065f46 !important;
+        }
+
+        .quiz-option-container.review-wrong {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+            color: #991b1b !important;
+        }
+
+        .quiz-score-wheel {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            border: 6px solid #e2e8f0;
+        }
+
+        .quiz-score-wheel.passed {
+            border-color: #10b981;
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .quiz-score-wheel.failed {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .quiz-overview-pill {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .quiz-overview-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+
+        .quiz-overview-pill.answered {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #047857;
+        }
+
+        .quiz-overview-pill.unanswered {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #b45309;
+        }
+
+        .quiz-overview-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .quiz-overview-item:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .quiz-overview-item.unanswered {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .quiz-overview-item.answered {
+            border-left: 4px solid #10b981;
+        }
     </style>
 </head>
 <body>
@@ -616,6 +837,29 @@
     </aside>
 </div>
 
+<div class="modal fade" id="quizSubmitConfirmModal" tabindex="-1" aria-labelledby="quizSubmitConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 bg-light px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="quizSubmitConfirmModalLabel">
+                    <i class="bi bi-ui-checks-grid text-primary fs-5"></i>
+                    Tổng quan bài làm & Xác nhận nộp bài
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="quizSubmitConfirmModalBody"></div>
+            <div class="modal-footer border-0 bg-light px-4 py-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left me-1"></i>Tiếp tục làm bài
+                </button>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" id="btnConfirmSubmitQuizAction">
+                    <i class="bi bi-send-fill me-1"></i>Xác nhận nộp bài
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -628,6 +872,8 @@
     const moduleObjectives = /*[[${module.objectives}]]*/ '';
     const moduleDescription = /*[[${module.description}]]*/ '';
     const initialLessonId = /*[[${initialLessonId}]]*/ null;
+    const isModerator = /*[[${isModerator}]]*/ false;
+    const isAdmin = /*[[${isAdmin}]]*/ false;
 
     const serverCompletedIds = /*[[${completedLessonIds}]]*/ [];
     const lessonsRaw = /*[[${lessonDtos}]]*/ [];
@@ -756,53 +1002,60 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        setupSidebarControls();
-        setupFocusModeControls();
-        renderSidebar();
-        updateProgressUI();
+        try {
+            setupSidebarControls();
+            setupFocusModeControls();
+            renderSidebar();
+            updateProgressUI();
 
-        if (moduleLessons.length > 0) {
-            let targetIndex = -1;
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryLessonParam = urlParams.get('lesson');
-            if (queryLessonParam) {
-                const parsedId = parseInt(queryLessonParam, 10);
-                const foundIdx = moduleLessons.findIndex(l => l.id === parsedId);
-                if (foundIdx !== -1) {
-                    targetIndex = foundIdx;
+            if (moduleLessons.length > 0) {
+                let targetIndex = -1;
+                const urlParams = new URLSearchParams(window.location.search);
+                const queryLessonParam = urlParams.get('lesson');
+                if (queryLessonParam) {
+                    const parsedId = parseInt(queryLessonParam, 10);
+                    const foundIdx = moduleLessons.findIndex(l => l.id === parsedId);
+                    if (foundIdx !== -1) {
+                        targetIndex = foundIdx;
+                    }
+                }
+
+                if (targetIndex === -1 && initialLessonId) {
+                    const foundIdx = moduleLessons.findIndex(l => l.id === initialLessonId);
+                    if (foundIdx !== -1) {
+                        targetIndex = foundIdx;
+                    }
+                }
+
+                if (targetIndex === -1) {
+                    const completed = getCompletedLessons();
+                    const firstAvailableIndex = moduleLessons.findIndex(l => !l.isLocked && !completed.includes(l.id));
+                    if (firstAvailableIndex !== -1) {
+                        targetIndex = firstAvailableIndex;
+                    } else {
+                        const firstUnlockedIndex = moduleLessons.findIndex(l => !l.isLocked);
+                        targetIndex = firstUnlockedIndex !== -1 ? firstUnlockedIndex : 0;
+                    }
+                }
+
+                loadLessonByIndex(targetIndex);
+            } else {
+                const mainEl = document.getElementById('mainContentInner');
+                if (mainEl) {
+                    mainEl.innerHTML = `
+                        <div class="text-center py-5 my-5 text-muted">
+                            <i class="bi bi-journal-x display-3 mb-3 text-secondary opacity-50"></i>
+                            <h5>Module này hiện chưa có bài học nào được phát hành.</h5>
+                            <p class="small text-muted">Giảng viên sẽ sớm cập nhật bài học và lịch mở bài giảng.</p>
+                            <a href="/courses/${courseSlug}/modules/${moduleId}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
+                                <i class="bi bi-arrow-left me-1"></i>Quay lại trang Module
+                            </a>
+                        </div>
+                    `;
                 }
             }
-
-            if (targetIndex === -1 && initialLessonId) {
-                const foundIdx = moduleLessons.findIndex(l => l.id === initialLessonId);
-                if (foundIdx !== -1) {
-                    targetIndex = foundIdx;
-                }
-            }
-
-            if (targetIndex === -1) {
-                const completed = getCompletedLessons();
-                const firstAvailableIndex = moduleLessons.findIndex(l => !l.isLocked && !completed.includes(l.id));
-                if (firstAvailableIndex !== -1) {
-                    targetIndex = firstAvailableIndex;
-                } else {
-                    const firstUnlockedIndex = moduleLessons.findIndex(l => !l.isLocked);
-                    targetIndex = firstUnlockedIndex !== -1 ? firstUnlockedIndex : 0;
-                }
-            }
-
-            loadLessonByIndex(targetIndex);
-        } else {
-            document.getElementById('mainContentInner').innerHTML = `
-                <div class="text-center py-5 my-5 text-muted">
-                    <i class="bi bi-journal-x display-3 mb-3 text-secondary opacity-50"></i>
-                    <h5>Module này hiện chưa có bài học nào được phát hành.</h5>
-                    <p class="small text-muted">Giảng viên sẽ sớm cập nhật bài học và lịch mở bài giảng.</p>
-                    <a href="/courses/${courseSlug}/modules/${moduleId}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
-                        <i class="bi bi-arrow-left me-1"></i>Quay lại trang Module
-                    </a>
-                </div>
-            `;
+        } catch (err) {
+            console.error('Lỗi khởi tạo phòng học:', err);
         }
     });
 
@@ -889,6 +1142,8 @@
                     iconClass = 'bi-question-circle-fill text-warning';
                 } else if (lesson.lessonType === 'CODE_PRACTICE') {
                     iconClass = 'bi-code-slash text-info';
+                } else if (lesson.lessonType === 'ASSIGNMENT') {
+                    iconClass = 'bi-journal-check text-warning';
                 }
 
                 let metaBadgeHtml = '';
@@ -907,6 +1162,8 @@
                     metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-question-circle me-1"></i>Trắc nghiệm</span>`;
                 } else if (lesson.lessonType === 'CODE_PRACTICE') {
                     metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-laptop me-1"></i>Bài tập Code</span>`;
+                } else if (lesson.lessonType === 'ASSIGNMENT') {
+                    metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-journal-check me-1"></i>Bài tập</span>`;
                 }
 
                 html += `
@@ -942,6 +1199,10 @@
                 iconEl.className = 'bi bi-check-circle-fill text-success lesson-status-icon';
             } else if (l.lessonType === 'VIDEO') {
                 iconEl.className = 'bi bi-play-circle-fill text-primary lesson-status-icon';
+            } else if (l.lessonType === 'QUIZ') {
+                iconEl.className = 'bi bi-question-circle-fill text-warning lesson-status-icon';
+            } else if (l.lessonType === 'ASSIGNMENT') {
+                iconEl.className = 'bi bi-journal-check text-warning lesson-status-icon';
             } else {
                 iconEl.className = 'bi bi-file-earmark-text-fill text-info lesson-status-icon';
             }
@@ -1007,7 +1268,7 @@
         if (!btn) return;
 
         const currentLesson = moduleLessons.find(l => l.id === lessonId);
-        if (currentLesson && currentLesson.isLocked) {
+        if (currentLesson && (currentLesson.isLocked || currentLesson.lessonType === 'QUIZ' || currentLesson.lessonType === 'ASSIGNMENT')) {
             btn.style.display = 'none';
             return;
         }
@@ -1318,6 +1579,36 @@
                     </div>
                 `;
             }
+        } else if (lesson.lessonType === 'QUIZ') {
+            mainMediaHtml = `
+                <div id="quizPlayerContainer" class="quiz-player-card mb-4" data-lesson-id="${lesson.id}">
+                    <div class="card border-0 rounded-4 p-5 text-center bg-white">
+                        <div class="spinner-border text-primary mx-auto mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <h5 class="fw-bold text-dark">Đang nạp bài kiểm tra...</h5>
+                        <p class="text-muted small mb-0">Hệ thống đang chuẩn bị nội dung câu hỏi.</p>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => {
+                loadQuizData(lesson.id);
+            }, 60);
+        } else if (lesson.lessonType === 'ASSIGNMENT') {
+            mainMediaHtml = `
+                <div id="assignmentPlayerContainer" class="assignment-player-card mb-4" data-lesson-id="${lesson.id}">
+                    <div class="card border-0 rounded-4 p-5 text-center bg-white shadow-sm">
+                        <div class="spinner-border text-primary mx-auto mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <h5 class="fw-bold text-dark">Đang nạp bài tập...</h5>
+                        <p class="text-muted small mb-0">Hệ thống đang chuẩn bị nội dung và biểu mẫu nộp bài.</p>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => {
+                loadAssignmentData(lesson.id);
+            }, 60);
         } else {
             mainMediaHtml = `
                 <div class="card border-0 rounded-4 shadow-sm p-5 text-center my-4 bg-white">
@@ -1580,6 +1871,1517 @@
                         boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)'
                     }
                 }).showToast();
+            }
+        }
+    }
+
+    let currentQuizMeta = null;
+    let activeQuizSession = null;
+    let quizCountdownTimer = null;
+    let quizRemainingSecs = 0;
+    let quizStudentAnswers = {};
+
+    function loadQuizData(lessonId) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        fetch('/api/quizzes/lesson/' + lessonId + '?cohortId=' + moduleId)
+            .then(res => {
+                if (!res.ok) throw new Error('Không thể tải bài kiểm tra');
+                return res.json();
+            })
+            .then(quiz => {
+                currentQuizMeta = quiz;
+                const isReviewerMode = Boolean(isModerator || isAdmin || quiz.isReviewer);
+                if (isReviewerMode) {
+                    renderQuizModeratorReview(quiz);
+                } else {
+                    renderQuizOverview(quiz);
+                }
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-5 text-center bg-white">
+                        <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 72px; height: 72px;">
+                            <i class="bi bi-patch-question text-warning display-6"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">Bài kiểm tra đang được chuẩn bị</h4>
+                        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+                            Giảng viên đang hoàn thiện ngân hàng câu hỏi cho bài kiểm tra này. Vui lòng quay lại sau.
+                        </p>
+                        <div>
+                            <button class="btn btn-outline-primary rounded-pill px-4 btn-sm fw-semibold" onclick="stepLesson(1)">
+                                Sang bài tiếp theo <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function renderQuizModeratorReview(quiz) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        const totalQ = (quiz.questions && Array.isArray(quiz.questions)) ? quiz.questions.length : (quiz.totalQuestions || 0);
+        const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+        let questionsHtml = '';
+        if (!quiz.questions || quiz.questions.length === 0) {
+            questionsHtml = `
+                <div class="card border border-warning-subtle rounded-4 p-5 text-center bg-warning-subtle bg-opacity-25 mb-4">
+                    <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center p-3 mx-auto mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-exclamation-triangle text-warning fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Chưa có câu hỏi nào trong đề thi</h5>
+                    <p class="text-muted small mb-0">Giảng viên chưa soạn câu hỏi cho bài kiểm tra này. Vui lòng yêu cầu bổ sung câu hỏi trước khi phê duyệt.</p>
+                </div>
+            `;
+        } else {
+            questionsHtml = quiz.questions.map((q, idx) => {
+                let typeName = 'Một đáp án';
+                let typeBadgeClass = 'bg-primary-subtle text-primary border-primary-subtle';
+                let typeIcon = 'bi-ui-radios-grid';
+                if (q.questionType === 'MULTI_SELECT' || q.questionType === 'MULTIPLE_CHOICE') {
+                    typeName = 'Nhiều đáp án';
+                    typeBadgeClass = 'bg-info-subtle text-info border-info-subtle';
+                    typeIcon = 'bi-ui-checks';
+                } else if (q.questionType === 'TRUE_FALSE') {
+                    typeName = 'Đúng / Sai';
+                    typeBadgeClass = 'bg-secondary-subtle text-secondary border-secondary-subtle';
+                    typeIcon = 'bi-check2-circle';
+                } else if (q.questionType === 'FILL_BLANK') {
+                    typeName = 'Điền từ';
+                    typeBadgeClass = 'bg-warning-subtle text-warning border-warning-subtle';
+                    typeIcon = 'bi-pencil';
+                }
+
+                let optionsHtml = '';
+                if (q.questionType === 'FILL_BLANK') {
+                    const correctAnswers = (q.options || []).filter(o => o.isCorrect !== false).map(o => o.text).join(' HOẶC ');
+                    optionsHtml = `
+                        <div class="p-3 rounded-3 border border-success bg-success-subtle bg-opacity-25 text-success-emphasis">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-success text-white"><i class="bi bi-check-lg me-1"></i>Các đáp án được chấp nhận</span>
+                            </div>
+                            <div class="fw-bold fs-6">${correctAnswers || '(Chưa cấu hình)'}</div>
+                        </div>
+                    `;
+                } else {
+                    optionsHtml = (q.options || []).map((opt, oIdx) => {
+                        const isCorrect = Boolean(opt.isCorrect);
+                        const letter = letters[oIdx] || (oIdx + 1);
+                        if (isCorrect) {
+                            return `
+                                <div class="quiz-option-container review-correct mb-2">
+                                    <span class="badge bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 11px;">
+                                        <i class="bi bi-check-lg"></i>
+                                    </span>
+                                    <span class="fw-bold text-success me-1">${letter}.</span>
+                                    <span class="flex-grow-1 text-dark">${opt.text}</span>
+                                    <span class="badge bg-success text-white px-2.5 py-1 rounded-pill small ms-auto">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Đáp án đúng
+                                    </span>
+                                </div>
+                            `;
+                        } else {
+                            return `
+                                <div class="quiz-option-container mb-2" style="cursor: default;">
+                                    <span class="badge bg-light text-secondary border rounded-circle d-inline-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 11px;">
+                                        ${letter}
+                                    </span>
+                                    <span class="fw-bold text-secondary me-1">${letter}.</span>
+                                    <span class="flex-grow-1 text-secondary">${opt.text}</span>
+                                </div>
+                            `;
+                        }
+                    }).join('');
+                }
+
+                let explanationHtml = '';
+                if (q.explanation && q.explanation.trim()) {
+                    explanationHtml = `
+                        <div class="mt-3 p-3 bg-light rounded-3 border border-info-subtle small text-dark">
+                            <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                            <strong>Giải thích đáp án:</strong> ${q.explanation}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="card border rounded-4 p-4 mb-3 bg-white shadow-xs">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-dark text-white rounded-pill px-3 py-1 fw-bold">Câu ${idx + 1}</span>
+                                <span class="badge ${typeBadgeClass} border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi ${typeIcon} me-1"></i>${typeName}
+                                </span>
+                            </div>
+                            <span class="badge bg-light text-secondary border font-monospace">${q.points || 1} điểm</span>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-3" style="line-height: 1.6;">${q.content}</h6>
+                        <div>${optionsHtml}</div>
+                        ${explanationHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        container.innerHTML = `
+            <div class="quiz-hero-banner" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                        <i class="bi bi-shield-check me-1"></i>CHẾ ĐỘ THẨM ĐỊNH (MODERATOR REVIEW)
+                    </span>
+                    <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1" onclick="renderQuizOverview(currentQuizMeta)">
+                        <i class="bi bi-play-circle me-1"></i>Xem giao diện làm bài
+                    </button>
+                </div>
+                <h3 class="fw-bold mb-2">${quiz.title || 'Bài kiểm tra trắc nghiệm'}</h3>
+                <p class="text-white text-opacity-75 small mb-0">Hiển thị toàn bộ ngân hàng câu hỏi, các phương án lựa chọn và đáp án chuẩn để Kiểm duyệt viên thẩm định chất lượng bài thi.</p>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-question-circle text-primary me-1"></i>Tổng số câu hỏi</div>
+                            <div class="fs-4 fw-bold text-dark">${totalQ} câu</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-stopwatch text-warning me-1"></i>Thời gian</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.durationMinutes || 15} phút</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-bullseye text-success me-1"></i>Điểm sàn đạt</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.passingScore || 5.0} / 10</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-shuffle text-info me-1"></i>Trộn câu hỏi</div>
+                            <div class="fs-5 fw-bold text-dark">${quiz.shuffleQuestions ? 'Bật (Xáo trộn)' : 'Tắt'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between mb-3 border-top pt-4">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-list-check text-primary me-2"></i>Bộ câu hỏi & Đáp án chuẩn (${totalQ} câu)
+                    </h5>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                        <i class="bi bi-check-circle-fill me-1"></i>Đã đánh dấu đáp án đúng
+                    </span>
+                </div>
+
+                <div class="quiz-review-questions-list">
+                    ${questionsHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderQuizOverview(quiz) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        let moderatorReturnBtn = '';
+        if (isModerator || isAdmin || quiz.isReviewer) {
+            moderatorReturnBtn = `
+                <div class="mb-4">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 fw-semibold shadow-xs" onclick="renderQuizModeratorReview(currentQuizMeta)">
+                        <i class="bi bi-shield-check me-1"></i>Quay lại chế độ Thẩm định câu hỏi & đáp án
+                    </button>
+                </div>
+            `;
+        }
+
+        let statusBannerHtml = '';
+        if (quiz.userPassed) {
+            statusBannerHtml = `
+                <div class="alert alert-success border-0 rounded-4 p-3 d-flex align-items-center gap-3 mb-4 shadow-sm">
+                    <div class="rounded-circle bg-success text-white p-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="bi bi-check-lg fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-success">Bạn đã hoàn thành và ĐẠT bài kiểm tra này!</div>
+                        <div class="small text-muted">Điểm cao nhất đạt được: <strong class="text-success">${quiz.userHighestScore} / 10.0</strong></div>
+                    </div>
+                </div>
+            `;
+        } else if (quiz.userAttemptsCount > 0) {
+            statusBannerHtml = `
+                <div class="alert alert-warning border-0 rounded-4 p-3 d-flex align-items-center gap-3 mb-4 shadow-sm">
+                    <div class="rounded-circle bg-warning text-white p-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="bi bi-exclamation-triangle fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-warning-emphasis">Bạn chưa đạt điểm sàn qua các lượt làm trước</div>
+                        <div class="small text-muted">Điểm cao nhất hiện tại: <strong>${quiz.userHighestScore !== null ? quiz.userHighestScore + ' / 10.0' : 'Chưa có'}</strong> (Yêu cầu: ${quiz.passingScore} điểm)</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let actionButtonsHtml = '';
+        if (quiz.canAttempt) {
+            actionButtonsHtml += `
+                <button class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2" onclick="startQuizTest(${quiz.id})">
+                    <i class="bi bi-play-circle-fill fs-5"></i>
+                    <span>${quiz.userAttemptsCount > 0 ? 'Làm lại bài kiểm tra' : 'Bắt đầu làm bài thi'}</span>
+                </button>
+            `;
+        } else {
+            actionButtonsHtml += `
+                <button class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold disabled d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-slash-circle fs-5"></i>
+                    <span>Đã hết số lượt làm bài</span>
+                </button>
+            `;
+        }
+
+        if (quiz.userAttemptsCount > 0) {
+            actionButtonsHtml += `
+                <button class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-bold ms-2" onclick="showQuizSubmissionsList(${quiz.id})">
+                    <i class="bi bi-clock-history me-1"></i>Lịch sử làm bài (${quiz.userAttemptsCount})
+                </button>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="quiz-hero-banner">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-light border-opacity-25 rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                        <i class="bi bi-patch-question-fill me-1"></i>KIỂM TRA ĐÁNH GIÁ (QUIZ)
+                    </span>
+                    <span class="badge ${quiz.userPassed ? 'bg-success' : (quiz.userAttemptsCount > 0 ? 'bg-warning text-dark' : 'bg-light text-dark')} rounded-pill px-3 py-1.5 fw-bold">
+                        ${quiz.userPassed ? '<i class=\"bi bi-check-circle-fill me-1\"></i>ĐÃ ĐẠT' : (quiz.userAttemptsCount > 0 ? 'CHƯA ĐẠT' : 'CHƯA LÀM')}
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-2">${quiz.title}</h3>
+                <p class="text-white text-opacity-75 small mb-0">Bài kiểm tra trực tuyến giúp đánh giá mức độ tiếp thu và vận dụng kiến thức bài học.</p>
+            </div>
+
+            <div class="p-4 p-md-5">
+                ${moderatorReturnBtn}
+                ${statusBannerHtml}
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-question-circle text-primary me-1"></i>Số câu hỏi</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.totalQuestions || 0} câu</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-stopwatch text-warning me-1"></i>Thời gian</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.durationMinutes || 15} phút</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-bullseye text-success me-1"></i>Điểm sàn đạt</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.passingScore || 5.0} / 10</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="quiz-stat-box">
+                            <div class="text-muted small mb-1"><i class="bi bi-arrow-repeat text-info me-1"></i>Số lần làm</div>
+                            <div class="fs-4 fw-bold text-dark">${quiz.userAttemptsCount} / ${quiz.maxAttempts || '∞'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border rounded-4 p-4 bg-light mb-4">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle-fill text-primary me-2"></i>Quy chế làm bài thi:</h6>
+                    <ul class="text-secondary small mb-0 ps-3" style="line-height: 1.8;">
+                        <li>Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn nhấn nút <strong>"Bắt đầu làm bài thi"</strong>.</li>
+                        <li>Khi hết thời gian quy định, hệ thống sẽ <strong>tự động thu và chấm bài thi</strong> của bạn.</li>
+                        <li>Đạt từ <strong>${quiz.passingScore || 5.0} điểm</strong> trở lên để được hệ thống tự động ghi nhận hoàn thành bài học.</li>
+                        <li>Xem lại bài làm: <strong>${quiz.allowReview !== false ? 'Được phép xem lại chi tiết câu hỏi & đáp án' : 'Không cho phép xem lại chi tiết sau khi nộp'}</strong>.</li>
+                        <li>Tránh tải lại trang (F5) hoặc thoát khỏi trình duyệt trong suốt quá trình làm bài.</li>
+                    </ul>
+                </div>
+
+                <div class="text-center pt-2">
+                    ${actionButtonsHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function startQuizTest(quizId) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="card border-0 rounded-4 p-5 text-center bg-white">
+                <div class="spinner-border text-primary mx-auto mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Đang khởi tạo đề...</span>
+                </div>
+                <h5 class="fw-bold text-dark">Đang khởi tạo đề thi và bấm giờ...</h5>
+            </div>
+        `;
+
+        fetch('/api/quizzes/' + quizId + '/start?cohortId=' + moduleId, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) return res.json().then(j => { throw new Error(j.message || 'Không thể bắt đầu bài kiểm tra'); });
+                return res.json();
+            })
+            .then(quiz => {
+                activeQuizSession = quiz;
+                quizStudentAnswers = {};
+                if (quiz.questions) {
+                    quiz.questions.forEach(q => {
+                        quizStudentAnswers[q.id] = { selectedOptionIds: [], textAnswer: '' };
+                    });
+                }
+                quizRemainingSecs = (quiz.durationMinutes || 15) * 60;
+                renderQuizExamUI(quiz);
+                startQuizTimer(quizId);
+            })
+            .catch(err => {
+                alert(err.message || 'Không thể bắt đầu làm bài');
+                loadQuizData(moduleLessons[currentLessonIndex].id);
+            });
+    }
+
+    function startQuizTimer(quizId) {
+        if (quizCountdownTimer) {
+            clearInterval(quizCountdownTimer);
+        }
+
+        updateTimerDisplay();
+
+        quizCountdownTimer = setInterval(() => {
+            quizRemainingSecs--;
+            updateTimerDisplay();
+
+            if (quizRemainingSecs <= 0) {
+                clearInterval(quizCountdownTimer);
+                quizCountdownTimer = null;
+                const modalEl = document.getElementById('quizSubmitConfirmModal');
+                if (modalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                }
+                alert('Đã hết thời gian làm bài! Hệ thống đang tự động nộp bài làm của bạn.');
+                submitQuizExam(quizId, true);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const timerPill = document.getElementById('quizTimerDisplay');
+        const timerText = document.getElementById('quizTimerText');
+        if (!timerText) return;
+
+        const mins = Math.floor(Math.max(0, quizRemainingSecs) / 60);
+        const secs = Math.max(0, quizRemainingSecs) % 60;
+        const formatted = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        timerText.textContent = formatted;
+
+        if (timerPill) {
+            if (quizRemainingSecs <= 120) {
+                timerPill.classList.add('danger');
+            } else {
+                timerPill.classList.remove('danger');
+            }
+        }
+    }
+
+    function getQuestionTypeBadge(type) {
+        if (type === 'SINGLE_CHOICE') return '<span class="badge bg-primary-subtle text-primary border">1 đáp án</span>';
+        if (type === 'MULTI_SELECT') return '<span class="badge bg-info-subtle text-info border">Nhiều đáp án</span>';
+        if (type === 'TRUE_FALSE') return '<span class="badge bg-secondary-subtle text-secondary border">Đúng / Sai</span>';
+        if (type === 'FILL_BLANK') return '<span class="badge bg-warning-subtle text-warning border">Điền từ</span>';
+        return '<span class="badge bg-light text-dark border">' + type + '</span>';
+    }
+
+    function renderQuizExamUI(quiz) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        const totalQ = quiz.questions ? quiz.questions.length : 0;
+
+        let paletteHtml = '';
+        if (quiz.questions) {
+            paletteHtml = quiz.questions.map((q, idx) => `
+                <a href="#quiz-q-${q.id}" class="quiz-palette-pill" id="palette-btn-${q.id}" onclick="event.preventDefault(); document.getElementById('quiz-q-${q.id}').scrollIntoView({behavior: 'smooth', block: 'center'});">${idx + 1}</a>
+            `).join('');
+        }
+
+        let questionsHtml = '';
+        if (quiz.questions) {
+            questionsHtml = quiz.questions.map((q, idx) => {
+                let optionsHtml = '';
+                if (q.questionType === 'SINGLE_CHOICE' || q.questionType === 'TRUE_FALSE') {
+                    optionsHtml = (q.options || []).map(opt => `
+                        <div class="quiz-option-container" id="opt-wrap-${q.id}-${opt.id}" onclick="selectSingleOption(${q.id}, '${opt.id}')">
+                            <input type="radio" name="question_input_${q.id}" id="opt-input-${q.id}-${opt.id}" class="form-check-input flex-shrink-0" value="${opt.id}">
+                            <label class="form-check-label flex-grow-1 user-select-none mb-0" for="opt-input-${q.id}-${opt.id}">${opt.text}</label>
+                        </div>
+                    `).join('');
+                } else if (q.questionType === 'MULTI_SELECT') {
+                    optionsHtml = (q.options || []).map(opt => `
+                        <div class="quiz-option-container" id="opt-wrap-${q.id}-${opt.id}" onclick="toggleMultiOption(${q.id}, '${opt.id}')">
+                            <input type="checkbox" name="question_input_${q.id}" id="opt-input-${q.id}-${opt.id}" class="form-check-input flex-shrink-0" value="${opt.id}">
+                            <label class="form-check-label flex-grow-1 user-select-none mb-0" for="opt-input-${q.id}-${opt.id}">${opt.text}</label>
+                        </div>
+                    `).join('');
+                } else if (q.questionType === 'FILL_BLANK') {
+                    optionsHtml = `
+                        <div class="mt-2">
+                            <input type="text" class="form-control rounded-3 py-2 px-3 border-2" id="fill-input-${q.id}" placeholder="Gõ câu trả lời của bạn vào đây..." oninput="updateFillAnswer(${q.id}, this.value)">
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="quiz-question-box" id="quiz-q-${q.id}">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-dark rounded-pill px-3 py-1.5 fw-bold">Câu ${idx + 1}</span>
+                                ${getQuestionTypeBadge(q.questionType)}
+                            </div>
+                            <span class="badge bg-light text-secondary border">${q.points || 1.0} điểm</span>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-4 lh-base" style="font-size: 15.5px;">${q.content}</h6>
+                        <div>${optionsHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        container.innerHTML = `
+            <div class="quiz-sticky-bar">
+                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                    <span class="fw-bold text-dark text-truncate d-none d-md-inline" style="max-width: 260px;">${quiz.title}</span>
+                    <span id="quizProgressBadge" class="badge bg-light text-secondary border">0/${totalQ} câu đã làm</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="quiz-timer-pill" id="quizTimerDisplay">
+                        <i class="bi bi-stopwatch text-danger"></i>
+                        <span id="quizTimerText">15:00</span>
+                    </div>
+                    <button class="btn btn-success rounded-pill px-3 py-1.5 fw-bold btn-sm shadow-sm" onclick="confirmSubmitExam(${quiz.id})">
+                        <i class="bi bi-send-fill me-1"></i>Nộp bài
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <div class="card border rounded-4 p-3 bg-light mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Danh sách câu hỏi:</span>
+                        <span class="text-muted small" style="font-size: 11px;">Bấm số để chuyển nhanh</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${paletteHtml}
+                    </div>
+                </div>
+
+                <div class="quiz-questions-list">
+                    ${questionsHtml}
+                </div>
+
+                <div class="text-center pt-3 pb-2 border-top">
+                    <button class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow" onclick="confirmSubmitExam(${quiz.id})">
+                        <i class="bi bi-check-circle-fill me-2"></i>Hoàn thành & Nộp bài thi
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function selectSingleOption(questionId, optionId) {
+        quizStudentAnswers[questionId].selectedOptionIds = [optionId];
+
+        const box = document.getElementById('quiz-q-' + questionId);
+        if (box) {
+            box.querySelectorAll('.quiz-option-container').forEach(el => el.classList.remove('selected'));
+            box.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+        }
+
+        const wrap = document.getElementById('opt-wrap-' + questionId + '-' + optionId);
+        const input = document.getElementById('opt-input-' + questionId + '-' + optionId);
+        if (wrap) wrap.classList.add('selected');
+        if (input) input.checked = true;
+
+        updateAnswerProgressUI();
+    }
+
+    function toggleMultiOption(questionId, optionId) {
+        let list = quizStudentAnswers[questionId].selectedOptionIds;
+        const idx = list.indexOf(optionId);
+        if (idx > -1) {
+            list.splice(idx, 1);
+        } else {
+            list.push(optionId);
+        }
+
+        const wrap = document.getElementById('opt-wrap-' + questionId + '-' + optionId);
+        const input = document.getElementById('opt-input-' + questionId + '-' + optionId);
+        if (list.includes(optionId)) {
+            if (wrap) wrap.classList.add('selected');
+            if (input) input.checked = true;
+        } else {
+            if (wrap) wrap.classList.remove('selected');
+            if (input) input.checked = false;
+        }
+
+        updateAnswerProgressUI();
+    }
+
+    function updateFillAnswer(questionId, val) {
+        quizStudentAnswers[questionId].textAnswer = val.trim();
+        updateAnswerProgressUI();
+    }
+
+    function updateAnswerProgressUI() {
+        if (!activeQuizSession || !activeQuizSession.questions) return;
+
+        let answeredCount = 0;
+        activeQuizSession.questions.forEach(q => {
+            const ans = quizStudentAnswers[q.id];
+            let isDone = false;
+            if (q.questionType === 'FILL_BLANK') {
+                isDone = ans && ans.textAnswer && ans.textAnswer.length > 0;
+            } else {
+                isDone = ans && ans.selectedOptionIds && ans.selectedOptionIds.length > 0;
+            }
+
+            const pill = document.getElementById('palette-btn-' + q.id);
+            if (pill) {
+                if (isDone) pill.classList.add('answered');
+                else pill.classList.remove('answered');
+            }
+
+            if (isDone) answeredCount++;
+        });
+
+        const badge = document.getElementById('quizProgressBadge');
+        if (badge) {
+            badge.textContent = answeredCount + '/' + activeQuizSession.questions.length + ' câu đã làm';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function jumpToExamQuestion(qId) {
+        const modalEl = document.getElementById('quizSubmitConfirmModal');
+        if (modalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        }
+        const qEl = document.getElementById('quiz-q-' + qId);
+        if (qEl) {
+            qEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            qEl.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+            qEl.style.boxShadow = '0 0 0 4px rgba(37, 99, 235, 0.25)';
+            qEl.style.borderColor = '#2563eb';
+            setTimeout(() => {
+                qEl.style.boxShadow = '';
+                qEl.style.borderColor = '';
+            }, 2200);
+        }
+    }
+
+    function confirmSubmitExam(quizId) {
+        if (!activeQuizSession || !activeQuizSession.questions) return;
+
+        const totalQ = activeQuizSession.questions.length;
+        let answeredCount = 0;
+        const questionStatusList = activeQuizSession.questions.map((q, idx) => {
+            const ans = quizStudentAnswers[q.id];
+            let isAnswered = false;
+            if (q.questionType === 'FILL_BLANK') {
+                isAnswered = Boolean(ans && ans.textAnswer && ans.textAnswer.trim().length > 0);
+            } else {
+                isAnswered = Boolean(ans && ans.selectedOptionIds && ans.selectedOptionIds.length > 0);
+            }
+            if (isAnswered) answeredCount++;
+            return {
+                q: q,
+                idx: idx,
+                isAnswered: isAnswered
+            };
+        });
+
+        const unansweredCount = totalQ - answeredCount;
+
+        const mins = Math.floor(Math.max(0, quizRemainingSecs) / 60);
+        const secs = Math.max(0, quizRemainingSecs) % 60;
+        const timeFormatted = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+        const matrixHtml = questionStatusList.map(item => `
+            <button type="button" class="quiz-overview-pill ${item.isAnswered ? 'answered' : 'unanswered'}" onclick="jumpToExamQuestion(${item.q.id})" title="Câu ${item.idx + 1}: ${item.isAnswered ? 'Đã làm' : 'Chưa làm'}">
+                ${item.idx + 1}
+            </button>
+        `).join('');
+
+        const rowsHtml = questionStatusList.map(item => `
+            <div class="quiz-overview-item ${item.isAnswered ? 'answered' : 'unanswered'} d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2 min-w-0 flex-grow-1">
+                    <span class="badge ${item.isAnswered ? 'bg-success' : 'bg-warning text-dark'} rounded-pill flex-shrink-0">Câu ${item.idx + 1}</span>
+                    <span class="flex-shrink-0">${getQuestionTypeBadge(item.q.questionType)}</span>
+                    <span class="text-dark small text-truncate fw-medium" title="${escapeHtml(item.q.content)}">${escapeHtml(item.q.content)}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    ${item.isAnswered
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Đã làm</span>'
+                        : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-exclamation-circle me-1"></i>Chưa làm</span>'
+                    }
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0.5 px-2.5" style="font-size: 12px;" onclick="jumpToExamQuestion(${item.q.id})">
+                        Làm câu này
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        let alertHtml = '';
+        if (unansweredCount > 0) {
+            alertHtml = `
+                <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 text-warning"></i>
+                    <div class="small">
+                        Bạn còn <strong>${unansweredCount}</strong> câu hỏi chưa trả lời. Bạn có thể nhấn vào từng câu bên dưới để hoàn thành hoặc bấm <strong>Xác nhận nộp bài</strong> để kết thúc bài thi.
+                    </div>
+                </div>
+            `;
+        } else {
+            alertHtml = `
+                <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3" role="alert">
+                    <i class="bi bi-check-circle-fill fs-5 flex-shrink-0 text-success"></i>
+                    <div class="small">
+                        Bạn đã trả lời đầy đủ <strong>${totalQ}/${totalQ}</strong> câu hỏi. Hãy kiểm tra lại hoặc bấm <strong>Xác nhận nộp bài</strong> để hoàn thành bài thi.
+                    </div>
+                </div>
+            `;
+        }
+
+        const modalBody = document.getElementById('quizSubmitConfirmModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-sm-3">
+                        <div class="border rounded-3 p-2.5 text-center bg-light">
+                            <div class="text-muted small fw-semibold" style="font-size: 12px;">Tổng câu hỏi</div>
+                            <div class="fs-5 fw-bold text-dark mt-1">${totalQ}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="border border-success-subtle rounded-3 p-2.5 text-center bg-success-subtle">
+                            <div class="text-success small fw-semibold" style="font-size: 12px;">Đã trả lời</div>
+                            <div class="fs-5 fw-bold text-success mt-1">${answeredCount}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="border border-warning-subtle rounded-3 p-2.5 text-center bg-warning-subtle">
+                            <div class="text-warning-emphasis small fw-semibold" style="font-size: 12px;">Chưa trả lời</div>
+                            <div class="fs-5 fw-bold text-warning-emphasis mt-1">${unansweredCount}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-3">
+                        <div class="border rounded-3 p-2.5 text-center bg-light">
+                            <div class="text-muted small fw-semibold" style="font-size: 12px;">Thời gian còn</div>
+                            <div class="fs-5 fw-bold text-primary mt-1">${timeFormatted}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${alertHtml}
+
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted small fw-semibold">Bảng câu hỏi nhanh:</span>
+                        <div class="d-flex align-items-center gap-3 small text-muted" style="font-size: 11.5px;">
+                            <span class="d-flex align-items-center gap-1"><span class="badge bg-success rounded-circle p-1"> </span> Đã làm</span>
+                            <span class="d-flex align-items-center gap-1"><span class="badge bg-warning rounded-circle p-1"> </span> Chưa làm</span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 p-2.5 rounded-3 bg-light border">
+                        ${matrixHtml}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-muted small fw-semibold mb-2">Chi tiết từng câu hỏi:</div>
+                    <div class="d-flex flex-column gap-2" style="max-height: 250px; overflow-y: auto;">
+                        ${rowsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        const confirmBtn = document.getElementById('btnConfirmSubmitQuizAction');
+        if (confirmBtn) {
+            confirmBtn.onclick = function() {
+                const modalEl = document.getElementById('quizSubmitConfirmModal');
+                if (modalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                }
+                submitQuizExam(quizId, false);
+            };
+        }
+
+        const modalEl = document.getElementById('quizSubmitConfirmModal');
+        if (modalEl) {
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+        }
+    }
+
+    function submitQuizExam(quizId, isAuto) {
+        if (quizCountdownTimer) {
+            clearInterval(quizCountdownTimer);
+            quizCountdownTimer = null;
+        }
+
+        const modalEl = document.getElementById('quizSubmitConfirmModal');
+        if (modalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        }
+
+        const container = document.getElementById('quizPlayerContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="card border-0 rounded-4 p-5 text-center bg-white">
+                    <div class="spinner-border text-success mx-auto mb-3" role="status" style="width: 3.5rem; height: 3.5rem;">
+                        <span class="visually-hidden">Đang chấm điểm...</span>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">Đang tự động chấm điểm bài thi...</h4>
+                    <p class="text-muted small mb-0">Hệ thống đang so khớp kết quả và lưu vết bài nộp.</p>
+                </div>
+            `;
+        }
+
+        const answersPayload = Object.keys(quizStudentAnswers).map(qid => ({
+            questionId: Number(qid),
+            selectedOptionIds: quizStudentAnswers[qid].selectedOptionIds || [],
+            textAnswer: quizStudentAnswers[qid].textAnswer || ''
+        }));
+
+        fetch('/api/quizzes/' + quizId + '/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cohortId: moduleId, answers: answersPayload })
+        })
+        .then(res => {
+            if (!res.ok) return res.json().then(j => { throw new Error(j.message || 'Lỗi khi nộp bài'); });
+            return res.json();
+        })
+        .then(result => {
+            if (result.isPassed) {
+                const currentLessonId = moduleLessons[currentLessonIndex].id;
+                let completed = getCompletedLessons();
+                if (!completed.includes(currentLessonId)) {
+                    completed.push(currentLessonId);
+                    localStorage.setItem(storageKey, JSON.stringify(completed));
+                }
+                updateProgressUI();
+                updateSidebarItemsUI();
+                updateCompleteButtonUI(currentLessonId);
+            }
+            renderQuizResult(result);
+        })
+        .catch(err => {
+            alert(err.message || 'Có lỗi xảy ra khi nộp bài thi');
+            loadQuizData(moduleLessons[currentLessonIndex].id);
+        });
+    }
+
+    function renderQuizResult(result) {
+        const container = document.getElementById('quizPlayerContainer');
+        if (!container) return;
+
+        const isPassed = result.isPassed;
+        const wheelClass = isPassed ? 'passed' : 'failed';
+        const statusText = isPassed ? 'CHÚC MỪNG BẠN ĐÃ ĐẠT!' : 'BẠN CHƯA ĐẠT ĐIỂM SÀN';
+        const statusDesc = isPassed
+            ? 'Bạn đã xuất sắc vượt qua bài kiểm tra đánh giá này và hoàn thành bài học.'
+            : 'Hãy xem lại đáp án và củng cố kiến thức trước khi bắt đầu lượt làm mới.';
+
+        container.innerHTML = `
+            <div class="p-4 p-md-5 text-center">
+                <div class="quiz-score-wheel ${wheelClass}">
+                    <div class="fs-1 fw-bold lh-1">${result.score}</div>
+                    <div class="small fw-semibold mt-1">/ 10 điểm</div>
+                </div>
+
+                <span class="badge ${isPassed ? 'bg-success' : 'bg-danger'} rounded-pill px-4 py-2 fs-6 fw-bold mb-3 shadow-sm">
+                    ${statusText}
+                </span>
+
+                <p class="text-secondary mb-4 mx-auto" style="max-width: 520px; line-height: 1.6;">${statusDesc}</p>
+
+                <div class="row g-3 justify-content-center mb-4 text-start" style="max-width: 600px; margin: 0 auto;">
+                    <div class="col-6 col-sm-4">
+                        <div class="p-3 bg-light rounded-4 border text-center">
+                            <small class="text-muted d-block mb-1">Số câu đúng</small>
+                            <span class="fw-bold text-dark fs-5">${result.correctCount} / ${result.totalQuestions}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4">
+                        <div class="p-3 bg-light rounded-4 border text-center">
+                            <small class="text-muted d-block mb-1">Điểm sàn đạt</small>
+                            <span class="fw-bold text-dark fs-5">${result.passingScore} điểm</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <div class="p-3 bg-light rounded-4 border text-center">
+                            <small class="text-muted d-block mb-1">Lượt đã làm</small>
+                            <span class="fw-bold text-dark fs-5">${result.attemptNumber} / ${result.maxAttempts || '∞'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center flex-wrap gap-2 pt-2">
+                    ${result.allowReview !== false ? `
+                        <button class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold" onclick="renderQuizReviewQuestions(${result.submissionId})">
+                            <i class="bi bi-eye-fill me-1"></i>Xem lại chi tiết bài làm
+                        </button>
+                    ` : `
+                        <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 rounded-pill align-self-center">
+                            <i class="bi bi-eye-slash-fill me-1"></i>Giảng viên không cho phép xem lại chi tiết bài làm
+                        </span>
+                    `}
+                    ${result.canRetake ? `
+                        <button class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm" onclick="startQuizTest(${result.quizId})">
+                            <i class="bi bi-arrow-repeat me-1"></i>Làm lại bài kiểm tra
+                        </button>
+                    ` : ''}
+                    <button class="btn btn-success rounded-pill px-4 py-2.5 fw-bold" onclick="stepLesson(1)">
+                        <span>Bài tiếp theo</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="quizReviewQuestionsContainer" class="p-4 p-md-5 pt-0" style="display: none;"></div>
+        `;
+    }
+
+    function renderQuizReviewQuestions(submissionId) {
+        const reviewBox = document.getElementById('quizReviewQuestionsContainer');
+        if (!reviewBox) return;
+
+        if (reviewBox.style.display === 'block') {
+            reviewBox.style.display = 'none';
+            return;
+        }
+
+        reviewBox.style.display = 'block';
+        reviewBox.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                <span class="ms-2 small text-muted">Đang tải chi tiết đáp án...</span>
+            </div>
+        `;
+
+        fetch('/api/quizzes/submissions/' + submissionId)
+            .then(res => res.json())
+            .then(detail => {
+                if (detail.allowReview === false || (!detail.reviewQuestions || detail.reviewQuestions.length === 0)) {
+                    reviewBox.innerHTML = `
+                        <div class="alert alert-secondary rounded-4 p-4 text-center border my-3">
+                            <i class="bi bi-eye-slash-fill text-secondary fs-3 d-block mb-2"></i>
+                            <div class="fw-bold text-dark mb-1">Giảng viên không cho phép xem lại chi tiết bài làm</div>
+                            <div class="small text-muted">Nội dung câu hỏi và đáp án chi tiết được ẩn theo thiết lập của giảng viên cho đề thi này.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<h5 class="fw-bold text-dark mb-4 border-top pt-4"><i class="bi bi-card-checklist text-primary me-2"></i>Chi tiết lời giải và kết quả từng câu:</h5>';
+
+                (detail.reviewQuestions || []).forEach((q, idx) => {
+                    const isRight = q.isCorrect;
+                    let optionsHtml = '';
+
+                    if (q.questionType === 'FILL_BLANK') {
+                        const correctTexts = (q.options || []).filter(o => o.isCorrect !== false).map(o => o.text).join(' HOẶC ');
+                        optionsHtml = `
+                            <div class="p-3 rounded-3 mb-2 ${isRight ? 'bg-success-subtle border border-success-subtle text-success-emphasis' : 'bg-danger-subtle border border-danger-subtle text-danger-emphasis'}">
+                                <strong>Câu trả lời của bạn:</strong> ${q.studentTextAnswer || '(Để trống)'}
+                            </div>
+                            <div class="p-3 rounded-3 bg-light border text-secondary small">
+                                <strong>Các đáp án được chấp nhận:</strong> ${correctTexts}
+                            </div>
+                        `;
+                    } else {
+                        optionsHtml = (q.options || []).map(opt => {
+                            const isStudentPick = (q.studentSelectedOptionIds || []).includes(opt.id);
+                            const isCorrectOpt = opt.isCorrect;
+                            let cls = '';
+                            let badge = '';
+
+                            if (isCorrectOpt) {
+                                cls = 'review-correct';
+                                badge = '<span class="badge bg-success ms-auto"><i class="bi bi-check-lg me-1"></i>Đáp án đúng</span>';
+                            } else if (isStudentPick && !isCorrectOpt) {
+                                cls = 'review-wrong';
+                                badge = '<span class="badge bg-danger ms-auto"><i class="bi bi-x-lg me-1"></i>Lựa chọn của bạn (Sai)</span>';
+                            }
+
+                            return `
+                                <div class="quiz-option-container ${cls}">
+                                    <span class="fw-bold small me-2">${isStudentPick ? '<i class=\"bi bi-arrow-right-circle-fill text-primary\"></i>' : '•'}</span>
+                                    <span class="flex-grow-1">${opt.text}</span>
+                                    ${badge}
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    html += `
+                        <div class="card border rounded-4 p-4 mb-3 shadow-none ${isRight ? 'border-success-subtle' : 'border-danger-subtle'}">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge ${isRight ? 'bg-success' : 'bg-danger'} rounded-pill">Câu ${idx + 1}</span>
+                                    <span class="badge ${isRight ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} border">
+                                        ${isRight ? 'Đúng (+' + q.earnedPoints + 'đ)' : 'Sai (0đ)'}
+                                    </span>
+                                </div>
+                                <span class="text-muted small">${q.points} điểm</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-3">${q.content}</h6>
+                            <div>${optionsHtml}</div>
+                            ${q.explanation ? `
+                                <div class="mt-3 p-3 bg-light rounded-3 text-secondary small border">
+                                    <strong class="text-dark"><i class="bi bi-lightbulb-fill text-warning me-1"></i>Lời giải thích:</strong> ${q.explanation}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+
+                reviewBox.innerHTML = html;
+                reviewBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .catch(err => {
+                reviewBox.innerHTML = '<div class="alert alert-danger small">Không thể tải chi tiết bài làm.</div>';
+            });
+    }
+
+    function showQuizSubmissionsList(quizId) {
+        fetch('/api/quizzes/' + quizId + '/submissions?cohortId=' + moduleId)
+            .then(res => res.json())
+            .then(list => {
+                if (!list || list.length === 0) {
+                    alert('Chưa có lịch sử làm bài.');
+                    return;
+                }
+                let tableHtml = '<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Lần làm</th><th>Điểm số</th><th>Trạng thái</th><th>Thời gian nộp</th><th>Thao tác</th></tr></thead><tbody>';
+                list.forEach((sub, i) => {
+                    const timeStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '';
+                    tableHtml += `
+                        <tr>
+                            <td class="fw-bold">#${list.length - i}</td>
+                            <td class="fw-bold fs-6 ${sub.isPassed ? 'text-success' : 'text-danger'}">${sub.score} / 10</td>
+                            <td><span class="badge ${sub.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill">${sub.isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}</span></td>
+                            <td class="small text-muted">${timeStr}</td>
+                            <td>
+                                ${sub.allowReview !== false ? `
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="viewSubmissionPopup(${sub.submissionId})">
+                                        Xem chi tiết
+                                    </button>
+                                ` : `
+                                    <span class="badge bg-light text-muted border">Không cho xem lại</span>
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                });
+                tableHtml += '</tbody></table></div>';
+
+                const container = document.getElementById('quizPlayerContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="p-4 p-md-5">
+                            <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+                                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử các lần làm bài thi</h5>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadQuizData(moduleLessons[currentLessonIndex].id)">
+                                    <i class="bi bi-arrow-left me-1"></i>Quay lại tổng quan
+                                </button>
+                            </div>
+                            ${tableHtml}
+                        </div>
+                        <div id="quizReviewQuestionsContainer" class="p-4 p-md-5 pt-0" style="display: none;"></div>
+                    `;
+                }
+            })
+            .catch(() => alert('Không thể tải lịch sử làm bài'));
+    }
+
+    function viewSubmissionPopup(subId) {
+        renderQuizReviewQuestions(subId);
+    }
+
+    let currentAssignmentMeta = null;
+    let isAssignmentResubmitting = false;
+
+    function loadAssignmentData(lessonId) {
+        const container = document.getElementById('assignmentPlayerContainer');
+        if (!container) return;
+
+        fetch('/api/assignments/lesson/' + lessonId + '?cohortId=' + moduleId)
+            .then(res => {
+                if (!res.ok) throw new Error('Không thể tải bài tập');
+                return res.json();
+            })
+            .then(assignment => {
+                currentAssignmentMeta = assignment;
+                isAssignmentResubmitting = false;
+                renderAssignmentView(assignment);
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div class="card border-0 rounded-4 shadow-sm p-5 text-center bg-white">
+                        <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 72px; height: 72px;">
+                            <i class="bi bi-journal-text text-warning display-6"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">Bài tập đang được cập nhật</h4>
+                        <p class="text-muted small mb-4" style="max-width: 480px; margin: 0 auto;">
+                            Giảng viên đang biên soạn nội dung yêu cầu cho bài tập này. Vui lòng quay lại sau.
+                        </p>
+                        <div>
+                            <button class="btn btn-outline-primary rounded-pill px-4 btn-sm fw-semibold" onclick="stepLesson(1)">
+                                Sang bài tiếp theo <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function formatAssignmentBytes(bytes) {
+        if (!bytes || bytes <= 0) return '0 B';
+        const k = 1024;
+        const dm = 1;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function toggleAssignmentResubmit() {
+        isAssignmentResubmitting = !isAssignmentResubmitting;
+        const formWrap = document.getElementById('assignmentSubmitFormWrap');
+        if (formWrap) {
+            formWrap.style.display = isAssignmentResubmitting ? 'block' : 'none';
+            if (isAssignmentResubmitting) {
+                formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+
+    function renderAssignmentView(assignment) {
+        const container = document.getElementById('assignmentPlayerContainer');
+        if (!container) return;
+
+        if (assignment.isPassed) {
+            const currentLessonId = assignment.lessonId;
+            let completed = getCompletedLessons();
+            if (!completed.includes(currentLessonId)) {
+                completed.push(currentLessonId);
+                localStorage.setItem(storageKey, JSON.stringify(completed));
+            }
+            updateProgressUI();
+            updateSidebarItemsUI();
+        }
+
+        const sub = assignment.currentSubmission;
+        const requiresGrading = assignment.requiresGrading !== false && (assignment.maxScore == null || assignment.maxScore > 0);
+
+        let statusBadgeHtml = '<span class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1.5"><i class="bi bi-clock me-1"></i> Chưa nộp bài</span>';
+        if (sub) {
+            if (!requiresGrading) {
+                statusBadgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5"><i class="bi bi-check-circle-fill me-1"></i> ĐÃ HOÀN THÀNH (Không chấm điểm)</span>';
+            } else if (sub.status === 'GRADED') {
+                if (sub.isPassed) {
+                    statusBadgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5"><i class="bi bi-check-circle-fill me-1"></i> ĐÃ ĐẠT (' + sub.score + '/' + (sub.maxScore || 10) + ' đ)</span>';
+                } else {
+                    statusBadgeHtml = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5"><i class="bi bi-x-circle-fill me-1"></i> CHƯA ĐẠT (' + sub.score + '/' + (sub.maxScore || 10) + ' đ)</span>';
+                }
+            } else if (sub.status === 'RESUBMISSION_REQUESTED') {
+                statusBadgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1.5"><i class="bi bi-exclamation-triangle-fill me-1"></i> YÊU CẦU NỘP LẠI</span>';
+            } else {
+                statusBadgeHtml = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5"><i class="bi bi-hourglass-split me-1"></i> ĐÃ NỘP • CHỜ CHẤM ĐIỂM</span>';
+            }
+        }
+
+        let instructionHtml = '';
+        if (assignment.instruction) {
+            instructionHtml = `
+                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white">
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-card-text text-primary fs-5"></i>
+                        <span>Yêu cầu &amp; Hướng dẫn thực hiện</span>
+                    </h6>
+                    <div class="text-secondary lh-lg" style="white-space: pre-wrap; font-size: 15px;">${assignment.instruction}</div>
+                    ${assignment.attachmentUrl ? `
+                        <div class="mt-4 pt-3 border-top">
+                            <a href="${assignment.attachmentUrl}" target="_blank" download class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="bi bi-paperclip me-1"></i> Tải tài liệu / đề bài đính kèm
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        let submissionStatusCardHtml = '';
+        if (sub) {
+            const submittedTimeStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '';
+            const gradedTimeStr = sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '';
+            const isLateBadge = sub.isLate ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1 small ms-1"><i class="bi bi-clock-history me-1"></i> Nộp trễ</span>' : '';
+
+            let scoreBoxHtml = '';
+            if (!requiresGrading) {
+                scoreBoxHtml = `
+                    <div class="p-4 rounded-4 mb-4 border border-success-subtle bg-success-subtle bg-opacity-25">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div>
+                                <span class="badge bg-success rounded-pill px-3 py-1.5 fw-bold mb-2">
+                                    BÀI TẬP ĐÃ HOÀN THÀNH
+                                </span>
+                                <div class="fs-5 fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Không cần chấm điểm</div>
+                                <div class="text-muted small">Hệ thống đã tự động ghi nhận hoàn thành bài tập ngay khi nộp bài.</div>
+                            </div>
+                            <div class="text-end">
+                                <i class="bi bi-patch-check-fill text-success display-4"></i>
+                            </div>
+                        </div>
+                        ${sub.feedback ? `
+                            <div class="mt-3 pt-3 border-top border-secondary-subtle">
+                                <div class="fw-bold small text-dark mb-1"><i class="bi bi-chat-left-quote-fill text-primary me-1"></i> Nhận xét của Giảng viên:</div>
+                                <div class="p-3 bg-white rounded-3 border text-secondary small" style="white-space: pre-wrap;">${sub.feedback}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (sub.status === 'GRADED') {
+                scoreBoxHtml = `
+                    <div class="p-4 rounded-4 mb-4 border ${sub.isPassed ? 'border-success-subtle bg-success-subtle bg-opacity-25' : 'border-danger-subtle bg-danger-subtle bg-opacity-25'}">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div>
+                                <span class="badge ${sub.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill px-3 py-1.5 fw-bold mb-2">
+                                    ${sub.isPassed ? 'BÀI LÀM ĐẠT YÊU CẦU' : 'BÀI LÀM CHƯA ĐẠT'}
+                                </span>
+                                <div class="display-6 fw-bold ${sub.isPassed ? 'text-success' : 'text-danger'}">${sub.score} <span class="fs-4 text-muted fw-normal">/ ${sub.maxScore || 10}</span></div>
+                                <div class="text-muted small mt-1">Giảng viên chấm: <strong>${sub.gradedByName || 'Giảng viên phụ trách'}</strong> lúc ${gradedTimeStr}</div>
+                            </div>
+                            <div class="text-end">
+                                ${sub.isPassed ? '<i class="bi bi-patch-check-fill text-success display-4"></i>' : '<i class="bi bi-exclamation-circle-fill text-danger display-4"></i>'}
+                            </div>
+                        </div>
+                        ${sub.feedback ? `
+                            <div class="mt-3 pt-3 border-top border-secondary-subtle">
+                                <div class="fw-bold small text-dark mb-1"><i class="bi bi-chat-left-quote-fill text-primary me-1"></i> Nhận xét của Giảng viên:</div>
+                                <div class="p-3 bg-white rounded-3 border text-secondary small" style="white-space: pre-wrap;">${sub.feedback}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            const canResubmit = !assignment.isPastDeadline || assignment.allowLateSubmission !== false;
+
+            submissionStatusCardHtml = `
+                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history text-primary fs-5"></i>
+                            <span>Bài nộp của bạn</span>
+                        </h6>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="text-muted small">Thời gian nộp: ${submittedTimeStr}</span>
+                            ${isLateBadge}
+                            ${canResubmit ? `
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="toggleAssignmentResubmit()">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Nộp lại
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="deleteMyAssignmentSubmission(${assignment.id})">
+                                <i class="bi bi-trash me-1"></i> Xóa bài nộp
+                            </button>
+                        </div>
+                    </div>
+                    ${scoreBoxHtml}
+                    <div class="row g-3">
+                        ${sub.fileName ? `
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-semibold">Tệp đính kèm bài làm:</label>
+                                <div class="d-flex align-items-center justify-content-between p-2.5 bg-light rounded-3 border">
+                                    <div class="d-flex align-items-center gap-2 min-w-0">
+                                        <i class="bi bi-file-earmark-arrow-up text-primary fs-5 flex-shrink-0"></i>
+                                        <span class="text-truncate small fw-medium" title="${sub.fileName}">${sub.fileName}</span>
+                                        <span class="text-muted small flex-shrink-0">(${formatAssignmentBytes(sub.fileSizeBytes)})</span>
+                                    </div>
+                                    <a href="${sub.fileUrl}" target="_blank" download class="btn btn-sm btn-light border rounded-pill px-2.5 ms-2 flex-shrink-0" title="Tải về tệp">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${sub.submissionText ? `
+                            <div class="col-12">
+                                <label class="form-label text-muted small fw-semibold">Nội dung bài nộp / Liên kết:</label>
+                                <div class="p-3 bg-light rounded-3 border text-dark small" style="white-space: pre-wrap; word-break: break-all;">${sub.submissionText}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        const isDeadlineBlocked = assignment.isPastDeadline && assignment.allowLateSubmission === false;
+        const showFormInitially = (!sub || isAssignmentResubmitting) && !isDeadlineBlocked;
+        const allowFile = assignment.allowFileSubmission !== false;
+        const allowText = assignment.allowTextSubmission !== false;
+
+        let modeBadgeHtml = '';
+        if (allowFile && !allowText) {
+            modeBadgeHtml = '<div class="mb-3"><span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small"><i class="bi bi-file-earmark-arrow-up me-1"></i> Kiểu nộp yêu cầu: Chỉ nộp tệp tin đính kèm</span></div>';
+        } else if (!allowFile && allowText) {
+            modeBadgeHtml = '<div class="mb-3"><span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small"><i class="bi bi-card-text me-1"></i> Kiểu nộp yêu cầu: Chỉ nhập văn bản / liên kết</span></div>';
+        } else {
+            modeBadgeHtml = '<div class="mb-3"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1 small"><i class="bi bi-ui-checks-grid me-1"></i> Kiểu nộp yêu cầu: Nộp tệp tin, văn bản / link hoặc cả hai</span></div>';
+        }
+
+        let lateNoticeHtml = '';
+        if (assignment.isPastDeadline && assignment.allowLateSubmission !== false) {
+            lateNoticeHtml = `
+                <div class="alert alert-warning rounded-3 d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                    <div class="small"><strong>Lưu ý:</strong> Đã quá hạn nộp bài (${assignment.deadlineAt || ''}). Bài nộp của bạn sẽ được đánh dấu là <strong>Nộp trễ</strong>.</div>
+                </div>
+            `;
+        }
+
+        let formHtml = '';
+        if (isDeadlineBlocked && !sub) {
+            formHtml = `
+                <div class="alert alert-danger rounded-4 p-4 mb-4 border-0 shadow-sm d-flex align-items-center gap-3">
+                    <i class="bi bi-calendar-x fs-1 text-danger"></i>
+                    <div>
+                        <h6 class="fw-bold text-danger mb-1">Đã hết hạn nộp bài!</h6>
+                        <div class="small text-muted">Hạn nộp bài là <strong>${assignment.deadlineAt || 'Đã qua'}</strong>. Giảng viên không cho phép nộp trễ cho bài tập này.</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            formHtml = `
+                <div id="assignmentSubmitFormWrap" class="card border-0 rounded-4 shadow-sm p-4 mb-4 bg-white" style="display: ${showFormInitially ? 'block' : 'none'};">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-cloud-arrow-up text-primary fs-5"></i>
+                            <span>${sub ? 'Nộp lại bài tập' : 'Biểu mẫu nộp bài tập'}</span>
+                        </h6>
+                        ${sub ? '<button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="toggleAssignmentResubmit()">Đóng</button>' : ''}
+                    </div>
+                    <form id="studentAssignmentForm" onsubmit="event.preventDefault(); submitStudentAssignment(${assignment.id});">
+                        ${lateNoticeHtml}
+                        ${modeBadgeHtml}
+                        ${allowFile ? `
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-dark">
+                                    Chọn tệp đính kèm bài làm <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control rounded-3" id="assignmentStudentFile" ${allowText ? '' : 'required'} accept="${assignment.allowedFileTypes || '*'}">
+                                <div class="form-text small text-muted">
+                                    Định dạng cho phép: <strong>${assignment.allowedFileTypes || 'Tất cả các định dạng'}</strong> • Dung lượng tối đa: <strong>${assignment.maxFileSizeMb || 20} MB</strong>
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${allowText ? `
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-dark">
+                                    Nội dung bài làm hoặc Liên kết (GitHub, Google Drive, ...) <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control rounded-3" id="assignmentStudentText" rows="4" placeholder="Nhập câu trả lời hoặc dán link repo GitHub, link Google Drive, bài viết..." ${allowFile ? '' : 'required'}></textarea>
+                            </div>
+                        ` : ''}
+                        <div class="d-flex align-items-center justify-content-end gap-2 pt-2">
+                            <button type="submit" id="btnSubmitAssignment" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
+                                <i class="bi bi-send-fill me-1"></i> ${sub ? 'Gửi bài nộp lại' : 'Xác nhận nộp bài'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
+        const scoreSummaryHtml = requiresGrading
+            ? `Thang điểm: <strong>${assignment.maxScore || 10} điểm</strong> • Điểm đạt: <strong>${assignment.passingScore || 5.0} điểm</strong>`
+            : `<span class="badge bg-secondary-subtle text-secondary border">Không tính điểm (Nộp bài là hoàn thành)</span>`;
+
+        container.innerHTML = `
+            <div class="p-4 p-md-5 bg-white rounded-4 border shadow-sm mb-4">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pb-4 mb-4 border-bottom">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">BÀI TẬP THỰC HÀNH</span>
+                            ${statusBadgeHtml}
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">${assignment.title}</h4>
+                        <div class="text-muted small">${scoreSummaryHtml}</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-secondary rounded-pill px-3 btn-sm" onclick="stepLesson(1)">
+                            <span>Bài tiếp</span> <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+                ${instructionHtml}
+                ${submissionStatusCardHtml}
+                ${formHtml}
+            </div>
+        `;
+    }
+
+    function submitStudentAssignment(assignmentId) {
+        if (!assignmentId) return;
+        const fileInput = document.getElementById('assignmentStudentFile');
+        const textInput = document.getElementById('assignmentStudentText');
+        const btnSubmit = document.getElementById('btnSubmitAssignment');
+
+        if (currentAssignmentData && currentAssignmentData.isPastDeadline && currentAssignmentData.allowLateSubmission === false) {
+            const msg = 'Bài tập đã quá hạn nộp và không cho phép nộp trễ!';
+            if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+            else alert(msg);
+            return;
+        }
+
+        const file = (fileInput && fileInput.files && fileInput.files.length > 0) ? fileInput.files[0] : null;
+        const text = textInput ? textInput.value.trim() : '';
+
+        const allowFile = currentAssignmentData ? (currentAssignmentData.allowFileSubmission !== false) : true;
+        const allowText = currentAssignmentData ? (currentAssignmentData.allowTextSubmission !== false) : true;
+
+        if (allowFile && !allowText) {
+            if (!file) {
+                const msg = 'Bài tập này yêu cầu bạn bắt buộc phải đính kèm tệp tin bài làm!';
+                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                else alert(msg);
+                return;
+            }
+        } else if (!allowFile && allowText) {
+            if (!text) {
+                const msg = 'Bài tập này yêu cầu bạn bắt buộc phải nhập văn bản hoặc liên kết bài làm!';
+                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                else alert(msg);
+                return;
+            }
+        } else {
+            if (!file && !text) {
+                const msg = 'Vui lòng đính kèm tệp hoặc nhập nội dung bài nộp!';
+                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                else alert(msg);
+                return;
+            }
+        }
+
+        const formData = new FormData();
+        if (moduleId) {
+            formData.append('cohortId', moduleId);
+        }
+        if (text) {
+            formData.append('submissionText', text);
+        }
+        if (file) {
+            formData.append('file', file);
+        }
+
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nộp bài...';
+        }
+
+        fetch('/api/assignments/' + assignmentId + '/submit', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(data => { throw new Error(data.message || 'Lỗi khi nộp bài'); });
+                }
+                return res.json();
+            })
+            .then(submission => {
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({ text: 'Nộp bài tập thành công!', style: { background: '#15803d' } }).showToast();
+                } else {
+                    alert('Nộp bài tập thành công!');
+                }
+                isAssignmentResubmitting = false;
+                loadAssignmentData(moduleLessons[currentLessonIndex].id);
+            })
+            .catch(err => {
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({ text: err.message || 'Không thể nộp bài tập', style: { background: '#dc3545' } }).showToast();
+                } else {
+                    alert(err.message || 'Không thể nộp bài tập');
+                }
+            })
+            .finally(() => {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="bi bi-send-fill me-1"></i> Xác nhận nộp bài';
+                }
+            });
+    }
+
+    async function deleteMyAssignmentSubmission(assignmentId) {
+        if (!assignmentId) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa bài nộp này không? Sau khi xóa, bạn có thể nộp lại bài làm mới.')) {
+            return;
+        }
+
+        try {
+            const url = moduleId 
+                ? `/api/assignments/${assignmentId}/submissions/my?cohortId=${moduleId}`
+                : `/api/assignments/${assignmentId}/submissions/my`;
+
+            const res = await fetch(url, { method: 'DELETE' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'Không thể xóa bài nộp');
+            }
+
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: 'Đã xóa bài nộp thành công!', style: { background: '#10b981' } }).showToast();
+            } else {
+                alert('Đã xóa bài nộp thành công!');
+            }
+
+            if (currentLesson) {
+                let completed = getCompletedLessons();
+                completed = completed.filter(id => id !== currentLesson.id);
+                localStorage.setItem(storageKey, JSON.stringify(completed));
+                updateProgressUI();
+                updateSidebarItemsUI();
+                await loadAssignmentData(currentLesson.id);
+            }
+        } catch (e) {
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+            } else {
+                alert('Lỗi: ' + e.message);
             }
         }
     }

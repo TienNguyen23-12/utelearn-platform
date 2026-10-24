@@ -22,6 +22,7 @@ import vn.edu.ute.utelearn.util.SecurityUtils;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -169,9 +170,16 @@ public class CohortServiceImpl implements CohortService {
             }
         }
 
-        if (cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        boolean coreInfoChanged = false;
+        if (dto.getName() != null && !dto.getName().equals(cohort.getName())) coreInfoChanged = true;
+        if (dto.getCode() != null && !dto.getCode().equals(cohort.getCode())) coreInfoChanged = true;
+        if (dto.getPrice() != null && (cohort.getPrice() == null || cohort.getPrice().compareTo(dto.getPrice()) != 0)) coreInfoChanged = true;
+        if (dto.getDescription() != null && !Objects.equals(dto.getDescription(), cohort.getDescription())) coreInfoChanged = true;
+        if (dto.getObjectives() != null && !Objects.equals(formatObjectives(dto.getObjectives()), cohort.getObjectives())) coreInfoChanged = true;
+
+        if (coreInfoChanged && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
-            log.info("[CohortService] Chuyển module độc lập id: {} về DRAFT do cập nhật thông tin", id);
+            log.info("[CohortService] Chuyển module id: {} về DRAFT do cập nhật thông tin cốt lõi", id);
         }
 
         cohort.setCode(dto.getCode());
@@ -549,10 +557,10 @@ public class CohortServiceImpl implements CohortService {
     @Override
     @Transactional
     public void revertToDraftIfApproved(Cohort cohort) {
-        if (cohort != null && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (cohort != null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
             cohortRepository.save(cohort);
-            log.info("[CohortService] Tự động chuyển trạng thái Module độc lập id: {} về DRAFT do có thay đổi nội dung", cohort.getId());
+            log.info("[CohortService] Tự động chuyển trạng thái Module id: {} về DRAFT do có thay đổi nội dung", cohort.getId());
         }
     }
 
