@@ -2,8 +2,8 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
-    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Module & Chuyên đề - UTELearn Platform</title>
@@ -131,11 +131,7 @@
                                 <td class="text-center text-nowrap">
                                     <a th:href="@{/instructor/cohorts/{id}/curriculum(id=${cohort.id})}"
                                         class="btn btn-sm btn-outline-success rounded-pill px-3">
-                                        <i class="bi bi-journal-text me-1"></i> Giáo trình
-                                    </a>
-                                    <a th:href="@{/instructor/cohorts/{id}/schedule(id=${cohort.id})}"
-                                        class="btn btn-sm btn-outline-info rounded-pill px-3 ms-1">
-                                        <i class="bi bi-calendar-event me-1"></i> Lộ trình
+                                        <i class="bi bi-journal-text me-1"></i> Giáo trình &amp; Lộ trình
                                     </a>
                                     <a th:href="@{/instructor/cohorts/{id}/edit(id=${cohort.id})}"
                                         class="btn btn-sm btn-outline-primary rounded-pill px-3 ms-1">
@@ -146,12 +142,12 @@
                                             <i class="bi bi-trash me-1"></i> Xóa
                                         </button>
                                     </form>
-                                    <form th:if="${cohort.course == null and (cohort.moderationStatus == 'DRAFT' or cohort.moderationStatus == 'REJECTED')}" th:action="@{/instructor/cohorts/{id}/submit-review(id=${cohort.id})}" method="post" class="d-inline-block ms-1">
+                                    <form th:if="${cohort.moderationStatus == 'DRAFT' or cohort.moderationStatus == 'REJECTED'}" th:action="@{/instructor/cohorts/{id}/submit-review(id=${cohort.id})}" method="post" class="d-inline-block ms-1">
                                         <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="return showConfirmModal(event, this.form, 'Bạn có chắc chắn muốn gửi duyệt Module này không? Module sẽ được đưa vào hàng đợi của Moderator.');">
                                             <i class="bi bi-send-check me-1"></i> Gửi duyệt
                                         </button>
                                     </form>
-                                    <button th:if="${cohort.course == null and cohort.moderationStatus == 'REJECTED'}" type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-1" th:onclick="'showModerationFeedbackModal(\'COHORT\', ' + ${cohort.id} + ')'">
+                                    <button th:if="${cohort.moderationStatus == 'REJECTED'}" type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 ms-1" th:onclick="'showModerationFeedbackModal(\'COHORT\', ' + ${cohort.id} + ')'">
                                         <i class="bi bi-chat-square-quote me-1"></i> Lý do
                                     </button>
                                 </td>

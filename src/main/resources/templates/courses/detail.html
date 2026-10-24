@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
-    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${course.title + ' - UTELearn'}">Chi tiết khóa học - UTELearn</title>
@@ -534,7 +534,7 @@
                                 <ul class="list-group list-group-flush">
                                     <li th:each="lesson : ${sec.lessons}" class="list-group-item p-3 border-0 border-bottom bg-transparent d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center">
-                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : ' bi-code-slash text-info'))}"></i>
+                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : (lesson.lessonType == 'ASSIGNMENT' ? ' bi-journal-check text-info' : ' bi-code-slash text-info')))}"></i>
                                             <span class="fw-medium text-dark" th:text="${lesson.title}">Tiêu đề bài học</span>
                                         </div>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">
@@ -564,7 +564,7 @@
                                 <ul class="list-group list-group-flush">
                                     <li th:each="lesson : ${unassignedLessons}" class="list-group-item p-3 border-0 border-bottom bg-transparent">
                                         <div class="d-flex align-items-center">
-                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : ' bi-file-earmark-text text-secondary'))}"></i>
+                                            <i class="bi fs-5 me-2" th:classappend="${lesson.lessonType == 'VIDEO' ? ' bi-play-circle-fill text-primary' : (lesson.lessonType == 'DOCUMENT' ? ' bi-file-earmark-text-fill text-success' : (lesson.lessonType == 'QUIZ' ? ' bi-question-circle-fill text-warning' : (lesson.lessonType == 'ASSIGNMENT' ? ' bi-journal-check text-info' : ' bi-file-earmark-text text-secondary')))}"></i>
                                             <span class="fw-medium" th:text="${lesson.title}">Bài học</span>
                                             <span class="badge bg-light text-muted border ms-auto" style="font-size: 10px;">Bổ trợ</span>
                                         </div>

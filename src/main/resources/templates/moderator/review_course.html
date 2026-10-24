@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
-    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duyệt Khóa học - UTELearn Platform</title>
@@ -30,7 +30,7 @@
                     <i class="bi bi-arrow-left"></i>
                 </a>
                 <div>
-                    <h3 class="fw-bold mb-1" th:text="${task.itemType == 'COHORT' ? 'Kiểm duyệt Module Độc Lập' : 'Kiểm duyệt Khóa học'}">Kiểm duyệt Khóa học</h3>
+                    <h3 class="fw-bold mb-1" th:text="${task.itemType == 'COHORT' ? (course != null ? 'Kiểm duyệt Module Khóa học' : 'Kiểm duyệt Module Độc Lập') : 'Kiểm duyệt Khóa học'}">Kiểm duyệt Khóa học</h3>
                     <div class="d-flex align-items-center gap-2">
                         <p class="text-muted mb-0">Task #<span th:text="${task.id}"></span> - Tác giả: <span th:text="${task.author?.fullName}"></span></p>
                         <span th:if="${task.deadlineAt != null}" class="badge bg-info-subtle text-info border">
@@ -81,12 +81,12 @@
 
         <div class="row g-4">
             <div class="col-lg-4">
-                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${course != null}">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${task.itemType == 'COURSE' and course != null}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0">Khóa học lớn</h5>
                         <span class="badge bg-primary text-white font-monospace" th:text="${course.code}">CODE</span>
                     </div>
-                    <img th:src="${course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="img-fluid rounded mb-3" alt="Thumbnail">
+                    <img th:src="${course.effectiveThumbnailUrl}" class="img-fluid rounded mb-3" alt="Thumbnail">
                     <h6 class="fw-bold" th:text="${course.title}">Tên khóa học</h6>
                     <p class="text-muted small mb-2" th:text="${course.headline}">Mô tả ngắn</p>
                     <hr>
@@ -108,10 +108,13 @@
                     </a>
                 </div>
 
-                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${cohort != null and course == null}">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${task.itemType == 'COHORT' and cohort != null}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Module bán lẻ độc lập</h5>
+                        <h5 class="fw-bold mb-0" th:text="${course != null ? 'Module khóa học' : 'Module bán lẻ độc lập'}">Module bán lẻ độc lập</h5>
                         <span class="badge bg-success text-white font-monospace" th:text="${cohort.code}">CODE</span>
+                    </div>
+                    <div th:if="${course != null}" class="alert alert-light border small py-2 px-3 rounded-3 mb-3">
+                        <i class="bi bi-collection me-1 text-primary"></i> Khóa học cha: <strong th:text="${course.title}"></strong>
                     </div>
                     <img th:src="${cohort.effectiveThumbnailUrl}" class="img-fluid rounded mb-3" alt="Thumbnail">
                     <h6 class="fw-bold" th:text="${cohort.name}">Tên module</h6>
@@ -129,7 +132,7 @@
                         <span class="badge bg-success-subtle text-success border">Cho phép chia sẻ</span>
                     </div>
                     <hr>
-                    <a th:href="@{'/courses/module/' + ${cohort.id}}" target="_blank" class="btn btn-outline-primary w-100 rounded-3 shadow-sm mt-2">
+                    <a th:href="@{'/courses/' + ${course != null && course.slug != null ? course.slug : 'standalone'} + '/modules/' + ${cohort.id}}" target="_blank" class="btn btn-outline-primary w-100 rounded-3 shadow-sm mt-2">
                         <i class="bi bi-box-arrow-up-right me-2"></i> Xem Chi Tiết Module
                     </a>
                 </div>
@@ -140,12 +143,12 @@
                     <h5 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Giới thiệu & Mục tiêu đào tạo</h5>
                     <div class="mb-3">
                         <label class="form-label text-muted small fw-semibold">Mô tả nội dung</label>
-                        <div class="bg-light p-3 rounded-3" th:utext="${course != null ? course.description : cohort?.description}">Chưa có mô tả</div>
+                        <div class="bg-light p-3 rounded-3" th:utext="${task.itemType == 'COHORT' ? (cohort?.description != null ? cohort.description : 'Chưa có mô tả') : (course?.description != null ? course.description : 'Chưa có mô tả')}">Chưa có mô tả</div>
                     </div>
                     <div>
                         <label class="form-label text-muted small fw-semibold">Kiến thức / Kỹ năng đạt được</label>
-                        <div class="bg-light p-3 rounded-3" th:if="${course != null}" th:utext="${course.objectives}">Chưa thiết lập mục tiêu</div>
-                        <div class="bg-light p-3 rounded-3" th:if="${course == null and cohort != null}">
+                        <div class="bg-light p-3 rounded-3" th:if="${task.itemType == 'COURSE' and course != null}" th:utext="${course.objectives}">Chưa thiết lập mục tiêu</div>
+                        <div class="bg-light p-3 rounded-3" th:if="${task.itemType == 'COHORT' and cohort != null}">
                             <ul class="mb-0 ps-3" th:if="${cohort.parsedObjectives != null and !#lists.isEmpty(cohort.parsedObjectives)}">
                                 <li th:each="obj : ${cohort.parsedObjectives}" th:text="${obj}" class="mb-1"></li>
                             </ul>
@@ -157,7 +160,12 @@
                 <div class="card card-custom border-0 shadow-sm rounded-4 p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Giáo trình & Bài giảng Thẩm định</h5>
-                        <span class="badge bg-primary-subtle text-primary border rounded-pill" th:text="${sections != null ? #lists.size(sections) : 0} + ' chương'">0 chương</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" th:if="${sections != null && !#lists.isEmpty(sections)}" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-primary small fw-semibold" onclick="toggleAllSections()">
+                                <i class="bi bi-arrows-expand me-1" id="toggleAllSectionsIcon"></i><span id="toggleAllSectionsText">Mở tất cả</span>
+                            </button>
+                            <span class="badge bg-primary-subtle text-primary border rounded-pill" th:text="${sections != null ? #lists.size(sections) : 0} + ' chương'">0 chương</span>
+                        </div>
                     </div>
                     <div th:if="${sections == null || #lists.isEmpty(sections)}" class="text-center py-4 text-muted">
                         <i class="bi bi-folder-x fs-2 d-block mb-2 text-secondary opacity-50"></i>
@@ -172,14 +180,14 @@
                                     <span class="badge bg-secondary-subtle text-secondary ms-auto me-2 font-monospace" th:text="${lessonsMap != null && lessonsMap[sec.id] != null ? #lists.size(lessonsMap[sec.id]) : 0} + ' bài'">0 bài</span>
                                 </button>
                             </h2>
-                            <div th:id="'collapse' + ${sec.id}" class="accordion-collapse collapse" data-bs-parent="#curriculumAccordion">
+                            <div th:id="'collapse' + ${sec.id}" class="accordion-collapse collapse">
                                 <div class="accordion-body p-0">
                                     <div th:if="${lessonsMap == null || lessonsMap[sec.id] == null || #lists.isEmpty(lessonsMap[sec.id])}" class="p-3 text-muted small fst-italic">
                                         Chương này chưa có bài học nào.
                                     </div>
                                     <ul th:if="${lessonsMap != null && lessonsMap[sec.id] != null && !#lists.isEmpty(lessonsMap[sec.id])}" class="list-group list-group-flush">
                                         <li th:each="l : ${lessonsMap[sec.id]}" class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                                            <div class="d-flex align-items-center gap-2">
+                                             <div class="d-flex align-items-center gap-2">
                                                 <span th:if="${l.lessonType == 'VIDEO'}" class="badge bg-danger-subtle text-danger"><i class="bi bi-play-circle me-1"></i>Video</span>
                                                 <span th:if="${l.lessonType == 'DOCUMENT'}" class="badge bg-info-subtle text-info"><i class="bi bi-file-earmark-text me-1"></i>Tài liệu</span>
                                                 <span th:if="${l.lessonType == 'QUIZ'}" class="badge bg-warning-subtle text-warning"><i class="bi bi-question-circle me-1"></i>Quiz</span>
@@ -192,7 +200,10 @@
                                                     <span th:if="${l.lessonType == 'VIDEO' && l.durationSeconds != null && l.durationSeconds > 0}" th:text="${l.durationSeconds / 60} + ' phút'"></span>
                                                     <span th:if="${l.videoUrl != null && !l.videoUrl.isBlank()}" class="badge bg-light text-secondary border font-monospace ms-2" th:text="${l.videoUrl.length() > 30 ? l.videoUrl.substring(0, 30) + '...' : l.videoUrl}">URL</span>
                                                 </div>
-                                                <a th:if="${cohort != null}" th:href="@{'/courses/module/' + ${cohort.id} + '/learn?lesson=' + ${l.id}}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
+                                                <button type="button" th:if="${l.lessonType == 'QUIZ'}" th:attr="data-lesson-id=${l.id},data-lesson-title=${l.title}" onclick="openQuizModalFromBtn(this)" class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
+                                                    <i class="bi bi-card-checklist me-1"></i>Xem đề thi
+                                                </button>
+                                                <a th:if="${cohort != null}" th:href="@{'/courses/' + ${course != null && course.slug != null ? course.slug : 'standalone'} + '/modules/' + ${cohort.id} + '/learn?lesson=' + ${l.id}}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
                                                     <i class="bi bi-eye me-1"></i>Xem nội dung
                                                 </a>
                                                 <a th:if="${cohort == null and course != null and course.slug != null}" th:href="@{'/courses/' + ${course.slug} + '/learn?lesson=' + ${l.id}}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
@@ -218,11 +229,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">Phê duyệt Khóa học</h5>
+                <h5 class="modal-title fw-bold">Phê duyệt Nội dung</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Khóa học này sẽ được xuất bản lên hệ thống.</p>
+                <p>Nội dung này sẽ được xuất bản lên hệ thống.</p>
                 <div class="mb-3">
                     <label class="form-label">Phản hồi cho Giảng viên (Tùy chọn)</label>
                     <textarea class="form-control" id="approveFeedback" rows="3"></textarea>
@@ -240,11 +251,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold text-danger">Từ chối Khóa học</h5>
+                <h5 class="modal-title fw-bold text-danger">Từ chối Nội dung</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Khóa học sẽ bị trả lại cho Giảng viên. Vui lòng nêu rõ lý do từ chối.</p>
+                <p>Nội dung sẽ bị trả lại cho Giảng viên. Vui lòng nêu rõ lý do từ chối.</p>
                 <div class="mb-3">
                     <label class="form-label">Lý do từ chối <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="rejectFeedback" rows="3" required></textarea>
@@ -266,7 +277,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Khóa học sẽ được chuyển lên Quản trị viên (Admin) để quyết định.</p>
+                <p>Nội dung sẽ được chuyển lên Quản trị viên (Admin) để quyết định.</p>
                 <div class="mb-3">
                     <label class="form-label">Lý do chuyển cấp <span class="text-danger">*</span></label>
                     <textarea class="form-control" id="escalateReason" rows="3" required placeholder="VD: Khóa học có nội dung nhạy cảm..."></textarea>
@@ -304,6 +315,31 @@
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
                 <button type="button" class="btn btn-info text-white" onclick="submitReassign()">Xác nhận chuyển</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quizReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 small mb-1">
+                        <i class="bi bi-shield-check me-1"></i>Thẩm định Đề thi & Đáp án
+                    </span>
+                    <h5 class="modal-title fw-bold" id="quizReviewModalTitle">Bài kiểm tra trắc nghiệm</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="quizReviewModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="small text-muted mt-2">Đang nạp bộ câu hỏi và đáp án chuẩn...</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
@@ -386,6 +422,185 @@
         } catch(e) {
             console.error(e);
             alert("Lỗi kết nối");
+        }
+    }
+
+    const quizReviewModalEl = document.getElementById('quizReviewModal');
+    const quizReviewModal = quizReviewModalEl ? new bootstrap.Modal(quizReviewModalEl) : null;
+
+    function openQuizModalFromBtn(btn) {
+        const lessonId = btn.getAttribute('data-lesson-id');
+        const lessonTitle = btn.getAttribute('data-lesson-title') || 'Bài kiểm tra trắc nghiệm';
+        if (!lessonId || !quizReviewModal) return;
+
+        document.getElementById('quizReviewModalTitle').textContent = lessonTitle;
+        const modalBody = document.getElementById('quizReviewModalBody');
+        modalBody.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <div class="small text-muted mt-2">Đang nạp bộ câu hỏi và đáp án chuẩn...</div>
+            </div>
+        `;
+        quizReviewModal.show();
+
+        fetch('/api/quizzes/lesson/' + lessonId)
+            .then(res => {
+                if (!res.ok) throw new Error('Không thể tải bài kiểm tra');
+                return res.json();
+            })
+            .then(quiz => {
+                const totalQ = (quiz.questions && Array.isArray(quiz.questions)) ? quiz.questions.length : (quiz.totalQuestions || 0);
+                const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+                let questionsHtml = '';
+                if (!quiz.questions || quiz.questions.length === 0) {
+                    questionsHtml = `
+                        <div class="alert alert-warning border-0 rounded-4 p-4 text-center">
+                            <i class="bi bi-exclamation-triangle text-warning fs-3 d-block mb-2"></i>
+                            <h6 class="fw-bold">Chưa có câu hỏi nào trong đề thi</h6>
+                            <p class="text-muted small mb-0">Giảng viên chưa soạn câu hỏi cho bài kiểm tra này.</p>
+                        </div>
+                    `;
+                } else {
+                    questionsHtml = quiz.questions.map((q, idx) => {
+                        let typeName = 'Một đáp án';
+                        let typeBadgeClass = 'bg-primary-subtle text-primary border-primary-subtle';
+                        let typeIcon = 'bi-ui-radios-grid';
+                        if (q.questionType === 'MULTI_SELECT' || q.questionType === 'MULTIPLE_CHOICE') {
+                            typeName = 'Nhiều đáp án';
+                            typeBadgeClass = 'bg-info-subtle text-info border-info-subtle';
+                            typeIcon = 'bi-ui-checks';
+                        } else if (q.questionType === 'TRUE_FALSE') {
+                            typeName = 'Đúng / Sai';
+                            typeBadgeClass = 'bg-secondary-subtle text-secondary border-secondary-subtle';
+                            typeIcon = 'bi-check2-circle';
+                        } else if (q.questionType === 'FILL_BLANK') {
+                            typeName = 'Điền từ';
+                            typeBadgeClass = 'bg-warning-subtle text-warning border-warning-subtle';
+                            typeIcon = 'bi-pencil';
+                        }
+
+                        let optionsHtml = '';
+                        if (q.questionType === 'FILL_BLANK') {
+                            const correctAnswers = (q.options || []).filter(o => o.isCorrect !== false).map(o => o.text).join(' HOẶC ');
+                            optionsHtml = `
+                                <div class="p-3 rounded-3 border border-success bg-success-subtle bg-opacity-25 text-success-emphasis">
+                                    <span class="badge bg-success text-white mb-1"><i class="bi bi-check-lg me-1"></i>Các đáp án được chấp nhận</span>
+                                    <div class="fw-bold">${correctAnswers || '(Chưa cấu hình)'}</div>
+                                </div>
+                            `;
+                        } else {
+                            optionsHtml = (q.options || []).map((opt, oIdx) => {
+                                const isCorrect = Boolean(opt.isCorrect);
+                                const letter = letters[oIdx] || (oIdx + 1);
+                                if (isCorrect) {
+                                    return `
+                                        <div class="d-flex align-items-center justify-content-between p-2.5 rounded-3 mb-2 border border-success bg-success-subtle bg-opacity-25">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-success text-white rounded-circle p-1 d-inline-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 10px;">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </span>
+                                                <span class="fw-bold text-success me-1">${letter}.</span>
+                                                <span class="fw-semibold text-dark small">${opt.text}</span>
+                                            </div>
+                                            <span class="badge bg-success text-white rounded-pill px-2 py-0.5" style="font-size: 10px;">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Đáp án đúng
+                                            </span>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `
+                                        <div class="d-flex align-items-center justify-content-between p-2.5 rounded-3 mb-2 border bg-light text-secondary">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-white text-secondary border rounded-circle p-1 d-inline-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 10px;">
+                                                    ${letter}
+                                                </span>
+                                                <span class="fw-bold text-secondary me-1">${letter}.</span>
+                                                <span class="small">${opt.text}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }).join('');
+                        }
+
+                        let explanationHtml = '';
+                        if (q.explanation && q.explanation.trim()) {
+                            explanationHtml = `
+                                <div class="mt-2 p-2.5 bg-light rounded-3 border border-info-subtle small text-dark">
+                                    <i class="bi bi-lightbulb-fill text-warning me-1"></i>
+                                    <strong>Giải thích:</strong> ${q.explanation}
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div class="card border rounded-3 p-3 mb-3 bg-white shadow-xs">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-dark text-white rounded-pill px-2.5 py-0.5 small fw-bold">Câu ${idx + 1}</span>
+                                        <span class="badge ${typeBadgeClass} border rounded-pill px-2 py-0.5" style="font-size: 10px;">
+                                            <i class="bi ${typeIcon} me-1"></i>${typeName}
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-light text-secondary border font-monospace" style="font-size: 11px;">${q.points || 1} điểm</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-2.5 small">${q.content}</h6>
+                                <div>${optionsHtml}</div>
+                                ${explanationHtml}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                modalBody.innerHTML = `
+                    <div class="row g-2 mb-3 p-3 bg-light rounded-3 border">
+                        <div class="col-4 text-center border-end">
+                            <span class="text-muted small d-block">Số câu hỏi</span>
+                            <strong class="text-dark">${totalQ} câu</strong>
+                        </div>
+                        <div class="col-4 text-center border-end">
+                            <span class="text-muted small d-block">Thời gian</span>
+                            <strong class="text-dark">${quiz.durationMinutes || 15} phút</strong>
+                        </div>
+                        <div class="col-4 text-center">
+                            <span class="text-muted small d-block">Điểm sàn</span>
+                            <strong class="text-success">${quiz.passingScore || 5.0} / 10</strong>
+                        </div>
+                    </div>
+                    <div>${questionsHtml}</div>
+                `;
+            })
+            .catch(err => {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger border-0 rounded-3 p-3 text-center">
+                        <i class="bi bi-exclamation-octagon me-1"></i>Không thể tải thông tin đề thi: ${err.message}
+                    </div>
+                `;
+            });
+    }
+
+    function toggleAllSections() {
+        const collapses = document.querySelectorAll('#curriculumAccordion .accordion-collapse');
+        const buttons = document.querySelectorAll('#curriculumAccordion .accordion-button');
+        const textSpan = document.getElementById('toggleAllSectionsText');
+        const icon = document.getElementById('toggleAllSectionsIcon');
+
+        let allOpen = true;
+        collapses.forEach(el => {
+            if (!el.classList.contains('show')) allOpen = false;
+        });
+
+        if (allOpen) {
+            collapses.forEach(el => el.classList.remove('show'));
+            buttons.forEach(btn => btn.classList.add('collapsed'));
+            if (textSpan) textSpan.textContent = 'Mở tất cả';
+            if (icon) { icon.className = 'bi bi-arrows-expand me-1'; }
+        } else {
+            collapses.forEach(el => el.classList.add('show'));
+            buttons.forEach(btn => btn.classList.remove('collapsed'));
+            if (textSpan) textSpan.textContent = 'Thu gọn tất cả';
+            if (icon) { icon.className = 'bi bi-arrows-collapse me-1'; }
         }
     }
 </script>

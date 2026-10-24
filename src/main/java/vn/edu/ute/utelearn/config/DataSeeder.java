@@ -102,6 +102,17 @@ public class DataSeeder implements CommandLineRunner {
             if (fixedCourses > 0) {
                 log.info("[DataSeeder] Đã tự động sửa " + fixedCourses + " khóa học bị kẹt ở trạng thái APPROVED sang PUBLISHED.");
             }
+            jdbcTemplate.update("UPDATE courses SET status = 'PUBLISHED' WHERE slug = 'luyen-thi-thuat-toan-oj' AND status = 'DRAFT'");
+            jdbcTemplate.update("UPDATE cohorts SET moderation_status = 'DRAFT' WHERE code = 'MOD-2026-09' AND moderation_status = 'APPROVED'");
+            if (isTablePresent("quizzes")) {
+                jdbcTemplate.update("UPDATE quizzes SET duration_minutes = 15 WHERE duration_minutes = 45");
+            }
+
+            if (isTablePresent("lessons")) {
+                initAssignmentTables();
+            }
+
+            seedSampleQuizzes();
 
             log.info("[DataSeeder] Quá trình nạp dữ liệu mẫu hoàn tất thành công!");
         } catch (Exception e) {
@@ -133,6 +144,100 @@ public class DataSeeder implements CommandLineRunner {
         jdbcTemplate.update("UPDATE cohorts SET description = ?, objectives = ? WHERE code = 'MOD-JAVA-03' AND (objectives IS NULL OR objectives = '')",
                 "Triển khai giải pháp phân quyền nâng cao RBAC và bảo mật hệ thống microservice với Spring Security 6 và JWT.",
                 "[\"Cấu hình Spring Security Filter Chain chuẩn xác\", \"Tích hợp xác thực Stateless với JSON Web Token (JWT)\", \"Phân quyền phương thức và endpoint động với @PreAuthorize\", \"Triển khai Single Sign-On (SSO) OAuth2 Google\"]");
+    }
+
+    private void seedSampleQuizzes() {
+        if (!isTablePresent("quizzes") || !isTablePresent("questions") || !isTablePresent("lessons")) {
+            return;
+        }
+        try {
+            jdbcTemplate.execute("ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS allow_review BOOLEAN DEFAULT true");
+            jdbcTemplate.execute("UPDATE quizzes SET allow_review = true WHERE allow_review IS NULL");
+            jdbcTemplate.execute("ALTER TABLE questions ADD COLUMN IF NOT EXISTS order_index INT DEFAULT 1");
+            jdbcTemplate.execute("UPDATE questions SET order_index = 1 WHERE order_index IS NULL");
+        } catch (Exception ignored) {}
+
+        Integer quizCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM quizzes", Integer.class);
+        if (quizCount != null && quizCount > 0) {
+            return;
+        }
+
+        List<Map<String, Object>> sections = jdbcTemplate.queryForList(
+                "SELECT s.id, s.cohort_id FROM sections s WHERE s.cohort_id IS NOT NULL ORDER BY s.id ASC LIMIT 1");
+        if (sections.isEmpty()) {
+            return;
+        }
+
+        Long sectionId = ((Number) sections.get(0).get("id")).longValue();
+        Long cohortId = ((Number) sections.get(0).get("cohort_id")).longValue();
+
+        jdbcTemplate.update(
+                "INSERT INTO lessons (section_id, title, lesson_type, order_index, is_free_preview, is_public_for_cohorts, status) " +
+                "VALUES (?, ?, 'QUIZ', 99, false, true, 'PUBLISHED')",
+                sectionId, "Bài kiểm tra Đánh giá Năng lực OOP & Java Core");
+
+        Long lessonId = jdbcTemplate.queryForObject(
+                "SELECT id FROM lessons WHERE section_id = ? AND lesson_type = 'QUIZ' ORDER BY id DESC LIMIT 1",
+                Long.class, sectionId);
+
+        if (lessonId == null) {
+            return;
+        }
+
+        if (isTablePresent("cohort_schedules")) {
+            jdbcTemplate.update(
+                    "INSERT INTO cohort_schedules (cohort_id, lesson_id, unlock_at, show_score_type, is_score_published, allow_review_answers) " +
+                    "VALUES (?, ?, CURRENT_TIMESTAMP, 'IMMEDIATELY', true, true) ON CONFLICT DO NOTHING",
+                    cohortId, lessonId);
+        }
+
+        jdbcTemplate.update(
+                "INSERT INTO quizzes (lesson_id, title, duration_minutes, passing_score, max_attempts, shuffle_questions) " +
+                "VALUES (?, ?, 15, 5.0, 3, true)",
+                lessonId, "Bài kiểm tra Đánh giá Năng lực OOP & Java Core");
+
+        Long quizId = jdbcTemplate.queryForObject("SELECT id FROM quizzes WHERE lesson_id = ?", Long.class, lessonId);
+        if (quizId == null) {
+            return;
+        }
+
+        jdbcTemplate.update(
+                "INSERT INTO questions (quiz_id, content, question_type, points, explanation, options) VALUES (?, ?, ?, ?, ?, ?::jsonb)",
+                quizId,
+                "Trong ngôn ngữ Java, từ khóa nào sau đây được sử dụng để một lớp kế thừa từ một lớp cha?",
+                "SINGLE_CHOICE",
+                2.5,
+                "Trong Java, từ khóa 'extends' được dùng để kế thừa một class, còn 'implements' dùng để triển khai interface.",
+                "[{\"id\":\"opt_1\",\"text\":\"extends\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"implements\",\"isCorrect\":false},{\"id\":\"opt_3\",\"text\":\"inherits\",\"isCorrect\":false},{\"id\":\"opt_4\",\"text\":\"super\",\"isCorrect\":false}]");
+
+        jdbcTemplate.update(
+                "INSERT INTO questions (quiz_id, content, question_type, points, explanation, options) VALUES (?, ?, ?, ?, ?, ?::jsonb)",
+                quizId,
+                "Những tính chất nào sau đây là các trụ cột cốt lõi của Lập trình Hướng đối tượng (OOP)?",
+                "MULTI_SELECT",
+                2.5,
+                "4 tính chất cốt lõi của OOP gồm: Đóng gói (Encapsulation), Kế thừa (Inheritance), Đa hình (Polymorphism) và Trừu tượng (Abstraction).",
+                "[{\"id\":\"opt_1\",\"text\":\"Đóng gói (Encapsulation)\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"Kế thừa (Inheritance)\",\"isCorrect\":true},{\"id\":\"opt_3\",\"text\":\"Đa hình (Polymorphism)\",\"isCorrect\":true},{\"id\":\"opt_4\",\"text\":\"Đồng quy đa luồng (Concurrency)\",\"isCorrect\":false}]");
+
+        jdbcTemplate.update(
+                "INSERT INTO questions (quiz_id, content, question_type, points, explanation, options) VALUES (?, ?, ?, ?, ?, ?::jsonb)",
+                quizId,
+                "Trong Java, một lớp (class) có thể cùng lúc kế thừa trực tiếp từ nhiều lớp cha khác nhau (Multiple Class Inheritance).",
+                "TRUE_FALSE",
+                2.5,
+                "Java không hỗ trợ đa kế thừa trực tiếp giữa các class để tránh lỗi nhập nhằng Diamond Problem.",
+                "[{\"id\":\"opt_1\",\"text\":\"Đúng\",\"isCorrect\":false},{\"id\":\"opt_2\",\"text\":\"Sai\",\"isCorrect\":true}]");
+
+        jdbcTemplate.update(
+                "INSERT INTO questions (quiz_id, content, question_type, points, explanation, options) VALUES (?, ?, ?, ?, ?, ?::jsonb)",
+                quizId,
+                "Môi trường thực thi của Java chịu trách nhiệm nạp bytecode và chuyển đổi thành mã máy được gọi tắt là gì? (3 chữ cái)",
+                "FILL_BLANK",
+                2.5,
+                "JVM viết tắt của Java Virtual Machine (Máy ảo Java).",
+                "[{\"id\":\"opt_1\",\"text\":\"JVM\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"Java Virtual Machine\",\"isCorrect\":true}]");
+
+        log.info("[DataSeeder] Đã tạo thành công bài kiểm tra mẫu OOP & Java Core gồm 4 dạng câu hỏi.");
     }
 
     private boolean isTablePresent(String tableName) {
@@ -312,6 +417,50 @@ public class DataSeeder implements CommandLineRunner {
 
         for (Object[] cat : categories) {
             jdbcTemplate.update(sql, cat);
+        }
+    }
+
+    private void initAssignmentTables() {
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS assignments (" +
+                    "id BIGSERIAL PRIMARY KEY, " +
+                    "lesson_id BIGINT UNIQUE NOT NULL REFERENCES lessons(id) ON DELETE CASCADE, " +
+                    "title VARCHAR(255) NOT NULL, " +
+                    "instruction TEXT, " +
+                    "attachment_url TEXT, " +
+                    "max_score NUMERIC(5, 2) DEFAULT 10.0, " +
+                    "passing_score NUMERIC(5, 2) DEFAULT 5.0, " +
+                    "allow_file_submission BOOLEAN DEFAULT TRUE, " +
+                    "allow_text_submission BOOLEAN DEFAULT TRUE, " +
+                    "allowed_file_types VARCHAR(255) DEFAULT 'pdf,doc,docx,zip,rar,txt', " +
+                    "max_file_size_mb INT DEFAULT 20, " +
+                    "created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, " +
+                    "updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
+
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS assignment_submissions (" +
+                    "id BIGSERIAL PRIMARY KEY, " +
+                    "assignment_id BIGINT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE, " +
+                    "user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE, " +
+                    "cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE, " +
+                    "submission_text TEXT, " +
+                    "file_url TEXT, " +
+                    "file_name VARCHAR(255), " +
+                    "file_size_bytes BIGINT, " +
+                    "status VARCHAR(30) DEFAULT 'SUBMITTED', " +
+                    "score NUMERIC(5, 2), " +
+                    "feedback TEXT, " +
+                    "graded_by BIGINT REFERENCES users(id) ON DELETE SET NULL, " +
+                    "graded_at TIMESTAMPTZ, " +
+                    "submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, " +
+                    "created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, " +
+                    "updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, " +
+                    "CONSTRAINT uq_assignment_user_cohort UNIQUE (assignment_id, user_id, cohort_id))");
+
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_assignment_submissions_user ON assignment_submissions(cohort_id, user_id, assignment_id)");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_assignment_submissions_assignment ON assignment_submissions(assignment_id)");
+            log.info("[DataSeeder] Đã kiểm tra và khởi tạo bảng assignments và assignment_submissions thành công.");
+        } catch (Exception e) {
+            log.warn("[DataSeeder] Không thể khởi tạo bảng assignment: {}", e.getMessage());
         }
     }
 }

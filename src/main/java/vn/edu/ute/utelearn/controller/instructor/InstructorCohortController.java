@@ -185,18 +185,8 @@ public class InstructorCohortController {
     }
 
     @GetMapping("/{id}/schedule")
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public String manageSchedule(
-            @PathVariable Long id,
-            Model model) {
-        User currentUser = authService.getCurrentAuthenticatedUser()
-                .orElseThrow(() -> new RuntimeException("Unauthorized"));
-        Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
-        List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(id);
-        model.addAttribute("currentUser", currentUser);
-        model.addAttribute("cohort", cohort);
-        model.addAttribute("schedules", schedules);
-        return "instructor/cohorts/schedule";
+    public String manageSchedule(@PathVariable Long id) {
+        return "redirect:/instructor/cohorts/" + id + "/curriculum";
     }
 
     @PostMapping("/{id}/schedule")
@@ -206,6 +196,7 @@ public class InstructorCohortController {
             @RequestParam(required = false) java.util.List<String> unlockAts,
             @RequestParam(required = false) java.util.List<String> deadlineAts,
             @RequestParam(required = false) java.util.List<String> showScoreTypes,
+            @RequestParam(required = false) java.util.List<Boolean> allowReviewAnswers,
             RedirectAttributes redirectAttributes) {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
@@ -232,6 +223,9 @@ public class InstructorCohortController {
                         if (showScoreTypes != null && idx < showScoreTypes.size() && showScoreTypes.get(idx) != null) {
                             cs.setShowScoreType(showScoreTypes.get(idx));
                         }
+                        if (allowReviewAnswers != null && idx < allowReviewAnswers.size() && allowReviewAnswers.get(idx) != null) {
+                            cs.setAllowReviewAnswers(allowReviewAnswers.get(idx));
+                        }
                         cohortScheduleRepository.save(cs);
                     }
                 });
@@ -240,7 +234,7 @@ public class InstructorCohortController {
 
         cohortService.revertToDraftIfApproved(cohort);
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật lộ trình module thành công!");
-        return "redirect:/instructor/cohorts/" + id + "/schedule";
+        return "redirect:/instructor/cohorts/" + id + "/curriculum";
     }
 
     @PostMapping("/{id}/schedule/{scheduleId}/delete")
@@ -258,7 +252,7 @@ public class InstructorCohortController {
             }
         });
         redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ bài học khỏi module!");
-        return "redirect:/instructor/cohorts/" + id + "/schedule";
+        return "redirect:/instructor/cohorts/" + id + "/curriculum";
     }
 
     @GetMapping("/{id}/curriculum")
@@ -303,7 +297,9 @@ public class InstructorCohortController {
 
     @PostMapping("/{id}/submit-review")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
-    public String submitCohortForReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String submitCohortForReview(@PathVariable Long id,
+                                        @RequestParam(value = "redirectUrl", required = false) String redirectUrl,
+                                        RedirectAttributes redirectAttributes) {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
         Cohort cohort = cohortService.getCohortByIdAndInstructor(id, currentUser.getId());
@@ -314,6 +310,9 @@ public class InstructorCohortController {
         moderationService.createCohortModerationTask(id, currentUser.getId());
         log.info("[InstructorCohortController] Gửi duyệt module id: {}, user: {}", id, currentUser.getEmail());
         redirectAttributes.addFlashAttribute("successMessage", "Module đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.");
+        if (redirectUrl != null && (redirectUrl.startsWith("/instructor/cohorts/") || redirectUrl.startsWith("/instructor/courses/"))) {
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/instructor/cohorts";
     }
 }

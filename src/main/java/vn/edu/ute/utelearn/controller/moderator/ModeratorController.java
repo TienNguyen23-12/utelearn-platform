@@ -65,6 +65,11 @@ public class ModeratorController {
         return "moderator/queue";
     }
 
+    @GetMapping({"/review", "/review/"})
+    public String reviewIndex() {
+        return "redirect:/moderator/queue";
+    }
+
     @GetMapping("/review/{taskId}")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
@@ -116,7 +121,8 @@ public class ModeratorController {
             vn.edu.ute.utelearn.entity.Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             model.addAttribute("cohort", cohort);
             if (cohort.getCourse() != null) {
-                model.addAttribute("course", cohort.getCourse());
+                Course course = courseService.getCourseById(cohort.getCourse().getId());
+                model.addAttribute("course", course);
             }
             List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCohortId(cohort.getId());
             model.addAttribute("sections", sections);

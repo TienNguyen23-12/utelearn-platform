@@ -30,4 +30,12 @@ public class LessonRequestDTO {
     private Long cohortId;
 
     private String status;
+
+    private String unlockAt;
+
+    private String deadlineAt;
+
+    private String showScoreType;
+
+    private Boolean allowReviewAnswers;
 }

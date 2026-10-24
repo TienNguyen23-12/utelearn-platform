@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="icon" type="image/png" href="/images/brand/logo-900x900.png">
-    <link rel="apple-touch-icon" href="/images/brand/logo-900x900.png">
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'Lộ trình Module: ' + ${cohort.name} + ' - UTELearn Platform'">Cấu hình Lộ trình Module</title>
@@ -79,6 +79,7 @@
                                     <th style="min-width: 180px;">Ngày mở bài (unlock_at)</th>
                                     <th style="min-width: 180px;">Hạn nộp (deadline_at)</th>
                                     <th style="min-width: 160px;">Chế độ xem điểm</th>
+                                    <th style="min-width: 150px;">Xem lại bài thi</th>
                                     <th class="text-center" style="width: 80px;">Gỡ</th>
                                 </tr>
                             </thead>
@@ -109,6 +110,18 @@
                                             <option value="AFTER_DEADLINE" th:selected="${cs.showScoreType == 'AFTER_DEADLINE'}">Sau khi hết hạn</option>
                                             <option value="MANUAL" th:selected="${cs.showScoreType == 'MANUAL'}">Chấm tay</option>
                                         </select>
+                                    </td>
+                                    <td>
+                                        <div th:if="${cs.lesson.lessonType == 'QUIZ'}">
+                                            <select class="form-select form-select-sm" name="allowReviewAnswers">
+                                                <option value="true" th:selected="${cs.allowReviewAnswers != false}">Cho xem lại</option>
+                                                <option value="false" th:selected="${cs.allowReviewAnswers == false}">Không cho xem</option>
+                                            </select>
+                                        </div>
+                                        <div th:unless="${cs.lesson.lessonType == 'QUIZ'}" class="text-center text-muted small">
+                                            <span>—</span>
+                                            <input type="hidden" name="allowReviewAnswers" value="false">
+                                        </div>
                                     </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger border-0" th:onclick="'deleteScheduleItem(' + ${cs.id} + ')'" title="Gỡ khỏi module">
