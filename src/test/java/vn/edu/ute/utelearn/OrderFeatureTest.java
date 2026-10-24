@@ -27,6 +27,7 @@ import vn.edu.ute.utelearn.service.OrderService;
 import vn.edu.ute.utelearn.service.impl.OrderServiceImpl;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -587,5 +588,130 @@ public class OrderFeatureTest {
         assertFalse(processed);
         assertEquals("CANCELLED", expiredOrder.getStatus());
         verify(orderRepository, times(1)).save(expiredOrder);
+    }
+
+    @Test
+    void testPayCourseWithWallet_Success_DeductsBalanceAndEnrolls() {
+        sampleUser.setBalance(new BigDecimal("1000000"));
+        when(courseRepository.findBySlug("web-dev")).thenReturn(Optional.of(sampleCourse));
+        when(cohortRepository.findByCourseIdAndStatusIn(eq(10L), any())).thenReturn(List.of(sampleCohort));
+        when(cohortMemberRepository.findByCohort_Course_IdAndUser_Id(10L, 1L)).thenReturn(Collections.emptyList());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order order = orderService.payCourseWithWallet(sampleUser, "web-dev");
+
+        assertNotNull(order);
+        assertEquals("SUCCESS", order.getStatus());
+        assertEquals("WALLET", order.getPaymentMethod());
+        assertEquals(BigDecimal.ZERO, sampleUser.getBalance());
+        verify(userRepository, times(1)).save(sampleUser);
+        verify(cohortMemberRepository, times(1)).save(any(CohortMember.class));
+        verify(emailService, times(1)).sendPaymentReceiptEmail(any(Order.class));
+    }
+
+    @Test
+    void testCreateCashierOrder_OfflinePending_SendsInstructionEmail() {
+        when(userRepository.findByEmail("student1@utelearn.edu.vn")).thenReturn(Optional.of(sampleUser));
+        when(cohortRepository.findById(101L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(101L, 1L)).thenReturn(false);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order order = orderService.createCashierOrder(
+                "student1@utelearn.edu.vn",
+                "COHORT",
+                101L,
+                null,
+                "OFFLINE_CASH",
+                false,
+                "Thu tiền tại phòng A1-01",
+                "cashier01"
+        );
+
+        assertNotNull(order);
+        assertEquals("PENDING", order.getStatus());
+        assertEquals("OFFLINE_COUNTER", order.getPaymentMethod());
+        assertNotNull(order.getExpiresAt());
+        verify(emailService, times(1)).sendOfflinePaymentInstructionEmail(any(Order.class));
+    }
+
+    @Test
+    void testCashierConfirmPayment_Success_EnrollsAndSendsReceiptEmail() {
+        Order pendingOrder = Order.builder()
+                .id(901L)
+                .orderCode("UTE901001")
+                .user(sampleUser)
+                .totalAmount(new BigDecimal("400000"))
+                .status("PENDING")
+                .items("[{\"type\":\"COHORT\",\"cohortId\":101,\"name\":\"Module 1\",\"price\":400000}]")
+                .build();
+
+        when(orderRepository.findById(901L)).thenReturn(Optional.of(pendingOrder));
+        when(cohortRepository.findById(101L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(101L, 1L)).thenReturn(false);
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order confirmed = orderService.cashierConfirmPayment(901L, "cashier_hoa", "OFFLINE_CASH", "Đã thu tiền mặt đủ");
+
+        assertNotNull(confirmed);
+        assertEquals("SUCCESS", confirmed.getStatus());
+        assertEquals("cashier_hoa", confirmed.getConfirmedBy());
+        assertEquals("PT-901", confirmed.getTransactionId());
+        verify(cohortMemberRepository, times(1)).save(any(CohortMember.class));
+        verify(emailService, times(1)).sendPaymentReceiptEmail(any(Order.class));
+    }
+    @Test
+    void testCreateCashierMultiOrder_Success_MultipleItems() {
+        when(userRepository.findByEmail("student1@utelearn.edu.vn")).thenReturn(Optional.of(sampleUser));
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(sampleCourse));
+        when(cohortRepository.findByCourseIdAndStatusIn(eq(10L), any())).thenReturn(List.of(sampleCohort));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(101L, 1L)).thenReturn(false);
+        when(cohortRepository.findById(101L)).thenReturn(Optional.of(sampleCohort));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Order order = orderService.createCashierMultiOrder(
+                "student1@utelearn.edu.vn",
+                List.of(10L),
+                List.of(101L),
+                "OFFLINE_CASH",
+                true,
+                "Thu tại quầy gộp",
+                "cashier01"
+        );
+
+        assertNotNull(order);
+        assertEquals("SUCCESS", order.getStatus());
+        assertEquals("PT-" + order.getId(), order.getTransactionId());
+        assertEquals(new BigDecimal("1400000"), order.getTotalAmount());
+        verify(emailService, times(1)).sendPaymentReceiptEmail(any(Order.class));
+    }
+
+    @Test
+    void testGetAvailableProductsForStudent_FiltersEnrolledAndPending() {
+        when(userRepository.findByEmail("student1@utelearn.edu.vn")).thenReturn(Optional.of(sampleUser));
+
+        CohortMember enrolledCm = CohortMember.builder().user(sampleUser).cohort(sampleCohort).build();
+        when(cohortMemberRepository.findByUserOrderByEnrolledAtDesc(sampleUser)).thenReturn(List.of(enrolledCm));
+
+        Order pendingOrder = Order.builder()
+                .id(777L)
+                .orderCode("UTE777888")
+                .status("PENDING")
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .items("[{\"type\":\"COURSE\",\"courseId\":10,\"name\":\"Lập trình Web\"}]")
+                .build();
+        when(orderRepository.findByUserOrderByCreatedAtDesc(sampleUser)).thenReturn(List.of(pendingOrder));
+
+        when(courseRepository.findAll()).thenReturn(List.of(sampleCourse));
+        when(cohortRepository.findAll()).thenReturn(List.of(sampleCohort));
+
+        Map<String, Object> result = orderService.getAvailableProductsForStudent("student1@utelearn.edu.vn");
+
+        assertNotNull(result);
+        List<?> availableCourses = (List<?>) result.get("availableCourses");
+        List<?> availableCohorts = (List<?>) result.get("availableCohorts");
+
+        assertTrue(availableCourses.isEmpty());
+        assertTrue(availableCohorts.isEmpty());
     }
 }

@@ -78,9 +78,7 @@
     </style>
 </head>
 <body class="bg-light">
-
 <nav th:replace="~{fragments/navbar :: siteNavbar('checkout')}"></nav>
-
 <div class="container py-5 mt-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -114,7 +112,6 @@
                             <p th:if="${isFullCourse and !isUpgrade}" class="text-muted small mb-0">Đăng ký trọn gói toàn bộ module & chuyên đề thành phần</p>
                         </div>
                     </div>
-
                     <div th:if="${isFullCourse and unenrolledCohorts != null}" class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label fw-bold small text-muted text-uppercase mb-0">Các module sẽ được kích hoạt</label>
@@ -143,7 +140,6 @@
                                 <span class="fw-semibold text-primary" th:text="${c.price != null && c.price > 0 ? #numbers.formatDecimal(c.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
                             </div>
                         </div>
-
                         <div id="removedCohortsSection" class="mt-3 p-3 bg-white rounded-3 border border-dashed d-none">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="small text-muted"><i class="bi bi-info-circle me-1"></i>Các module đã bỏ không mua:</span>
@@ -153,7 +149,6 @@
                             </div>
                             <div class="d-flex flex-wrap gap-2" id="removedCohortChips"></div>
                         </div>
-
                         <div id="allCohortsRemovedAlert" class="alert alert-warning rounded-3 text-center p-4 mt-3 d-none">
                             <i class="bi bi-cart-x fs-2 text-warning mb-2 d-block"></i>
                             <h6 class="fw-bold text-dark mb-1">Bạn chưa chọn module nào</h6>
@@ -163,9 +158,7 @@
                             </button>
                         </div>
                     </div>
-
                     <hr class="text-muted">
-
                     <div class="my-4" id="priceBreakdownContainer">
                         <div id="fullComboBreakdown">
                             <div th:if="${isFullCourse and isUpgrade}" class="d-flex justify-content-between align-items-center mb-2">
@@ -189,7 +182,6 @@
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" th:text="'- ' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">- 0 VNĐ</span>
                             </div>
                         </div>
-
                         <div id="customSelectedBreakdown" class="d-none">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="text-muted small">Tổng tiền các module đã chọn (<span id="customSelectedCountText">0</span> module)</span>
@@ -200,7 +192,12 @@
                                 <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" id="customDiscountText">- 0 VNĐ</span>
                             </div>
                         </div>
-
+                                                <div id="appliedVoucherRow" class="d-flex justify-content-between align-items-center mb-2 d-none">
+                            <span class="text-danger fw-semibold small">
+                                <i class="bi bi-gift-fill me-1"></i>Mã giảm giá (<span id="appliedVoucherCodeText"></span>)
+                            </span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" id="appliedVoucherAmountText">- 0 VNĐ</span>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                             <div>
                                 <h5 class="fw-bold text-dark mb-0">
@@ -212,8 +209,17 @@
                             <h4 class="fw-bold text-success mb-0" id="checkoutTotalPrice" th:data-price="${totalPrice.longValue()}" th:text="${#numbers.formatDecimal(totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</h4>
                         </div>
                     </div>
-
                     <div class="mb-4">
+                                            <div class="card border rounded-3 p-3 bg-light mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2">
+                            <i class="bi bi-tag-fill text-danger me-1"></i>Mã giảm giá / Voucher
+                        </label>
+                        <div class="input-group">
+                            <input type="text" id="checkoutDiscountInput" class="form-control rounded-start-3" placeholder="Nhập mã ưu đãi (ví dụ: GIAM10)..." style="text-transform: uppercase;">
+                            <button type="button" class="btn btn-outline-primary rounded-end-3 px-3 fw-semibold" onclick="applyCheckoutDiscount()">Áp dụng</button>
+                        </div>
+                        <div id="checkoutDiscountMessage" class="small mt-2 d-none"></div>
+                    </div>
                         <label class="form-label fw-bold small text-muted text-uppercase mb-3">Chọn phương thức thanh toán</label>
                         
                         <div class="payment-choice-card p-3 mb-3" id="choiceWallet" onclick="selectPaymentMethod('WALLET')">
@@ -245,7 +251,6 @@
                                 </button>
                             </div>
                         </div>
-
                         <div class="payment-choice-card p-3 mb-3 active" id="choiceVietQr" onclick="selectPaymentMethod('VIETQR')">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-3">
@@ -260,7 +265,6 @@
                                 <span class="badge bg-primary text-white rounded-pill px-3 py-1 small fw-semibold">Tiện lợi</span>
                             </div>
                         </div>
-
                         <div class="payment-choice-card p-3 mb-3" id="choiceOffline" onclick="selectPaymentMethod('OFFLINE')">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-3">
@@ -286,14 +290,12 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-primary btn-lg rounded-pill fw-bold w-100 shadow-sm py-3" id="btnMainPay" onclick="handleMainPayment()">
                             <i class="bi bi-qr-code me-2"></i>
                             <span th:if="${isFullCourse}">Thanh toán trọn gói qua VietQR</span>
                             <span th:unless="${isFullCourse}">Thanh toán module qua VietQR</span>
                         </button>
-
                         <div th:if="${isFullCourse}">
                             <form th:action="@{'/checkout/course/' + ${course.slug} + '/process'}" method="post">
                                 <input type="hidden" name="cohortIds" id="testFormCohortIds" th:value="${#strings.listJoin(unenrolledCohorts.![id], ',')}">
@@ -309,16 +311,13 @@
                                 </button>
                             </form>
                         </div>
-
                         <a th:href="@{${isFullCourse ? '/courses/' + course.slug : (course != null ? '/courses/' + course.slug : '/cohorts')}}" class="btn btn-light rounded-pill py-2">Quay lại</a>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="vietQrModal" tabindex="-1" aria-labelledby="vietQrModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -340,7 +339,6 @@
                     <p class="text-muted mt-3 mb-0">Đang khởi tạo mã QR thanh toán an toàn...</p>
                 </div>
             </div>
-
             <div class="modal-body p-4 d-none" id="modalQrPaymentView">
                 <div class="text-center mb-3">
                     <div class="p-2 bg-light rounded-4 d-inline-block border shadow-sm position-relative">
@@ -350,7 +348,6 @@
                         <i class="bi bi-phone me-1"></i>Mở App Ngân hàng hoặc MoMo để quét mã QR
                     </div>
                 </div>
-
                 <div class="bg-light p-3 rounded-3 border text-start small mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                         <span class="text-muted">Ngân hàng:</span>
@@ -388,19 +385,16 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="alert alert-info py-2 px-3 small rounded-3 border-0 d-flex align-items-center justify-content-between mb-3">
                     <span><span class="pulse-dot me-1"></span> Đang chờ đối soát tự động...</span>
                     <span class="fw-semibold text-muted" id="modalCountdownText">15:00</span>
                 </div>
-
                 <div class="d-grid gap-2">
                     <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2" id="btnSimulateModalPay" onclick="simulateModalPayment()">
                         <i class="bi bi-lightning-charge me-1"></i>Mô phỏng thanh toán SePay thành công (Test Demo)
                     </button>
                 </div>
             </div>
-
             <div class="modal-body p-4 text-center d-none" id="modalQrSuccessView">
                 <div class="py-4">
                     <div class="success-checkmark mb-3">
@@ -416,7 +410,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="walletDepositModal" tabindex="-1" aria-labelledby="walletDepositModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -429,7 +422,6 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopDepositPolling()"></button>
             </div>
-
             <div class="modal-body p-4" id="depositInputView">
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted text-uppercase mb-2">Nhập số tiền cần nạp (VNĐ)</label>
@@ -439,7 +431,6 @@
                     </div>
                     <small class="text-muted">Tối thiểu 10.000 VNĐ. Tiền sẽ được cộng vào ví ngay sau khi chuyển khoản.</small>
                 </div>
-
                 <div class="mb-4">
                     <label class="form-label fw-bold small text-muted text-uppercase mb-2">Chọn nhanh mệnh giá</label>
                     <div class="d-flex flex-wrap gap-2">
@@ -451,12 +442,10 @@
                         <span class="badge bg-light text-dark border rounded-pill px-3 py-2 quick-amount-chip" onclick="setQuickDeposit(2000000)">2.000.000 đ</span>
                     </div>
                 </div>
-
                 <button type="button" class="btn btn-primary rounded-pill w-100 py-3 fw-bold shadow-sm" id="btnConfirmDepositInput" onclick="handleGenerateDepositQr()">
                     <i class="bi bi-qr-code me-1"></i>Tạo mã VietQR nạp tiền
                 </button>
             </div>
-
             <div class="modal-body p-4 d-none" id="depositQrView">
                 <div class="text-center mb-3">
                     <div class="p-2 bg-light rounded-4 d-inline-block border shadow-sm position-relative">
@@ -466,7 +455,6 @@
                         Quét mã QR bằng App Ngân hàng (Nội dung tự động điền sẵn)
                     </div>
                 </div>
-
                 <div class="bg-light p-3 rounded-3 border text-start small mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                         <span class="text-muted">Ngân hàng:</span>
@@ -504,11 +492,9 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="alert alert-info py-2 px-3 small rounded-3 border-0 d-flex align-items-center justify-content-between mb-3">
                     <span><span class="pulse-dot me-1"></span> Đang chờ đối soát cộng tiền vào ví...</span>
                 </div>
-
                 <div class="d-grid gap-2">
                     <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2" id="btnSimulateDepositPay" onclick="simulateDepositPayment()">
                         <i class="bi bi-lightning-charge me-1"></i>Mô phỏng nạp tiền thành công (Test Demo)
@@ -518,7 +504,6 @@
                     </button>
                 </div>
             </div>
-
             <div class="modal-body p-4 text-center d-none" id="depositSuccessView">
                 <div class="py-4">
                     <div class="success-checkmark mb-3">
@@ -534,7 +519,6 @@
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:inline="javascript">
@@ -547,24 +531,105 @@
     var coursePriceVal = /*[[${coursePrice != null ? coursePrice.longValue() : 0}]]*/ 0;
     var totalPaidAmountVal = /*[[${totalPaidAmount != null ? totalPaidAmount.longValue() : 0}]]*/ 0;
     var isUpgradeVal = /*[[${isUpgrade != null ? isUpgrade : false}]]*/ false;
-
     var allCohorts = [];
     var activeCohortIds = [];
-
+    var currentCheckoutDiscount = null;
+    var appliedDiscountCode = null;
+    function applyCheckoutDiscount() {
+        var input = document.getElementById('checkoutDiscountInput');
+        var msg = document.getElementById('checkoutDiscountMessage');
+        var code = input ? input.value.trim() : '';
+        if (!code) {
+            currentCheckoutDiscount = null;
+            appliedDiscountCode = null;
+            if (msg) {
+                msg.className = 'small mt-2 text-muted';
+                msg.innerText = 'Đã hủy mã giảm giá.';
+                msg.classList.remove('d-none');
+            }
+            updateCheckoutPriceDisplay();
+            return;
+        }
+        var amount = totalPrice;
+        fetch('/api/discounts/validate?code=' + encodeURIComponent(code) + '&amount=' + amount)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.valid) {
+                    currentCheckoutDiscount = data;
+                    appliedDiscountCode = data.code;
+                    if (msg) {
+                        msg.className = 'small mt-2 text-success fw-semibold';
+                        msg.innerHTML = '<i class="bi bi-check-circle me-1"></i>Áp dụng thành công mã "' + data.code + '" (' + data.name + '): Giảm ' + data.formattedDiscountAmount;
+                        msg.classList.remove('d-none');
+                    }
+                } else {
+                    currentCheckoutDiscount = null;
+                    appliedDiscountCode = null;
+                    if (msg) {
+                        msg.className = 'small mt-2 text-danger';
+                        msg.innerText = data.message || 'Mã giảm giá không hợp lệ.';
+                        msg.classList.remove('d-none');
+                    }
+                }
+                updateCheckoutPriceDisplay();
+            })
+            .catch(function(err) {
+                currentCheckoutDiscount = null;
+                appliedDiscountCode = null;
+                if (msg) {
+                    msg.className = 'small mt-2 text-danger';
+                    msg.innerText = 'Lỗi kiểm tra mã: ' + err.message;
+                    msg.classList.remove('d-none');
+                }
+                updateCheckoutPriceDisplay();
+            });
+    }
+    function updateCheckoutPriceDisplay() {
+        var discAmount = 0;
+        var voucherRow = document.getElementById('appliedVoucherRow');
+        var voucherCodeText = document.getElementById('appliedVoucherCodeText');
+        var voucherAmountText = document.getElementById('appliedVoucherAmountText');
+        if (currentCheckoutDiscount && currentCheckoutDiscount.valid) {
+            discAmount = parseFloat(currentCheckoutDiscount.discountAmount || 0);
+            if (voucherRow && voucherCodeText && voucherAmountText) {
+                voucherRow.classList.remove('d-none');
+                voucherCodeText.innerText = currentCheckoutDiscount.code;
+                voucherAmountText.innerText = '- ' + new Intl.NumberFormat('en-US').format(discAmount) + ' VNĐ';
+            }
+        } else {
+            if (voucherRow) voucherRow.classList.add('d-none');
+        }
+        var finalAmount = Math.max(0, totalPrice - discAmount);
+        var priceEl = document.getElementById('checkoutTotalPrice');
+        if (priceEl) {
+            priceEl.innerText = new Intl.NumberFormat('en-US').format(finalAmount) + ' VNĐ';
+        }
+        var walletSuff = document.getElementById('walletSufficientBadge');
+        var walletInsuff = document.getElementById('walletInsufficientBadge');
+        var walletNotice = document.getElementById('walletInsufficientNotice');
+        if (walletSuff && walletInsuff) {
+            if (currentBalance >= finalAmount) {
+                walletSuff.classList.remove('d-none');
+                walletInsuff.classList.add('d-none');
+                if (walletNotice) walletNotice.classList.add('d-none');
+            } else {
+                walletSuff.classList.add('d-none');
+                walletInsuff.classList.remove('d-none');
+                if (walletNotice) walletNotice.classList.remove('d-none');
+            }
+        }
+    }
     var selectedMethod = 'VIETQR';
     var currentPaymentOrderCode = null;
     var paymentPollInterval = null;
     var paymentCountdownInterval = null;
     var currentDepositOrderCode = null;
     var depositPollInterval = null;
-
     var vietQrModalInstance = null;
     var walletDepositModalInstance = null;
-
     document.addEventListener("DOMContentLoaded", function() {
         vietQrModalInstance = new bootstrap.Modal(document.getElementById('vietQrModal'));
         walletDepositModalInstance = new bootstrap.Modal(document.getElementById('walletDepositModal'));
-
         if (isFullCourse) {
             document.querySelectorAll('.cohort-checkout-item').forEach(function(el) {
                 var cId = parseInt(el.getAttribute('data-cohort-id'));
@@ -574,22 +639,18 @@
                 activeCohortIds.push(cId);
             });
         }
-
         updatePaymentButtonLabel();
     });
-
     function selectPaymentMethod(method) {
         selectedMethod = method;
         var cardWallet = document.getElementById('choiceWallet');
         var cardVietQr = document.getElementById('choiceVietQr');
         var cardOffline = document.getElementById('choiceOffline');
         var offlineBox = document.getElementById('offlineInfoBox');
-
         cardWallet.classList.remove('active');
         cardVietQr.classList.remove('active');
         if (cardOffline) cardOffline.classList.remove('active');
         if (offlineBox) offlineBox.classList.add('d-none');
-
         if (method === 'WALLET') {
             cardWallet.classList.add('active');
         } else if (method === 'OFFLINE') {
@@ -600,12 +661,10 @@
         }
         updatePaymentButtonLabel();
     }
-
     function removeCohortItem(id) {
         var index = activeCohortIds.indexOf(id);
         if (index === -1) return;
         activeCohortIds.splice(index, 1);
-
         var row = document.getElementById('cohort-row-' + id);
         if (row) {
             row.style.transition = 'all 0.25s ease';
@@ -619,7 +678,6 @@
             recalculateCheckoutState();
         }
     }
-
     function restoreCohortItem(id) {
         if (activeCohortIds.indexOf(id) !== -1) return;
         activeCohortIds.push(id);
@@ -633,7 +691,6 @@
         }
         recalculateCheckoutState();
     }
-
     function restoreAllCohorts() {
         activeCohortIds = allCohorts.map(function(c) { return c.id; });
         allCohorts.forEach(function(c) {
@@ -646,13 +703,11 @@
         });
         recalculateCheckoutState();
     }
-
     function recalculateCheckoutState() {
         var countBadge = document.getElementById('activeCohortCountBadge');
         if (countBadge) {
             countBadge.innerText = activeCohortIds.length + ' module đã chọn';
         }
-
         var removedSection = document.getElementById('removedCohortsSection');
         var removedChips = document.getElementById('removedCohortChips');
         var emptyAlert = document.getElementById('allCohortsRemovedAlert');
@@ -664,11 +719,9 @@
         var customDiscountText = document.getElementById('customDiscountText');
         var totalPriceEl = document.getElementById('checkoutTotalPrice');
         var priceFormulaNote = document.getElementById('priceFormulaNote');
-
         var removedCohorts = allCohorts.filter(function(c) {
             return activeCohortIds.indexOf(c.id) === -1;
         });
-
         if (removedSection && removedChips) {
             if (removedCohorts.length > 0) {
                 removedSection.classList.remove('d-none');
@@ -684,7 +737,6 @@
                 removedChips.innerHTML = '';
             }
         }
-
         if (activeCohortIds.length === 0) {
             if (emptyAlert) emptyAlert.classList.remove('d-none');
             if (fullComboBreakdown) fullComboBreakdown.classList.add('d-none');
@@ -698,11 +750,8 @@
             updateWalletSufficiencyUI();
             return;
         }
-
         if (emptyAlert) emptyAlert.classList.add('d-none');
-
         var isAllSelected = (activeCohortIds.length === allCohorts.length);
-
         if (isAllSelected) {
             totalPrice = initialComboPrice;
             if (fullComboBreakdown) fullComboBreakdown.classList.remove('d-none');
@@ -713,14 +762,12 @@
         } else {
             if (fullComboBreakdown) fullComboBreakdown.classList.add('d-none');
             if (customSelectedBreakdown) customSelectedBreakdown.classList.remove('d-none');
-
             var sumOfSelected = 0;
             allCohorts.forEach(function(c) {
                 if (activeCohortIds.indexOf(c.id) !== -1) {
                     sumOfSelected += c.price;
                 }
             });
-
             var effectivePrice = sumOfSelected;
             if (isUpgradeVal) {
                 var diff = coursePriceVal - totalPaidAmountVal;
@@ -730,43 +777,34 @@
             } else if (coursePriceVal > 0 && effectivePrice > coursePriceVal) {
                 effectivePrice = coursePriceVal;
             }
-
             totalPrice = effectivePrice;
-
             if (customSelectedCountText) customSelectedCountText.innerText = activeCohortIds.length;
             if (customSelectedSumText) customSelectedSumText.innerText = formatMoney(sumOfSelected);
-
             if (sumOfSelected > effectivePrice) {
                 if (customDiscountRow) customDiscountRow.classList.remove('d-none');
                 if (customDiscountText) customDiscountText.innerText = '- ' + formatMoney(sumOfSelected - effectivePrice);
             } else {
                 if (customDiscountRow) customDiscountRow.classList.add('d-none');
             }
-
             if (priceFormulaNote) {
                 priceFormulaNote.innerText = '(Tính theo các module đã chọn)';
             }
         }
-
         if (totalPriceEl) {
             totalPriceEl.innerText = formatMoney(totalPrice);
             totalPriceEl.setAttribute('data-price', totalPrice);
         }
-
         updatePaymentButtonLabel();
         updateWalletSufficiencyUI();
-
         var testFormCohortIds = document.getElementById('testFormCohortIds');
         if (testFormCohortIds) {
             testFormCohortIds.value = activeCohortIds.join(',');
         }
     }
-
     function updateWalletSufficiencyUI() {
         var sufficientBadge = document.getElementById('walletSufficientBadge');
         var insufficientBadge = document.getElementById('walletInsufficientBadge');
         var insufficientNotice = document.getElementById('walletInsufficientNotice');
-
         if (currentBalance >= totalPrice) {
             if (sufficientBadge) sufficientBadge.classList.remove('d-none');
             if (insufficientBadge) insufficientBadge.classList.add('d-none');
@@ -777,17 +815,14 @@
             if (insufficientNotice) insufficientNotice.classList.remove('d-none');
         }
     }
-
     function formatMoney(amount) {
         return (amount || 0).toLocaleString('vi-VN') + ' VNĐ';
     }
-
     function escapeHtml(text) {
         var div = document.createElement('div');
         div.innerText = text;
         return div.innerHTML;
     }
-
     function updatePaymentButtonLabel() {
         var btn = document.getElementById('btnMainPay');
         var btnTest = document.getElementById('btnTestPay');
@@ -826,7 +861,6 @@
             btn.disabled = false;
         }
     }
-
     function handleMainPayment() {
         if (isFullCourse && activeCohortIds.length === 0) {
             Toastify({text: 'Vui lòng chọn ít nhất 1 module để thanh toán', style: {background: '#dc3545'}}).showToast();
@@ -844,12 +878,10 @@
             openVietQrModal();
         }
     }
-
     function processOfflineOrder() {
         var btn = document.getElementById('btnMainPay');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang tạo đơn hàng và gửi email hướng dẫn...';
-
         var url = isFullCourse ? '/api/checkout/offline-course' : '/api/checkout/offline-cohort';
         var bodyParams = new URLSearchParams();
         if (isFullCourse) {
@@ -860,7 +892,9 @@
         } else {
             bodyParams.append('cohortId', cohortId);
         }
-
+        if (appliedDiscountCode) {
+            bodyParams.append('discountCode', appliedDiscountCode);
+        }
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -885,12 +919,10 @@
             Toastify({text: 'Lỗi kết nối khi đặt đơn offline', style: {background: '#dc3545'}}).showToast();
         });
     }
-
     function processWalletPayment() {
         var btn = document.getElementById('btnMainPay');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý thanh toán ví...';
-
         var url = isFullCourse ? '/api/checkout/pay-wallet-course' : '/api/checkout/pay-wallet-cohort';
         var bodyParams = new URLSearchParams();
         if (isFullCourse) {
@@ -901,7 +933,9 @@
         } else {
             bodyParams.append('cohortId', cohortId);
         }
-
+        if (appliedDiscountCode) {
+            bodyParams.append('discountCode', appliedDiscountCode);
+        }
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -925,13 +959,11 @@
             Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
         });
     }
-
     function openVietQrModal() {
         document.getElementById('modalQrLoadingView').classList.remove('d-none');
         document.getElementById('modalQrPaymentView').classList.add('d-none');
         document.getElementById('modalQrSuccessView').classList.add('d-none');
         vietQrModalInstance.show();
-
         var url = isFullCourse ? '/api/checkout/initiate-course' : '/api/checkout/initiate-cohort';
         var bodyParams = new URLSearchParams();
         if (isFullCourse) {
@@ -942,7 +974,9 @@
         } else {
             bodyParams.append('cohortId', cohortId);
         }
-
+        if (appliedDiscountCode) {
+            bodyParams.append('discountCode', appliedDiscountCode);
+        }
         fetch(url, {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -958,10 +992,8 @@
                 document.getElementById('modalAccountName').innerText = data.accountName;
                 document.getElementById('modalTotalAmount').innerText = data.formattedTotalAmount;
                 document.getElementById('modalOrderCode').innerText = data.orderCode;
-
                 document.getElementById('modalQrLoadingView').classList.add('d-none');
                 document.getElementById('modalQrPaymentView').classList.remove('d-none');
-
                 startPaymentPolling(data.orderCode);
                 startCountdown(15 * 60);
             } else {
@@ -974,7 +1006,6 @@
             Toastify({text: 'Lỗi kết nối khi khởi tạo mã QR', style: {background: '#dc3545'}}).showToast();
         });
     }
-
     function startPaymentPolling(orderCode) {
         stopPaymentPolling();
         paymentPollInterval = setInterval(function() {
@@ -989,7 +1020,6 @@
             .catch(function(e) {});
         }, 2000);
     }
-
     function stopPaymentPolling() {
         if (paymentPollInterval) {
             clearInterval(paymentPollInterval);
@@ -1000,7 +1030,6 @@
             paymentCountdownInterval = null;
         }
     }
-
     function startCountdown(duration) {
         var timer = duration;
         var countdownEl = document.getElementById('modalCountdownText');
@@ -1016,13 +1045,11 @@
             }
         }, 1000);
     }
-
     function simulateModalPayment() {
         if (!currentPaymentOrderCode) return;
         var btn = document.getElementById('btnSimulateModalPay');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang mô phỏng...';
-
         fetch('/api/orders/' + currentPaymentOrderCode + '/simulate', {method: 'POST'})
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -1040,7 +1067,6 @@
             btn.innerHTML = '<i class="bi bi-lightning-charge me-1"></i>Mô phỏng thanh toán SePay thành công (Test Demo)';
         });
     }
-
     function showPaymentSuccessModal(redirectUrl) {
         document.getElementById('modalQrPaymentView').classList.add('d-none');
         document.getElementById('modalQrSuccessView').classList.remove('d-none');
@@ -1054,11 +1080,9 @@
             }
         }, 2200);
     }
-
     function setQuickDeposit(amount) {
         document.getElementById('depositAmountInput').value = amount;
     }
-
     function handleGenerateDepositQr() {
         var input = document.getElementById('depositAmountInput');
         var amount = parseInt(input.value, 10);
@@ -1066,14 +1090,11 @@
             Toastify({text: 'Vui lòng nhập số tiền nạp tối thiểu 10.000 VNĐ', style: {background: '#dc3545'}}).showToast();
             return;
         }
-
         var btn = document.getElementById('btnConfirmDepositInput');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang tạo mã QR nạp tiền...';
-
         var bodyParams = new URLSearchParams();
         bodyParams.append('amount', amount);
-
         fetch('/api/wallet/deposit', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1091,7 +1112,6 @@
                 document.getElementById('depositAccountName').innerText = data.accountName;
                 document.getElementById('depositAmountFormatted').innerText = data.formattedAmount;
                 document.getElementById('depositOrderCode').innerText = data.orderCode;
-
                 document.getElementById('depositInputView').classList.add('d-none');
                 document.getElementById('depositQrView').classList.remove('d-none');
                 startDepositPolling(data.orderCode);
@@ -1105,7 +1125,6 @@
             Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
         });
     }
-
     function startDepositPolling(orderCode) {
         stopDepositPolling();
         depositPollInterval = setInterval(function() {
@@ -1126,20 +1145,17 @@
             .catch(function(e) {});
         }, 2000);
     }
-
     function stopDepositPolling() {
         if (depositPollInterval) {
             clearInterval(depositPollInterval);
             depositPollInterval = null;
         }
     }
-
     function simulateDepositPayment() {
         if (!currentDepositOrderCode) return;
         var btn = document.getElementById('btnSimulateDepositPay');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang mô phỏng...';
-
         fetch('/api/orders/' + currentDepositOrderCode + '/simulate', {method: 'POST'})
         .then(function(res) { return res.json(); })
         .then(function(data) {
@@ -1159,19 +1175,16 @@
             btn.innerHTML = '<i class="bi bi-lightning-charge me-1"></i>Mô phỏng nạp tiền thành công (Test Demo)';
         });
     }
-
     function showDepositSuccessView(formattedBalance) {
         document.getElementById('depositQrView').classList.add('d-none');
         document.getElementById('depositSuccessView').classList.remove('d-none');
         document.getElementById('depositSuccessBalanceText').innerText = formattedBalance;
     }
-
     function backToDepositInput() {
         stopDepositPolling();
         document.getElementById('depositQrView').classList.add('d-none');
         document.getElementById('depositInputView').classList.remove('d-none');
     }
-
     function updateBalanceUI(formattedBalance) {
         var pageBadge = document.getElementById('pageWalletBadge');
         if (pageBadge) pageBadge.innerText = formattedBalance;
@@ -1179,7 +1192,6 @@
         if (walletText) walletText.innerText = formattedBalance;
         updatePaymentButtonLabel();
     }
-
     function copyModalField(elementId, successMsg) {
         var el = document.getElementById(elementId);
         if (!el) return;

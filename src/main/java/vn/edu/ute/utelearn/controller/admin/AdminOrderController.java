@@ -29,6 +29,7 @@ import vn.edu.ute.utelearn.util.CurrencyUtils;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -192,23 +193,36 @@ public class AdminOrderController {
     @Transactional
     public String createOfflineOrder(
             @RequestParam String studentIdentifier,
-            @RequestParam String productType,
-            @RequestParam Long productId,
+            @RequestParam(required = false) List<Long> courseIds,
             @RequestParam(required = false) List<Long> cohortIds,
+            @RequestParam(required = false) String productType,
+            @RequestParam(required = false) Long productId,
             @RequestParam(required = false, defaultValue = "OFFLINE_CASH") String paymentMethod,
             @RequestParam(required = false, defaultValue = "false") boolean paidImmediately,
+            @RequestParam(required = false) String discountCode,
             @RequestParam(required = false) String note,
             RedirectAttributes redirectAttributes) {
 
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         String cashierUsername = currentUserOpt.map(User::getUsername).orElse("CASHIER");
 
+        List<Long> resolvedCourseIds = courseIds != null ? new ArrayList<>(courseIds) : new ArrayList<>();
+        List<Long> resolvedCohortIds = cohortIds != null ? new ArrayList<>(cohortIds) : new ArrayList<>();
+
+        if (resolvedCourseIds.isEmpty() && resolvedCohortIds.isEmpty() && productId != null) {
+            if ("COHORT".equalsIgnoreCase(productType)) {
+                resolvedCohortIds.add(productId);
+            } else {
+                resolvedCourseIds.add(productId);
+            }
+        }
+
         try {
-            Order order = orderService.createCashierOrder(
+            Order order = orderService.createCashierMultiOrder(
                     studentIdentifier,
-                    productType,
-                    productId,
-                    cohortIds,
+                    resolvedCourseIds,
+                    resolvedCohortIds,
+                    discountCode,
                     paymentMethod,
                     paidImmediately,
                     note,
@@ -296,5 +310,17 @@ public class AdminOrderController {
                 "price", price,
                 "formattedPrice", CurrencyUtils.formatVnd(price)
         ));
+    }
+    @GetMapping("/api/available-products")
+    @ResponseBody
+    public ResponseEntity<?> getAvailableProducts(@RequestParam String studentIdentifier) {
+        if (studentIdentifier == null || studentIdentifier.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng cung cấp email hoặc tài khoản học viên."));
+        }
+        Map<String, Object> data = orderService.getAvailableProductsForStudent(studentIdentifier);
+        if (data == null || data.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Không tìm thấy học viên với email hoặc tài khoản này."));
+        }
+        return ResponseEntity.ok(data);
     }
 }

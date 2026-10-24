@@ -75,9 +75,17 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'cart'} ? ' active' : ''"
+                        href="/cart">
+                        <i class="bi bi-cart3 text-primary"></i>
+                        <span>Giỏ hàng</span>
+                        <span class="badge bg-danger rounded-pill ms-auto" th:if="${cartItemCount != null and cartItemCount > 0}" th:text="${cartItemCount}">1</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'orders'} ? ' active' : ''"
                         href="/orders">
-                        <i class="bi bi-receipt text-info"></i>
+                        <i class="bi bi-bag-check-fill text-info"></i>
                         <span>Đơn hàng của tôi</span>
                     </a>
                 </li>
@@ -111,6 +119,13 @@
                         href="/admin/categories">
                         <i class="bi bi-tags-fill text-success"></i>
                         <span>Danh mục Khóa học</span>
+                    </a>
+                </li>
+                <li class="nav-item" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_discounts'} ? ' active' : ''"
+                        href="/admin/discounts">
+                        <i class="bi bi-percent text-danger"></i>
+                        <span>Mã giảm giá (Discount)</span>
                     </a>
                 </li>
                 <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">

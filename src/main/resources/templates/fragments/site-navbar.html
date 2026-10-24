@@ -38,7 +38,16 @@
             </ul>
 
             <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-                <a th:if="${currentUser != null}" href="/orders" class="btn btn-light border d-none d-sm-flex align-items-center gap-2 py-2 px-3 rounded-pill text-decoration-none shadow-sm" style="background-color: #f0fdf4;" title="Số dư Ví UTELearn - Bấm để xem đơn hàng & nạp tiền">
+                <a th:if="${currentUser != null}" href="/cart" class="btn btn-light border d-flex align-items-center gap-2 py-2 px-3 rounded-pill text-decoration-none shadow-sm position-relative" title="Giỏ hàng của bạn">
+                    <i class="bi bi-cart3 text-primary"></i>
+                    <span class="small fw-semibold d-none d-md-inline">Giỏ hàng</span>
+                    <span th:if="${cartItemCount != null and cartItemCount > 0}" class="badge bg-danger rounded-pill px-2 py-0.5" style="font-size: 11px;" th:text="${cartItemCount}">1</span>
+                </a>
+                <a th:if="${currentUser != null}" href="/orders" class="btn btn-light border d-flex align-items-center gap-2 py-2 px-3 rounded-pill text-decoration-none shadow-sm position-relative" title="Đơn hàng của bạn">
+                    <i class="bi bi-bag-check-fill text-info"></i>
+                    <span class="small fw-semibold d-none d-md-inline">Đơn hàng</span>
+                </a>
+                <a th:if="${currentUser != null}" href="/profile" class="btn btn-light border d-none d-sm-flex align-items-center gap-2 py-2 px-3 rounded-pill text-decoration-none shadow-sm" style="background-color: #f0fdf4;" title="Số dư Ví UTELearn - Bấm để nạp tiền">
                     <i class="bi bi-wallet2 text-success"></i>
                     <span class="small text-muted d-none d-md-inline">Ví:</span>
                     <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
@@ -72,6 +81,7 @@
                         </li>
                         <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
                         <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/cart"><i class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
                         <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
                             <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/admin/orders">

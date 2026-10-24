@@ -20,6 +20,9 @@ public class OrderResponseDTO {
     private String userEmail;
     private BigDecimal totalAmount;
     private String formattedTotalAmount;
+    private String discountCode;
+    private BigDecimal discountAmount;
+    private String formattedDiscountAmount;
     private String status;
     private String statusDisplayName;
     private String statusBadgeClass;
