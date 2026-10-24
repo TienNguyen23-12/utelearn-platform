@@ -6,4 +6,5 @@ public interface EmailService {
     void sendHtmlEmail(String to, String subject, String htmlBody);
     void sendOfflinePaymentInstructionEmail(Order order);
     void sendPaymentReceiptEmail(Order order);
+    void sendRegistrationOtpEmail(String to, String otpCode);
 }

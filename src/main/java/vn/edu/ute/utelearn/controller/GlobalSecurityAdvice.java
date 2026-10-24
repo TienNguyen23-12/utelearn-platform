@@ -16,6 +16,7 @@ public class GlobalSecurityAdvice {
     private final RbacHelper rbacHelper;
     private final vn.edu.ute.utelearn.service.AuthService authService;
     private final vn.edu.ute.utelearn.dao.ModerationTaskRepository moderationTaskRepository;
+    private final vn.edu.ute.utelearn.service.CartService cartService;
 
     @ModelAttribute
     public void addSecurityAttributesToModel(Model model) {
@@ -28,7 +29,10 @@ public class GlobalSecurityAdvice {
             model.addAttribute("currentUserRolesJson", toJsonArray(userRoles));
             model.addAttribute("currentUserPermissionsJson", toJsonArray(userPermissions));
 
-            authService.getCurrentAuthenticatedUser().ifPresent(u -> model.addAttribute("currentUser", u));
+            authService.getCurrentAuthenticatedUser().ifPresent(u -> {
+                model.addAttribute("currentUser", u);
+                model.addAttribute("cartItemCount", cartService.getCartItemCount(u));
+            });
 
             if (rbacHelper.hasRole("ADMIN")) {
                 long escalatedCount = moderationTaskRepository.countByStatus("ESCALATED");

@@ -24,7 +24,9 @@ import vn.edu.ute.utelearn.entity.Role;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.security.JwtTokenProvider;
 import vn.edu.ute.utelearn.dao.PasswordResetTokenRepository;
+import vn.edu.ute.utelearn.dao.RegistrationOtpRepository;
 import vn.edu.ute.utelearn.entity.PasswordResetToken;
+import vn.edu.ute.utelearn.entity.RegistrationOtp;
 import vn.edu.ute.utelearn.service.EmailService;
 import vn.edu.ute.utelearn.util.ValidationUtils;
 
@@ -42,10 +44,36 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RegistrationOtpRepository registrationOtpRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final UtelearnProperties properties;
+
+    @Override
+    @Transactional
+    public void sendRegistrationOtp(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Địa chỉ email không được để trống!");
+        }
+        String normalizedEmail = email.trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Địa chỉ email '" + normalizedEmail + "' đã được đăng ký tài khoản!");
+        }
+
+        String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+        registrationOtpRepository.deleteByEmail(normalizedEmail);
+
+        RegistrationOtp registrationOtp = RegistrationOtp.builder()
+            .email(normalizedEmail)
+            .otp(otp)
+            .expiryDate(Instant.now().plus(5, java.time.temporal.ChronoUnit.MINUTES))
+            .build();
+        registrationOtpRepository.save(registrationOtp);
+
+        emailService.sendRegistrationOtpEmail(normalizedEmail, otp);
+        log.info("Đã gửi mã OTP xác thực đăng ký tài khoản tới email {}", normalizedEmail);
+    }
 
     @Override
     @Transactional
@@ -63,6 +91,25 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Địa chỉ email '" + email + "' đã được đăng ký tài khoản!");
         }
+
+        String inputOtp = requestDTO.getOtp() != null ? requestDTO.getOtp().trim() : "";
+        if (inputOtp.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mã OTP xác thực!");
+        }
+
+        RegistrationOtp storedOtp = registrationOtpRepository.findTopByEmailOrderByCreatedAtDesc(email)
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã OTP cho email này. Vui lòng nhấn gửi lại mã!"));
+
+        if (storedOtp.isExpired()) {
+            registrationOtpRepository.delete(storedOtp);
+            throw new IllegalArgumentException("Mã OTP đã hết hạn. Vui lòng nhận mã mới!");
+        }
+
+        if (!storedOtp.getOtp().equals(inputOtp)) {
+            throw new IllegalArgumentException("Mã OTP không chính xác. Vui lòng kiểm tra lại!");
+        }
+
+        registrationOtpRepository.delete(storedOtp);
 
         String username;
         if (requestDTO.getUsername() != null && !requestDTO.getUsername().isBlank()) {
@@ -190,10 +237,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email.trim().toLowerCase())
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nào với email này!"));
 
-        // Generate token
         String token = java.util.UUID.randomUUID().toString();
-        
-        // Delete old token if exists
         passwordResetTokenRepository.deleteByUser(user);
 
         PasswordResetToken resetToken = PasswordResetToken.builder()
@@ -204,8 +248,12 @@ public class AuthServiceImpl implements AuthService {
             
         passwordResetTokenRepository.save(resetToken);
 
-        // Send Email
-        String baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String baseUrl;
+        try {
+            baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        } catch (Exception e) {
+            baseUrl = "https://utelearn-platform.onrender.com";
+        }
         String resetUrl = baseUrl + "/reset-password?token=" + token;
         
         String emailContent = "<h3>Đặt lại mật khẩu UTELearn</h3>"

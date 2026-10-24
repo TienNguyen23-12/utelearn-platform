@@ -501,6 +501,13 @@
                                         <span th:if="${!courseMod.isEnrolled && !hasAccessRole && courseMod.isFull}" class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">
                                             Đã đủ sĩ số
                                         </span>
+                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && courseMod.price != null && courseMod.price > 0}" th:action="@{/cart/add-redirect}" method="post" class="d-inline me-1">
+                                            <input type="hidden" name="itemType" value="COHORT">
+                                            <input type="hidden" name="itemId" th:value="${courseMod.id}">
+                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold" title="Thêm module vào giỏ hàng">
+                                                <i class="bi bi-cart-plus me-1"></i>Thêm giỏ hàng
+                                            </button>
+                                        </form>
                                         <a th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && courseMod.price != null && courseMod.price > 0}" th:href="@{'/checkout/' + ${courseMod.id}}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
                                             <i class="bi bi-plus-circle me-1"></i>Ghi danh module (<span th:text="${#numbers.formatDecimal(courseMod.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">0 VNĐ</span>)
                                         </a>
@@ -626,8 +633,15 @@
                                 <span class="badge bg-danger text-white rounded-pill" th:text="'Tiết kiệm ' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">Tiết kiệm</span>
                             </div>
                             <div class="h5 fw-bold text-success mb-3" th:text="${fullCoursePrice > 0 ? #numbers.formatDecimal(fullCoursePrice, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</div>
+                            <form th:if="${fullCoursePrice != null && fullCoursePrice > 0}" th:action="@{/cart/add-redirect}" method="post" class="mb-2">
+                                <input type="hidden" name="itemType" value="COURSE">
+                                <input type="hidden" name="itemId" th:value="${course.id}">
+                                <button type="submit" class="btn btn-outline-primary w-100 rounded-pill fw-semibold btn-sm py-2">
+                                    <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ hàng
+                                </button>
+                            </form>
                             <form th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post">
-                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm">
+                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm mb-2">
                                     <i class="bi bi-bag-check-fill me-1"></i><span th:text="${isEnrolled ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
                                 </button>
                             </form>

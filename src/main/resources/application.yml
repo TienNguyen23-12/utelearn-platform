@@ -64,6 +64,7 @@ spring:
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
+        from: ${MAIL_FROM:noreply@utelearn.edu.vn}
         smtp:
           auth: true
           starttls:
