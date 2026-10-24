@@ -197,6 +197,9 @@
                             </td>
                             <td>
                                 <span class="fw-bold text-dark" th:text="${order.formattedTotalAmount}">0 VNĐ</span>
+                                <div th:if="${order.discountAmount != null && order.discountAmount > 0}" class="small text-danger">
+                                    <i class="bi bi-tag-fill me-1"></i><span th:if="${order.discountCode != null && !order.discountCode.isBlank()}" th:text="${order.discountCode} + ': '"></span>-<span th:text="${order.formattedDiscountAmount}"></span>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge bg-light text-secondary border" th:text="${order.paymentMethod}">VIETQR</span>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Mã Giảm Giá - UTELearn Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('admin_discounts')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Quản lý Mã Giảm Giá')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon-wrapper bg-danger-subtle text-danger" style="width: 48px; height: 48px; font-size: 22px;">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Quản lý Mã Giảm Giá (Discount & Voucher)</h3>
+                    <p class="text-muted small mb-0">Quản trị viên tạo và phát hành voucher khuyến mãi, áp dụng cho giỏ hàng và thanh toán khóa học</p>
+                </div>
+            </div>
+            <a th:href="@{/admin/discounts/new}" class="btn btn-primary rounded-pill px-3 py-2 fw-semibold">
+                <i class="bi bi-plus-circle-fill me-2"></i>Tạo mã giảm giá mới
+            </a>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-sm-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-primary-subtle text-primary rounded-4 p-3" style="font-size: 24px;">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small fw-medium">Tổng số voucher</span>
+                            <h4 class="fw-bold mb-0 text-dark" th:text="${totalDiscounts}">0</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-success-subtle text-success rounded-4 p-3" style="font-size: 24px;">
+                            <i class="bi bi-check2-circle"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small fw-medium">Đang hiệu lực</span>
+                            <h4 class="fw-bold mb-0 text-success" th:text="${activeCount}">0</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-warning-subtle text-warning rounded-4 p-3" style="font-size: 24px;">
+                            <i class="bi bi-pause-circle-fill"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small fw-medium">Tạm dừng / Đã đóng</span>
+                            <h4 class="fw-bold mb-0 text-warning" th:text="${totalDiscounts - activeCount}">0</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Mã Code</th>
+                                <th>Tên chương trình</th>
+                                <th>Loại giảm giá</th>
+                                <th>Mức giảm</th>
+                                <th>Đơn tối thiểu</th>
+                                <th>Lượt dùng</th>
+                                <th>Thời hạn</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(discounts)}">
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                                    Chưa có mã giảm giá nào. Hãy bấm "Tạo mã giảm giá mới".
+                                </td>
+                            </tr>
+                            <tr th:each="d : ${discounts}">
+                                <td class="ps-4">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1.5 rounded-pill font-monospace fw-bold fs-6" th:text="${d.code}">CODE</span>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold text-dark" th:text="${d.name}">Tên ưu đãi</span>
+                                    <div class="text-muted small" style="font-size: 11px;" th:if="${d.createdBy != null}" th:text="'Tạo bởi: ' + ${d.createdBy}"></div>
+                                </td>
+                                <td>
+                                    <span th:if="${'PERCENTAGE'.equalsIgnoreCase(d.discountType)}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1">Phần trăm (%)</span>
+                                    <span th:unless="${'PERCENTAGE'.equalsIgnoreCase(d.discountType)}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1">Số tiền cố định</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success" th:text="${d.formattedDiscountValue}">20%</span>
+                                    <div class="text-muted small" style="font-size: 11px;" th:if="${d.maxDiscountAmount != null && d.maxDiscountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}" th:text="'Tối đa: ' + ${d.formattedMaxDiscountAmount}"></div>
+                                </td>
+                                <td class="small text-muted" th:text="${d.formattedMinOrderAmount}">Không giới hạn</td>
+                                <td>
+                                    <span class="fw-semibold text-dark" th:text="${d.usedCount != null ? d.usedCount : 0}">0</span>
+                                    <span class="text-muted" th:text="'/ ' + ${(d.usageLimit != null ? d.usageLimit : '∞')}">/ ∞</span>
+                                </td>
+                                <td class="small text-muted">
+                                    <div th:text="'Từ: ' + ${d.formattedStartDate}"></div>
+                                    <div th:text="'Đến: ' + ${d.formattedEndDate}"></div>
+                                </td>
+                                <td>
+                                    <span th:if="${d.active and !d.expired}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">Đang hoạt động</span>
+                                    <span th:if="${d.active and d.expired}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1">Đã hết hạn</span>
+                                    <span th:if="${!d.active}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1">Tạm dừng</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a th:href="@{'/admin/discounts/' + ${d.id} + '/edit'}" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </a>
+                                        <form th:action="@{'/admin/discounts/' + ${d.id} + '/toggle'}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" th:title="${d.active ? 'Tạm dừng mã' : 'Kích hoạt mã'}">
+                                                <i th:class="${d.active ? 'bi bi-pause-fill' : 'bi bi-play-fill'}"></i>
+                                            </button>
+                                        </form>
+                                        <form th:action="@{'/admin/discounts/' + ${d.id} + '/delete'}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa mã giảm giá này?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin.js}"></script>
+</body>
+</html>
