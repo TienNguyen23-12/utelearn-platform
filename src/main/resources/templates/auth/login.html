@@ -120,8 +120,32 @@
             font-weight: 500;
             transition: border-color 0.2s;
         }
+        .input-group.with-toggle .form-control {
+            border-right: none !important;
+            border-radius: 0 !important;
+        }
+        .toggle-password-btn {
+            background-color: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            border-left: none;
+            color: #64748b;
+            border-radius: 0 12px 12px 0 !important;
+            padding: 12px 14px;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toggle-password-btn:hover {
+            background-color: #f8fafc;
+            color: #1e293b;
+            border-color: #cbd5e1;
+        }
         .input-group:focus-within .input-group-text,
-        .input-group:focus-within .form-control {
+        .input-group:focus-within .form-control,
+        .input-group:focus-within .toggle-password-btn {
             border-color: #2563eb;
         }
         .form-control:focus {
@@ -304,9 +328,12 @@
 
             <div class="mb-3">
                 <label class="form-label mb-1" for="password">Mật khẩu</label>
-                <div class="input-group">
+                <div class="input-group with-toggle">
                     <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
                     <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu..." required>
+                    <button type="button" class="btn btn-outline-secondary toggle-password-btn" data-target="password" tabindex="-1" title="Hiện/ẩn mật khẩu">
+                        <i class="bi bi-eye"></i>
+                    </button>
                 </div>
             </div>
 
@@ -351,6 +378,23 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-layout.js}"></script>
 <script>
+    document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            if (!input) return;
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
 
     function handleLogin(event) {
         event.preventDefault();

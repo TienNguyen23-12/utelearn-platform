@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import vn.edu.ute.utelearn.dto.AuthResponseDTO;
 import vn.edu.ute.utelearn.dto.LoginRequestDTO;
 import vn.edu.ute.utelearn.dto.RegisterRequestDTO;
+import vn.edu.ute.utelearn.dto.SendOtpRequestDTO;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.dto.ForgotPasswordRequestDTO;
 import vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO;
@@ -44,6 +45,29 @@ public class AuthApiController {
             res.put("message", "Đăng nhập thành công!");
             res.put("redirectUrl", isAdmin ? "/dashboard" : "/home");
             res.put("data", authResponse);
+            return ResponseEntity.ok(res);
+        } catch (Exception ex) {
+            res.put("success", false);
+            res.put("message", ex.getMessage());
+            return ResponseEntity.badRequest().body(res);
+        }
+    }
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<Map<String, Object>> sendOtp(@Valid @RequestBody SendOtpRequestDTO requestDTO, BindingResult bindingResult) {
+        Map<String, Object> res = new HashMap<>();
+        if (bindingResult.hasErrors()) {
+            String errorMessage = bindingResult.getFieldError() != null
+                    ? bindingResult.getFieldError().getDefaultMessage()
+                    : "Email không hợp lệ.";
+            res.put("success", false);
+            res.put("message", errorMessage);
+            return ResponseEntity.badRequest().body(res);
+        }
+        try {
+            authService.sendRegistrationOtp(requestDTO.getEmail());
+            res.put("success", true);
+            res.put("message", "Mã xác thực OTP đã được gửi đến email của bạn.");
             return ResponseEntity.ok(res);
         } catch (Exception ex) {
             res.put("success", false);

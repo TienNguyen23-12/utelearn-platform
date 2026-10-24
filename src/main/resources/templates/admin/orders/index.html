@@ -15,14 +15,10 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
-
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
 <aside th:replace="~{fragments/sidebar :: sidebar('admin_orders')}"></aside>
-
 <div class="app-content-wrapper">
     <header th:replace="~{fragments/navbar :: navbar('Quản lý Đơn hàng & Thu ngân')}"></header>
-
     <main class="app-main-content">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
             <div>
@@ -40,7 +36,6 @@
                 </a>
             </div>
         </div>
-
         <div class="row g-3 mb-4">
             <div class="col-sm-6 col-xl-3">
                 <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
@@ -97,7 +92,6 @@
                 </div>
             </div>
         </div>
-
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
             <div class="card-body p-3 border-bottom bg-white">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -132,7 +126,6 @@
                     </form>
                 </div>
             </div>
-
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light text-muted small text-uppercase">
@@ -170,6 +163,9 @@
                             </td>
                             <td>
                                 <span class="fw-bold text-dark" th:text="${order.formattedTotalAmount}">0 VNĐ</span>
+                                <div th:if="${order.discountAmount != null && order.discountAmount > 0}" class="small text-danger">
+                                    <i class="bi bi-tag-fill me-1"></i><span th:if="${order.discountCode != null && !order.discountCode.isBlank()}" th:text="${order.discountCode} + ': '"></span>-<span th:text="${order.formattedDiscountAmount}"></span>
+                                </div>
                             </td>
                             <td>
                                 <span th:if="${order.offline}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
@@ -197,10 +193,10 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-1">
-                                    <button th:if="${order.status == 'PENDING' && order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2 fw-semibold" title="Thu tiền tại quầy" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" onclick="openCashierModal(this)">
+                                    <button th:if="${order.status == 'PENDING' && order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2 fw-semibold" title="Thu tiền tại quầy" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openCashierModal(this)">
                                         <i class="bi bi-cash-coin me-1"></i>Thu tiền quầy
                                     </button>
-                                    <button th:if="${order.status == 'PENDING' && !order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2" title="Xác nhận thanh toán" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" onclick="openConfirmModal(this)">
+                                    <button th:if="${order.status == 'PENDING' && !order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2" title="Xác nhận thanh toán" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openConfirmModal(this)">
                                         <i class="bi bi-check-lg me-1"></i>Duyệt
                                     </button>
                                     <button th:if="${order.status == 'PENDING'}" type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Hủy đơn hàng" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="openCancelModal(this)">
@@ -218,7 +214,6 @@
         </div>
     </main>
 </div>
-
 <div class="modal fade" id="createOfflineOrderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -234,7 +229,7 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="createOfflineOrderForm" method="post" th:action="@{/admin/orders/create-offline}">
+            <form id="createOfflineOrderForm" method="post" th:action="@{/admin/orders/create-offline}" onsubmit="return validateCreateOfflineForm(event);">
                 <div class="modal-body py-3">
                     <div class="alert alert-info small rounded-3 p-3 mb-3 border-0">
                         <i class="bi bi-shield-check text-primary me-1"></i>
@@ -242,41 +237,68 @@
                         <strong class="text-primary font-monospace" th:text="${currentUser.username}">thu_ngan</strong>.
                         Hệ thống sẽ gửi ngay Email Biên nhận hoặc Email Hướng dẫn tới hòm thư của học viên để đối soát chéo.
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-dark mb-1">1. Học viên đăng ký <span class="text-danger">*</span></label>
                         <div class="position-relative">
-                            <input type="text" id="studentIdentifierInput" name="studentIdentifier" class="form-control rounded-3" placeholder="Nhập Email hoặc Tên tài khoản học viên..." required autocomplete="off" oninput="handleUserSearchInput(this.value)">
+                            <input type="text" id="studentIdentifierInput" name="studentIdentifier" class="form-control rounded-3" placeholder="Nhập Email hoặc Tên tài khoản học viên..." required autocomplete="off" oninput="handleUserSearchInput(this.value)" onchange="loadAvailableProducts(this.value)" onblur="loadAvailableProducts(this.value)">
                             <div id="userSearchResults" class="list-group position-absolute w-100 shadow rounded-3 mt-1 d-none" style="z-index: 1055; max-height: 180px; overflow-y: auto;"></div>
                         </div>
-                        <small class="text-muted">Học viên phải có tài khoản trên UTELearn để hệ thống kích hoạt quyền học tập.</small>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-5">
-                            <label class="form-label small fw-bold text-dark mb-1">2. Loại sản phẩm <span class="text-danger">*</span></label>
-                            <select id="productTypeSelect" name="productType" class="form-select rounded-3" onchange="handleProductTypeChange(this.value)">
-                                <option value="COURSE">Khóa học trọn gói</option>
-                                <option value="COHORT">Module chuyên đề</option>
-                            </select>
-                        </div>
-                        <div class="col-md-7">
-                            <label class="form-label small fw-bold text-dark mb-1">3. Chọn Khóa học / Module <span class="text-danger">*</span></label>
-                            <select id="productIdSelect" name="productId" class="form-select rounded-3" onchange="handleProductSelected(this.value)" required>
-                                <option value="">-- Chọn khóa học --</option>
-                                <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.title} + ' - ' + (${c.price != null ? #numbers.formatDecimal(c.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'})"></option>
-                            </select>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <small class="text-muted">Học viên phải có tài khoản trên UTELearn để hệ thống kích hoạt quyền học tập.</small>
+                            <div id="studentStatusBadge"></div>
                         </div>
                     </div>
-
+                                        <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold text-dark mb-0">2. Chọn các Khóa học / Module đăng ký <span class="text-danger">*</span></label>
+                            <small class="text-muted"><i class="bi bi-shield-check me-1"></i>Tự động lọc bỏ các món đã sở hữu hoặc đang chờ thanh toán</small>
+                        </div>
+                        <div class="card border rounded-3 p-2 bg-light">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary active pos-filter-btn px-2.5 py-1" data-type="ALL" onclick="filterPosProducts('ALL', this)">Tất cả</button>
+                                    <button type="button" class="btn btn-outline-primary pos-filter-btn px-2.5 py-1" data-type="COURSE" onclick="filterPosProducts('COURSE', this)">Khóa học</button>
+                                    <button type="button" class="btn btn-outline-primary pos-filter-btn px-2.5 py-1" data-type="COHORT" onclick="filterPosProducts('COHORT', this)">Module</button>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="text" id="posProductSearchInput" class="form-control form-control-sm rounded-pill" style="max-width: 170px;" placeholder="Tìm nhanh..." oninput="searchPosProducts(this.value)">
+                                    <div class="form-check m-0 ms-1">
+                                        <input class="form-check-input" type="checkbox" id="posMasterCheckbox" onchange="toggleSelectAllPos(this)">
+                                        <label class="form-check-label small fw-semibold text-muted text-nowrap" for="posMasterCheckbox">Chọn tất cả</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="availableProductsContainer" class="bg-white rounded-2 border overflow-auto" style="max-height: 220px; min-height: 140px;">
+                                <div class="text-center py-4 text-muted small">
+                                    <i class="bi bi-person-exclamation me-1 text-primary"></i>Vui lòng nhập Email hoặc Tên tài khoản học viên ở bước 1 để tải danh sách sản phẩm chưa mua.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark mb-1">3. Mã giảm giá (Discount code)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-tag-fill text-danger"></i></span>
+                            <input type="text" id="posDiscountCodeInput" name="discountCode" class="form-control" placeholder="Nhập mã ưu đãi (ví dụ: GIAM10)..." style="text-transform: uppercase;">
+                            <button type="button" class="btn btn-outline-primary fw-semibold px-3" onclick="applyPosDiscount()">Áp dụng</button>
+                        </div>
+                        <div id="posDiscountFeedback" class="small mt-1 d-none"></div>
+                    </div>
                     <div class="bg-light p-3 rounded-3 border mb-3">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">Học phí niêm yết thu:</span>
-                            <span class="fw-bold text-success fs-5" id="posCalculatedPriceText">0 VNĐ</span>
+                            <span class="text-muted small">Học phí niêm yết:</span>
+                            <span class="fw-bold text-secondary" id="posRawPriceText">0 VNĐ</span>
+                        </div>
+                        <div id="posDiscountRow" class="d-flex justify-content-between align-items-center mt-1 d-none">
+                            <span class="text-danger small fw-semibold"><i class="bi bi-gift-fill me-1"></i>Mã giảm giá (<span id="posDiscountCodeLabel"></span>):</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" id="posDiscountValText">- 0 VNĐ</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <span class="text-dark fw-bold small">Học phí thực thu tại quầy:</span>
+                            <span class="fw-bold text-success fs-5" id="posCalculatedPriceText">0 VNĐ (0 sản phẩm đã chọn)</span>
                         </div>
                         <small class="text-muted d-block mt-1"><i class="bi bi-lock me-1"></i>Học phí được tính toán tự động từ giá niêm yết của hệ thống để chống thất thoát và sai lệch giá.</small>
                     </div>
-
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-dark mb-1">4. Hình thức thanh toán tại quầy</label>
@@ -294,12 +316,10 @@
                             <small class="text-muted"><i class="bi bi-lock me-1"></i>Hệ thống tự động sinh theo ID khi lưu đơn</small>
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-dark mb-1">Ghi chú ca trực / Đối soát</label>
                         <input type="text" name="note" class="form-control rounded-3" placeholder="Ví dụ: Thu tiền mặt tại quầy A1-01, ca sáng">
                     </div>
-
                     <div class="form-check form-switch p-3 bg-white border rounded-3 mb-2">
                         <input class="form-check-input ms-0 me-3" type="checkbox" id="paidImmediatelySwitch" name="paidImmediately" value="true" checked>
                         <label class="form-check-label fw-bold text-dark" for="paidImmediatelySwitch">
@@ -318,7 +338,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="cashierConfirmModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -340,12 +359,15 @@
                             <span class="text-muted small">Khách hàng:</span>
                             <span class="fw-bold" id="cashierModalUser"></span>
                         </div>
+                        <div class="d-flex justify-content-between mb-1" id="cashierModalDiscountRow" style="display: none;">
+                            <span class="text-danger small">Giảm giá (<span id="cashierModalDiscountCode"></span>):</span>
+                            <span class="fw-bold text-danger fs-6" id="cashierModalDiscountAmount"></span>
+                        </div>
                         <div class="d-flex justify-content-between">
                             <span class="text-muted small">Số tiền thu:</span>
                             <span class="fw-bold text-success fs-6" id="cashierModalAmount"></span>
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Phương thức thu tiền thực tế <span class="text-danger">*</span></label>
                         <select name="cashierPaymentMethod" class="form-select rounded-3">
@@ -353,7 +375,6 @@
                             <option value="OFFLINE_BANK_TRANSFER">Chuyển khoản tại quầy (OFFLINE_BANK_TRANSFER)</option>
                         </select>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Mã phiếu thu (Hệ thống tự sinh theo ID)</label>
                         <div class="input-group">
@@ -362,12 +383,10 @@
                         </div>
                         <small class="text-muted"><i class="bi bi-lock me-1"></i>Mã phiếu thu được hệ thống tự động khóa và sinh theo ID đơn hàng (PT-[ID]) để chống thất thoát.</small>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Ghi chú đối soát</label>
                         <input type="text" name="note" class="form-control rounded-3" placeholder="Ghi chú thu ngân ca trực...">
                     </div>
-
                     <div class="alert alert-success small mb-0 rounded-3">
                         <i class="bi bi-check-circle-fill me-1"></i>Hệ thống sẽ cập nhật trạng thái <strong>SUCCESS</strong>, lưu ID thu ngân <strong th:text="${currentUser.username}">thu_ngan</strong>, kích hoạt khóa học và gửi Email Biên nhận cho học viên.
                     </div>
@@ -380,7 +399,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="confirmPaymentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -401,6 +419,10 @@
                         <span class="text-muted small">Khách hàng:</span>
                         <span class="fw-bold" id="modalUserFullName"></span>
                     </div>
+                    <div class="d-flex justify-content-between mb-1" id="confirmModalDiscountRow" style="display: none;">
+                        <span class="text-danger small">Giảm giá (<span id="confirmModalDiscountCode"></span>):</span>
+                        <span class="fw-bold text-danger" id="confirmModalDiscountAmount"></span>
+                    </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-muted small">Số tiền:</span>
                         <span class="fw-bold text-success" id="modalAmount"></span>
@@ -419,7 +441,6 @@
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="cancelOrderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
@@ -445,19 +466,25 @@
         </div>
     </div>
 </div>
-
 <div id="flashMessages" class="d-none" th:data-error="${error}" th:data-success="${success}"></div>
-<div class="d-none">
-    <select id="courseOptionsTemplate">
-        <option value="">-- Chọn Khóa học --</option>
-        <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.title} + ' - ' + (${c.price != null ? #numbers.formatDecimal(c.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'})"></option>
-    </select>
-    <select id="cohortOptionsTemplate">
-        <option value="">-- Chọn Module --</option>
-        <option th:each="m : ${cohorts}" th:value="${m.id}" th:text="${m.name} + ' - ' + (${m.price != null ? #numbers.formatDecimal(m.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'})"></option>
-    </select>
+<div id="defaultProductsData" class="d-none">
+    <div th:each="c : ${courses}" th:if="${c.price != null && c.price > 0}" class="default-pos-product"
+         data-type="COURSE"
+         data-type-name="Khóa học"
+         th:data-id="${c.id}"
+         th:data-title="${c.title}"
+         th:data-code="${c.slug}"
+         th:data-price="${c.price != null ? c.price : 0}"
+         th:data-formatted-price="${c.price != null ? #numbers.formatDecimal(c.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'}"></div>
+    <div th:each="m : ${cohorts}" th:if="${m.price != null && m.price > 0}" class="default-pos-product"
+         data-type="COHORT"
+         data-type-name="Module"
+         th:data-id="${m.id}"
+         th:data-title="${m.name + (m.course != null ? ' (' + m.course.title + ')' : '')}"
+         th:data-code="${m.code != null ? m.code : ''}"
+         th:data-price="${m.price != null ? m.price : 0}"
+         th:data-formatted-price="${m.price != null ? #numbers.formatDecimal(m.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : '0 VNĐ'}"></div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-layout.js}"></script>
@@ -473,57 +500,75 @@
             Toastify({text: successMessage, style: {background: "#00b050"}}).showToast();
         }
     });
-
     function openConfirmModal(btn) {
         var id = btn.getAttribute('data-id');
         var code = btn.getAttribute('data-code');
         var user = btn.getAttribute('data-user');
         var amount = btn.getAttribute('data-amount');
-
         document.getElementById('modalOrderCode').innerText = code;
         document.getElementById('modalUserFullName').innerText = user;
         document.getElementById('modalAmount').innerText = amount;
         document.getElementById('confirmPaymentForm').action = '/admin/orders/' + id + '/confirm';
-
         new bootstrap.Modal(document.getElementById('confirmPaymentModal')).show();
     }
-
     function openCashierModal(btn) {
         var id = btn.getAttribute('data-id');
         var code = btn.getAttribute('data-code');
         var user = btn.getAttribute('data-user');
         var amount = btn.getAttribute('data-amount');
-
         document.getElementById('cashierModalCode').innerText = code;
         document.getElementById('cashierModalUser').innerText = user;
         document.getElementById('cashierModalAmount').innerText = amount;
         document.getElementById('cashierModalReceiptCode').value = 'PT-' + id;
         document.getElementById('cashierConfirmForm').action = '/admin/orders/' + id + '/confirm-cashier';
-
         new bootstrap.Modal(document.getElementById('cashierConfirmModal')).show();
     }
-
     function openCancelModal(btn) {
         var id = btn.getAttribute('data-id');
         var code = btn.getAttribute('data-code');
-
         document.getElementById('modalCancelCode').innerText = code;
         document.getElementById('cancelOrderForm').action = '/admin/orders/' + id + '/cancel';
-
         new bootstrap.Modal(document.getElementById('cancelOrderModal')).show();
     }
-
     function openCreateOfflineModal() {
+        var studentInput = document.getElementById('studentIdentifierInput');
+        if (studentInput && studentInput.value && studentInput.value.trim().length > 0) {
+            loadAvailableProducts(studentInput.value.trim());
+        } else {
+            loadDefaultProducts();
+        }
         new bootstrap.Modal(document.getElementById('createOfflineOrderModal')).show();
     }
-
+    function loadDefaultProducts() {
+        var els = document.querySelectorAll('.default-pos-product');
+        currentAvailableProducts = [];
+        els.forEach(function(el) {
+            currentAvailableProducts.push({
+                id: el.getAttribute('data-id'),
+                title: el.getAttribute('data-title'),
+                code: el.getAttribute('data-code'),
+                price: parseFloat(el.getAttribute('data-price') || 0),
+                formattedPrice: el.getAttribute('data-formatted-price'),
+                type: el.getAttribute('data-type'),
+                typeName: el.getAttribute('data-type-name')
+            });
+        });
+        var statusBadge = document.getElementById('studentStatusBadge');
+        if (statusBadge) {
+            statusBadge.innerHTML = '<span class="text-muted small">Hiển thị toàn bộ danh mục</span>';
+        }
+        renderProductList(currentAvailableProducts);
+    }
     var searchDebounceTimer = null;
+    var productLoadDebounceTimer = null;
     function handleUserSearchInput(val) {
         clearTimeout(searchDebounceTimer);
+        clearTimeout(productLoadDebounceTimer);
         var resContainer = document.getElementById('userSearchResults');
         if (!val || val.trim().length < 2) {
             resContainer.classList.add('d-none');
             resContainer.innerHTML = '';
+            loadDefaultProducts();
             return;
         }
         searchDebounceTimer = setTimeout(function() {
@@ -546,39 +591,195 @@
                     console.warn(err);
                 });
         }, 300);
+        if (val.indexOf('@') >= 0 || val.trim().length >= 4) {
+            productLoadDebounceTimer = setTimeout(function() {
+                loadAvailableProducts(val.trim());
+            }, 500);
+        }
     }
-
     function selectSearchUser(email) {
         document.getElementById('studentIdentifierInput').value = email;
         document.getElementById('userSearchResults').classList.add('d-none');
+        loadAvailableProducts(email);
     }
-
-    function handleProductTypeChange(type) {
-        var selectEl = document.getElementById('productIdSelect');
-        var templateId = type === 'COHORT' ? 'cohortOptionsTemplate' : 'courseOptionsTemplate';
-        var templateEl = document.getElementById(templateId);
-        if (templateEl) {
-            selectEl.innerHTML = templateEl.innerHTML;
+    var currentAvailableProducts = [];
+    function loadAvailableProducts(ident) {
+        if (!ident || ident.trim().length === 0) return;
+        var container = document.getElementById('availableProductsContainer');
+        var statusBadge = document.getElementById('studentStatusBadge');
+        container.innerHTML = '<div class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Đang kiểm tra dữ liệu mua & đơn hàng của học viên...</div>';
+        fetch('/admin/orders/api/available-products?studentIdentifier=' + encodeURIComponent(ident.trim()))
+            .then(function(res) {
+                if (!res.ok) throw new Error("Không tìm thấy học viên hoặc tài khoản này.");
+                return res.json();
+            })
+            .then(function(data) {
+                statusBadge.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill"><i class="bi bi-person-check me-1"></i>Học viên: <strong>' + data.student.fullName + '</strong> (' + data.student.email + ')</span>';
+                var courses = (data.availableCourses || []).map(function(c) {
+                    return { id: c.id, title: c.title, code: c.slug, price: c.price, formattedPrice: c.formattedPrice, type: 'COURSE', typeName: 'Khóa học' };
+                });
+                var cohorts = (data.availableCohorts || []).map(function(m) {
+                    return { id: m.id, title: m.title + (m.courseTitle ? ' (' + m.courseTitle + ')' : ''), code: m.code, price: m.price, formattedPrice: m.formattedPrice, type: 'COHORT', typeName: 'Module' };
+                });
+                currentAvailableProducts = courses.concat(cohorts);
+                renderProductList(currentAvailableProducts);
+            })
+            .catch(function(err) {
+                statusBadge.innerHTML = '<span class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>' + err.message + '</span>';
+                container.innerHTML = '<div class="alert alert-warning small rounded-3 p-3 mb-0">' + err.message + '</div>';
+                currentAvailableProducts = [];
+                recalculatePosTotal();
+            });
+    }
+    function renderProductList(items, filterType, searchKeyword) {
+        var container = document.getElementById('availableProductsContainer');
+        var filtered = items || [];
+        if (filterType && filterType !== 'ALL') {
+            filtered = filtered.filter(function(i) { return i.type === filterType; });
         }
-        document.getElementById('posCalculatedPriceText').innerText = '0 VNĐ';
-    }
-
-    function handleProductSelected(id) {
-        if (!id) {
-            document.getElementById('posCalculatedPriceText').innerText = '0 VNĐ';
+        if (searchKeyword && searchKeyword.trim().length > 0) {
+            var q = searchKeyword.trim().toLowerCase();
+            filtered = filtered.filter(function(i) {
+                return (i.title && i.title.toLowerCase().indexOf(q) >= 0) || (i.code && i.code.toLowerCase().indexOf(q) >= 0);
+            });
+        }
+        if (!filtered || filtered.length === 0) {
+            container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-info-circle me-1 text-primary"></i>Học viên này đã sở hữu hoặc đang có đơn chờ thanh toán cho tất cả các sản phẩm tương ứng.</div>';
+            recalculatePosTotal();
             return;
         }
-        var type = document.getElementById('productTypeSelect').value;
-        fetch('/admin/orders/api/product-info?type=' + type + '&id=' + id)
+        var html = '<div class="list-group list-group-flush">';
+        filtered.forEach(function(item) {
+            var inputName = item.type === 'COURSE' ? 'courseIds' : 'cohortIds';
+            var badgeClass = item.type === 'COURSE' ? 'bg-primary-subtle text-primary border-primary-subtle' : 'bg-purple-subtle text-purple border-purple-subtle';
+            var customStyle = item.type === 'COHORT' ? 'style="color: #7c3aed; background-color: #f5f3ff;"' : '';
+            html += '<label class="list-group-item d-flex align-items-center gap-3 py-2.5 px-3 border-bottom list-group-item-action cursor-pointer">' +
+                '<input class="form-check-input pos-product-checkbox m-0" type="checkbox" name="' + inputName + '" value="' + item.id + '" data-price="' + item.price + '" onchange="recalculatePosTotal()">' +
+                '<div class="flex-grow-1 overflow-hidden">' +
+                    '<div class="d-flex align-items-center gap-2 mb-0.5">' +
+                        '<span class="badge ' + badgeClass + ' border rounded-pill" style="font-size: 10px;" ' + customStyle + '>' + item.typeName + '</span>' +
+                        '<span class="font-monospace text-muted small" style="font-size: 11px;">' + (item.code || '') + '</span>' +
+                    '</div>' +
+                    '<div class="fw-semibold text-dark text-truncate" style="font-size: 13.5px;">' + item.title + '</div>' +
+                '</div>' +
+                '<div class="fw-bold text-success text-nowrap fs-6">' + item.formattedPrice + '</div>' +
+            '</label>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        recalculatePosTotal();
+    }
+    function toggleSelectAllPos(master) {
+        var checkboxes = document.querySelectorAll('.pos-product-checkbox');
+        checkboxes.forEach(function(cb) { cb.checked = master.checked; });
+        recalculatePosTotal();
+    }
+    function filterPosProducts(type, btn) {
+        document.querySelectorAll('.pos-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var keyword = document.getElementById('posProductSearchInput').value;
+        renderProductList(currentAvailableProducts, type, keyword);
+    }
+    function searchPosProducts(keyword) {
+        var activeBtn = document.querySelector('.pos-filter-btn.active');
+        var type = activeBtn ? activeBtn.getAttribute('data-type') : 'ALL';
+        renderProductList(currentAvailableProducts, type, keyword);
+    }
+    var currentDiscount = null;
+    function applyPosDiscount() {
+        var codeInput = document.getElementById('posDiscountCodeInput');
+        var feedback = document.getElementById('posDiscountFeedback');
+        var code = codeInput ? codeInput.value.trim() : '';
+        if (!code) {
+            currentDiscount = null;
+            if (feedback) {
+                feedback.className = 'small mt-1 text-muted';
+                feedback.innerText = 'Đã hủy áp dụng mã giảm giá.';
+                feedback.classList.remove('d-none');
+            }
+            recalculatePosTotal();
+            return;
+        }
+        var checked = document.querySelectorAll('.pos-product-checkbox:checked');
+        var rawTotal = 0;
+        checked.forEach(function(cb) {
+            rawTotal += parseFloat(cb.getAttribute('data-price') || 0);
+        });
+        if (rawTotal <= 0) {
+            if (feedback) {
+                feedback.className = 'small mt-1 text-danger';
+                feedback.innerText = 'Vui lòng chọn ít nhất một khóa học / module trước khi áp mã.';
+                feedback.classList.remove('d-none');
+            }
+            return;
+        }
+        fetch('/api/discounts/validate?code=' + encodeURIComponent(code) + '&amount=' + rawTotal)
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                if (data && data.formattedPrice) {
-                    document.getElementById('posCalculatedPriceText').innerText = data.formattedPrice;
+                if (data.valid) {
+                    currentDiscount = data;
+                    if (feedback) {
+                        feedback.className = 'small mt-1 text-success fw-semibold';
+                        feedback.innerHTML = '<i class="bi bi-check-circle me-1"></i>Áp dụng thành công voucher "' + data.name + '": Giảm ' + data.formattedDiscountAmount;
+                        feedback.classList.remove('d-none');
+                    }
+                } else {
+                    currentDiscount = null;
+                    if (feedback) {
+                        feedback.className = 'small mt-1 text-danger';
+                        feedback.innerText = data.message || 'Mã giảm giá không hợp lệ.';
+                        feedback.classList.remove('d-none');
+                    }
                 }
+                recalculatePosTotal();
             })
-            .catch(function(e) {
-                console.warn(e);
+            .catch(function(err) {
+                currentDiscount = null;
+                if (feedback) {
+                    feedback.className = 'small mt-1 text-danger';
+                    feedback.innerText = 'Lỗi kiểm tra mã: ' + err.message;
+                    feedback.classList.remove('d-none');
+                }
+                recalculatePosTotal();
             });
+    }
+    function recalculatePosTotal() {
+        var checked = document.querySelectorAll('.pos-product-checkbox:checked');
+        var rawTotal = 0;
+        checked.forEach(function(cb) {
+            var p = parseFloat(cb.getAttribute('data-price') || 0);
+            rawTotal += p;
+        });
+        var rawFormatted = new Intl.NumberFormat('en-US').format(rawTotal) + ' VNĐ';
+        var rawEl = document.getElementById('posRawPriceText');
+        if (rawEl) rawEl.innerText = rawFormatted;
+        var discountAmount = 0;
+        if (currentDiscount && currentDiscount.valid) {
+            discountAmount = parseFloat(currentDiscount.discountAmount || 0);
+            var discRow = document.getElementById('posDiscountRow');
+            var discCodeLabel = document.getElementById('posDiscountCodeLabel');
+            var discValText = document.getElementById('posDiscountValText');
+            if (discRow && discCodeLabel && discValText) {
+                discRow.classList.remove('d-none');
+                discCodeLabel.innerText = currentDiscount.code;
+                discValText.innerText = '- ' + new Intl.NumberFormat('en-US').format(discountAmount) + ' VNĐ';
+            }
+        } else {
+            var discRow = document.getElementById('posDiscountRow');
+            if (discRow) discRow.classList.add('d-none');
+        }
+        var finalTotal = Math.max(0, rawTotal - discountAmount);
+        var finalFormatted = new Intl.NumberFormat('en-US').format(finalTotal) + ' VNĐ';
+        document.getElementById('posCalculatedPriceText').innerText = finalFormatted + ' (' + checked.length + ' sản phẩm đã chọn)';
+    }
+    function validateCreateOfflineForm(e) {
+        var checked = document.querySelectorAll('.pos-product-checkbox:checked');
+        if (!checked || checked.length === 0) {
+            alert('Vui lòng chọn ít nhất một khóa học hoặc module để tạo đơn.');
+            e.preventDefault();
+            return false;
+        }
+        return true;
     }
 </script>
 </body>

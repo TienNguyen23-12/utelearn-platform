@@ -68,6 +68,10 @@
                     <div class="col-sm-6 text-sm-end">
                         <h6 class="text-uppercase text-muted fw-bold small mb-2">Chi tiết thanh toán</h6>
                         <div class="small text-muted">Phương thức: <span class="fw-semibold text-dark" th:text="${order.paymentMethodDisplayName}">VIETQR_SEPAY</span></div>
+                        <div class="small text-danger fw-semibold" th:if="${order.discountAmount != null && order.discountAmount > 0}">
+                            Mã ưu đãi: <span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace" th:text="${order.discountCode != null && !order.discountCode.isBlank() ? order.discountCode : 'VOUCHER'}">CODE</span>
+                            (<span th:text="'-' + ${order.formattedDiscountAmount}">-0 VNĐ</span>)
+                        </div>
                         <div class="small text-muted" th:if="${order.confirmedBy != null && !order.confirmedBy.isBlank()}">Thu ngân / Người duyệt: <span class="fw-semibold text-dark" th:text="${order.confirmedBy}">thu_ngan</span></div>
                         <div class="small text-muted" th:if="${order.transactionId}">Mã biên nhận / Giao dịch: <span class="fw-semibold text-dark font-monospace" th:text="${order.transactionId}">TX123456</span></div>
                         <div class="small text-muted" th:if="${order.paidAt}">Thời gian thanh toán: <span class="fw-semibold text-dark" th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}"></span></div>
@@ -103,9 +107,16 @@
                             </tr>
                         </tbody>
                         <tfoot>
+                            <tr th:if="${order.discountAmount != null && order.discountAmount > 0}">
+                                <th colspan="2" class="text-end border-0 pb-1 text-muted">
+                                    Mã giảm giá
+                                    <span th:if="${order.discountCode != null && !order.discountCode.isBlank()}" class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1 font-monospace" th:text="${order.discountCode}">CODE</span>:
+                                </th>
+                                <th class="text-end border-0 pb-1 text-danger fw-bold" th:text="'-' + ${order.formattedDiscountAmount}">-0 VNĐ</th>
+                            </tr>
                             <tr>
-                                <th colspan="2" class="text-end border-0 pt-3">Tổng cộng thanh toán:</th>
-                                <th class="text-end border-0 pt-3 fs-5 fw-bold text-success" th:text="${order.formattedTotalAmount}">0 VNĐ</th>
+                                <th colspan="2" class="text-end border-0 pt-2">Tổng cộng thanh toán:</th>
+                                <th class="text-end border-0 pt-2 fs-5 fw-bold text-success" th:text="${order.formattedTotalAmount}">0 VNĐ</th>
                             </tr>
                         </tfoot>
                     </table>

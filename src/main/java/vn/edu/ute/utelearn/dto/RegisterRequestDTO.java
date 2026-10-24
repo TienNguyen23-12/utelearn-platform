@@ -30,6 +30,10 @@ public class RegisterRequestDTO {
     @NotBlank(message = "Vui lòng xác nhận lại mật khẩu")
     private String confirmPassword;
 
+    @NotBlank(message = "Mã xác thực OTP không được để trống")
+    @Size(min = 6, max = 6, message = "Mã OTP phải gồm 6 chữ số")
+    private String otp;
+
     private String username;
 
     private String fullName;

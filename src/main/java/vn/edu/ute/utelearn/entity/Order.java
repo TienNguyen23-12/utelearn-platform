@@ -29,6 +29,13 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
+
+    @Column(name = "discount_amount", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     @Column(length = 30)
     @Builder.Default
     private String status = "PENDING";
@@ -72,6 +79,13 @@ public class Order {
             return "0 VNĐ";
         }
         return java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(totalAmount) + " VNĐ";
+    }
+
+    public String getFormattedDiscountAmount() {
+        if (discountAmount == null || discountAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return "0 VNĐ";
+        }
+        return java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(discountAmount) + " VNĐ";
     }
 
     public String getFormattedCreatedAt() {

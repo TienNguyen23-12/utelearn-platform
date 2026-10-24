@@ -44,11 +44,12 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: UTELearnHikariPool
-      minimum-idle: 5
-      maximum-pool-size: 20
-      idle-timeout: 300000
-      max-lifetime: 1200000
-      connection-timeout: 20000
+      minimum-idle: ${DB_HIKARI_MIN_IDLE:2}
+      maximum-pool-size: ${DB_HIKARI_MAX_POOL_SIZE:5}
+      idle-timeout: ${DB_HIKARI_IDLE_TIMEOUT:300000}
+      max-lifetime: ${DB_HIKARI_MAX_LIFETIME:600000}
+      connection-timeout: ${DB_HIKARI_CONNECTION_TIMEOUT:30000}
+      leak-detection-threshold: 30000
       auto-commit: true
 
   sql:
@@ -64,6 +65,7 @@ spring:
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
+        from: ${MAIL_FROM:noreply@utelearn.edu.vn}
         smtp:
           auth: true
           starttls:
