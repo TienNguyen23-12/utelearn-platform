@@ -190,10 +190,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email.trim().toLowerCase())
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nào với email này!"));
 
-        // Generate token
         String token = java.util.UUID.randomUUID().toString();
-        
-        // Delete old token if exists
         passwordResetTokenRepository.deleteByUser(user);
 
         PasswordResetToken resetToken = PasswordResetToken.builder()
@@ -204,8 +201,12 @@ public class AuthServiceImpl implements AuthService {
             
         passwordResetTokenRepository.save(resetToken);
 
-        // Send Email
-        String baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String baseUrl;
+        try {
+            baseUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        } catch (Exception e) {
+            baseUrl = "https://utelearn-platform.onrender.com";
+        }
         String resetUrl = baseUrl + "/reset-password?token=" + token;
         
         String emailContent = "<h3>Đặt lại mật khẩu UTELearn</h3>"
