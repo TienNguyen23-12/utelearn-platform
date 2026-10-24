@@ -259,6 +259,37 @@ public class EmailServiceImpl implements EmailService {
         sendHtmlEmail(recipientEmail, subject, htmlBody);
     }
 
+    @Override
+    public void sendRegistrationOtpEmail(String to, String otpCode) {
+        if (to == null || to.isBlank() || otpCode == null || otpCode.isBlank()) {
+            return;
+        }
+
+        String recipientEmail = to.trim();
+        String subject = "[UTELearn] Mã xác thực OTP đăng ký tài khoản";
+
+        String htmlBody = "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;\">"
+                + "<div style=\"background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 24px; text-align: center; color: #ffffff;\">"
+                + "<h2 style=\"margin: 0; font-size: 24px;\">UTE<span style=\"color: #93c5fd;\">Learn</span> Platform</h2>"
+                + "<p style=\"margin: 6px 0 0; font-size: 14px; opacity: 0.9;\">Xác thực đăng ký tài khoản</p>"
+                + "</div>"
+                + "<div style=\"padding: 24px; text-align: center;\">"
+                + "<p style=\"font-size: 15px; color: #334155; margin-top: 0;\">Xin chào,</p>"
+                + "<p style=\"font-size: 14px; color: #475569; line-height: 1.6;\">Cảm ơn bạn đã đăng ký tài khoản tại UTELearn. Vui lòng sử dụng mã xác thực OTP sau đây để hoàn tất quá trình kích hoạt tài khoản:</p>"
+                + "<div style=\"background-color: #f1f5f9; border: 2px dashed #3b82f6; border-radius: 8px; padding: 14px; margin: 20px auto; max-width: 260px;\">"
+                + "<span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e40af; font-family: monospace;\">" + otpCode + "</span>"
+                + "</div>"
+                + "<p style=\"font-size: 13px; color: #ef4444; font-weight: 500;\">Mã OTP này có hiệu lực trong vòng 5 phút.</p>"
+                + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 20px;\">Nếu bạn không gửi yêu cầu đăng ký này, vui lòng bỏ qua thư này.</p>"
+                + "</div>"
+                + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
+                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM"
+                + "</div>"
+                + "</div>";
+
+        sendHtmlEmail(recipientEmail, subject, htmlBody);
+    }
+
     private List<OrderItemDTO> deserializeItems(String itemsJson) {
         if (itemsJson == null || itemsJson.isBlank()) {
             return Collections.emptyList();

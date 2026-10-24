@@ -9,6 +9,7 @@ import vn.edu.ute.utelearn.entity.User;
 import java.util.Optional;
 
 public interface AuthService {
+    void sendRegistrationOtp(String email);
     User register(RegisterRequestDTO requestDTO);
     AuthResponseDTO login(LoginRequestDTO requestDTO, HttpServletResponse response);
     void logout(HttpServletResponse response);
