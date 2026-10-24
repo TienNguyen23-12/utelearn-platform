@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa Mã Giảm Giá' : 'Tạo Mã Giảm Giá Mới'} + ' - UTELearn Admin'">Mã Giảm Giá - UTELearn Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside th:replace="~{fragments/sidebar :: sidebar('admin_discounts')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar(${isEdit ? 'Chỉnh sửa Mã Giảm Giá' : 'Tạo Mã Giảm Giá Mới'})}"></header>
+
+    <main class="app-main-content">
+        <div class="mb-4">
+            <a th:href="@{/admin/discounts}" class="text-decoration-none text-muted small fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách mã giảm giá
+            </a>
+            <h3 class="fw-bold text-dark mt-2" th:text="${isEdit ? 'Chỉnh sửa Mã Giảm Giá #' + discount.code : 'Tạo Mã Giảm Giá Khuyến Mãi Mới'}">Tạo Mã Giảm Giá</h3>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <form th:action="@{/admin/discounts/save}" method="post" th:object="${discount}">
+                <input type="hidden" th:field="*{id}" th:if="${isEdit}">
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Mã Voucher / Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-3 text-uppercase font-monospace fw-bold" th:field="*{code}" placeholder="VD: GIAM20, UTEFALL, VIP50" required>
+                        <div class="form-text small text-muted">Mã nhập khi thanh toán (tự động chuyển thành chữ hoa).</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Tên chương trình / Mô tả <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-3" th:field="*{name}" placeholder="VD: Ưu đãi tân sinh viên UTE 2026" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Loại giảm giá <span class="text-danger">*</span></label>
+                        <select class="form-select rounded-3" th:field="*{discountType}" id="discountTypeSelect" onchange="toggleDiscountTypeInputs()">
+                            <option value="PERCENTAGE">Giảm theo Phần trăm (%)</option>
+                            <option value="FIXED_AMOUNT">Giảm Số tiền cố định (VNĐ)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small" id="valueLabel">Mức giảm (% hoặc VNĐ) <span class="text-danger">*</span></label>
+                        <input type="number" step="any" min="0" class="form-control rounded-3" th:field="*{discountValue}" placeholder="VD: 20 (cho 20%) hoặc 50000 (cho 50.000 VNĐ)" required>
+                    </div>
+
+                    <div class="col-md-6" id="maxDiscountCol">
+                        <label class="form-label fw-bold text-dark small">Số tiền giảm tối đa (VNĐ)</label>
+                        <input type="number" step="any" min="0" class="form-control rounded-3" th:field="*{maxDiscountAmount}" placeholder="Để trống nếu không giới hạn">
+                        <div class="form-text small text-muted">Chỉ áp dụng với loại Phần trăm. VD: giảm 20% tối đa 200.000 VNĐ.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Giá trị đơn hàng tối thiểu (VNĐ)</label>
+                        <input type="number" step="any" min="0" class="form-control rounded-3" th:field="*{minOrderAmount}" placeholder="0">
+                        <div class="form-text small text-muted">Đơn hàng phải đạt từ mức này trở lên mới áp dụng được mã.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Giới hạn số lượt sử dụng</label>
+                        <input type="number" min="1" class="form-control rounded-3" th:field="*{usageLimit}" placeholder="Để trống nếu không giới hạn lượt dùng">
+                        <div class="form-text small text-muted" th:if="${isEdit}" th:text="'Đã sử dụng: ' + ${discount.usedCount != null ? discount.usedCount : 0} + ' lượt'"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Trạng thái kích hoạt</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="activeSwitch" th:field="*{active}">
+                            <label class="form-check-label small" for="activeSwitch">Kích hoạt để học viên có thể áp dụng mã ngay</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Ngày & Giờ bắt đầu</label>
+                        <input type="datetime-local" class="form-control rounded-3" name="startDateStr">
+                        <div class="form-text small text-muted">Để trống nếu có hiệu lực ngay lập tức.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark small">Ngày & Giờ kết thúc (Hết hạn)</label>
+                        <input type="datetime-local" class="form-control rounded-3" name="endDateStr">
+                        <div class="form-text small text-muted">Để trống nếu không có thời hạn kết thúc.</div>
+                    </div>
+
+                    <div class="col-12 mt-4 pt-3 border-top d-flex gap-2 justify-content-end">
+                        <a th:href="@{/admin/discounts}" class="btn btn-light rounded-pill px-4">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i><span th:text="${isEdit ? 'Lưu thay đổi' : 'Tạo mã giảm giá'}">Lưu</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin.js}"></script>
+<script>
+function toggleDiscountTypeInputs() {
+    const type = document.getElementById('discountTypeSelect').value;
+    const maxCol = document.getElementById('maxDiscountCol');
+    const label = document.getElementById('valueLabel');
+    if (type === 'FIXED_AMOUNT') {
+        maxCol.style.display = 'none';
+        label.innerHTML = 'Số tiền giảm (VNĐ) <span class="text-danger">*</span>';
+    } else {
+        maxCol.style.display = 'block';
+        label.innerHTML = 'Tỷ lệ giảm (%) <span class="text-danger">*</span>';
+    }
+}
+document.addEventListener('DOMContentLoaded', toggleDiscountTypeInputs);
+</script>
+</body>
+</html>
