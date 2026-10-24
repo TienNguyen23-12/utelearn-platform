@@ -77,6 +77,7 @@ public class SecurityConfig {
                                 "/api/cohorts/**",
                                 "/api/webhooks/**",
                                 "/api/orders/**",
+                                "/api/quizzes/**",
                                 "/oj/**")
                         .permitAll()
 

@@ -136,12 +136,12 @@ CREATE TABLE lessons (
     id BIGSERIAL PRIMARY KEY,
     section_id BIGINT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    lesson_type VARCHAR(30) NOT NULL,             -- 'VIDEO', 'DOCUMENT', 'QUIZ', 'CODE_PRACTICE'
+    lesson_type VARCHAR(30) NOT NULL,             -- 'VIDEO', 'DOCUMENT', 'QUIZ', 'CODE_PRACTICE', 'ANNOUNCEMENT', 'ASSIGNMENT'
     order_index INT NOT NULL DEFAULT 1,
     is_free_preview BOOLEAN DEFAULT FALSE,
-    video_url TEXT,                               -- If it's a VIDEO (watch forever)
+    video_url TEXT,
     duration_seconds INT DEFAULT 0,
-    document_content TEXT,                        -- If it's a DOCUMENT
+    document_content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -207,7 +207,7 @@ CREATE TABLE cohort_schedules (
     
     show_score_type VARCHAR(30) DEFAULT 'IMMEDIATELY', -- 'IMMEDIATELY', 'AFTER_DEADLINE', 'MANUAL'
     is_score_published BOOLEAN DEFAULT TRUE,           -- Score has been publicly opened for the class
-    allow_review_answers BOOLEAN DEFAULT FALSE,        -- Allow reviewing correct answers / explanations
+    allow_review_answers BOOLEAN DEFAULT TRUE,
     review_available_at TIMESTAMPTZ,                   -- Time to open score review for the class
     
     CONSTRAINT uq_cohort_lesson UNIQUE (cohort_id, lesson_id)
@@ -241,10 +241,11 @@ CREATE TABLE quizzes (
     id BIGSERIAL PRIMARY KEY,
     lesson_id BIGINT UNIQUE NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    duration_minutes INT DEFAULT 45,              -- Countdown timer when taking the test
+    duration_minutes INT DEFAULT 15,
     passing_score NUMERIC(5, 2) DEFAULT 5.0,
     max_attempts INT DEFAULT 1,                   -- 1 = True test, >1 = Practice
     shuffle_questions BOOLEAN DEFAULT TRUE,       -- Shuffle questions to prevent cheating
+    allow_review BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -256,8 +257,11 @@ CREATE TABLE questions (
     points NUMERIC(5, 2) DEFAULT 1.0,
     explanation TEXT,                             -- Detailed solution
     options JSONB DEFAULT '[]'::jsonb,            -- List of options or fill-in keywords
+    order_index INT DEFAULT 1,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS order_index INT DEFAULT 1;
 
 CREATE INDEX idx_questions_options_gin ON questions USING gin (options);
 CREATE INDEX idx_questions_quiz ON questions(quiz_id);
@@ -280,6 +284,51 @@ CREATE TABLE quiz_submissions (
 
 CREATE INDEX idx_submissions_user_quiz ON quiz_submissions(user_id, quiz_id, cohort_id);
 CREATE INDEX idx_submissions_answers_gin ON quiz_submissions USING gin (answers);
+
+CREATE TABLE assignments (
+    id BIGSERIAL PRIMARY KEY,
+    lesson_id BIGINT UNIQUE NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    instruction TEXT,
+    attachment_url TEXT,
+    max_score NUMERIC(5, 2) DEFAULT 10.0,
+    passing_score NUMERIC(5, 2) DEFAULT 5.0,
+    allow_file_submission BOOLEAN DEFAULT TRUE,
+    allow_text_submission BOOLEAN DEFAULT TRUE,
+    allowed_file_types VARCHAR(255) DEFAULT 'pdf,doc,docx,zip,rar,txt',
+    max_file_size_mb INT DEFAULT 20,
+    allow_late_submission BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS allow_late_submission BOOLEAN DEFAULT TRUE;
+
+CREATE TABLE assignment_submissions (
+    id BIGSERIAL PRIMARY KEY,
+    assignment_id BIGINT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE,
+    submission_text TEXT,
+    file_url TEXT,
+    file_name VARCHAR(255),
+    file_size_bytes BIGINT,
+    is_late BOOLEAN DEFAULT FALSE,
+    status VARCHAR(30) DEFAULT 'SUBMITTED',
+    score NUMERIC(5, 2),
+    feedback TEXT,
+    graded_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    graded_at TIMESTAMPTZ,
+    submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_assignment_user_cohort UNIQUE (assignment_id, user_id, cohort_id)
+);
+
+ALTER TABLE assignment_submissions ADD COLUMN IF NOT EXISTS is_late BOOLEAN DEFAULT FALSE;
+
+CREATE INDEX idx_assignment_submissions_user ON assignment_submissions(cohort_id, user_id, assignment_id);
+CREATE INDEX idx_assignment_submissions_assignment ON assignment_submissions(assignment_id);
 
 -- 6. ONLINE JUDGE (OJ) FOR PROGRAMMING EXERCISES
 

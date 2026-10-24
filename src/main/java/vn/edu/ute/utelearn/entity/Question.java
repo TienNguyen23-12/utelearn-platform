@@ -40,6 +40,10 @@ public class Question {
     @Builder.Default
     private String options = "[]";
 
+    @Column(name = "order_index")
+    @Builder.Default
+    private Integer orderIndex = 1;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

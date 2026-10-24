@@ -54,6 +54,9 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
 
     @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) AND c.id = :id")
     Optional<Cohort> findByIdAndInstructorId(@Param("id") Long id, @Param("instructorId") Long instructorId);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "course.category", "createdBy"})
+    Optional<Cohort> findById(Long id);
     
     boolean existsByCode(String code);
 
@@ -62,9 +65,6 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     java.util.Optional<Cohort> findFirstByCourseIdAndStatusIn(Long courseId, java.util.List<String> statuses);
 
     java.util.List<Cohort> findByCourseIdAndStatusIn(Long courseId, java.util.List<String> statuses);
-
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "createdBy"})
-    java.util.Optional<Cohort> findById(Long id);
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"course", "createdBy"})
     java.util.List<Cohort> findByCourseIdOrderByCreatedAtAsc(Long courseId);

@@ -43,7 +43,7 @@ public class CohortSchedule {
 
     @Column(name = "allow_review_answers")
     @Builder.Default
-    private Boolean allowReviewAnswers = false;
+    private Boolean allowReviewAnswers = true;
 
     @Column(name = "review_available_at")
     private Instant reviewAvailableAt;

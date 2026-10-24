@@ -28,7 +28,7 @@ public class Quiz {
 
     @Column(name = "duration_minutes")
     @Builder.Default
-    private Integer durationMinutes = 45;
+    private Integer durationMinutes = 15;
 
     @Column(name = "passing_score", precision = 5, scale = 2)
     @Builder.Default
@@ -41,6 +41,10 @@ public class Quiz {
     @Column(name = "shuffle_questions")
     @Builder.Default
     private Boolean shuffleQuestions = true;
+
+    @Column(name = "allow_review")
+    @Builder.Default
+    private Boolean allowReview = true;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

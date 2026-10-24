@@ -27,7 +27,13 @@ import java.util.ArrayList;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import vn.edu.ute.utelearn.service.CohortService;
 import vn.edu.ute.utelearn.service.CloudinaryService;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -41,6 +47,7 @@ public class InstructorCurriculumApiController {
     private final AuthService authService;
     private final InstructorAssetService assetService;
     private final CloudinaryService cloudinaryService;
+    private final CohortService cohortService;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
@@ -143,7 +150,9 @@ public class InstructorCurriculumApiController {
 
     @GetMapping("/sections/{sectionId}/lessons")
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
-    public ResponseEntity<?> getLessons(@PathVariable Long sectionId) {
+    public ResponseEntity<?> getLessons(
+            @PathVariable Long sectionId,
+            @RequestParam(required = false) Long cohortId) {
         try {
             List<Lesson> lessons = lessonService.getLessonsBySectionId(sectionId);
             List<Map<String, Object>> result = lessons.stream().map(l -> {
@@ -158,13 +167,41 @@ public class InstructorCurriculumApiController {
                 map.put("assetUrl", l.getAssetUrl());
                 map.put("documentContent", l.getDocumentContent());
                 map.put("isPublicForCohorts", l.getIsPublicForCohorts());
-                List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(l.getId());
-                if (!schedules.isEmpty() && schedules.get(0).getCohort() != null) {
-                    Cohort c = schedules.get(0).getCohort();
-                    map.put("cohortId", c.getId());
-                    map.put("cohortCode", c.getCode());
-                    map.put("cohortName", c.getName());
+
+                CohortSchedule targetSchedule = null;
+                if (cohortId != null) {
+                    targetSchedule = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, l.getId()).orElse(null);
+                }
+                if (targetSchedule == null) {
+                    List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(l.getId());
+                    if (!schedules.isEmpty()) {
+                        targetSchedule = schedules.get(0);
+                    }
+                }
+
+                if (targetSchedule != null) {
+                    map.put("scheduleId", targetSchedule.getId());
+                    map.put("unlockAt", targetSchedule.getFormattedUnlockAt());
+                    map.put("deadlineAt", targetSchedule.getFormattedDeadlineAt());
+                    map.put("displayUnlockAt", targetSchedule.getDisplayUnlockAt());
+                    map.put("displayDeadlineAt", targetSchedule.getDisplayDeadlineAt());
+                    map.put("isLocked", targetSchedule.isLockedNow());
+                    map.put("showScoreType", targetSchedule.getShowScoreType());
+                    map.put("allowReviewAnswers", targetSchedule.getAllowReviewAnswers());
+                    if (targetSchedule.getCohort() != null) {
+                        map.put("cohortId", targetSchedule.getCohort().getId());
+                        map.put("cohortCode", targetSchedule.getCohort().getCode());
+                        map.put("cohortName", targetSchedule.getCohort().getName());
+                    }
                 } else {
+                    map.put("scheduleId", null);
+                    map.put("unlockAt", "");
+                    map.put("deadlineAt", "");
+                    map.put("displayUnlockAt", "");
+                    map.put("displayDeadlineAt", "");
+                    map.put("isLocked", false);
+                    map.put("showScoreType", "IMMEDIATELY");
+                    map.put("allowReviewAnswers", true);
                     map.put("cohortId", null);
                     map.put("cohortCode", null);
                     map.put("cohortName", null);
@@ -173,7 +210,7 @@ public class InstructorCurriculumApiController {
             }).toList();
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            log.error("Lỗi khi tải danh sách bài học của section ID {}: {}", sectionId, e.getMessage(), e);
+            log.error("[InstructorCurriculumApiController] Lỗi khi tải bài học của section ID {}: {}", sectionId, e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error"));
         }
     }
@@ -368,44 +405,59 @@ public class InstructorCurriculumApiController {
             return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền chỉnh sửa module này"));
         }
 
+        boolean coreChanged = false;
+
         if (payload.containsKey("name")) {
             String name = (String) payload.get("name");
-            if (name != null && !name.trim().isBlank()) {
+            if (name != null && !name.trim().isBlank() && !name.trim().equals(cohort.getName())) {
                 cohort.setName(name.trim());
+                coreChanged = true;
             }
         }
         if (payload.containsKey("code")) {
             String code = (String) payload.get("code");
-            if (code != null && !code.trim().isBlank()) {
+            if (code != null && !code.trim().isBlank() && !code.trim().equals(cohort.getCode())) {
                 cohort.setCode(code.trim());
+                coreChanged = true;
             }
         }
         if (payload.containsKey("description")) {
-            cohort.setDescription((String) payload.get("description"));
+            String desc = (String) payload.get("description");
+            if (!java.util.Objects.equals(desc, cohort.getDescription())) {
+                cohort.setDescription(desc);
+                coreChanged = true;
+            }
         }
         if (payload.containsKey("objectives")) {
             Object obj = payload.get("objectives");
             if (obj != null) {
                 String raw = obj.toString().trim();
-                if (raw.startsWith("[")) {
-                    cohort.setObjectives(raw);
-                } else {
+                String formatted = raw;
+                if (!raw.startsWith("[")) {
                     List<String> list = java.util.Arrays.stream(raw.split("\n"))
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
                             .toList();
                     try {
-                        cohort.setObjectives(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list));
+                        formatted = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(list);
                     } catch (Exception e) {
-                        cohort.setObjectives(raw);
+                        formatted = raw;
                     }
+                }
+                if (!java.util.Objects.equals(formatted, cohort.getObjectives())) {
+                    cohort.setObjectives(formatted);
+                    coreChanged = true;
                 }
             }
         }
         if (payload.containsKey("price")) {
             Object p = payload.get("price");
             if (p != null) {
-                cohort.setPrice(new java.math.BigDecimal(p.toString()));
+                java.math.BigDecimal newPrice = new java.math.BigDecimal(p.toString());
+                if (cohort.getPrice() == null || cohort.getPrice().compareTo(newPrice) != 0) {
+                    cohort.setPrice(newPrice);
+                    coreChanged = true;
+                }
             }
         }
         if (payload.containsKey("announcementTitle")) {
@@ -415,9 +467,9 @@ public class InstructorCurriculumApiController {
             cohort.setAnnouncementContent((String) payload.get("announcementContent"));
         }
 
-        if (cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (coreChanged && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
-            log.info("[InstructorCurriculumApiController] Chuyển module độc lập id: {} về DRAFT do sửa inline", cohortId);
+            log.info("[InstructorCurriculumApiController] Chuyển module độc lập id: {} về DRAFT do sửa thông tin cốt lõi", cohortId);
         }
 
         Cohort saved = cohortRepository.save(cohort);
@@ -483,5 +535,146 @@ public class InstructorCurriculumApiController {
             }
         }
         return ResponseEntity.ok(Map.of("message", "Cập nhật thứ tự module thành công"));
+    }
+
+    @GetMapping("/cohorts/{cohortId}/lessons/{lessonId}/schedule")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> getLessonSchedule(
+            @PathVariable Long cohortId,
+            @PathVariable Long lessonId) {
+        try {
+            Optional<CohortSchedule> csOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, lessonId);
+            Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+            Map<String, Object> map = new HashMap<>();
+            map.put("cohortId", cohortId);
+            map.put("lessonId", lessonId);
+            map.put("lessonTitle", lesson != null ? lesson.getTitle() : "");
+            map.put("lessonType", lesson != null ? lesson.getLessonType() : "");
+            if (csOpt.isPresent()) {
+                CohortSchedule cs = csOpt.get();
+                map.put("scheduleId", cs.getId());
+                map.put("unlockAt", cs.getFormattedUnlockAt());
+                map.put("deadlineAt", cs.getFormattedDeadlineAt());
+                map.put("displayUnlockAt", cs.getDisplayUnlockAt());
+                map.put("displayDeadlineAt", cs.getDisplayDeadlineAt());
+                map.put("showScoreType", cs.getShowScoreType());
+                map.put("allowReviewAnswers", cs.getAllowReviewAnswers());
+                map.put("isLocked", cs.isLockedNow());
+            } else {
+                map.put("scheduleId", null);
+                map.put("unlockAt", "");
+                map.put("deadlineAt", "");
+                map.put("displayUnlockAt", "");
+                map.put("displayDeadlineAt", "");
+                map.put("showScoreType", "IMMEDIATELY");
+                map.put("allowReviewAnswers", true);
+                map.put("isLocked", false);
+            }
+            return ResponseEntity.ok(map);
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi tải schedule lesson {}: {}", lessonId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", "Lỗi khi tải thông tin lộ trình"));
+        }
+    }
+
+    @PutMapping("/cohorts/{cohortId}/lessons/{lessonId}/schedule")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> updateLessonSchedule(
+            @PathVariable Long cohortId,
+            @PathVariable Long lessonId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Cohort cohort = cohortRepository.findById(cohortId).orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+            Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> new RuntimeException("Bài học không tồn tại"));
+
+            String unlockAtStr = (String) payload.get("unlockAt");
+            String deadlineAtStr = (String) payload.get("deadlineAt");
+            String showScoreType = (String) payload.get("showScoreType");
+            Boolean allowReview = payload.get("allowReviewAnswers") != null ? (Boolean) payload.get("allowReviewAnswers") : true;
+
+            Instant unlockInstant = parseDateTime(unlockAtStr);
+            if (unlockInstant == null) {
+                unlockInstant = Instant.now();
+            }
+            Instant deadlineInstant = parseDateTime(deadlineAtStr);
+
+            Optional<CohortSchedule> csOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, lessonId);
+            CohortSchedule cs;
+            if (csOpt.isPresent()) {
+                cs = csOpt.get();
+                cs.setUnlockAt(unlockInstant);
+                cs.setDeadlineAt(deadlineInstant);
+                if (showScoreType != null && !showScoreType.isBlank()) {
+                    cs.setShowScoreType(showScoreType);
+                }
+                cs.setAllowReviewAnswers(allowReview);
+            } else {
+                cs = CohortSchedule.builder()
+                        .cohort(cohort)
+                        .lesson(lesson)
+                        .unlockAt(unlockInstant)
+                        .deadlineAt(deadlineInstant)
+                        .showScoreType(showScoreType != null && !showScoreType.isBlank() ? showScoreType : "IMMEDIATELY")
+                        .allowReviewAnswers(allowReview)
+                        .build();
+            }
+            cohortScheduleRepository.save(cs);
+            cohortService.revertToDraftIfApproved(cohort);
+            log.info("[InstructorCurriculumApiController] Cập nhật lộ trình cho bài học {} trong module {}", lessonId, cohortId);
+
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("message", "Cập nhật lộ trình thành công");
+            resp.put("unlockAt", cs.getFormattedUnlockAt());
+            resp.put("deadlineAt", cs.getFormattedDeadlineAt());
+            resp.put("displayUnlockAt", cs.getDisplayUnlockAt());
+            resp.put("displayDeadlineAt", cs.getDisplayDeadlineAt());
+            resp.put("showScoreType", cs.getShowScoreType());
+            resp.put("allowReviewAnswers", cs.getAllowReviewAnswers());
+            resp.put("isLocked", cs.isLockedNow());
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi cập nhật schedule: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Lỗi khi cập nhật lộ trình"));
+        }
+    }
+
+    @PostMapping("/cohorts/{cohortId}/unlock-all")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> unlockAllCohortLessons(@PathVariable Long cohortId) {
+        try {
+            Cohort cohort = cohortRepository.findById(cohortId).orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+            List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortId(cohortId);
+            Instant now = Instant.now();
+            for (CohortSchedule cs : schedules) {
+                cs.setUnlockAt(now);
+                cohortScheduleRepository.save(cs);
+            }
+            cohortService.revertToDraftIfApproved(cohort);
+            log.info("[InstructorCurriculumApiController] Đã mở toàn bộ bài học ngay bây giờ cho module {}", cohortId);
+            return ResponseEntity.ok(Map.of("message", "Đã mở toàn bộ bài học thành công!"));
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi khi mở toàn bộ bài học: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Lỗi khi mở toàn bộ bài học"));
+        }
+    }
+
+    private Instant parseDateTime(String str) {
+        if (str == null || str.isBlank()) {
+            return null;
+        }
+        try {
+            if (str.length() == 16) {
+                return LocalDateTime.parse(str).atZone(ZoneId.systemDefault()).toInstant();
+            }
+            return Instant.parse(str);
+        } catch (Exception e) {
+            try {
+                return LocalDateTime.parse(str).atZone(ZoneId.systemDefault()).toInstant();
+            } catch (Exception ex) {
+                return null;
+            }
+        }
     }
 }

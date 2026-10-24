@@ -92,6 +92,7 @@ public class ModeratorReviewPageRenderTest {
                 .id(10L)
                 .title("Sample Course")
                 .slug("sample-course")
+                .code("CS101")
                 .build();
 
         ModerationTask task = ModerationTask.builder()
@@ -116,4 +117,65 @@ public class ModeratorReviewPageRenderTest {
                 .andExpect(model().attributeExists("course"))
                 .andExpect(model().attributeExists("moderators"));
     }
+
+    @Test
+    void testReviewIndexRedirect() throws Exception {
+        mockMvc.perform(get("/moderator/review"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/moderator/queue"));
+
+        mockMvc.perform(get("/moderator/review/"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/moderator/queue"));
+    }
+
+    @Test
+    void testRenderCohortTask() throws Exception {
+        User admin = User.builder()
+                .id(1L)
+                .username("admin")
+                .email("admin@ute.edu.vn")
+                .fullName("Administrator")
+                .build();
+
+        Course course = Course.builder()
+                .id(10L)
+                .title("Sample Course")
+                .slug("sample-course")
+                .code("CS101")
+                .build();
+
+        vn.edu.ute.utelearn.entity.Cohort cohort = vn.edu.ute.utelearn.entity.Cohort.builder()
+                .id(20L)
+                .name("Sample Cohort")
+                .code("CH01")
+                .course(course)
+                .build();
+
+        ModerationTask task = ModerationTask.builder()
+                .id(6L)
+                .itemType("COHORT")
+                .itemId(20L)
+                .status("PENDING")
+                .author(User.builder().id(2L).fullName("Instructor").build())
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(admin));
+        when(rbacHelper.hasRole("ADMIN")).thenReturn(true);
+        when(taskRepository.findById(6L)).thenReturn(Optional.of(task));
+        when(userRepository.findActiveModerators()).thenReturn(Collections.emptyList());
+        when(cohortRepository.findById(20L)).thenReturn(Optional.of(cohort));
+        when(courseService.getCourseById(10L)).thenReturn(course);
+        when(sectionService.getSectionsByCohortId(20L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/moderator/review/6"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("moderator/review_course"))
+                .andExpect(model().attributeExists("task"))
+                .andExpect(model().attributeExists("cohort"))
+                .andExpect(model().attributeExists("course"))
+                .andExpect(model().attributeExists("sections"))
+                .andExpect(model().attributeExists("lessonsMap"));
+    }
 }
+
