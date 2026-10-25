@@ -24,4 +24,7 @@ public interface CohortMessageRepository extends JpaRepository<CohortMessage, Lo
             @Param("userId") Long userId,
             Pageable pageable
     );
+
+    @Query("SELECT m.cohort.id, MAX(m.createdAt) FROM CohortMessage m WHERE m.cohort.id IN :cohortIds GROUP BY m.cohort.id")
+    List<Object[]> findLatestMessageTimesByCohortIds(@Param("cohortIds") List<Long> cohortIds);
 }

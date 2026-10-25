@@ -277,14 +277,19 @@
                            th:href="@{/instructor/cohorts/{id}/chat(id=${c.id})}"
                            th:classappend="${c.id == currentCohort.id} ? 'active' : ''"
                            class="cohort-nav-item"
+                           th:id="'cohort-item-' + ${c.id}"
+                           th:data-cohort-id="${c.id}"
                            th:data-cohort-name="${c.name}"
                            th:data-cohort-code="${c.code}">
                             <div class="d-flex align-items-center justify-content-between mb-1">
                                 <span class="badge bg-secondary-subtle text-secondary font-monospace" style="font-size: 10px;" th:text="${c.code}">CODE</span>
-                                <span th:if="${c.status == 'IN_PROGRESS'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">Đang học</span>
-                                <span th:if="${c.status == 'ENROLLING'}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">Ghi danh</span>
-                                <span th:if="${c.status == 'UPCOMING'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 10px;">Sắp mở</span>
-                                <span th:if="${c.status == 'COMPLETED'}" class="badge bg-light text-muted border rounded-pill" style="font-size: 10px;">Đã đóng</span>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span th:if="${c.status == 'IN_PROGRESS'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">Đang học</span>
+                                    <span th:if="${c.status == 'ENROLLING'}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 10px;">Ghi danh</span>
+                                    <span th:if="${c.status == 'UPCOMING'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size: 10px;">Sắp mở</span>
+                                    <span th:if="${c.status == 'COMPLETED'}" class="badge bg-light text-muted border rounded-pill" style="font-size: 10px;">Đã đóng</span>
+                                    <span class="badge bg-danger rounded-pill d-none cohort-new-badge" style="font-size: 9px;">Mới</span>
+                                </div>
                             </div>
                             <div class="fw-bold text-dark text-truncate small mb-1" th:text="${c.name}">Tên module</div>
                             <div class="d-flex align-items-center justify-content-between text-muted" style="font-size: 11.5px;">
@@ -372,6 +377,24 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function moveCohortToTop(cId, isNewUnread) {
+            const container = document.getElementById('cohortListContainer');
+            if (!container) return;
+            const item = document.getElementById('cohort-item-' + cId) || container.querySelector('[data-cohort-id="' + cId + '"]');
+            if (!item) return;
+
+            if (container.firstElementChild !== item) {
+                container.insertBefore(item, container.firstElementChild);
+            }
+
+            if (isNewUnread && String(cId) !== String(cohortId)) {
+                const badge = item.querySelector('.cohort-new-badge');
+                if (badge) {
+                    badge.classList.remove('d-none');
+                }
+            }
         }
 
         function filterCohorts(keyword) {
@@ -519,9 +542,22 @@
                         try {
                             const newMsg = JSON.parse(message.body);
                             appendMessage(newMsg);
+                            moveCohortToTop(cohortId, false);
                         } catch (err) {
                         }
                     });
+
+                    if (currentUserId) {
+                        stompClient.subscribe('/topic/users/' + currentUserId + '/notifications', function (frame) {
+                            try {
+                                const notif = JSON.parse(frame.body);
+                                if (notif && notif.cohortId) {
+                                    moveCohortToTop(notif.cohortId, true);
+                                }
+                            } catch (e) {
+                            }
+                        });
+                    }
                 }, function () {
                     isChatConnected = false;
                     isConnectingChat = false;
@@ -557,6 +593,7 @@
             if (isChatConnected && stompClient && stompClient.connected) {
                 try {
                     stompClient.send('/app/cohort/' + cohortId + '/send', {}, JSON.stringify(payload));
+                    moveCohortToTop(cohortId, false);
                     if (sendBtn) sendBtn.disabled = false;
                     input.focus();
                     return;
@@ -573,6 +610,7 @@
                 if (response.ok) {
                     const savedMsg = await response.json();
                     appendMessage(savedMsg);
+                    moveCohortToTop(cohortId, false);
                 } else if (response.status === 403) {
                     alert('Bạn không có quyền gửi tin nhắn trong lớp này.');
                 } else {

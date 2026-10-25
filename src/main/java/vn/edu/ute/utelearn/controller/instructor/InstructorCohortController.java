@@ -18,7 +18,13 @@ import vn.edu.ute.utelearn.service.CohortService;
 import vn.edu.ute.utelearn.service.CourseService;
 import vn.edu.ute.utelearn.service.CohortChatService;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import vn.edu.ute.utelearn.dao.CohortMessageRepository;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -40,6 +46,7 @@ public class InstructorCohortController {
     private final vn.edu.ute.utelearn.service.SectionService sectionService;
     private final vn.edu.ute.utelearn.service.ModerationService moderationService;
     private final CohortChatService cohortChatService;
+    private final CohortMessageRepository cohortMessageRepository;
 
     @GetMapping
     public String listCohorts(
@@ -291,11 +298,31 @@ public class InstructorCohortController {
         return "redirect:/instructor/cohorts";
     }
 
+    private List<Cohort> getSortedInstructorCohorts(Long instructorId) {
+        List<Cohort> cohorts = cohortRepository.findByInstructorId(instructorId, PageRequest.of(0, 50)).getContent();
+        if (cohorts == null || cohorts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> cohortIds = cohorts.stream().map(Cohort::getId).toList();
+        Map<Long, Instant> lastActivityMap = new HashMap<>();
+        List<Object[]> results = cohortMessageRepository.findLatestMessageTimesByCohortIds(cohortIds);
+        for (Object[] row : results) {
+            lastActivityMap.put((Long) row[0], (Instant) row[1]);
+        }
+        List<Cohort> sorted = new ArrayList<>(cohorts);
+        sorted.sort((a, b) -> {
+            Instant tA = lastActivityMap.getOrDefault(a.getId(), a.getCreatedAt() != null ? a.getCreatedAt() : Instant.EPOCH);
+            Instant tB = lastActivityMap.getOrDefault(b.getId(), b.getCreatedAt() != null ? b.getCreatedAt() : Instant.EPOCH);
+            return tB.compareTo(tA);
+        });
+        return sorted;
+    }
+
     @GetMapping("/chat")
     public String showInstructorCohortsChat() {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
-        List<Cohort> cohorts = cohortRepository.findByInstructorId(currentUser.getId(), PageRequest.of(0, 1)).getContent();
+        List<Cohort> cohorts = getSortedInstructorCohorts(currentUser.getId());
         if (cohorts != null && !cohorts.isEmpty()) {
             return "redirect:/instructor/cohorts/" + cohorts.get(0).getId() + "/chat";
         }
@@ -318,7 +345,7 @@ public class InstructorCohortController {
             return "redirect:/instructor/cohorts";
         }
 
-        List<Cohort> instructorCohorts = cohortRepository.findByInstructorId(currentUser.getId(), PageRequest.of(0, 50)).getContent();
+        List<Cohort> instructorCohorts = getSortedInstructorCohorts(currentUser.getId());
 
         model.addAttribute("currentCohort", currentCohort);
         model.addAttribute("cohorts", instructorCohorts);

@@ -4,6 +4,26 @@ Tài liệu ghi lại toàn bộ lịch sử chỉnh sửa, cập nhật tính n
 
 ---
 
+## [2026-10-25 17:15] - Nâng Cấp Tự Động Đẩy Lớp Có Tin Nhắn Mới Lên Đầu Danh Sách (Instructor Chat Realtime Sorting)
+- **Yêu cầu**: "chỗ chat của gv á thì chỗ khu vực lớp nào có tin nhắn mới thì nhảy lên đầu á"
+- **Các cải tiến đã thực hiện**:
+  1. *Sắp xếp thời gian thực trên giao diện (Frontend Realtime)*:
+     - Bổ sung hàm `moveCohortToTop(cId, isNewUnread)` trong `templates/instructor/cohorts/chat.html`.
+     - Lắng nghe đồng thời kênh phòng học hiện tại (`/topic/cohort/{cohortId}`) và kênh thông báo toàn cục của giảng viên (`/topic/users/{currentUserId}/notifications`).
+     - Khi có tin nhắn mới (cả lớp đang mở hoặc bất kỳ lớp nào khác mà giảng viên phụ trách), thẻ lớp đó lập tức được đẩy lên đầu danh sách sidebar bên trái.
+     - Tự động hiển thị huy hiệu đỏ `"Mới"` cho lớp có tin nhắn mới chưa đọc.
+  2. *Sắp xếp khởi tạo từ máy chủ (Backend Sorting)*:
+     - Bổ sung truy vấn `findLatestMessageTimesByCohortIds` trong `CohortMessageRepository` gom nhóm `MAX(createdAt)` theo từng lớp.
+     - Trong `InstructorCohortController`, tự động sắp xếp danh sách lớp phụ trách theo hoạt động thảo luận mới nhất.
+     - Route mặc định `/instructor/cohorts/chat` tự động điều hướng vào lớp có tin nhắn mới nhất gần đây.
+- **Thành phần tác động**:
+  - `src/main/java/vn/edu/ute/utelearn/dao/CohortMessageRepository.java`
+  - `src/main/java/vn/edu/ute/utelearn/controller/instructor/InstructorCohortController.java`
+  - `src/main/resources/templates/instructor/cohorts/chat.html`
+- **Kiểm thử**: Đã chạy `mvn compile` và `mvn test -Dtest=CohortChatFeatureTest`, 16/16 test passed.
+
+---
+
 ## [2026-10-25 17:10] - Khắc Phục Lỗi Vỡ Layout Khung Chat Trong Phòng Học Module (module-learn.html)
 - **Hiện tượng**: Trong tab Thảo luận phòng học (`/courses/{slug}/modules/{id}/learn`), ảnh avatar hiển thị to dạng hình vuông, tên người gửi và nội dung tin nhắn rớt dòng xuống dưới avatar, không có khung bong bóng tin nhắn.
 - **Nguyên nhân cốt lõi**:
