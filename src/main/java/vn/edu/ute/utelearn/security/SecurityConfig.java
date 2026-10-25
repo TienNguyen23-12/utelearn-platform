@@ -78,7 +78,9 @@ public class SecurityConfig {
                                 "/api/webhooks/**",
                                 "/api/orders/**",
                                 "/api/quizzes/**",
-                                "/oj/**")
+                                "/oj/**",
+                                "/ws",
+                                "/ws/**")
                         .permitAll()
 
                         .requestMatchers("/admin/orders/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")

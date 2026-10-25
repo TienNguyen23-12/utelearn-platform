@@ -674,10 +674,121 @@
 
         .quiz-overview-item.answered {
             border-left: 4px solid #10b981;
+        .chat-messages-container {
+            height: 420px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            scroll-behavior: smooth;
+        }
+
+        .chat-bubble-row {
+            display: flex;
+            gap: 10px;
+            max-width: 85%;
+        }
+
+        .chat-bubble-row.mine {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .chat-bubble-row.theirs {
+            align-self: flex-start;
+        }
+
+        .chat-bubble-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .chat-bubble-body {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chat-bubble-row.mine .chat-bubble-body {
+            align-items: flex-end;
+        }
+
+        .chat-bubble-row.theirs .chat-bubble-body {
+            align-items: flex-start;
+        }
+
+        .chat-bubble-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
+            font-size: 11.5px;
+        }
+
+        .chat-bubble-content {
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            word-break: break-word;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .chat-bubble-row.mine .chat-bubble-content {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-bubble-row.theirs .chat-bubble-content {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-role-badge-instructor {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        .chat-role-badge-ta {
+            background-color: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .chat-role-badge-admin {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .chat-role-badge-student {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
         }
     </style>
 </head>
-<body>
+<body th:data-current-user-id="${currentUser != null ? currentUser.id : ''}"
+      th:data-current-user-name="${currentUser != null ? currentUser.fullName : ''}"
+      th:data-module-id="${module != null ? module.id : ''}">
 
 <header class="learn-header justify-content-between">
     <div class="d-flex align-items-center gap-2 overflow-hidden me-2" style="min-width: 0;">
@@ -738,6 +849,11 @@
         <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" id="btnToggleFocusMode" title="Chế độ tập trung (Phím F)">
             <i class="bi bi-aspect-ratio" id="focusModeIcon"></i>
             <span class="d-none d-md-inline small fw-semibold" id="focusModeText">Tập trung</span>
+        </button>
+
+        <button class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" id="btnHeaderCohortChat" onclick="openCohortChatTab()" title="Thảo luận lớp học realtime">
+            <i class="bi bi-chat-dots-fill text-primary"></i>
+            <span class="d-none d-md-inline small fw-semibold">Thảo luận</span>
         </button>
 
         <div class="dropdown" th:if="${currentUser != null}">
@@ -873,6 +989,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
 <script th:inline="javascript">
     const moduleId = /*[[${module.id}]]*/ 0;
@@ -1792,6 +1910,12 @@
                             <i class="bi bi-pencil-square me-1"></i>Ghi chú cá nhân
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link position-relative" id="tab-chat-btn" data-bs-toggle="tab" data-bs-target="#tab-chat" type="button" role="tab" onclick="ensureChatRendered()">
+                            <i class="bi bi-chat-dots-fill text-primary me-1"></i>Thảo luận Lớp học
+                            <span id="chatTabUnreadDot" class="badge rounded-circle bg-danger ms-1.5 p-1 d-none" style="width: 8px; height: 8px; display: inline-block;"></span>
+                        </button>
+                    </li>
                 </ul>
 
                 <div class="tab-content pt-2" id="lessonTabsContent">
@@ -1816,6 +1940,42 @@
                             <i class="bi bi-save me-1"></i>Lưu ghi chú
                         </button>
                         <span id="noteSaveNotice" class="ms-2 small text-success fw-semibold" style="display: none;"><i class="bi bi-check-circle me-1"></i>Đã lưu!</span>
+                    </div>
+
+                    <div class="tab-pane fade" id="tab-chat" role="tabpanel">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-chat-square-quote-fill text-primary"></i>
+                                    Phòng Thảo luận Realtime: <span class="text-primary">${moduleCode}</span>
+                                </h6>
+                                <div class="text-secondary small mt-0.5">Trao đổi trực tiếp giữa Giảng viên, Trợ giảng và Học viên trong lớp</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="chatConnectionStatus" class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5" style="font-size: 11px;">
+                                    <span class="spinner-grow spinner-grow-sm text-warning" style="width: 8px; height: 8px;"></span>
+                                    <span>Đang kết nối...</span>
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1" onclick="reloadChatMessages()" title="Tải lại tin nhắn">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="chatMessagesBox" class="chat-messages-container mb-3">
+                            <div class="text-center py-5 my-auto text-muted small">
+                                <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+                                <div>Đang tải tin nhắn...</div>
+                            </div>
+                        </div>
+
+                        <form id="chatMessageForm" onsubmit="handleSendChatMessage(event)" class="d-flex gap-2 align-items-center">
+                            <input type="text" id="chatInputMessage" class="form-control rounded-pill px-3 py-2" placeholder="Nhập câu hỏi hoặc chia sẻ thảo luận với cả lớp (Enter để gửi)..." autocomplete="off" maxlength="1000" required>
+                            <button type="submit" id="btnSendChat" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold d-flex align-items-center gap-1.5 flex-shrink-0">
+                                <i class="bi bi-send-fill"></i>
+                                <span>Gửi</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -2166,9 +2326,193 @@
                     ${questionsHtml}
                 </div>
             </div>
-        `;
+        ;
     }
 
+    let stompClient = null;
+    let isChatConnected = false;
+    let chatMessagesList = [];
+    let isConnectingChat = false;
+
+    async function initCohortChat() {
+        if (!moduleId || moduleId <= 0) return;
+        loadChatHistory();
+        connectWebSocket();
+    }
+
+    async function loadChatHistory() {
+        const box = document.getElementById('chatMessagesBox');
+        try {
+            const response = await fetch('/api/cohorts/' + moduleId + '/messages');
+            if (!response.ok) {
+                if (box) {
+                    if (response.status === 403) {
+                        box.innerHTML = '<div class="text-center py-4 text-warning small"><i class="bi bi-shield-lock me-1"></i>Chỉ thành viên của lớp học mới có quyền tham gia thảo luận.</div>';
+                    } else {
+                        box.innerHTML = '<div class="text-center py-4 text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>Không thể tải lịch sử tin nhắn.</div>';
+                    }
+                }
+                return;
+            }
+            chatMessagesList = await response.json();
+            renderChatMessages();
+        } catch (err) {
+            if (box) {
+                box.innerHTML = '<div class="text-center py-4 text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>Lỗi kết nối khi tải tin nhắn.</div>';
+            }
+        }
+    }
+
+    function connectWebSocket() {
+        if (isChatConnected || isConnectingChat) return;
+        isConnectingChat = true;
+        updateChatStatus('connecting');
+
+        try {
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+
+            stompClient.connect({}, function (frame) {
+                isChatConnected = true;
+                isConnectingChat = false;
+                updateChatStatus('connected');
+
+                stompClient.subscribe('/topic/cohort/' + moduleId, function (messageOutput) {
+                    try {
+                        const message = JSON.parse(messageOutput.body);
+                        appendChatMessage(message);
+                    } catch (e) {
+                    }
+                });
+            }, function (error) {
+                isChatConnected = false;
+                isConnectingChat = false;
+                updateChatStatus('disconnected');
+                setTimeout(connectWebSocket, 5000);
+            });
+        } catch (err) {
+            isChatConnected = false;
+            isConnectingChat = false;
+            updateChatStatus('disconnected');
+        }
+    }
+
+    function updateChatStatus(status) {
+        const el = document.getElementById('chatConnectionStatus');
+        if (!el) return;
+        if (status === 'connected') {
+            el.className = 'badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5';
+            el.innerHTML = '<span class="d-inline-block rounded-circle bg-success" style="width: 8px; height: 8px;"></span><span>Trực tuyến</span>';
+        } else if (status === 'connecting') {
+            el.className = 'badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5';
+            el.innerHTML = '<span class="spinner-grow spinner-grow-sm text-warning" style="width: 8px; height: 8px;"></span><span>Đang kết nối...</span>';
+        } else {
+            el.className = 'badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5';
+            el.innerHTML = '<span class="d-inline-block rounded-circle bg-danger" style="width: 8px; height: 8px;"></span><span>Mất kết nối</span>';
+        }
+    }
+
+    function renderChatMessages() {
+        const box = document.getElementById('chatMessagesBox');
+        if (!box) return;
+
+        if (!chatMessagesList || chatMessagesList.length === 0) {
+            box.innerHTML = `
+                <div class="text-center py-5 my-auto text-muted">
+                    <i class="bi bi-chat-square-dots fs-1 text-primary opacity-50 mb-2 d-block"></i>
+                    <div class="fw-semibold small">Chưa có tin nhắn thảo luận nào trong lớp này.</div>
+                    <div class="small text-secondary mt-1">Hãy là người đầu tiên đặt câu hỏi hoặc gửi lời chào đến cả lớp!</div>
+                </div>
+            `;
+            return;
+        }
+
+        const currentUserIdStr = document.body.getAttribute('data-current-user-id');
+        const currentUserId = currentUserIdStr ? parseInt(currentUserIdStr, 10) : null;
+
+        let html = '';
+        for (const msg of chatMessagesList) {
+            html += buildMessageHtml(msg, currentUserId);
+        }
+        box.innerHTML = html;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function appendChatMessage(msg) {
+        if (!msg || !msg.id) return;
+        const exists = chatMessagesList.some(m => m.id === msg.id);
+        if (exists) return;
+
+        chatMessagesList.push(msg);
+
+        const box = document.getElementById('chatMessagesBox');
+        if (!box) return;
+
+        const emptyPlaceholder = box.querySelector('.bi-chat-square-dots');
+        if (emptyPlaceholder) {
+            box.innerHTML = '';
+        }
+
+        const currentUserIdStr = document.body.getAttribute('data-current-user-id');
+        const currentUserId = currentUserIdStr ? parseInt(currentUserIdStr, 10) : null;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.innerHTML = buildMessageHtml(msg, currentUserId);
+        if (msgDiv.firstElementChild) {
+            box.appendChild(msgDiv.firstElementChild);
+        }
+        box.scrollTop = box.scrollHeight;
+        if (msg.senderId !== currentUserId) {
+            const chatTab = document.getElementById('tab-chat');
+            if (chatTab && !chatTab.classList.contains('active')) {
+                const dot = document.getElementById('chatTabUnreadDot');
+                if (dot) dot.classList.remove('d-none');
+            }
+        }
+    }
+
+    function getRoleBadge(role) {
+        if (!role) return '';
+        const r = role.toUpperCase();
+        if (r === 'INSTRUCTOR' || r === 'TEACHER') {
+            return '<span class="badge chat-role-badge-instructor px-1.5 py-0.5 rounded-pill" style="font-size: 10px;">Giảng viên</span>';
+        }
+        if (r === 'TA') {
+            return '<span class="badge chat-role-badge-ta px-1.5 py-0.5 rounded-pill" style="font-size: 10px;">Trợ giảng</span>';
+        }
+        if (r === 'ADMIN') {
+            return '<span class="badge chat-role-badge-admin px-1.5 py-0.5 rounded-pill" style="font-size: 10px;">Quản trị</span>';
+        }
+        return '<span class="badge chat-role-badge-student px-1.5 py-0.5 rounded-pill" style="font-size: 10px;">Học viên</span>';
+    }
+
+    function buildMessageHtml(msg, currentUserId) {
+        const isMine = currentUserId && msg.senderId && currentUserId === msg.senderId;
+        const rowClass = isMine ? 'mine' : 'theirs';
+        const roleBadge = getRoleBadge(msg.senderRole);
+        const initial = msg.senderName ? msg.senderName.trim().charAt(0).toUpperCase() : 'U';
+
+        const avatarHtml = msg.senderAvatar
+            ? '<img src="' + escapeHtml(msg.senderAvatar) + '" class="chat-bubble-avatar" alt="' + escapeHtml(msg.senderName) + '">'
+            : '<div class="chat-bubble-avatar">' + initial + '</div>';
+
+        return `
+            <div class="chat-bubble-row ${rowClass}" id="chat-msg-${msg.id}">
+                ${avatarHtml}
+                <div class="chat-bubble-body">
+                    <div class="chat-bubble-meta">
+                        <span class="fw-semibold text-dark">${escapeHtml(msg.senderName || 'Người dùng')}</span>
+                        ${roleBadge}
+                        <span class="text-muted" style="font-size: 10.5px;">${escapeHtml(msg.createdAtFormatted || '')}</span>
+                    </div>
+                    <div class="chat-bubble-content">
+                        ${escapeHtml(msg.message)}
+                    </div>
+                </div>
+            </div>
+        ;
+    }
     function renderQuizOverview(quiz) {
         const container = document.getElementById('quizPlayerContainer');
         if (!container) return;
@@ -2613,7 +2957,6 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
-
     function jumpToExamQuestion(qId) {
         const modalEl = document.getElementById('quizSubmitConfirmModal');
         if (modalEl) {
@@ -3563,6 +3906,82 @@
             }
         }
     }
+    async function handleSendChatMessage(event) {
+        event.preventDefault();
+        const input = document.getElementById('chatInputMessage');
+        const sendBtn = document.getElementById('btnSendChat');
+        if (!input) return;
+
+        const messageText = input.value.trim();
+        if (!messageText) return;
+
+        input.value = '';
+        if (sendBtn) sendBtn.disabled = true;
+
+        const payload = {
+            message: messageText,
+            messageType: 'TEXT'
+        };
+
+        if (isChatConnected && stompClient && stompClient.connected) {
+            try {
+                stompClient.send('/app/cohort/' + moduleId + '/send', {}, JSON.stringify(payload));
+                if (sendBtn) sendBtn.disabled = false;
+                input.focus();
+                return;
+            } catch (e) {
+            }
+        }
+
+        try {
+            const response = await fetch('/api/cohorts/' + moduleId + '/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                const savedMsg = await response.json();
+                appendChatMessage(savedMsg);
+            } else if (response.status === 403) {
+                alert('Bạn không có quyền gửi tin nhắn trong lớp học này.');
+            } else {
+                alert('Không thể gửi tin nhắn. Vui lòng thử lại.');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối khi gửi tin nhắn.');
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    function ensureChatRendered() {
+        const dot = document.getElementById('chatTabUnreadDot');
+        if (dot) dot.classList.add('d-none');
+        renderChatMessages();
+        if (!isChatConnected && !isConnectingChat) {
+            connectWebSocket();
+        }
+        const input = document.getElementById('chatInputMessage');
+        if (input) {
+            setTimeout(() => input.focus(), 150);
+        }
+    }
+
+    function openCohortChatTab() {
+        const chatBtn = document.getElementById('tab-chat-btn');
+        if (chatBtn) {
+            bootstrap.Tab.getOrCreateInstance(chatBtn).show();
+            ensureChatRendered();
+            chatBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function reloadChatMessages() {
+        loadChatHistory();
+    }
+
+    setTimeout(initCohortChat, 300);
 </script>
 
 </body>
