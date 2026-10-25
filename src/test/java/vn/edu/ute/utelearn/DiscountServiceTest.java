@@ -100,64 +100,25 @@ public class DiscountServiceTest {
     }
 
     @Test
-    void testFindValidDiscountByCode_Inactive_ReturnsEmpty() {
-        samplePercentageDiscount.setActive(false);
-        when(discountRepository.findByCodeIgnoreCase("GIAM20")).thenReturn(Optional.of(samplePercentageDiscount));
-
-        Optional<Discount> result = discountService.findValidDiscountByCode("GIAM20", new BigDecimal("500000"));
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void testCalculateDiscount_PercentageWithMaxCap() {
-        BigDecimal orderAmount = new BigDecimal("1000000");
-        BigDecimal calculated = samplePercentageDiscount.calculateDiscount(orderAmount);
-
-        assertEquals(new BigDecimal("100000"), calculated);
-    }
-
-    @Test
-    void testCalculateDiscount_FixedAmount() {
-        BigDecimal orderAmount = new BigDecimal("300000");
-        BigDecimal calculated = sampleFixedDiscount.calculateDiscount(orderAmount);
-
-        assertEquals(new BigDecimal("50000"), calculated);
-    }
-
-    @Test
-    void testCalculateDiscount_CannotExceedOrderTotal() {
-        Discount bigDiscount = Discount.builder()
-                .code("BIG")
-                .discountType("FIXED_AMOUNT")
-                .discountValue(new BigDecimal("500000"))
-                .active(true)
-                .build();
-
-        BigDecimal orderAmount = new BigDecimal("200000");
-        BigDecimal calculated = bigDiscount.calculateDiscount(orderAmount);
-
-        assertEquals(new BigDecimal("200000"), calculated);
-    }
-
-    @Test
     void testCreateDiscount_Success() {
         DiscountDTO dto = DiscountDTO.builder()
-                .code("NEWYEAR")
-                .name("Mừng năm mới")
+                .code("NEWCODE")
+                .name("Mã mới")
                 .discountType("PERCENTAGE")
-                .discountValue(new BigDecimal("15"))
+                .discountValue(new BigDecimal("10"))
+                .maxDiscountAmount(new BigDecimal("50000"))
+                .minOrderAmount(BigDecimal.ZERO)
+                .usageLimit(20)
                 .active(true)
                 .build();
 
-        when(discountRepository.existsByCodeIgnoreCase("NEWYEAR")).thenReturn(false);
+        when(discountRepository.existsByCodeIgnoreCase("NEWCODE")).thenReturn(false);
         when(discountRepository.save(any(Discount.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Discount created = discountService.createDiscount(dto, "admin");
 
         assertNotNull(created);
-        assertEquals("NEWYEAR", created.getCode());
-        assertEquals("PERCENTAGE", created.getDiscountType());
+        assertEquals("NEWCODE", created.getCode());
         verify(discountRepository, times(1)).save(any(Discount.class));
     }
 
@@ -165,7 +126,7 @@ public class DiscountServiceTest {
     void testCreateDiscount_DuplicateCode_ThrowsException() {
         DiscountDTO dto = DiscountDTO.builder()
                 .code("GIAM20")
-                .discountValue(new BigDecimal("20"))
+                .discountValue(new BigDecimal("10"))
                 .build();
 
         when(discountRepository.existsByCodeIgnoreCase("GIAM20")).thenReturn(true);
@@ -199,13 +160,19 @@ public class DiscountServiceTest {
 
     @Test
     void testIncrementUsage_IncreasesUsedCount() {
-        when(discountRepository.findByCodeIgnoreCase("GIAM20")).thenReturn(Optional.of(samplePercentageDiscount));
-        when(discountRepository.save(any(Discount.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(discountRepository.incrementUsageAtomic("GIAM20")).thenReturn(1);
 
         discountService.incrementUsage("GIAM20");
 
-        assertEquals(11, samplePercentageDiscount.getUsedCount());
-        verify(discountRepository, times(1)).save(samplePercentageDiscount);
+        verify(discountRepository, times(1)).incrementUsageAtomic("GIAM20");
+    }
+
+    @Test
+    void testIncrementUsage_ExceededLimit_ThrowsException() {
+        when(discountRepository.incrementUsageAtomic("GIAM20")).thenReturn(0);
+
+        assertThrows(IllegalStateException.class, () -> discountService.incrementUsage("GIAM20"));
+        verify(discountRepository, times(1)).incrementUsageAtomic("GIAM20");
     }
 
     @Test

@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,10 +60,10 @@ public class User {
 
     @Builder.Default
     @Column(name = "balance", precision = 15, scale = 2)
-    private java.math.BigDecimal balance = java.math.BigDecimal.ZERO;
+    private BigDecimal balance = BigDecimal.ZERO;
 
-    public java.math.BigDecimal getBalance() {
-        return balance != null ? balance : java.math.BigDecimal.ZERO;
+    public BigDecimal getBalance() {
+        return balance != null ? balance : BigDecimal.ZERO;
     }
 
     public String getFormattedBalance() {
@@ -73,7 +74,7 @@ public class User {
     }
 
     @Builder.Default
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),

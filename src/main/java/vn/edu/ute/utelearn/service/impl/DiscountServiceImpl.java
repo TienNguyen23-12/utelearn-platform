@@ -176,10 +176,10 @@ public class DiscountServiceImpl implements DiscountService {
         if (code == null || code.isBlank()) {
             return;
         }
-        discountRepository.findByCodeIgnoreCase(code.trim()).ifPresent(d -> {
-            d.setUsedCount((d.getUsedCount() != null ? d.getUsedCount() : 0) + 1);
-            discountRepository.save(d);
-        });
+        int updated = discountRepository.incrementUsageAtomic(code.trim());
+        if (updated == 0) {
+            throw new IllegalStateException("Mã giảm giá đã hết lượt sử dụng hoặc không hợp lệ.");
+        }
     }
 
     private Instant parseDateString(String dateStr) {

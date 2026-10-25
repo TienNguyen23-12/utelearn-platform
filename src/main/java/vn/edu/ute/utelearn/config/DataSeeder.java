@@ -12,12 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-/**
- * UTELearn DataSeeder:
- * Automatically loads initial data (Roles, Permissions, Dynamic RBAC mapping, Admin & Sample Users, Categories)
- * using Java code instead of manual INSERT commands from the database.
- * The Idempotent mechanism (ON CONFLICT DO NOTHING) ensures absolute safety when starting multiple times.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor

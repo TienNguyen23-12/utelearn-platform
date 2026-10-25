@@ -68,17 +68,22 @@
         const isInstructorElement = document.querySelector('[data-is-instructor="true"]');
         const isInstructorPath = window.location.pathname.startsWith('/instructor') || window.location.pathname.startsWith('/admin');
         if ((isInstructorElement || isInstructorPath) && n.cohortId) {
-            return '/instructor/cohorts/' + n.cohortId + '/chat';
+            return '/instructor/cohorts/' + encodeURIComponent(n.cohortId) + '/chat';
         }
-        return n.actionUrl || ('/modules/' + n.cohortId + '/learn');
+        if (n.actionUrl && (n.actionUrl.startsWith('/') || n.actionUrl.startsWith('https://') || n.actionUrl.startsWith('http://'))) {
+            return n.actionUrl;
+        }
+        return '/modules/' + encodeURIComponent(n.cohortId || '') + '/learn';
     }
 
     function renderNotificationItem(n) {
         const initial = escapeHtml((n.senderName || 'U').charAt(0).toUpperCase());
-        const avatarHtml = n.senderAvatar
-            ? `<img src="${n.senderAvatar}" alt="Avatar" class="w-100 h-100 object-fit-cover">`
+        const rawAvatar = n.senderAvatar || '';
+        const isValidUrl = rawAvatar.startsWith('https://') || rawAvatar.startsWith('http://') || rawAvatar.startsWith('/');
+        const avatarHtml = isValidUrl
+            ? `<img src="${escapeHtml(rawAvatar)}" alt="Avatar" class="w-100 h-100 object-fit-cover">`
             : `<span class="fw-bold small text-primary">${initial}</span>`;
-        const targetUrl = resolveActionUrl(n);
+        const targetUrl = escapeHtml(resolveActionUrl(n));
 
         return `
             <a href="${targetUrl}" class="d-flex align-items-start gap-2.5 p-3 rounded-3 text-decoration-none border-bottom transition-all" style="background: #ffffff;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">

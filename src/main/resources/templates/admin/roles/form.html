@@ -7,19 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${isEdit ? 'Chỉnh sửa vai trò & Phân quyền - UTELearn' : 'Tạo mới vai trò & Phân quyền - UTELearn'}">Quản lý Phân quyền - UTELearn</title>
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap 5 & Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Toastify CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
-    <!-- Admin Master Layout CSS -->
     <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
 
     <style>
@@ -56,18 +52,13 @@
 
 <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<!-- Master Sidebar Fragment -->
 <aside th:replace="~{fragments/sidebar :: sidebar('roles')}"></aside>
 
-<!-- Master Content Wrapper -->
 <div class="app-content-wrapper">
-    <!-- Top Navbar Fragment -->
     <header th:replace="~{fragments/navbar :: navbar('Thiết lập Vai trò')}"></header>
 
-    <!-- Main Content Area -->
     <main class="app-main-content">
         <div style="max-width: 920px; margin: 0 auto;">
-            <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
                 <div>
                     <h3 class="fw-bold text-dark mb-1" th:text="${isEdit ? 'Chỉnh sửa Vai trò: ' + roleCode : 'Tạo mới Vai trò & Tick Phân quyền'}">
@@ -80,7 +71,6 @@
                 </a>
             </div>
 
-            <!-- Hiển thị thông báo bằng Toastify thay vì Alert tĩnh -->
             <script th:inline="javascript">
                 document.addEventListener('DOMContentLoaded', function() {
                     var errorMsg = /*[[${errorMessage}]]*/ null;
@@ -95,9 +85,7 @@
                 });
             </script>
 
-            <!-- Form chính -->
             <form th:action="${isEdit ? '/admin/roles/' + roleForm.id + '/edit' : '/admin/roles/create'}" th:object="${roleForm}" method="post">
-                <!-- Thông tin cơ bản của vai trò -->
                 <div class="card card-custom p-4 mb-4">
                     <h5 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle-fill text-primary me-2"></i>1. Thông tin Vai trò</h5>
 
@@ -124,7 +112,6 @@
                     </div>
                 </div>
 
-                <!-- Phân quyền chi tiết dạng Checkbox theo Module -->
                 <div class="card card-custom p-4 mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -136,7 +123,6 @@
                         </button>
                     </div>
 
-                    <!-- Lặp qua từng nhóm Module -->
                     <div th:each="entry : ${modulesMap}" class="module-card">
                         <div class="module-header-light d-flex justify-content-between align-items-center">
                             <div class="fw-bold text-dark d-flex align-items-center gap-2">
@@ -169,7 +155,6 @@
                     </div>
                 </div>
 
-                <!-- Action buttons -->
                 <div class="d-flex justify-content-end gap-3 mb-5">
                     <a th:href="@{/admin/roles}" class="btn btn-outline-secondary rounded-pill px-4">Hủy bỏ</a>
                     <button type="submit" class="btn btn-gradient-primary rounded-pill px-4">
@@ -181,7 +166,6 @@
     </main>
 </div>
 
-<!-- Bootstrap 5 Bundle JS & Layout Script -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-layout.js}"></script>

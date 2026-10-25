@@ -43,6 +43,10 @@ public class RegistrationOtp {
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
+    @Builder.Default
+    @Column(name = "attempt_count", nullable = false)
+    private Integer attemptCount = 0;
+
     public boolean isExpired() {
         return Instant.now().isAfter(this.expiryDate);
     }

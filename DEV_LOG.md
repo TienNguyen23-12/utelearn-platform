@@ -4,6 +4,65 @@ Tài liệu ghi lại toàn bộ lịch sử chỉnh sửa, cập nhật tính n
 
 ---
 
+## [2026-10-25 19:15] - Hệ Thống Hóa Toàn Diện: Bảo Mật, Kiến Trúc Tầng, Xóa Comment & Hardening Toàn Dự Án
+- **Yêu cầu**: Thực hiện 16 tác vụ bảo mật, chuẩn hóa kiến trúc, loại bỏ comment và hardening hệ thống:
+  1. Loại bỏ toàn bộ comment trong code (trừ các file `.sql` giữ nguyên).
+  2. Bổ sung `@RestControllerAdvice` tập trung cho các API REST.
+  3. Khắc phục Layering Violation ở `DashboardController` (chuyển 7 repository sang `DashboardService`).
+  4. Vá lỗ hổng IDOR trong điều phối lịch học bài giảng (`InstructorCurriculumApiController`).
+  5. Khắc phục Unit Test làm thay đổi dữ liệu thật trong DB (`UtelearnApplicationTests`).
+  6. Vá lỗ hổng Stored XSS trong trang kiểm duyệt khóa học (`review_course.html`).
+  7. Kích hoạt và cấu hình bảo vệ CSRF chuẩn hóa cho Thymeleaf form (`SecurityConfig`).
+  8. Vá lỗ hổng XSS trong thông báo avatar của `chat-notification.js`.
+  9. Khắc phục bỏ qua xác thực Webhook SePay khi chưa cấu hình API Key (`OrderServiceImpl`).
+  10. Khắc phục Race Condition khi áp dụng mã giảm giá (`DiscountRepository`, `DiscountServiceImpl`).
+  11. Thêm giới hạn số lần thử OTP đăng ký (tối đa 5 lần) chống brute-force (`RegistrationOtp`, `AuthServiceImpl`).
+  12. Yêu cầu xác thực và phân quyền chính chủ cho endpoint tra cứu đơn hàng (`SepayWebhookApiController`, `SecurityConfig`).
+  13. Phòng ngừa NullPointerException trong chức năng hủy đơn hàng (`OrderController`).
+  14. Chuyển cấu hình `FetchType.EAGER` sang `LAZY` trên quan hệ User - Role - Permission, bổ sung `@EntityGraph` (`User`, `Role`, `UserRepository`, `RoleRepository`).
+  15. Dọn dẹp constructor chồng chéo trong `CheckoutController`, đồng bộ sang `@RequiredArgsConstructor`.
+  16. Loại bỏ mật khẩu DB fallback cá nhân và seed password mặc định khỏi `application.yml`.
+- **Chi tiết thực hiện & Kiến trúc áp dụng**:
+  - *Clean Code & No Comment*: Đã rà soát và loại bỏ sạch comment trong toàn bộ các file Java, JS, CSS, HTML, YAML, Properties, Dockerfile, pom.xml. Giữ nguyên 100% các file `.sql`.
+  - *Tái sử dụng Base có sẵn & DRY*: Tận dụng `AuthService`, `ApiResponseDTO`, `GlobalRestExceptionHandler` xử lý tập trung mọi ngoại lệ `Validation`, `IllegalArgument`, `AccessDenied`, `IllegalState`.
+  - *Tối ưu hiệu năng*: FetchType.LAZY kết hợp `@EntityGraph(attributePaths = {"roles", "roles.permissions"})` loại bỏ triệt để hiện tượng Cartesian Product và N+1 query không mong muốn.
+  - *Bảo mật & Tính toàn vẹn*: Cập nhật nguyên tử (`@Modifying @Query`) số lượt sử dụng mã giảm giá `usedCount` chống tấn công đồng thời (Race Condition). Khóa OTP sau 5 lần nhập sai.
+- **Thành phần tác động**:
+  - `src/main/java/vn/edu/ute/utelearn/controller/api/GlobalRestExceptionHandler.java` (Tạo mới)
+  - `src/main/java/vn/edu/ute/utelearn/service/DashboardService.java` (Tạo mới)
+  - `src/main/java/vn/edu/ute/utelearn/service/impl/DashboardServiceImpl.java` (Tạo mới)
+  - `src/main/java/vn/edu/ute/utelearn/controller/DashboardController.java`
+  - `src/main/java/vn/edu/ute/utelearn/controller/CheckoutController.java`
+  - `src/main/java/vn/edu/ute/utelearn/controller/OrderController.java`
+  - `src/main/java/vn/edu/ute/utelearn/controller/api/InstructorCurriculumApiController.java`
+  - `src/main/java/vn/edu/ute/utelearn/controller/api/SepayWebhookApiController.java`
+  - `src/main/java/vn/edu/ute/utelearn/dao/DiscountRepository.java`
+  - `src/main/java/vn/edu/ute/utelearn/dao/UserRepository.java`
+  - `src/main/java/vn/edu/ute/utelearn/dao/RoleRepository.java`
+  - `src/main/java/vn/edu/ute/utelearn/entity/RegistrationOtp.java`
+  - `src/main/java/vn/edu/ute/utelearn/entity/User.java`
+  - `src/main/java/vn/edu/ute/utelearn/entity/Role.java`
+  - `src/main/java/vn/edu/ute/utelearn/security/SecurityConfig.java`
+  - `src/main/java/vn/edu/ute/utelearn/service/impl/AuthServiceImpl.java`
+  - `src/main/java/vn/edu/ute/utelearn/service/impl/DiscountServiceImpl.java`
+  - `src/main/java/vn/edu/ute/utelearn/service/impl/OrderServiceImpl.java`
+  - `src/main/resources/application.yml`
+  - `src/main/resources/application-secret.properties`
+  - `src/main/resources/static/js/chat-notification.js`
+  - `src/main/resources/static/css/admin-layout.css`
+  - `src/main/resources/templates/moderator/review_course.html`
+  - Các template HTML: `admin/attendance/index.html`, `admin/roles/form.html`, `admin/roles/index.html`, `admin/users/form.html`, `admin/users/index.html`, `auth/forgot-password.html`, `auth/login.html`, `auth/reset-password.html`, `dashboard/index.html`, `instructor/assets/index.html`, `moderator/attendance.html`, `profile/index.html`.
+  - `Dockerfile`, `pom.xml`.
+  - `src/test/java/vn/edu/ute/utelearn/CourseUpsellFeatureTest.java`
+  - `src/test/java/vn/edu/ute/utelearn/DiscountServiceTest.java`
+  - `src/test/java/vn/edu/ute/utelearn/OrderFeatureTest.java`
+  - `src/test/java/vn/edu/ute/utelearn/UtelearnApplicationTests.java`
+- **Kết quả kiểm thử**:
+  - `mvn test-compile`: BUILD SUCCESS.
+  - `mvn test`: 208/208 test passed, 0 failures, 0 errors, 0 skipped (thời gian thực thi: 17.1 giây).
+
+---
+
 ## [2026-10-25 17:15] - Nâng Cấp Tự Động Đẩy Lớp Có Tin Nhắn Mới Lên Đầu Danh Sách (Instructor Chat Realtime Sorting)
 - **Yêu cầu**: "chỗ chat của gv á thì chỗ khu vực lớp nào có tin nhắn mới thì nhảy lên đầu á"
 - **Các cải tiến đã thực hiện**:

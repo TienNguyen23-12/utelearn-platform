@@ -204,7 +204,7 @@ public class OrderController {
             return "redirect:/orders";
         }
 
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (order.getUser() == null || !user.getId().equals(order.getUser().getId())) {
             redirectAttributes.addFlashAttribute("error", "Bạn không có quyền thao tác trên đơn hàng này.");
             return "redirect:/orders";
         }
