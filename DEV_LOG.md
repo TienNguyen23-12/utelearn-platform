@@ -4,6 +4,21 @@ Tài liệu ghi lại toàn bộ lịch sử chỉnh sửa, cập nhật tính n
 
 ---
 
+## [2026-10-25 17:10] - Khắc Phục Lỗi Vỡ Layout Khung Chat Trong Phòng Học Module (module-learn.html)
+- **Hiện tượng**: Trong tab Thảo luận phòng học (`/courses/{slug}/modules/{id}/learn`), ảnh avatar hiển thị to dạng hình vuông, tên người gửi và nội dung tin nhắn rớt dòng xuống dưới avatar, không có khung bong bóng tin nhắn.
+- **Nguyên nhân cốt lõi**:
+  - Tại dòng 676 trong thẻ `<style>` của `templates/courses/module-learn.html`, selector `.quiz-overview-item.answered` bị thiếu dấu đóng ngoặc nhọn `}`.
+  - Khiến trình duyệt coi toàn bộ khối CSS chat bên dưới (bao gồm `.chat-messages-container`, `.chat-bubble-row`, `.chat-bubble-avatar`, `.chat-bubble-content`) là selector lồng sai cú pháp nên bỏ qua toàn bộ.
+- **Giải pháp xử lý**:
+  - Bổ sung dấu đóng ngoặc `}` tại `.quiz-overview-item.answered`.
+  - Tinh chỉnh CSS `.chat-bubble-avatar`: cố định `38x38px`, `border-radius: 50%`, `object-fit: cover`.
+  - Cố định `.chat-bubble-row`: `display: flex; align-items: flex-start; gap: 12px;` giúp avatar và bong bóng chat luôn xếp ngang hàng ngay ngắn.
+- **Thành phần tác động**:
+  - `src/main/resources/templates/courses/module-learn.html`.
+- **Kiểm thử**: `mvn compile` thành công, kiểm tra cân bằng dấu ngoặc CSS đạt độ sâu 0.
+
+---
+
 ## [2026-10-25 17:05] - Khắc Phục Lỗi Dừng Render Template Trang Chủ Do SpEL Bean Trong Attribute th:data-*
 - **Hiện tượng**: Trang `/home` sau khi đăng nhập bị cắt cụt ngay sau mục Ví (`Ví: 0 VNĐ`), phần còn lại của navbar và toàn bộ thân trang bên dưới bị trắng tinh.
 - **Nguyên nhân cốt lõi**:
