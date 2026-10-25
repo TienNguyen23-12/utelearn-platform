@@ -14,6 +14,8 @@ public interface CohortMemberRepository extends JpaRepository<CohortMember, Long
 
     long countByCohort_Id(Long cohortId);
 
+    java.util.List<CohortMember> findByCohort_Id(Long cohortId);
+
     java.util.List<CohortMember> findByCohort_Course_IdAndUser_Id(Long courseId, Long userId);
 
     Optional<CohortMember> findByCohort_IdAndUser_Id(Long cohortId, Long userId);
