@@ -29,12 +29,13 @@
                 </a>
 
                 <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
+                    <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
                     <button class="btn btn-light position-relative border-0 rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
                         style="width: 40px; height: 40px; background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thảo luận lớp học">
                         <i class="bi bi-bell-fill text-muted fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none nav-notification-badge" style="font-size: 10px;">0</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 320px; max-width: 90vw;">
+                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 380px; max-width: 95vw;">
                         <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
                             <span class="fw-bold small text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Thảo luận Lớp học</span>
                             <span class="badge bg-primary-subtle text-primary rounded-pill small">Trực tuyến</span>
@@ -172,12 +173,13 @@
                     </a>
 
                     <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
+                        <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
                         <button class="btn btn-light position-relative border rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
                             style="width: 40px; height: 40px; background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thảo luận lớp học">
                             <i class="bi bi-bell-fill text-muted fs-5"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none nav-notification-badge" style="font-size: 10px;">0</span>
                         </button>
-                        <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 320px; max-width: 90vw;">
+                        <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 380px; max-width: 95vw;">
                             <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
                                 <span class="fw-bold small text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Thảo luận Lớp học</span>
                                 <span class="badge bg-primary-subtle text-primary rounded-pill small">Trực tuyến</span>
