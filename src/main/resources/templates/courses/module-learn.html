@@ -255,6 +255,16 @@
             word-break: break-word;
         }
 
+        .sidebar-lesson-deadline {
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .sidebar-lesson-deadline .badge {
+            font-weight: 600;
+            letter-spacing: -0.1px;
+        }
+
         .lesson-status-icon {
             font-size: 18px;
             flex-shrink: 0;
@@ -895,7 +905,8 @@
             unlockAt: l.unlockAt || null,
             unlockAtDisplay: l.unlockAtDisplay || null,
             deadlineAt: l.deadlineAt || null,
-            deadlineAtDisplay: l.deadlineAtDisplay || null
+            deadlineAtDisplay: l.deadlineAtDisplay || null,
+            isDeadlinePassed: l.isDeadlinePassed || false
         }));
         moduleLessons.sort((a, b) => {
             const secOrderA = Number(a.sectionOrder) || 0;
@@ -1088,6 +1099,61 @@
         }
     }
 
+    function renderSidebarDeadlineHtml(lesson, isCompleted) {
+        if (!lesson.deadlineAtDisplay) {
+            return `
+                <div class="sidebar-lesson-deadline mt-1.5 pt-1 border-top border-light-subtle d-flex align-items-center justify-content-between text-truncate" id="sidebar-deadline-${lesson.id}">
+                    <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 11px;">
+                        <i class="bi bi-clock-history text-secondary"></i> Thời hạn:
+                    </span>
+                    <span class="text-muted fst-italic" style="font-size: 10.5px;">Không thời hạn</span>
+                </div>
+            `;
+        }
+
+        const isOverdue = lesson.isDeadlinePassed || (lesson.deadlineAt && !isNaN(new Date(lesson.deadlineAt).getTime()) && new Date(lesson.deadlineAt) < new Date());
+
+        if (isCompleted) {
+            return `
+                <div class="sidebar-lesson-deadline mt-1.5 pt-1 border-top border-light-subtle d-flex align-items-center justify-content-between text-truncate" id="sidebar-deadline-${lesson.id}">
+                    <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 11px;">
+                        <i class="bi bi-clock-history text-secondary"></i> Thời hạn:
+                    </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle text-truncate d-inline-flex align-items-center gap-1" style="font-size: 10px; max-width: 170px;" title="Hạn chót: ${lesson.deadlineAtDisplay}">
+                        <i class="bi bi-check-circle"></i>
+                        <span>${lesson.deadlineAtDisplay}</span>
+                    </span>
+                </div>
+            `;
+        }
+
+        if (isOverdue) {
+            return `
+                <div class="sidebar-lesson-deadline mt-1.5 pt-1 border-top border-light-subtle d-flex align-items-center justify-content-between text-truncate" id="sidebar-deadline-${lesson.id}">
+                    <span class="text-danger d-inline-flex align-items-center gap-1 fw-medium" style="font-size: 11px;">
+                        <i class="bi bi-alarm-fill text-danger"></i> Thời hạn:
+                    </span>
+                    <span class="badge bg-danger text-white text-truncate d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 10px; max-width: 170px;" title="Đã quá hạn chót: ${lesson.deadlineAtDisplay}">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>${lesson.deadlineAtDisplay} (Quá hạn)</span>
+                    </span>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="sidebar-lesson-deadline mt-1.5 pt-1 border-top border-light-subtle d-flex align-items-center justify-content-between text-truncate" id="sidebar-deadline-${lesson.id}">
+                <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 11px;">
+                    <i class="bi bi-alarm text-danger"></i> Thời hạn:
+                </span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-truncate d-inline-flex align-items-center gap-1" style="font-size: 10px; max-width: 170px;" title="Hạn nộp bài: ${lesson.deadlineAtDisplay}">
+                    <i class="bi bi-clock"></i>
+                    <span>${lesson.deadlineAtDisplay}</span>
+                </span>
+            </div>
+        `;
+    }
+
     function renderSidebar() {
         const container = document.getElementById('curriculumLessonList');
         if (!moduleLessons || moduleLessons.length === 0) {
@@ -1166,6 +1232,8 @@
                     metaBadgeHtml = `<span class="text-muted" style="font-size: 11px;"><i class="bi bi-journal-check me-1"></i>Bài tập</span>`;
                 }
 
+                const deadlineBadgeHtml = renderSidebarDeadlineHtml(lesson, isCompleted);
+
                 html += `
                     <div class="sidebar-lesson-item ${lesson.isLocked ? 'sidebar-lesson-locked opacity-75' : ''}" id="sidebar-lesson-${lesson.id}" onclick="loadLessonById(${lesson.id})">
                         <i class="bi ${iconClass} lesson-status-icon" id="sidebar-icon-${lesson.id}"></i>
@@ -1175,6 +1243,7 @@
                                 ${metaBadgeHtml}
                                 <span class="badge bg-light text-secondary border" style="font-size: 10px;">Bài ${globalIndex}</span>
                             </div>
+                            ${deadlineBadgeHtml}
                         </div>
                     </div>
                 `;
@@ -1188,23 +1257,29 @@
         const completed = getCompletedLessons();
         moduleLessons.forEach(l => {
             const iconEl = document.getElementById('sidebar-icon-' + l.id);
-            if (!iconEl) return;
-            if (l.isLocked) {
-                iconEl.className = 'bi bi-lock-fill text-warning lesson-status-icon';
-                return;
+            if (iconEl) {
+                if (l.isLocked) {
+                    iconEl.className = 'bi bi-lock-fill text-warning lesson-status-icon';
+                } else {
+                    const isCompleted = completed.includes(l.id);
+                    if (isCompleted) {
+                        iconEl.className = 'bi bi-check-circle-fill text-success lesson-status-icon';
+                    } else if (l.lessonType === 'VIDEO') {
+                        iconEl.className = 'bi bi-play-circle-fill text-primary lesson-status-icon';
+                    } else if (l.lessonType === 'QUIZ') {
+                        iconEl.className = 'bi bi-question-circle-fill text-warning lesson-status-icon';
+                    } else if (l.lessonType === 'ASSIGNMENT') {
+                        iconEl.className = 'bi bi-journal-check text-warning lesson-status-icon';
+                    } else {
+                        iconEl.className = 'bi bi-file-earmark-text-fill text-info lesson-status-icon';
+                    }
+                }
             }
-            const isCompleted = completed.includes(l.id);
 
-            if (isCompleted) {
-                iconEl.className = 'bi bi-check-circle-fill text-success lesson-status-icon';
-            } else if (l.lessonType === 'VIDEO') {
-                iconEl.className = 'bi bi-play-circle-fill text-primary lesson-status-icon';
-            } else if (l.lessonType === 'QUIZ') {
-                iconEl.className = 'bi bi-question-circle-fill text-warning lesson-status-icon';
-            } else if (l.lessonType === 'ASSIGNMENT') {
-                iconEl.className = 'bi bi-journal-check text-warning lesson-status-icon';
-            } else {
-                iconEl.className = 'bi bi-file-earmark-text-fill text-info lesson-status-icon';
+            const deadlineEl = document.getElementById('sidebar-deadline-' + l.id);
+            if (deadlineEl) {
+                const isCompleted = completed.includes(l.id);
+                deadlineEl.outerHTML = renderSidebarDeadlineHtml(l, isCompleted);
             }
         });
     }
@@ -2027,12 +2102,21 @@
             }).join('');
         }
 
+        const curLesson = (currentLessonIndex >= 0 && currentLessonIndex < moduleLessons.length) ? moduleLessons[currentLessonIndex] : null;
+        const displayDeadline = quiz.deadlineAtDisplay || (curLesson ? curLesson.deadlineAtDisplay : null);
+        const isPastDeadline = Boolean(quiz.isPastDeadline || (curLesson && curLesson.isDeadlinePassed));
+
         container.innerHTML = `
             <div class="quiz-hero-banner" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                    <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
-                        <i class="bi bi-shield-check me-1"></i>CHẾ ĐỘ THẨM ĐỊNH (MODERATOR REVIEW)
-                    </span>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                            <i class="bi bi-shield-check me-1"></i>CHẾ ĐỘ THẨM ĐỊNH (MODERATOR REVIEW)
+                        </span>
+                        <span class="badge rounded-pill px-3 py-1.5 fw-semibold border" style="font-size: 11px; background: rgba(255, 255, 255, 0.15); color: #ffffff; border-color: rgba(255, 255, 255, 0.28) !important;">
+                            <i class="bi bi-alarm me-1"></i>Hạn nộp: ${displayDeadline || 'Không giới hạn'}
+                        </span>
+                    </div>
                     <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1" onclick="renderQuizOverview(currentQuizMeta)">
                         <i class="bi bi-play-circle me-1"></i>Xem giao diện làm bài
                     </button>
@@ -2089,6 +2173,10 @@
         const container = document.getElementById('quizPlayerContainer');
         if (!container) return;
 
+        const curLesson = (currentLessonIndex >= 0 && currentLessonIndex < moduleLessons.length) ? moduleLessons[currentLessonIndex] : null;
+        const displayDeadline = quiz.deadlineAtDisplay || (curLesson ? curLesson.deadlineAtDisplay : null);
+        const isPastDeadline = Boolean(quiz.isPastDeadline || (curLesson && curLesson.isDeadlinePassed) || (curLesson && curLesson.deadlineAt && new Date(curLesson.deadlineAt) < new Date()));
+
         let moderatorReturnBtn = '';
         if (isModerator || isAdmin || quiz.isReviewer) {
             moderatorReturnBtn = `
@@ -2100,6 +2188,8 @@
             `;
         }
 
+        const isLateBlocked = isPastDeadline && quiz.allowLateSubmission === false;
+
         let statusBannerHtml = '';
         if (quiz.userPassed) {
             statusBannerHtml = `
@@ -2110,6 +2200,30 @@
                     <div>
                         <div class="fw-bold text-success">Bạn đã hoàn thành và ĐẠT bài kiểm tra này!</div>
                         <div class="small text-muted">Điểm cao nhất đạt được: <strong class="text-success">${quiz.userHighestScore} / 10.0</strong></div>
+                    </div>
+                </div>
+            `;
+        } else if (isLateBlocked) {
+            statusBannerHtml = `
+                <div class="alert alert-danger border-0 rounded-4 p-3 d-flex align-items-center gap-3 mb-4 shadow-sm">
+                    <div class="rounded-circle bg-danger text-white p-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="bi bi-calendar-x fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-danger">Bài kiểm tra đã hết thời hạn làm bài!</div>
+                        <div class="small text-muted">Thời hạn chót nộp bài là <strong>${displayDeadline || 'Đã qua'}</strong>. Giảng viên không cho phép làm bài trễ.</div>
+                    </div>
+                </div>
+            `;
+        } else if (isPastDeadline) {
+            statusBannerHtml = `
+                <div class="alert alert-warning border-0 rounded-4 p-3 d-flex align-items-center gap-3 mb-4 shadow-sm">
+                    <div class="rounded-circle bg-warning text-white p-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-warning-emphasis">Lưu ý: Đã quá hạn làm bài kiểm tra (${displayDeadline || ''})!</div>
+                        <div class="small text-muted">Giảng viên cho phép làm trễ. Lượt làm bài này của bạn sẽ được hệ thống ghi nhận là <strong>Làm trễ</strong>.</div>
                     </div>
                 </div>
             `;
@@ -2128,7 +2242,14 @@
         }
 
         let actionButtonsHtml = '';
-        if (quiz.canAttempt) {
+        if (isLateBlocked && !quiz.userPassed) {
+            actionButtonsHtml += `
+                <button class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold disabled d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-x fs-5"></i>
+                    <span>Đã hết thời hạn làm bài</span>
+                </button>
+            `;
+        } else if (quiz.canAttempt) {
             actionButtonsHtml += `
                 <button class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2" onclick="startQuizTest(${quiz.id})">
                     <i class="bi bi-play-circle-fill fs-5"></i>
@@ -2155,9 +2276,20 @@
         container.innerHTML = `
             <div class="quiz-hero-banner">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                    <span class="badge bg-primary bg-opacity-25 text-white border border-light border-opacity-25 rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
-                        <i class="bi bi-patch-question-fill me-1"></i>KIỂM TRA ĐÁNH GIÁ (QUIZ)
-                    </span>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-primary bg-opacity-25 text-white border border-light border-opacity-25 rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                            <i class="bi bi-patch-question-fill me-1"></i>KIỂM TRA ĐÁNH GIÁ (QUIZ)
+                        </span>
+                        ${displayDeadline ? `
+                            <span class="badge ${isPastDeadline ? 'bg-danger text-white' : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'} rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                                <i class="bi bi-alarm me-1"></i>Hạn chót: ${displayDeadline} ${isPastDeadline ? '(Quá hạn)' : ''}
+                            </span>
+                        ` : `
+                            <span class="badge rounded-pill px-3 py-1.5 fw-semibold border" style="font-size: 11px; background: rgba(255, 255, 255, 0.15); color: #ffffff; border-color: rgba(255, 255, 255, 0.28) !important;">
+                                <i class="bi bi-infinity me-1"></i>Không giới hạn thời hạn
+                            </span>
+                        `}
+                    </div>
                     <span class="badge ${quiz.userPassed ? 'bg-success' : (quiz.userAttemptsCount > 0 ? 'bg-warning text-dark' : 'bg-light text-dark')} rounded-pill px-3 py-1.5 fw-bold">
                         ${quiz.userPassed ? '<i class=\"bi bi-check-circle-fill me-1\"></i>ĐÃ ĐẠT' : (quiz.userAttemptsCount > 0 ? 'CHƯA ĐẠT' : 'CHƯA LÀM')}
                     </span>
@@ -2203,6 +2335,7 @@
                         <li>Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn nhấn nút <strong>"Bắt đầu làm bài thi"</strong>.</li>
                         <li>Khi hết thời gian quy định, hệ thống sẽ <strong>tự động thu và chấm bài thi</strong> của bạn.</li>
                         <li>Đạt từ <strong>${quiz.passingScore || 5.0} điểm</strong> trở lên để được hệ thống tự động ghi nhận hoàn thành bài học.</li>
+                        <li>Thời hạn nộp bài: <strong>${displayDeadline || 'Không giới hạn thời hạn'}</strong>${isPastDeadline ? ' <span class="badge bg-danger text-white">Đã quá hạn</span>' : ''}.</li>
                         <li>Xem lại bài làm: <strong>${quiz.allowReview !== false ? 'Được phép xem lại chi tiết câu hỏi & đáp án' : 'Không cho phép xem lại chi tiết sau khi nộp'}</strong>.</li>
                         <li>Tránh tải lại trang (F5) hoặc thoát khỏi trình duyệt trong suốt quá trình làm bài.</li>
                     </ul>
@@ -2361,7 +2494,7 @@
         container.innerHTML = `
             <div class="quiz-sticky-bar">
                 <div class="d-flex align-items-center gap-2 overflow-hidden">
-                    <span class="fw-bold text-dark text-truncate d-none d-md-inline" style="max-width: 260px;">${quiz.title}</span>
+                    <span class="fw-bold text-dark text-truncate d-none d-md-inline" style="max-width: 240px;">${quiz.title}</span>
                     <span id="quizProgressBadge" class="badge bg-light text-secondary border">0/${totalQ} câu đã làm</span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -2893,7 +3026,10 @@
                         <tr>
                             <td class="fw-bold">#${list.length - i}</td>
                             <td class="fw-bold fs-6 ${sub.isPassed ? 'text-success' : 'text-danger'}">${sub.score} / 10</td>
-                            <td><span class="badge ${sub.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill">${sub.isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}</span></td>
+                            <td>
+                                <span class="badge ${sub.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill">${sub.isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}</span>
+                                ${sub.isLate ? '<span class="badge bg-danger text-white rounded-pill ms-1 fw-semibold" style="font-size: 10px;"><i class="bi bi-clock-history me-1"></i>Làm trễ</span>' : ''}
+                            </td>
                             <td class="small text-muted">${timeStr}</td>
                             <td>
                                 ${sub.allowReview !== false ? `
@@ -3018,9 +3154,9 @@
                     statusBadgeHtml = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5"><i class="bi bi-x-circle-fill me-1"></i> CHƯA ĐẠT (' + sub.score + '/' + (sub.maxScore || 10) + ' đ)</span>';
                 }
             } else if (sub.status === 'RESUBMISSION_REQUESTED') {
-                statusBadgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1.5"><i class="bi bi-exclamation-triangle-fill me-1"></i> YÊU CẦU NỘP LẠI</span>';
+                statusBadgeHtml = '<span class="badge rounded-pill px-3 py-1.5 fw-semibold" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;"><i class="bi bi-exclamation-triangle-fill me-1"></i> YÊU CẦU NỘP LẠI</span>';
             } else {
-                statusBadgeHtml = '<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5"><i class="bi bi-hourglass-split me-1"></i> ĐÃ NỘP • CHỜ CHẤM ĐIỂM</span>';
+                statusBadgeHtml = '<span class="badge rounded-pill px-3 py-1.5 fw-semibold" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;"><i class="bi bi-hourglass-split me-1"></i> ĐÃ NỘP • CHỜ CHẤM ĐIỂM</span>';
             }
         }
 
@@ -3048,7 +3184,7 @@
         if (sub) {
             const submittedTimeStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '';
             const gradedTimeStr = sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '';
-            const isLateBadge = sub.isLate ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1 small ms-1"><i class="bi bi-clock-history me-1"></i> Nộp trễ</span>' : '';
+            const isLateBadge = sub.isLate ? '<span class="badge bg-danger text-white rounded-pill px-2.5 py-1 small ms-1 fw-semibold"><i class="bi bi-clock-history me-1"></i> Nộp trễ</span>' : '';
 
             let scoreBoxHtml = '';
             if (!requiresGrading) {
@@ -3095,6 +3231,20 @@
                                 <div class="p-3 bg-white rounded-3 border text-secondary small" style="white-space: pre-wrap;">${sub.feedback}</div>
                             </div>
                         ` : ''}
+                    </div>
+                `;
+            } else if (requiresGrading && sub.status !== 'GRADED') {
+                scoreBoxHtml = `
+                    <div class="p-3.5 rounded-4 mb-4 border" style="background-color: #fffbeb; border-color: #fde68a !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="background-color: #fef3c7; width: 44px; height: 44px;">
+                                <i class="bi bi-hourglass-split fs-4" style="color: #b45309;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="color: #92400e;">Bài nộp đang chờ Giảng viên chấm điểm</div>
+                                <div class="small text-secondary">Hệ thống đã ghi nhận bài nộp của bạn. Điểm số và nhận xét chi tiết sẽ hiển thị tại đây sau khi được chấm.</div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
@@ -3163,12 +3313,34 @@
             modeBadgeHtml = '<div class="mb-3"><span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1 small"><i class="bi bi-ui-checks-grid me-1"></i> Kiểu nộp yêu cầu: Nộp tệp tin, văn bản / link hoặc cả hai</span></div>';
         }
 
+        const curLesson = (currentLessonIndex >= 0 && currentLessonIndex < moduleLessons.length) ? moduleLessons[currentLessonIndex] : null;
+        const displayDeadline = assignment.deadlineAtDisplay || (curLesson ? curLesson.deadlineAtDisplay : null);
+        const isPastDeadline = Boolean(assignment.isPastDeadline || (curLesson && curLesson.isDeadlinePassed) || (curLesson && curLesson.deadlineAt && new Date(curLesson.deadlineAt) < new Date()));
+
+        let deadlineBadgeHtml = '';
+        if (displayDeadline) {
+            if (isPastDeadline) {
+                deadlineBadgeHtml = `<span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;"><i class="bi bi-alarm-fill me-1"></i>Hạn chót: ${displayDeadline} (Quá hạn)</span>`;
+            } else {
+                deadlineBadgeHtml = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;"><i class="bi bi-alarm me-1"></i>Hạn nộp: ${displayDeadline}</span>`;
+            }
+        } else {
+            deadlineBadgeHtml = `<span class="badge bg-light text-secondary border rounded-pill px-3 py-1 fw-semibold" style="font-size: 11px;"><i class="bi bi-infinity me-1"></i>Không giới hạn thời hạn</span>`;
+        }
+
         let lateNoticeHtml = '';
-        if (assignment.isPastDeadline && assignment.allowLateSubmission !== false) {
+        if (isPastDeadline && assignment.allowLateSubmission !== false) {
             lateNoticeHtml = `
                 <div class="alert alert-warning rounded-3 d-flex align-items-center gap-2 mb-3">
                     <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-                    <div class="small"><strong>Lưu ý:</strong> Đã quá hạn nộp bài (${assignment.deadlineAt || ''}). Bài nộp của bạn sẽ được đánh dấu là <strong>Nộp trễ</strong>.</div>
+                    <div class="small"><strong>Lưu ý:</strong> Đã quá hạn nộp bài (${displayDeadline || ''}). Bài nộp của bạn sẽ được đánh dấu là <strong>Nộp trễ</strong>.</div>
+                </div>
+            `;
+        } else if (displayDeadline && !isPastDeadline) {
+            lateNoticeHtml = `
+                <div class="alert alert-info border-0 rounded-3 d-flex align-items-center gap-2 mb-3 py-2 px-3 small">
+                    <i class="bi bi-alarm text-info fs-5"></i>
+                    <div>Thời hạn nộp bài: <strong>${displayDeadline}</strong>. Vui lòng hoàn thành trước thời hạn.</div>
                 </div>
             `;
         }
@@ -3180,7 +3352,7 @@
                     <i class="bi bi-calendar-x fs-1 text-danger"></i>
                     <div>
                         <h6 class="fw-bold text-danger mb-1">Đã hết hạn nộp bài!</h6>
-                        <div class="small text-muted">Hạn nộp bài là <strong>${assignment.deadlineAt || 'Đã qua'}</strong>. Giảng viên không cho phép nộp trễ cho bài tập này.</div>
+                        <div class="small text-muted">Hạn nộp bài là <strong>${displayDeadline || 'Đã qua'}</strong>. Giảng viên không cho phép nộp trễ cho bài tập này.</div>
                     </div>
                 </div>
             `;
@@ -3226,17 +3398,22 @@
             `;
         }
 
-        const scoreSummaryHtml = requiresGrading
+        const deadlineSummaryText = displayDeadline
+            ? ` • Hạn nộp: <strong class="${isPastDeadline ? 'text-danger' : 'text-dark'}">${displayDeadline}</strong>`
+            : ` • Hạn nộp: <span class="text-muted">Không giới hạn</span>`;
+
+        const scoreSummaryHtml = (requiresGrading
             ? `Thang điểm: <strong>${assignment.maxScore || 10} điểm</strong> • Điểm đạt: <strong>${assignment.passingScore || 5.0} điểm</strong>`
-            : `<span class="badge bg-secondary-subtle text-secondary border">Không tính điểm (Nộp bài là hoàn thành)</span>`;
+            : `<span class="badge bg-secondary-subtle text-secondary border">Không tính điểm (Nộp bài là hoàn thành)</span>`) + deadlineSummaryText;
 
         container.innerHTML = `
             <div class="p-4 p-md-5 bg-white rounded-4 border shadow-sm mb-4">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pb-4 mb-4 border-bottom">
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                             <span class="badge bg-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 11px;">BÀI TẬP THỰC HÀNH</span>
                             ${statusBadgeHtml}
+                            ${deadlineBadgeHtml}
                         </div>
                         <h4 class="fw-bold text-dark mb-1">${assignment.title}</h4>
                         <div class="text-muted small">${scoreSummaryHtml}</div>
@@ -3256,6 +3433,7 @@
 
     function submitStudentAssignment(assignmentId) {
         if (!assignmentId) return;
+        const currentAssignmentData = currentAssignmentMeta;
         const fileInput = document.getElementById('assignmentStudentFile');
         const textInput = document.getElementById('assignmentStudentText');
         const btnSubmit = document.getElementById('btnSubmitAssignment');

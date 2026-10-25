@@ -46,6 +46,10 @@ public class Quiz {
     @Builder.Default
     private Boolean allowReview = true;
 
+    @Column(name = "allow_late_submission")
+    @Builder.Default
+    private Boolean allowLateSubmission = true;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

@@ -212,6 +212,27 @@ public class QuizServiceImpl implements QuizService {
                     .toList();
         }
 
+        String unlockAt = null;
+        String deadlineAt = null;
+        String deadlineAtDisplay = null;
+        boolean isPastDeadline = false;
+
+        if (cohortId != null) {
+            Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, quiz.getLesson().getId());
+            if (scheduleOpt.isPresent()) {
+                CohortSchedule schedule = scheduleOpt.get();
+                unlockAt = schedule.getFormattedUnlockAt();
+                deadlineAt = schedule.getFormattedDeadlineAt();
+                deadlineAtDisplay = schedule.getDisplayDeadlineAt();
+                isPastDeadline = schedule.isDeadlinePassed();
+            }
+        }
+
+        boolean allowLate = quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true;
+        if (isPastDeadline && !allowLate && !userPassed) {
+            canAttempt = false;
+        }
+
         boolean allowReview = isReviewAllowed(quiz, cohortId);
 
         return QuizDTO.builder()
@@ -224,6 +245,7 @@ public class QuizServiceImpl implements QuizService {
                 .maxAttempts(quiz.getMaxAttempts())
                 .shuffleQuestions(quiz.getShuffleQuestions())
                 .allowReview(allowReview)
+                .allowLateSubmission(allowLate)
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
@@ -232,6 +254,10 @@ public class QuizServiceImpl implements QuizService {
                 .userHighestScore(highestScore)
                 .userPassed(userPassed)
                 .canAttempt(canAttempt)
+                .unlockAt(unlockAt)
+                .deadlineAt(deadlineAt)
+                .deadlineAtDisplay(deadlineAtDisplay)
+                .isPastDeadline(isPastDeadline)
                 .build();
     }
 
@@ -254,6 +280,7 @@ public class QuizServiceImpl implements QuizService {
                     .maxAttempts(1)
                     .shuffleQuestions(true)
                     .allowReview(true)
+                    .allowLateSubmission(true)
                     .build();
             return quizRepository.save(newQuiz);
         });
@@ -277,6 +304,7 @@ public class QuizServiceImpl implements QuizService {
                 .maxAttempts(quiz.getMaxAttempts())
                 .shuffleQuestions(quiz.getShuffleQuestions())
                 .allowReview(quiz.getAllowReview() != null ? quiz.getAllowReview() : true)
+                .allowLateSubmission(quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true)
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
@@ -330,6 +358,9 @@ public class QuizServiceImpl implements QuizService {
         if (request.getAllowReview() != null) {
             quiz.setAllowReview(request.getAllowReview());
         }
+        if (request.getAllowLateSubmission() != null) {
+            quiz.setAllowLateSubmission(request.getAllowLateSubmission());
+        }
 
         Quiz saved = quizRepository.save(quiz);
         log.info("[QuizService] Đã cập nhật cấu hình Quiz ID: {}", saved.getId());
@@ -353,6 +384,7 @@ public class QuizServiceImpl implements QuizService {
                 .maxAttempts(saved.getMaxAttempts())
                 .shuffleQuestions(saved.getShuffleQuestions())
                 .allowReview(saved.getAllowReview() != null ? saved.getAllowReview() : true)
+                .allowLateSubmission(saved.getAllowLateSubmission() != null ? saved.getAllowLateSubmission() : true)
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .build();
@@ -547,7 +579,9 @@ public class QuizServiceImpl implements QuizService {
                 throw new RuntimeException("Bài kiểm tra chưa đến thời điểm mở khóa");
             }
             if (schedule.getDeadlineAt() != null && Instant.now().isAfter(schedule.getDeadlineAt())) {
-                throw new RuntimeException("Bài kiểm tra đã quá hạn nộp bài");
+                if (Boolean.FALSE.equals(quiz.getAllowLateSubmission())) {
+                    throw new RuntimeException("Bài kiểm tra đã quá hạn nộp bài và không cho phép làm trễ");
+                }
             }
         }
 
@@ -581,6 +615,11 @@ public class QuizServiceImpl implements QuizService {
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
+                .unlockAt(scheduleOpt.map(CohortSchedule::getFormattedUnlockAt).orElse(null))
+                .deadlineAt(scheduleOpt.map(CohortSchedule::getFormattedDeadlineAt).orElse(null))
+                .deadlineAtDisplay(scheduleOpt.map(CohortSchedule::getDisplayDeadlineAt).orElse(null))
+                .isPastDeadline(scheduleOpt.map(CohortSchedule::isDeadlinePassed).orElse(false))
+                .allowLateSubmission(quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true)
                 .build();
     }
 
@@ -596,10 +635,14 @@ public class QuizServiceImpl implements QuizService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản học viên ID: " + userId));
 
+        boolean isPastDeadline = false;
         Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohort.getId(), quiz.getLesson().getId());
         if (scheduleOpt.isPresent() && scheduleOpt.get().getDeadlineAt() != null) {
             if (Instant.now().isAfter(scheduleOpt.get().getDeadlineAt())) {
-                throw new RuntimeException("Đã quá hạn nộp bài kiểm tra");
+                isPastDeadline = true;
+                if (Boolean.FALSE.equals(quiz.getAllowLateSubmission())) {
+                    throw new RuntimeException("Đã quá hạn nộp bài kiểm tra và không cho phép làm trễ");
+                }
             }
         }
 
@@ -721,6 +764,7 @@ public class QuizServiceImpl implements QuizService {
                 .submittedAt(Instant.now())
                 .score(scaledScore)
                 .isPassed(isPassed)
+                .isLate(isPastDeadline)
                 .status("SUBMITTED")
                 .answers(answersJson)
                 .build();
@@ -766,6 +810,7 @@ public class QuizServiceImpl implements QuizService {
                 .maxAttempts(quiz.getMaxAttempts())
                 .canRetake(canRetake)
                 .allowReview(allowReview)
+                .isLate(savedSub.getIsLate())
                 .reviewQuestions(returnedReviewList)
                 .build();
     }
@@ -821,6 +866,7 @@ public class QuizServiceImpl implements QuizService {
                 .maxAttempts(quiz.getMaxAttempts())
                 .canRetake(canRetake)
                 .allowReview(allowReview)
+                .isLate(submission.getIsLate())
                 .reviewQuestions(returnedReviewList)
                 .build();
     }
@@ -842,6 +888,7 @@ public class QuizServiceImpl implements QuizService {
                     .startedAt(s.getStartedAt())
                     .submittedAt(s.getSubmittedAt())
                     .allowReview(allowReview)
+                    .isLate(s.getIsLate())
                     .build());
         }
         return list;

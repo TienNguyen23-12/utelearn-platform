@@ -353,10 +353,13 @@
                 </div>
               </div>
               <div class="col-md-6 activity-item-col" data-title="lap trinh online judge code thực hành oj" data-type="CODE_PRACTICE">
-                <div class="activity-card" onclick="selectActivityType('CODE_PRACTICE')">
+                <div class="activity-card" onclick="notifyOjPhase2(event)">
                   <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
                   <div>
-                    <h6 class="fw-bold mb-1 text-dark">Bài tập Lập trình (OJ)</h6>
+                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
+                      <span>Bài tập Lập trình (OJ)</span>
+                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
+                    </h6>
                     <div class="text-muted small lh-base">Chấm code tự động qua Online Judge với nhiều ngôn ngữ (Java, C++, Python) và testcases.</div>
                   </div>
                 </div>
@@ -415,10 +418,13 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="activity-card" onclick="selectActivityType('CODE_PRACTICE')">
+                <div class="activity-card" onclick="notifyOjPhase2(event)">
                   <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
                   <div>
-                    <h6 class="fw-bold mb-1 text-dark">Bài tập Lập trình (OJ)</h6>
+                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
+                      <span>Bài tập Lập trình (OJ)</span>
+                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
+                    </h6>
                     <div class="text-muted small lh-base">Chấm điểm thuật toán và code tự động trực tuyến.</div>
                   </div>
                 </div>
@@ -714,15 +720,24 @@
                 <div class="form-text" style="font-size: 11px;">Nhập 0 nếu không giới hạn số lượt làm bài</div>
               </div>
               <div class="col-12 mt-3">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="quizCfgShuffle" checked>
-                  <label class="form-check-label fw-semibold small text-dark" for="quizCfgShuffle">Tự động xáo trộn thứ tự câu hỏi khi học viên làm bài (Shuffle)</label>
-                </div>
-              </div>
-              <div class="col-12 mt-2">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="quizCfgAllowReview" checked>
-                  <label class="form-check-label fw-semibold small text-dark" for="quizCfgAllowReview">Cho phép học viên xem lại bài làm và đáp án chi tiết sau khi nộp</label>
+                <div class="p-3 border rounded-3 bg-light">
+                  <div class="fw-semibold small text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-primary fs-5"></i>
+                    <span>Kiểm soát làm bài &amp; Cảnh báo</span>
+                  </div>
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="quizCfgShuffle" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgShuffle">Tự động xáo trộn thứ tự câu hỏi khi học viên làm bài (Shuffle)</label>
+                  </div>
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="quizCfgAllowReview" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgAllowReview">Cho phép học viên xem lại bài làm và đáp án chi tiết sau khi nộp</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="quizCfgAllowLate" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgAllowLate">Cho phép làm trễ sau hạn nộp (Deadline)</label>
+                    <div class="text-muted" style="font-size: 11px;">Nếu bật, học viên vẫn có thể làm bài sau khi hết hạn nộp và bài nộp sẽ ghi nhận làm trễ. Nếu tắt, học viên sẽ bị chặn làm bài khi quá hạn.</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1008,7 +1023,7 @@
               <div>
                 <span class="text-muted small me-3">Tổng số bài nộp: <strong class="text-dark" id="assignmentStatTotal">0</strong></span>
                 <span class="text-muted small me-3">Đã chấm: <strong class="text-success" id="assignmentStatGraded">0</strong></span>
-                <span class="text-muted small">Chờ chấm: <strong class="text-warning" id="assignmentStatPending">0</strong></span>
+                <span class="text-muted small">Chờ chấm: <strong class="fw-bold" style="color: #b45309;" id="assignmentStatPending">0</strong></span>
               </div>
               <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadAssignmentSubmissions()">
                 <i class="bi bi-arrow-clockwise me-1"></i>Làm mới danh sách
@@ -1250,9 +1265,62 @@
         activityChooserModal.show();
     }
 
-    function selectActivityType(type) {
+    function selectActivityType(type, event = null) {
+        if (type === 'CODE_PRACTICE') {
+            notifyOjPhase2(event);
+            return;
+        }
         activityChooserModal.hide();
         openLessonModal(pendingActivitySectionId, null, type);
+    }
+
+    function showToast(message, type = 'warning') {
+        let iconHtml = '';
+        if (type === 'success') {
+            iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+        } else if (type === 'warning') {
+            iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+        } else {
+            iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+        }
+
+        if (typeof Toastify === 'function') {
+            let toast = Toastify({
+                text: `<div style="display: flex; align-items: center; gap: 10px;">
+                    ${iconHtml}
+                    <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
+                   </div>`,
+                escapeMarkup: false,
+                duration: 3000,
+                close: false,
+                gravity: "top",
+                position: "right",
+                style: {
+                    background: "white",
+                    borderRadius: "30px",
+                    boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                    padding: "10px 20px 10px 12px",
+                    border: "1px solid #f0f0f0",
+                    cursor: "pointer"
+                },
+                onClick: function () {
+                    toast.hideToast();
+                }
+            });
+            toast.showToast();
+        } else {
+            alert(message);
+        }
+    }
+
+    function notifyOjPhase2(event = null) {
+        if (event) {
+            event.preventDefault();
+            if (typeof event.stopPropagation === 'function') {
+                event.stopPropagation();
+            }
+        }
+        showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
     }
 
     function openLessonModal(sectionId, event = null, preselectedType = 'VIDEO') {
@@ -1734,6 +1802,7 @@
             document.getElementById('quizCfgMaxAttempts').value = quiz.maxAttempts !== null ? quiz.maxAttempts : 1;
             document.getElementById('quizCfgShuffle').checked = quiz.shuffleQuestions !== false;
             document.getElementById('quizCfgAllowReview').checked = quiz.allowReview !== false;
+            document.getElementById('quizCfgAllowLate').checked = quiz.allowLateSubmission !== false;
 
             const badgeEl = document.getElementById('quizModalStatusBadge');
             if (badgeEl) {
@@ -1769,7 +1838,8 @@
             passingScore: parseFloat(document.getElementById('quizCfgPassingScore').value) || 5.0,
             maxAttempts: parseInt(document.getElementById('quizCfgMaxAttempts').value) || 0,
             shuffleQuestions: document.getElementById('quizCfgShuffle').checked,
-            allowReview: document.getElementById('quizCfgAllowReview').checked
+            allowReview: document.getElementById('quizCfgAllowReview').checked,
+            allowLateSubmission: document.getElementById('quizCfgAllowLate').checked
         };
 
         try {
@@ -2537,11 +2607,11 @@
             let html = '';
             submissions.forEach((sub, idx) => {
                 const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '---';
-                let statusBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle">Chờ chấm điểm</span>';
+                let statusBadge = '<span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;"><i class="bi bi-hourglass-split me-1"></i>Chờ chấm điểm</span>';
                 if (sub.status === 'GRADED') {
                     statusBadge = sub.isPassed
-                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Đạt yêu cầu</span>'
-                        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Chưa đạt</span>';
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">Đạt yêu cầu</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">Chưa đạt</span>';
                 }
 
                 let fileLink = '';
@@ -2562,16 +2632,16 @@
                     }
                 }
 
-                let isLateBadge = sub.isLate ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0.5 ms-1" style="font-size: 10px;"><i class="bi bi-clock-history me-1"></i>Nộp trễ</span>' : '';
+                let isLateBadge = sub.isLate ? '<span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1 fw-semibold" style="font-size: 10px;"><i class="bi bi-clock-history me-1"></i>Nộp trễ</span>' : '';
                 const requiresGrading = sub.requiresGrading !== false && (sub.maxScore == null || sub.maxScore > 0);
 
                 let scoreDisplay = '';
                 if (!requiresGrading) {
-                    scoreDisplay = '<span class="badge bg-success-subtle text-success border border-success-subtle">Không chấm điểm</span>';
+                    scoreDisplay = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">Không chấm điểm</span>';
                 } else if (sub.score != null) {
                     scoreDisplay = `<strong class="text-dark fs-6">${sub.score}</strong> / ${sub.maxScore || 10}`;
                 } else {
-                    scoreDisplay = '<span class="text-muted">Chưa chấm</span>';
+                    scoreDisplay = '<span class="badge bg-secondary-subtle text-dark border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size: 11px;">Chưa chấm</span>';
                 }
 
                 const gradeBtnLabel = requiresGrading ? '<i class="bi bi-pencil-square me-1"></i>Chấm điểm' : '<i class="bi bi-chat-left-text me-1"></i>Nhận xét';

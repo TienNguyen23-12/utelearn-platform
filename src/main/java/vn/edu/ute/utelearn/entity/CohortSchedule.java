@@ -79,4 +79,8 @@ public class CohortSchedule {
                 .withZone(java.time.ZoneId.systemDefault())
                 .format(deadlineAt);
     }
+
+    public boolean isDeadlinePassed() {
+        return deadlineAt != null && Instant.now().isAfter(deadlineAt);
+    }
 }

@@ -125,6 +125,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         String unlockAt = null;
         String deadlineAt = null;
+        String deadlineAtDisplay = null;
         boolean isLocked = false;
         boolean isPastDeadline = false;
 
@@ -134,6 +135,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 CohortSchedule schedule = scheduleOpt.get();
                 unlockAt = schedule.getFormattedUnlockAt();
                 deadlineAt = schedule.getFormattedDeadlineAt();
+                deadlineAtDisplay = schedule.getDisplayDeadlineAt();
                 if (schedule.getUnlockAt() != null && Instant.now().isBefore(schedule.getUnlockAt())) {
                     isLocked = true;
                 }
@@ -189,6 +191,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .currentSubmission(currentSubDTO)
                 .unlockAt(unlockAt)
                 .deadlineAt(deadlineAt)
+                .deadlineAtDisplay(deadlineAtDisplay)
                 .isLocked(isLocked)
                 .isPastDeadline(isPastDeadline)
                 .requiresGrading(requiresGrading)

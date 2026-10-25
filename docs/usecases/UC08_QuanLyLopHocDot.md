@@ -170,7 +170,7 @@ sequenceDiagram
 
 ---
 
-### UC-36: Điều phối lịch mở bài & Deadline (Drip Content)
+### UC-36: Điều phối lịch mở bài & Deadline (Drip Content & Late Submission Policy)
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
@@ -178,20 +178,20 @@ sequenceDiagram
 | **Tên Use Case** | Điều phối lịch mở bài & Deadline (Cohort Schedule & Unlock Management) |
 | **Actor chính** | Instructor |
 | **Actor xem** | Student, TA |
-| **Mô tả** | Thiết lập thời gian mở từng bài học (Lesson Unlock - Drip Content), thời hạn chót nộp bài (Deadline), và chế độ công bố điểm số trong Đợt học. |
-| **Luồng sự kiện chính** | 1. Giảng viên truy cập `/instructor/cohorts/{id}/schedule`.<br/>2. Hệ thống liệt kê toàn bộ các bài học (Lesson) và bài kiểm tra (Quiz) kế thừa từ Course cha hoặc giáo trình module.<br/>3. Với từng bài học, Giảng viên cấu hình:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời điểm mở bài (`unlock_at` - học viên chỉ xem được sau thời điểm này).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hạn nộp bài (`deadline_at` - áp dụng cho quiz và bài tập lập trình).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Chế độ xem điểm (`show_score_type`: IMMEDIATELY, AFTER_DEADLINE, MANUAL).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Cho phép xem lại đáp án (`allow_review_answers`).<br/>4. Nhấn **"Lưu lịch học"**.<br/>5. Dữ liệu được lưu vào bảng `cohort_schedules`. Học viên truy cập lớp học sẽ thấy lịch trình mở bài rõ ràng. |
-| **Hậu điều kiện** | Bài giảng và bài kiểm tra tự động khóa/mở theo đúng lịch trình của Đợt học. |
+| **Mô tả** | Thiết lập thời gian mở từng bài học (Lesson Unlock - Drip Content), thời hạn chót nộp bài (Deadline) hiển thị thân thiện, chế độ công bố điểm số và kiểm soát chính sách nộp trễ trong Đợt học. |
+| **Luồng sự kiện chính** | 1. Giảng viên truy cập `/instructor/cohorts/{id}/schedule`.<br/>2. Hệ thống liệt kê toàn bộ các bài học (Lesson), bài kiểm tra (Quiz) và bài tập tự luận (Assignment) kế thừa từ Course cha hoặc giáo trình module.<br/>3. Với từng bài học, Giảng viên cấu hình:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời điểm mở bài (`unlock_at` - học viên chỉ xem được sau thời điểm này).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hạn nộp bài (`deadline_at` - áp dụng cho Quiz, Assignment và Coding Problem).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Chế độ xem điểm (`show_score_type`: IMMEDIATELY, AFTER_DEADLINE, MANUAL).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Cho phép xem lại đáp án (`allow_review_answers`).<br/>4. **Cơ chế hiển thị & Kiểm soát nộp trễ (Deadline Tracking & Late Policy)**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hệ thống tự động chuyển đổi ngày giờ hạn chót sang định dạng trực quan thân thiện (`deadlineAtDisplay`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tự động đánh giá trạng thái quá hạn theo thời gian thực (`isDeadlinePassed` / `isPastDeadline`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Kết hợp cấu hình `allowLateSubmission`: Cho phép nộp trễ (gắn cờ `isLate = true` và badge đỏ cảnh báo) hoặc khóa hoàn toàn quyền nộp bài khi đã quá deadline.<br/>5. Nhấn **"Lưu lịch học"**.<br/>6. Dữ liệu được lưu vào bảng `cohort_schedules`. Học viên truy cập lớp học sẽ thấy lịch trình mở bài và hạn nộp rõ ràng. |
+| **Hậu điều kiện** | Bài giảng và bài kiểm tra tự động khóa/mở và kiểm soát hạn chót nộp bài theo đúng lịch trình của Đợt học. |
 
 ---
 
-### UC-37: Quản lý thành viên & Tiến độ lớp học (Auto-Sync Lifecycle)
+### UC-37: Quản lý thành viên, Chấm bài tập Assignment & Tiến độ lớp học
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
 | **Mã Use Case** | UC-37 |
-| **Tên Use Case** | Quản lý thành viên & Tiến độ lớp (Cohort Members & Auto-Sync Lifecycle) |
+| **Tên Use Case** | Quản lý thành viên, Chấm bài tập Assignment & Tiến độ lớp (Cohort Members & Assignment Grading) |
 | **Actor chính** | Instructor |
-| **Mô tả** | Giảng viên theo dõi danh sách học viên đã ghi danh vào Đợt học, kiểm tra tiến độ học bài và quản lý trạng thái vận hành của lớp học được đồng bộ tự động theo thời gian thực. |
-| **Luồng sự kiện chính** | 1. Giảng viên mở mục quản lý Đợt học `/instructor/cohorts`.<br/>2. Hệ thống tự động kích hoạt đồng bộ hàng loạt trạng thái (`syncCohortStatuses()`): các đợt đã đến thời gian mở ghi danh được tự động nâng cấp thành `ENROLLING`, các đợt đến giờ học thành `IN_PROGRESS`, và đợt kết thúc thành `COMPLETED`.<br/>3. Giảng viên xem thống kê sĩ số hiện tại (`current_enrolled / max_capacity`) và các huy hiệu trạng thái chính xác theo thời gian thực.<br/>4. Giảng viên xem danh sách thành viên trong bảng `cohort_members` (họ tên, email, ngày ghi danh, kết quả đạt/chưa đạt).<br/>5. Giảng viên có thể chủ động đánh dấu hoàn thành/đóng đợt học (`COMPLETED`) bất kỳ lúc nào nếu cần kết thúc sớm. |
-| **Hậu điều kiện** | Trạng thái đợt học luôn phản ánh chính xác tiến trình thực tế của lớp học mà không đòi hỏi thao tác cập nhật thủ công. |
+| **Mô tả** | Giảng viên theo dõi danh sách học viên đã ghi danh vào Đợt học, kiểm tra tiến độ học bài, quản lý vòng đời lớp học tự động (Auto-Sync Lifecycle), và trực tiếp chấm điểm, nhận xét các bài tập tự luận (Assignment) do học viên nộp theo từng Cohort. |
+| **Luồng sự kiện chính** | 1. **Đồng bộ Vòng đời Đợt học tự động**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Giảng viên mở `/instructor/cohorts`, hệ thống tự động kích hoạt đồng bộ hàng loạt trạng thái (`syncCohortStatuses()`): các đợt đến giờ mở ghi danh chuyển thành `ENROLLING`, đến giờ học thành `IN_PROGRESS`, và hết giờ thành `COMPLETED`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Giảng viên xem thống kê sĩ số hiện tại (`current_enrolled / max_capacity`) và danh sách thành viên trong bảng `cohort_members`.<br/>2. **Quản lý & Chấm điểm bài tập tự luận Assignment theo Cohort**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tại giáo trình Cohort (`module-curriculum.html` hoặc `curriculum.html`), Giảng viên bấm nút **"Xem bài nộp"** tại bài tập Assignment tương ứng.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hệ thống hiển thị bảng thống kê bài nộp của học viên trong lớp qua API `/api/instructor/assignments/{assignmentId}/submissions?cohortId={cohortId}`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hiển thị số lượng: Tổng bài nộp, số bài "Chờ chấm" (màu cam sẫm nổi bật `#b45309`), và các bài nộp trễ (badge đỏ `bg-danger text-white`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Bấm tải file bài làm của học viên về máy để thẩm định.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Bấm **"Chấm điểm"** (hoặc "Nhận xét" nếu không tính điểm) -> Mở modal chấm điểm: Nhập số điểm đạt được (trên thang `maxScore`), ghi lời nhận xét đánh giá (`feedback`), tick chọn Đạt yêu cầu (`isPassed`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Bấm "Lưu kết quả chấm" -> Hệ thống cập nhật bảng `assignment_submissions`, chuyển trạng thái thành `GRADED`. Nếu bài nộp đạt điểm sàn, tự động cập nhật hoàn thành bài học vào `lesson_completions` cho học viên.<br/>3. Giảng viên có thể chủ động đánh dấu hoàn thành/đóng đợt học (`COMPLETED`) bất kỳ lúc nào nếu kết thúc khóa học sớm. |
+| **Hậu điều kiện** | Kết quả chấm điểm và nhận xét được lưu trữ đầy đủ, học viên nhận được phản hồi ngay lập tức trên không gian học tập. |
 

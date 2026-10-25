@@ -137,8 +137,8 @@
                             th:classappend="${activePage == 'oj'} ? ' text-primary active' : ''"
                             href="javascript:void(0)" onclick="notifyOjPhase2(event)" role="button">
                             <i class="bi bi-code-square me-1"></i>Luyện thi OJ
-                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill"
-                                style="font-size: 10px;">Coming Soon</span>
+                            <span class="badge rounded-pill fw-semibold"
+                                style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
                         </a>
                     </li>
                 </ul>
@@ -242,27 +242,72 @@
             </div>
         </div>
         <script>
-            function notifyOjPhase2(event) {
-                if (event) {
-                    event.preventDefault();
-                }
-                if (typeof showToast === 'function') {
-                    showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
-                } else if (typeof Toastify === 'function') {
-                    Toastify({
-                        text: 'Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!',
-                        duration: 3500,
-                        gravity: 'top',
-                        position: 'right',
-                        style: {
-                            background: '#f59e0b',
-                            borderRadius: '12px'
-                        }
-                    }).showToast();
+        if (typeof window.showToast !== 'function') {
+            window.showToast = function (message, type = 'warning') {
+                let iconHtml = '';
+                if (type === 'success') {
+                    iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+                } else if (type === 'warning') {
+                    iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
                 } else {
-                    alert('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!');
+                    iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+                }
+
+                const trigger = () => {
+                    let toast = Toastify({
+                        text: `<div style="display: flex; align-items: center; gap: 10px;">
+                            ${iconHtml}
+                            <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
+                           </div>`,
+                        escapeMarkup: false,
+                        duration: 3000,
+                        close: false,
+                        gravity: "top",
+                        position: "right",
+                        style: {
+                            background: "white",
+                            borderRadius: "30px",
+                            boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                            padding: "10px 20px 10px 12px",
+                            border: "1px solid #f0f0f0",
+                            cursor: "pointer"
+                        },
+                        onClick: function () {
+                            toast.hideToast();
+                        }
+                    });
+                    toast.showToast();
+                };
+
+                if (typeof Toastify === 'function') {
+                    trigger();
+                } else {
+                    if (!document.getElementById('toastify-css')) {
+                        const link = document.createElement('link');
+                        link.id = 'toastify-css';
+                        link.rel = 'stylesheet';
+                        link.type = 'text/css';
+                        link.href = 'https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css';
+                        document.head.appendChild(link);
+                    }
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/toastify-js';
+                    script.onload = trigger;
+                    script.onerror = () => alert(message);
+                    document.head.appendChild(script);
+                }
+            };
+        }
+
+        function notifyOjPhase2(event) {
+            if (event) {
+                event.preventDefault();
+                if (typeof event.stopPropagation === 'function') {
+                    event.stopPropagation();
                 }
             }
+            showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
+        }
         </script>
     </nav>
 
