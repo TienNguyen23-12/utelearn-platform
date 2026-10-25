@@ -1,6 +1,7 @@
 package vn.edu.ute.utelearn.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -8,10 +9,12 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import vn.edu.ute.utelearn.dao.CohortRepository;
 import vn.edu.ute.utelearn.dao.UserRepository;
 import vn.edu.ute.utelearn.dto.ChatMessageRequestDTO;
 import vn.edu.ute.utelearn.dto.ChatMessageResponseDTO;
 import vn.edu.ute.utelearn.dto.ChatNotificationDTO;
+import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CohortChatService;
@@ -26,6 +29,7 @@ public class CohortChatController {
     private final CohortChatService cohortChatService;
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final CohortRepository cohortRepository;
 
     @MessageMapping("/cohort/{cohortId}/send")
     public void handleChatMessage(
@@ -89,5 +93,18 @@ public class CohortChatController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return ResponseEntity.ok(cohortChatService.getRecentNotifications(user));
+    }
+
+    @GetMapping("/instructor/discussions")
+    public String showInstructorDiscussions() {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElse(null);
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+        List<Cohort> cohorts = cohortRepository.findByInstructorId(currentUser.getId(), PageRequest.of(0, 1)).getContent();
+        if (cohorts != null && !cohorts.isEmpty()) {
+            return "redirect:/instructor/cohorts/" + cohorts.get(0).getId() + "/chat";
+        }
+        return "redirect:/instructor/cohorts";
     }
 }

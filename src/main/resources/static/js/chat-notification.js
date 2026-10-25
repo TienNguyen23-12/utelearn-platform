@@ -47,11 +47,30 @@
         });
     }
 
+    function getRoleLabel(role) {
+        if (!role) return 'Học viên';
+        const r = role.toUpperCase();
+        if (r === 'INSTRUCTOR' || r === 'TEACHER') return 'Giảng viên';
+        if (r === 'TA') return 'Trợ giảng';
+        if (r === 'ADMIN') return 'Quản trị';
+        return 'Học viên';
+    }
+
     function getBadgeClass(role) {
-        if (role === 'INSTRUCTOR') return 'bg-success-subtle text-success border border-success-subtle';
-        if (role === 'TA') return 'bg-info-subtle text-info border border-info-subtle';
-        if (role === 'ADMIN') return 'bg-danger-subtle text-danger border border-danger-subtle';
+        const r = (role || '').toUpperCase();
+        if (r === 'INSTRUCTOR' || r === 'TEACHER') return 'bg-success-subtle text-success border border-success-subtle';
+        if (r === 'TA') return 'bg-info-subtle text-info border border-info-subtle';
+        if (r === 'ADMIN') return 'bg-danger-subtle text-danger border border-danger-subtle';
         return 'bg-secondary-subtle text-secondary border';
+    }
+
+    function resolveActionUrl(n) {
+        const isInstructorElement = document.querySelector('[data-is-instructor="true"]');
+        const isInstructorPath = window.location.pathname.startsWith('/instructor') || window.location.pathname.startsWith('/admin');
+        if ((isInstructorElement || isInstructorPath) && n.cohortId) {
+            return '/instructor/cohorts/' + n.cohortId + '/chat';
+        }
+        return n.actionUrl || ('/modules/' + n.cohortId + '/learn');
     }
 
     function renderNotificationItem(n) {
@@ -59,20 +78,24 @@
         const avatarHtml = n.senderAvatar
             ? `<img src="${n.senderAvatar}" alt="Avatar" class="w-100 h-100 object-fit-cover">`
             : `<span class="fw-bold small text-primary">${initial}</span>`;
+        const targetUrl = resolveActionUrl(n);
 
         return `
-            <a href="${n.actionUrl}" class="d-flex align-items-start gap-2.5 p-2.5 rounded-3 text-decoration-none text-dark hover-bg-light border-bottom transition-all">
-                <div class="rounded-circle overflow-hidden flex-shrink-0 bg-primary-subtle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+            <a href="${targetUrl}" class="d-flex align-items-start gap-2.5 p-3 rounded-3 text-decoration-none border-bottom transition-all" style="background: #ffffff;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+                <div class="rounded-circle overflow-hidden flex-shrink-0 bg-light border d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
                     ${avatarHtml}
                 </div>
-                <div class="flex-grow-1 overflow-hidden">
+                <div class="flex-grow-1 overflow-hidden min-w-0">
                     <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="badge ${getBadgeClass(n.senderRole)}" style="font-size: 10px;">${escapeHtml(n.senderRole)}</span>
-                        <small class="text-muted" style="font-size: 10.5px;">${escapeHtml(n.createdAtFormatted)}</small>
+                        <span class="fw-bold text-dark text-truncate small" style="max-width: 210px;" title="${escapeHtml(n.cohortName)}">${escapeHtml(n.cohortName)}</span>
+                        <small class="text-muted flex-shrink-0 ms-1" style="font-size: 10.5px;">${escapeHtml(n.createdAtFormatted)}</small>
                     </div>
-                    <div class="small fw-bold text-truncate text-dark mb-0.5">${escapeHtml(n.cohortName)}</div>
-                    <div class="small text-muted text-truncate" style="font-size: 12px;">
-                        <span class="fw-semibold text-secondary">${escapeHtml(n.senderName)}:</span> ${escapeHtml(n.message)}
+                    <div class="d-flex align-items-center gap-1.5 mb-1">
+                        <span class="badge ${getBadgeClass(n.senderRole)} rounded-pill" style="font-size: 9.5px; padding: 2px 7px;">${getRoleLabel(n.senderRole)}</span>
+                        <span class="fw-semibold text-dark text-truncate" style="font-size: 12px;">${escapeHtml(n.senderName)}</span>
+                    </div>
+                    <div class="text-secondary text-truncate small" style="font-size: 12px;">
+                        ${escapeHtml(n.message)}
                     </div>
                 </div>
             </a>
@@ -82,17 +105,18 @@
     function showNotificationToast(n) {
         if (typeof Toastify !== 'function') return;
 
-        const roleText = n.senderRole === 'INSTRUCTOR' ? 'Giảng viên' : (n.senderRole === 'TA' ? 'Trợ giảng' : 'Học viên');
+        const roleText = getRoleLabel(n.senderRole);
+        const targetUrl = resolveActionUrl(n);
         Toastify({
             text: `💬 [${n.cohortName}] ${roleText} ${n.senderName}: ${n.message}`,
             duration: 6000,
             close: true,
             gravity: 'top',
             position: 'right',
-            destination: n.actionUrl,
+            destination: targetUrl,
             newWindow: false,
             style: {
-                background: n.senderRole === 'INSTRUCTOR'
+                background: (n.senderRole === 'INSTRUCTOR' || n.senderRole === 'TEACHER')
                     ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
                     : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
                 borderRadius: '14px',
@@ -123,7 +147,8 @@
             list.insertAdjacentHTML('afterbegin', itemHtml);
         });
 
-        if (window.location.pathname !== n.actionUrl) {
+        const targetUrl = resolveActionUrl(n);
+        if (window.location.pathname !== targetUrl) {
             showNotificationToast(n);
         }
     }

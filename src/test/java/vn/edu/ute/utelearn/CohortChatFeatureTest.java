@@ -223,7 +223,8 @@ public class CohortChatFeatureTest {
         cohortChatController = new CohortChatController(
                 cohortChatService,
                 authService,
-                userRepository
+                userRepository,
+                cohortRepository
         );
     }
 
@@ -375,6 +376,12 @@ public class CohortChatFeatureTest {
         ResponseEntity<List<ChatNotificationDTO>> notifResp = cohortChatController.getRecentNotifications();
         assertEquals(HttpStatus.OK, notifResp.getStatusCode());
         assertNotNull(notifResp.getBody());
+    }
+
+    @Test
+    void testCohortChatController_ShowInstructorDiscussionsRedirects() {
+        String view = cohortChatController.showInstructorDiscussions();
+        assertEquals("redirect:/instructor/cohorts/500/chat", view);
     }
 
     @Test

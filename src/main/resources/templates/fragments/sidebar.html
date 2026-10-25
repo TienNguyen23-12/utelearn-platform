@@ -159,6 +159,13 @@
                         <span>Kho tài nguyên số</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'discussions'} ? ' active' : ''"
+                        href="/instructor/discussions">
+                        <i class="bi bi-chat-dots-fill text-primary"></i>
+                        <span>Thảo luận Lớp học</span>
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">KIỂM DUYỆT NỘI DUNG</div>

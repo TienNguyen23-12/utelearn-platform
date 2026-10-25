@@ -16,6 +16,7 @@ import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CohortService;
 import vn.edu.ute.utelearn.service.CourseService;
+import vn.edu.ute.utelearn.service.CohortChatService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -38,6 +39,7 @@ public class InstructorCohortController {
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.service.SectionService sectionService;
     private final vn.edu.ute.utelearn.service.ModerationService moderationService;
+    private final CohortChatService cohortChatService;
 
     @GetMapping
     public String listCohorts(
@@ -74,7 +76,6 @@ public class InstructorCohortController {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized"));
         model.addAttribute("cohortDto", new CohortRequestDTO());
-        // Load courses for instructor to select
         Page<Course> courses = courseService.getCoursesByInstructor(currentUser.getId(), PageRequest.of(0, 100));
         model.addAttribute("courses", courses.getContent());
         return "instructor/cohorts/form";
@@ -288,6 +289,41 @@ public class InstructorCohortController {
             redirectAttributes.addFlashAttribute("errorMessage", "Không thể xóa Module: " + e.getMessage());
         }
         return "redirect:/instructor/cohorts";
+    }
+
+    @GetMapping("/chat")
+    public String showInstructorCohortsChat() {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+        List<Cohort> cohorts = cohortRepository.findByInstructorId(currentUser.getId(), PageRequest.of(0, 1)).getContent();
+        if (cohorts != null && !cohorts.isEmpty()) {
+            return "redirect:/instructor/cohorts/" + cohorts.get(0).getId() + "/chat";
+        }
+        return "redirect:/instructor/cohorts";
+    }
+
+    @GetMapping("/{id}/chat")
+    public String showCohortChat(
+            @PathVariable Long id,
+            Model model) {
+        User currentUser = authService.getCurrentAuthenticatedUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized"));
+
+        if (!cohortChatService.canUserAccessCohort(currentUser, id)) {
+            return "redirect:/instructor/cohorts";
+        }
+
+        Cohort currentCohort = cohortRepository.findById(id).orElse(null);
+        if (currentCohort == null) {
+            return "redirect:/instructor/cohorts";
+        }
+
+        List<Cohort> instructorCohorts = cohortRepository.findByInstructorId(currentUser.getId(), PageRequest.of(0, 50)).getContent();
+
+        model.addAttribute("currentCohort", currentCohort);
+        model.addAttribute("cohorts", instructorCohorts);
+        model.addAttribute("currentUser", currentUser);
+        return "instructor/cohorts/chat";
     }
 
     @GetMapping("/{id}/delete")
