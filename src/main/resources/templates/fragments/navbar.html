@@ -28,7 +28,8 @@
                     <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                 </a>
 
-                <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}" th:data-is-instructor="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
+                    <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
                     <button class="btn btn-light position-relative border-0 rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
                         style="width: 40px; height: 40px; background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thảo luận lớp học">
                         <i class="bi bi-bell-fill text-muted fs-5"></i>
@@ -171,7 +172,8 @@
                         <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                     </a>
 
-                    <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}" th:data-is-instructor="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                    <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
+                        <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
                         <button class="btn btn-light position-relative border rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
                             style="width: 40px; height: 40px; background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thảo luận lớp học">
                             <i class="bi bi-bell-fill text-muted fs-5"></i>
