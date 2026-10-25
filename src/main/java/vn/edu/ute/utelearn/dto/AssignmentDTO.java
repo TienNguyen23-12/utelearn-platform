@@ -29,6 +29,7 @@ public class AssignmentDTO {
     private AssignmentSubmissionDTO currentSubmission;
     private String unlockAt;
     private String deadlineAt;
+    private String deadlineAtDisplay;
     private Boolean isLocked;
     private Boolean isPassed;
     private Boolean isReviewer;

@@ -257,6 +257,9 @@ public class CourseApiController {
                 lMap.put("assetUrl", l.getAssetUrl());
                 lMap.put("videoUrl", l.getVideoUrl());
                 lMap.put("documentContent", l.getDocumentContent());
+                lMap.put("deadlineAt", cs.getFormattedDeadlineAt());
+                lMap.put("deadlineAtDisplay", cs.getDisplayDeadlineAt());
+                lMap.put("isDeadlinePassed", cs.isDeadlinePassed());
                 return lMap;
             }).collect(Collectors.toList());
 

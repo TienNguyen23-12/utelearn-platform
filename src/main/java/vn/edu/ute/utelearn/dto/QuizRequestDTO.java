@@ -30,4 +30,7 @@ public class QuizRequestDTO {
 
     @Builder.Default
     private Boolean allowReview = true;
+
+    @Builder.Default
+    private Boolean allowLateSubmission = true;
 }

@@ -29,6 +29,7 @@ public class QuizResultDTO {
     private Integer maxAttempts;
     private Boolean canRetake;
     private Boolean allowReview;
+    private Boolean isLate;
     @Builder.Default
     private List<QuestionReviewDTO> reviewQuestions = new ArrayList<>();
 }

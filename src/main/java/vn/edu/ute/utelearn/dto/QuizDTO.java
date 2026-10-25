@@ -32,4 +32,9 @@ public class QuizDTO {
     private Boolean userPassed;
     private Boolean canAttempt;
     private Boolean isReviewer;
+    private String unlockAt;
+    private String deadlineAt;
+    private String deadlineAtDisplay;
+    private Boolean isPastDeadline;
+    private Boolean allowLateSubmission;
 }

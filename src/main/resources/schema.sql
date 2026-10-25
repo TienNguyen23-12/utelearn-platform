@@ -283,6 +283,9 @@ CREATE TABLE quiz_submissions (
 );
 
 CREATE INDEX idx_submissions_user_quiz ON quiz_submissions(user_id, quiz_id, cohort_id);
+
+ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS allow_late_submission BOOLEAN DEFAULT TRUE;
+ALTER TABLE quiz_submissions ADD COLUMN IF NOT EXISTS is_late BOOLEAN DEFAULT FALSE;
 CREATE INDEX idx_submissions_answers_gin ON quiz_submissions USING gin (answers);
 
 CREATE TABLE assignments (

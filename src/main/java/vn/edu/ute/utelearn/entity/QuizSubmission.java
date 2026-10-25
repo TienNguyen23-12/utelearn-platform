@@ -46,6 +46,10 @@ public class QuizSubmission {
     @Builder.Default
     private Boolean isPassed = false;
 
+    @Column(name = "is_late")
+    @Builder.Default
+    private Boolean isLate = false;
+
     @Column(length = 30)
     @Builder.Default
     private String status = "SUBMITTED";
