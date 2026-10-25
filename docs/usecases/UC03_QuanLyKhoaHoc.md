@@ -11,12 +11,13 @@ graph TB
         subgraph Curriculum["Khung Giáo trình Chuẩn (Curriculum)"]
             direction TB
             Sec1["Section 1: Kiến thức nền tảng"]
-            Sec1 --> Les1["Lesson 1.1: Giới thiệu & Cài đặt (Video)"]
+            Sec1 --> Les1["Lesson 1.1: Giới thiệu & Cài đặt (Video - Tự tính thời lượng)"]
             Sec1 --> Les2["Lesson 1.2: Cú pháp cốt lõi (Document)"]
-            Sec1 --> Quiz1["Quiz 1: Trắc nghiệm tổng kết"]
+            Sec1 --> Quiz1["Quiz 1: Trắc nghiệm 4 dạng (Bấm giờ, Excel, Nộp trễ)"]
             Sec2["Section 2: Lập trình nâng cao & Đồ án"]
             Sec2 --> Les3["Lesson 2.1: Kiến trúc hệ thống"]
-            Sec2 --> Code1["Coding Problem: Bài tập thuật toán"]
+            Sec2 --> Ass1["Assignment 1: Bài tập tự luận nộp file (Chấm điểm/Nhận xét)"]
+            Sec2 --> Code1["Coding Problem: Bài tập thuật toán (OJ Phase 2)"]
         end
     end
 
@@ -54,6 +55,7 @@ graph LR
         UC15["UC-15: Gửi xuất bản khóa học"]
         UC16["UC-16: Soạn giáo trình chuẩn (Section, Lesson)"]
         UC17["UC-17: Biên soạn đề kiểm tra Quiz chuẩn"]
+        UC17b["UC-17b: Biên soạn bài tập tự luận Assignment"]
     end
 
     Instructor --> UC13
@@ -61,19 +63,21 @@ graph LR
     Instructor --> UC15
     Instructor --> UC16
     Instructor --> UC17
+    Instructor --> UC17b
 
     Admin -.->|"<<inherits>>"| Instructor
 
     UC13 -.->|"<<includes>>"| UC13a["Nhập tiêu đề, mô tả,<br/>thumbnail, danh mục, cấp độ"]
-    UC14 -.->|"<<includes>>"| UC14a["Cập nhật metadata<br/>khóa học"]
+    UC14 -.->|"<<includes>>"| UC14a["Cập nhật metadata<br/>khóa học & Inline Editing"]
     UC15 -.->|"<<includes>>"| UC15a["Kiểm tra điều kiện xuất bản<br/>(Tối thiểu 1 Section & 1 Lesson)"]
     UC15 -.->|"<<triggers>>"| ReviewQueue["Đẩy vào hàng đợi<br/>kiểm duyệt"]
     ReviewQueue -.->|"<<notifies>>"| Moderator
 
     UC16 -.->|"<<includes>>"| UC16a["Tạo Section & sắp xếp thứ tự"]
-    UC16 -.->|"<<includes>>"| UC16b["Thêm Lesson: Video, Document,<br/>Tài nguyên từ Asset Library"]
-    UC17 -.->|"<<includes>>"| UC17a["Thiết lập thời gian làm bài, điểm đạt"]
-    UC17 -.->|"<<includes>>"| UC17b["Thêm câu hỏi trắc nghiệm & đáp án"]
+    UC16 -.->|"<<includes>>"| UC16b["Thêm Video (Tự động đo thời lượng),<br/>Document, Tài nguyên số"]
+    UC17 -.->|"<<includes>>"| UC17a["Thiết lập thời gian làm bài, điểm đạt,<br/>xáo trộn, cấu hình nộp trễ"]
+    UC17 -.->|"<<includes>>"| UC17b1["Soạn 4 dạng câu hỏi, Import/Export Excel,<br/>kéo thả sắp xếp Sortable"]
+    UC17b -.->|"<<includes>>"| UC17b2["Cấu hình hướng dẫn, tệp đính kèm,<br/>định dạng/kích thước nộp, thang điểm"]
 ```
 
 ---
@@ -131,26 +135,39 @@ graph LR
 
 ---
 
-### UC-16: Soạn giáo trình chuẩn Course (Curriculum Management)
+### UC-16: Soạn giáo trình chuẩn Course (Curriculum Management & Auto Video Duration)
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
 | **Mã Use Case** | UC-16 |
-| **Tên Use Case** | Soạn giáo trình chuẩn Course (Manage Course Curriculum) |
+| **Tên Use Case** | Soạn giáo trình chuẩn Course & Tự động đo thời lượng Video |
 | **Actor chính** | Instructor |
-| **Mô tả** | Giảng viên xây dựng cây giáo trình chuẩn hoàn chỉnh của Khóa học gồm các Chương (Section) và Bài học (Lesson). Giáo trình này sẽ được dùng chung cho tất cả các Đợt học (Cohorts) mở sau này. |
-| **Luồng sự kiện chính** | 1. Giảng viên mở giao diện soạn giáo trình tại `/instructor/courses/{id}/curriculum`.<br/>2. **Thao tác Chương (Section)**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Nhấn "Thêm chương mới", nhập tiêu đề chương.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Sắp xếp thứ tự các chương (`orderIndex`).<br/>3. **Thao tác Bài học (Lesson)**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thêm bài học vào chương với loại nội dung: `VIDEO` hoặc `DOCUMENT`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Nhập URL video hoặc chọn tệp đã tải lên từ Kho Tài nguyên (`InstructorAsset`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Soạn thảo nội dung tài liệu (`document_content`) hoặc đính kèm tệp tài liệu.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Đánh dấu `is_free_preview` nếu cho phép học viên học thử bài này trước khi đăng ký.<br/>4. Nhấn **"Lưu"**. Dữ liệu được cập nhật trực tiếp vào bảng `sections` và `lessons` gắn với `course_id`. |
-| **Hậu điều kiện** | Khung giáo trình chuẩn của Course được hoàn thiện và lưu trữ an toàn. |
+| **Mô tả** | Giảng viên xây dựng cây giáo trình chuẩn hoàn chỉnh của Khóa học gồm các Chương (Section) và Bài học (Lesson). Hệ thống hỗ trợ tự động bóc tách và tính toán thời lượng video (phút:giây) khi giảng viên nhập URL hoặc chọn từ kho Cloudinary. Giáo trình này dùng chung cho tất cả các Đợt học (Cohorts) mở sau này. |
+| **Luồng sự kiện chính** | 1. Giảng viên mở giao diện soạn giáo trình tại `/instructor/courses/{id}/curriculum` (hoặc `/instructor/cohorts/{id}/module-curriculum`).<br/>2. **Thao tác Chương (Section)**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Nhấn "Thêm chương mới", nhập tiêu đề chương.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Sắp xếp thứ tự các chương (`orderIndex`).<br/>3. **Thao tác Bài học (Lesson)**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thêm bài học vào chương với loại nội dung: `VIDEO`, `DOCUMENT`, `QUIZ`, hoặc `ASSIGNMENT`.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Khi chọn `VIDEO`: Nhập URL video (YouTube, Vimeo, Cloudinary, MP4) hoặc chọn video từ Kho tài nguyên số (`InstructorAsset`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Cơ chế Tự động tính thời lượng Video (Auto Duration Calculation)**: Client bóc tách metadata thời lượng video thời gian thực hoặc gọi backend API để lưu trữ chính xác thời lượng (`durationMinutes`) hiển thị theo định dạng `mm:ss` trên toàn bộ giao diện học viên và kiểm duyệt viên.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Soạn thảo nội dung tài liệu (`document_content`) hoặc đính kèm tệp tài liệu.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Đánh dấu `is_free_preview` nếu cho phép học viên học thử bài này trước khi đăng ký.<br/>4. Nhấn **"Lưu bài học"**. Dữ liệu được cập nhật trực tiếp vào bảng `sections` và `lessons` gắn với `course_id`. |
+| **Hậu điều kiện** | Khung giáo trình chuẩn của Course được hoàn thiện, thời lượng bài học được tính toán đồng bộ và lưu trữ an toàn. |
 
 ---
 
-### UC-17: Biên soạn đề kiểm tra Quiz chuẩn
+### UC-17: Biên soạn đề kiểm tra Quiz chuẩn (4 Dạng câu hỏi, Excel Import/Export & Cấu hình nộp trễ)
 
 | Thuộc tính | Chi tiết mô tả |
 |------------|----------------|
 | **Mã Use Case** | UC-17 |
 | **Tên Use Case** | Biên soạn đề kiểm tra Quiz chuẩn (Course Assessment Authoring) |
 | **Actor chính** | Instructor |
-| **Mô tả** | Giảng viên tạo các bài kiểm tra trắc nghiệm gắn với bài học hoặc chương học trong khóa học chuẩn. |
-| **Luồng sự kiện chính** | 1. Giảng viên tạo bài học có loại `QUIZ` trong giáo trình chuẩn.<br/>2. Thiết lập thông số bài thi: Thời lượng làm bài (`duration_minutes`), Điểm đạt tối thiểu (`passing_score`), Số lần làm tối đa.<br/>3. Thêm danh sách câu hỏi trắc nghiệm (Nội dung câu hỏi, các lựa chọn đáp án `options JSONB`, đáp án đúng, giải thích câu trả lời).<br/>4. Lưu đề kiểm tra vào bảng `quizzes` và `questions`. |
-| **Hậu điều kiện** | Bộ đề kiểm tra Quiz chuẩn sẵn sàng để học viên trong các Đợt học (Cohorts) làm bài. |
+| **Mô tả** | Giảng viên tạo các bài kiểm tra trắc nghiệm gắn với bài học hoặc chương học trong khóa học chuẩn, thiết lập ngân hàng câu hỏi đa dạng 4 dạng cốt lõi, nhập/xuất tệp Excel và cấu hình các ràng buộc làm bài thi linh hoạt (bao gồm chính sách làm trễ). |
+| **Luồng sự kiện chính** | 1. Giảng viên tạo bài học có loại `QUIZ` trong giáo trình chuẩn.<br/>2. Bấm nút **"Soạn đề kiểm tra"** để mở modal cấu hình tham số bài thi:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thời lượng làm bài (`durationMinutes` - phút, nhập 0 nếu không giới hạn).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Điểm đạt tối thiểu (`passingScore` - thang điểm 10.0, mặc định 5.0).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Số lần làm bài tối đa (`maxAttempts` - 0 nghĩa là không giới hạn).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Xáo trộn thứ tự câu hỏi (`shuffleQuestions` - true/false).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Cho phép xem lại bài làm và lời giải sau khi nộp (`allowReview`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Kiểm soát làm trễ sau hạn chót (`allowLateSubmission`)**: Tick chọn cho phép học viên tiếp tục làm bài thi khi đã quá deadline (hệ thống sẽ gắn cờ và badge cảnh báo "Làm trễ"), hoặc bỏ tick để khóa hoàn toàn quyền thi khi quá hạn.<br/>3. **Soạn thảo Ngân hàng câu hỏi**:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hỗ trợ **4 dạng câu hỏi**: Trắc nghiệm 1 đáp án (`SINGLE_CHOICE`), Trắc nghiệm nhiều đáp án (`MULTI_SELECT`), Đúng / Sai (`TRUE_FALSE`), Điền từ khuyết (`FILL_BLANK`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Mỗi câu hỏi nhập nội dung, danh sách đáp án (`options` JSONB), đáp án đúng, điểm số và lời giải thích chi tiết.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Tính năng Nhập/Xuất Excel**: Tải file mẫu (`template.xlsx`), nhập danh sách hàng chục câu hỏi nhanh từ Excel qua API `/api/instructor/quizzes/{id}/questions/import-excel`, xuất toàn bộ ngân hàng câu hỏi ra file Excel.<br/>&nbsp;&nbsp;&nbsp;&nbsp;- **Sắp xếp câu hỏi trực quan**: Kéo thả câu hỏi tự do bằng SortableJS hoặc nhấn mũi tên Up/Down để thay đổi `order_index` tức thì.<br/>4. Nhấn **"Lưu cấu hình"**. Dữ liệu được lưu trữ an toàn trong các bảng `quizzes` và `questions`. |
+| **Hậu điều kiện** | Bộ đề kiểm tra Quiz chuẩn sẵn sàng để học viên trong các Đợt học (Cohorts) làm bài và tự động chấm điểm. |
+
+---
+
+### UC-17b: Biên soạn bài tập tự luận Assignment
+
+| Thuộc tính | Chi tiết mô tả |
+|------------|----------------|
+| **Mã Use Case** | UC-17b |
+| **Tên Use Case** | Biên soạn bài tập tự luận Assignment (Manage Assignment Tasks) |
+| **Actor chính** | Instructor |
+| **Mô tả** | Giảng viên tạo và cấu hình bài tập tự luận nộp file (Project, Essay, Báo cáo, Code zip...) gắn với giáo trình chuẩn hoặc module độc lập. |
+| **Luồng sự kiện chính** | 1. Trong giao diện soạn giáo trình `/instructor/courses/{id}/curriculum`, Giảng viên thêm bài học mới và chọn loại nội dung **`ASSIGNMENT`**.<br/>2. Giảng viên cấu hình các tham số bài tập tự luận:<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tiêu đề bài tập (`title`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Hướng dẫn làm bài chi tiết (`instructions`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Tệp đính kèm đề bài mẫu hoặc tài liệu tham khảo (`attachmentUrl`).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Danh sách định dạng tệp cho phép nộp (`allowedFileTypes`: PDF, DOCX, ZIP, RAR, TXT, PPTX...).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Dung lượng tệp tối đa (`maxFileSizeMb`, ví dụ: 25 MB).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Thang điểm tối đa (`maxScore`, ví dụ: 10.0 hoặc 100).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Điểm đạt yêu cầu (`passingScore`, ví dụ: 5.0).<br/>&nbsp;&nbsp;&nbsp;&nbsp;- Loại đánh giá (`requiresGrading`): Bắt buộc Giảng viên chấm điểm (`true`) hoặc Chỉ nộp để nhận xét/điểm danh (`false`).<br/>3. Giảng viên nhấn **"Lưu bài tập"**.<br/>4. Hệ thống lưu trữ thông tin vào bảng `assignments` liên kết 1-1 với `lesson_id`. |
+| **Hậu điều kiện** | Bài tập tự luận sẵn sàng để học viên theo dõi đề bài, tải tài liệu mẫu và nộp file bài làm. |

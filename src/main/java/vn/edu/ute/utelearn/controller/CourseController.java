@@ -784,6 +784,7 @@ public class CourseController {
             map.put("unlockAtDisplay", (cs != null) ? cs.getDisplayUnlockAt() : null);
             map.put("deadlineAt", (cs != null) ? cs.getFormattedDeadlineAt() : null);
             map.put("deadlineAtDisplay", (cs != null) ? cs.getDisplayDeadlineAt() : null);
+            map.put("isDeadlinePassed", (cs != null) && cs.isDeadlinePassed());
             return map;
         }).toList();
 
