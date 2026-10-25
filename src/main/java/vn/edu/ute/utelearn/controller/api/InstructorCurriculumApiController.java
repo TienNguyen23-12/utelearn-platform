@@ -53,6 +53,17 @@ public class InstructorCurriculumApiController {
     private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
     private final vn.edu.ute.utelearn.dao.LessonRepository lessonRepository;
 
+    private boolean canManageCohort(Cohort cohort, User user) {
+        if (cohort == null || user == null) {
+            return false;
+        }
+        boolean isModuleCreator = cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId());
+        boolean isCourseOwner = cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(user.getId());
+        boolean hasAdminRole = user.getRoles().stream().anyMatch(r ->
+                "ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()));
+        return isCourseOwner || isModuleCreator || hasAdminRole;
+    }
+
     @PostMapping("/{courseId}/sections")
     @Transactional
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
@@ -543,6 +554,19 @@ public class InstructorCurriculumApiController {
             @PathVariable Long cohortId,
             @PathVariable Long lessonId) {
         try {
+            Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            if (currentUserOpt.isEmpty()) {
+                return ResponseEntity.status(401).body(Map.of("message", "Vui lòng đăng nhập"));
+            }
+            User currentUser = currentUserOpt.get();
+            Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
+            if (cohort == null) {
+                return ResponseEntity.status(404).body(Map.of("message", "Module không tồn tại"));
+            }
+            if (!canManageCohort(cohort, currentUser)) {
+                return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền xem lộ trình của module này"));
+            }
+
             Optional<CohortSchedule> csOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, lessonId);
             Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
             Map<String, Object> map = new HashMap<>();
@@ -585,8 +609,22 @@ public class InstructorCurriculumApiController {
             @PathVariable Long lessonId,
             @RequestBody Map<String, Object> payload) {
         try {
+            Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            if (currentUserOpt.isEmpty()) {
+                return ResponseEntity.status(401).body(Map.of("message", "Vui lòng đăng nhập"));
+            }
+            User currentUser = currentUserOpt.get();
             Cohort cohort = cohortRepository.findById(cohortId).orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+            if (!canManageCohort(cohort, currentUser)) {
+                return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền chỉnh sửa lộ trình của module này"));
+            }
+
             Lesson lesson = lessonRepository.findById(lessonId).orElseThrow(() -> new RuntimeException("Bài học không tồn tại"));
+            if (cohort.getCourse() != null && lesson.getSection() != null && lesson.getSection().getCourse() != null) {
+                if (!cohort.getCourse().getId().equals(lesson.getSection().getCourse().getId())) {
+                    return ResponseEntity.status(400).body(Map.of("message", "Bài học không thuộc khóa học của module này"));
+                }
+            }
 
             String unlockAtStr = (String) payload.get("unlockAt");
             String deadlineAtStr = (String) payload.get("deadlineAt");
@@ -644,7 +682,16 @@ public class InstructorCurriculumApiController {
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> unlockAllCohortLessons(@PathVariable Long cohortId) {
         try {
+            Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+            if (currentUserOpt.isEmpty()) {
+                return ResponseEntity.status(401).body(Map.of("message", "Vui lòng đăng nhập"));
+            }
+            User currentUser = currentUserOpt.get();
             Cohort cohort = cohortRepository.findById(cohortId).orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+            if (!canManageCohort(cohort, currentUser)) {
+                return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền mở bài học của module này"));
+            }
+
             List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortId(cohortId);
             Instant now = Instant.now();
             for (CohortSchedule cs : schedules) {

@@ -67,6 +67,12 @@ public class CourseUpsellFeatureTest {
 
     @Mock
     private CohortService cohortService;
+    @Mock
+    private vn.edu.ute.utelearn.service.OrderService orderService;
+    @Mock
+    private vn.edu.ute.utelearn.config.UtelearnProperties properties;
+    @Mock
+    private vn.edu.ute.utelearn.dao.OrderRepository orderRepository;
 
     private User sampleUser;
     private Course sampleCourse;
@@ -92,6 +98,7 @@ public class CourseUpsellFeatureTest {
                 authService,
                 cohortScheduleRepository,
                 lessonRepository
+                , orderService, properties, orderRepository
         );
         checkoutMvc = MockMvcBuilders.standaloneSetup(checkoutController)
                 .setViewResolvers(viewResolver1)

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import vn.edu.ute.utelearn.dto.OrderResponseDTO;
 import vn.edu.ute.utelearn.dto.SepayWebhookDTO;
 import vn.edu.ute.utelearn.entity.Order;
+import vn.edu.ute.utelearn.entity.User;
+import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.OrderService;
 
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.Optional;
 public class SepayWebhookApiController {
 
     private final OrderService orderService;
+    private final AuthService authService;
 
     @PostMapping("/api/webhooks/sepay")
     public ResponseEntity<Map<String, Object>> handleSepayWebhook(
@@ -54,6 +57,14 @@ public class SepayWebhookApiController {
 
     @GetMapping("/api/orders/{orderCode}/status")
     public ResponseEntity<Map<String, Object>> checkOrderStatus(@PathVariable String orderCode) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Vui lòng đăng nhập"
+            ));
+        }
+
         Optional<Order> orderOpt = orderService.findByOrderCode(orderCode);
         if (orderOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -63,6 +74,19 @@ public class SepayWebhookApiController {
         }
 
         Order order = orderOpt.get();
+        User currentUser = currentUserOpt.get();
+        boolean isOwner = order.getUser() != null && order.getUser().getId().equals(currentUser.getId());
+        boolean hasPrivilegedRole = currentUser.getRoles().stream().anyMatch(r ->
+                "ADMIN".equalsIgnoreCase(r.getCode()) || "FINANCE".equalsIgnoreCase(r.getCode())
+                        || "ROLE_ADMIN".equalsIgnoreCase(r.getCode()) || "ROLE_FINANCE".equalsIgnoreCase(r.getCode()));
+
+        if (!isOwner && !hasPrivilegedRole) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "success", false,
+                    "message", "Bạn không có quyền xem thông tin đơn hàng này"
+            ));
+        }
+
         OrderResponseDTO dto = orderService.toResponseDTO(order);
         boolean isPaid = "SUCCESS".equalsIgnoreCase(order.getStatus()) || "COMPLETED".equalsIgnoreCase(order.getStatus());
 

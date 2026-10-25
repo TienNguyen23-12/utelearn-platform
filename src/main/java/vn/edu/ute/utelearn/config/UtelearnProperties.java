@@ -4,9 +4,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Type-safe configuration properties mapping cho hệ thống UTELearn từ application.yml
- */
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "utelearn")
@@ -39,7 +36,7 @@ public class UtelearnProperties {
     @Data
     public static class Jwt {
         private String secret;
-        private long accessTokenExpirationMs = 900000L; // 15 minutes (15 * 60 * 1000 ms)
+        private long accessTokenExpirationMs = 900000L;
         private long refreshTokenExpirationMs = 604800000L;
         private String cookieName = "UTELearn_Token";
         private String headerPrefix = "Bearer ";

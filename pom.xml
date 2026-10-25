@@ -6,7 +6,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>4.1.1</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/> 
     </parent>
     <groupId>vn.edu.ute</groupId>
     <artifactId>utelearn</artifactId>
@@ -68,7 +68,7 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
-        <!-- Swagger UI -->
+        
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -92,7 +92,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- JWT (JSON Web Token for Authentication & Dynamic RBAC) -->
+        
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -111,14 +111,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Cloudinary SDK -->
+        
         <dependency>
             <groupId>com.cloudinary</groupId>
             <artifactId>cloudinary-http44</artifactId>
             <version>1.39.0</version>
         </dependency>
 
-        <!-- Apache POI for Excel Import/Export -->
+        
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>

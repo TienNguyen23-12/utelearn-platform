@@ -38,8 +38,6 @@ public class CourseServiceImpl implements CourseService {
                 root.fetch("createdBy", jakarta.persistence.criteria.JoinType.LEFT);
             }
             List<Predicate> predicates = new ArrayList<>();
-            
-            // Only fetch published courses
             predicates.add(cb.equal(root.get("status"), "PUBLISHED"));
             
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(keyword)) {

@@ -68,6 +68,7 @@ public class AuthServiceImpl implements AuthService {
             .email(normalizedEmail)
             .otp(otp)
             .expiryDate(Instant.now().plus(5, java.time.temporal.ChronoUnit.MINUTES))
+            .attemptCount(0)
             .build();
         registrationOtpRepository.save(registrationOtp);
 
@@ -78,7 +79,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public User register(RegisterRequestDTO requestDTO) {
-
         if (!requestDTO.isPasswordMatching()) {
             throw new IllegalArgumentException("Mật khẩu xác nhận không khớp!");
         }
@@ -106,7 +106,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!storedOtp.getOtp().equals(inputOtp)) {
-            throw new IllegalArgumentException("Mã OTP không chính xác. Vui lòng kiểm tra lại!");
+            int attempts = (storedOtp.getAttemptCount() != null ? storedOtp.getAttemptCount() : 0) + 1;
+            storedOtp.setAttemptCount(attempts);
+            if (attempts >= 5) {
+                registrationOtpRepository.delete(storedOtp);
+                throw new IllegalArgumentException("Bạn đã nhập sai mã OTP quá 5 lần. Mã OTP đã bị hủy, vui lòng gửi lại mã mới!");
+            }
+            registrationOtpRepository.save(storedOtp);
+            throw new IllegalArgumentException("Mã OTP không chính xác. Bạn còn " + (5 - attempts) + " lần thử!");
         }
 
         registrationOtpRepository.delete(storedOtp);
