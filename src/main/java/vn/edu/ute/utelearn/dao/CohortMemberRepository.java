@@ -34,7 +34,7 @@ public interface CohortMemberRepository extends JpaRepository<CohortMember, Long
             @org.springframework.data.repository.query.Param("courseId") Long courseId,
             @org.springframework.data.repository.query.Param("userId") Long userId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT cm FROM CohortMember cm JOIN FETCH cm.cohort c JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category LEFT JOIN FETCH cm.lastLesson WHERE cm.user = :user ORDER BY cm.enrolledAt DESC")
+    @org.springframework.data.jpa.repository.Query("SELECT cm FROM CohortMember cm JOIN FETCH cm.cohort c LEFT JOIN FETCH c.createdBy LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH cr.category LEFT JOIN FETCH cm.lastLesson WHERE cm.user = :user ORDER BY cm.enrolledAt DESC")
     java.util.List<CohortMember> findByUserOrderByEnrolledAtDesc(
             @org.springframework.data.repository.query.Param("user") vn.edu.ute.utelearn.entity.User user);
 

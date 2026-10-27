@@ -25,7 +25,7 @@
                     <img th:src="${currentUser.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
                 </div>
                 <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder flex-shrink-0"
-                    th:text="${#strings.substring(currentUser.fullName, 0, 1)}">U</div>
+                    th:text="${currentUser.fullName != null and !currentUser.fullName.isEmpty() ? #strings.substring(currentUser.fullName, 0, 1) : 'U'}">U</div>
                 <div class="overflow-hidden flex-grow-1">
                     <div class="fw-bold text-dark text-truncate" style="font-size: 13.5px;"
                         th:text="${currentUser.fullName}">Quản trị viên</div>

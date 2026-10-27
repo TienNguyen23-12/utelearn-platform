@@ -58,7 +58,7 @@
                         </div>
                         <div th:unless="${currentUser.avatarUrl}" class="user-avatar-placeholder"
                             style="width: 36px; height: 36px; font-size: 13px;"
-                            th:text="${#strings.substring(currentUser.fullName, 0, 1)}">U</div>
+                            th:text="${currentUser.fullName != null and !currentUser.fullName.isEmpty() ? #strings.substring(currentUser.fullName, 0, 1) : 'U'}">U</div>
                         <div class="d-none d-md-block text-start pe-1">
                             <div class="fw-bold text-dark lh-1" style="font-size: 13px;"
                                 th:text="${currentUser.fullName}">Người dùng</div>

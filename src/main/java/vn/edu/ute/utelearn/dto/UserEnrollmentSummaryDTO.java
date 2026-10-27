@@ -34,11 +34,27 @@ public class UserEnrollmentSummaryDTO {
         private int enrolledModulesCount;
         private int completedModulesCount;
         private int progressPercent;
-        private boolean isCompleted;
+        private Boolean isCompleted;
         private BigDecimal averageGrade;
         private String certificateUrl;
         private boolean hasReviewed;
         private Integer rating;
         private String reviewComment;
+
+        public Boolean getIsCompleted() {
+            return isCompleted;
+        }
+
+        public boolean isCompleted() {
+            return Boolean.TRUE.equals(isCompleted);
+        }
+
+        public boolean isHasReviewed() {
+            return hasReviewed;
+        }
+
+        public boolean getHasReviewed() {
+            return hasReviewed;
+        }
     }
 }

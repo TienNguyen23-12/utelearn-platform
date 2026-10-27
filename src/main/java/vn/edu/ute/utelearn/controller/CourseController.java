@@ -173,7 +173,7 @@ public class CourseController {
         return "courses/index";
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     @GetMapping("/my-courses")
     public String showMyCourses(Model model) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();

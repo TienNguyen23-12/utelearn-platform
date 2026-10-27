@@ -345,7 +345,7 @@ public class CohortServiceImpl implements CohortService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO getUserEnrollmentSummary(User user) {
         List<vn.edu.ute.utelearn.entity.CohortMember> allMemberships = cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user);
 
