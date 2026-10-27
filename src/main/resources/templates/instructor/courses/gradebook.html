@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Bảng điểm Khóa học: ' + ${course.title} + ' - UTELearn'">Bảng điểm Khóa học - UTELearn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .main-content {
+            padding: 24px;
+        }
+        .table-sticky-header th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f1f5f9;
+        }
+        .student-row:hover {
+            background-color: #f8fafc;
+        }
+        .badge-passed {
+            background-color: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .badge-studying {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+        .badge-failed {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+
+<nav th:replace="~{fragments/navbar :: siteNavbar('instructor')}"></nav>
+
+<div class="container-fluid px-lg-5 py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/instructor/courses}" class="text-decoration-none">Khóa học</a></li>
+            <li class="breadcrumb-item"><a th:href="@{'/instructor/courses/' + ${course.id} + '/modules'}" class="text-decoration-none" th:text="${course.title}">Khóa học</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Bảng điểm & Tổng kết khóa học</li>
+        </ol>
+    </nav>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                        <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace" th:text="${course.code}">COURSE-CODE</span>
+                        <span class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold">
+                            <i class="bi bi-layers-fill me-1"></i>Bảng điểm Khóa học Tổng hợp
+                        </span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1" th:text="${modules.size()} + ' Module'">
+                            0 Module
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-white" th:text="${course.title}">Tên Khóa Học</h3>
+                    <div class="text-light opacity-75 small">
+                        <span>Giảng viên phụ trách: <strong th:text="${course.createdBy != null ? course.createdBy.fullName : 'Ban Đào tạo'}">Giảng viên</strong></span>
+                        <span class="ms-3">Tiêu chuẩn tốt nghiệp: <strong>Hoàn thành đạt 100% tất cả các Module thành phần</strong></span>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a th:href="@{'/instructor/courses/' + ${course.id} + '/gradebook/export'}" class="btn btn-outline-success bg-success bg-opacity-25 text-white border-success-subtle rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        <span>Xuất Excel</span>
+                    </a>
+
+                    <form th:action="@{'/instructor/courses/' + ${course.id} + '/gradebook/calculate'}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center gap-1.5" onclick="return confirm('Bạn có chắc muốn đồng bộ và tính toán kết quả tốt nghiệp cho toàn bộ học viên trong khóa học này?');">
+                            <i class="bi bi-calculator"></i>
+                            <span>Đồng bộ & Tính điểm</span>
+                        </button>
+                    </form>
+
+                    <a th:href="@{'/instructor/courses/' + ${course.id} + '/modules'}" class="btn btn-outline-light rounded-pill px-3 d-flex align-items-center gap-1.5">
+                        <i class="bi bi-collection"></i>
+                        <span>Quản lý Module</span>
+                    </a>
+
+                    <a th:href="@{'/courses/' + ${course.slug}}" target="_blank" class="btn btn-outline-light rounded-pill px-3 d-flex align-items-center gap-1.5">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>Xem trang khóa học</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Sĩ số ghi danh</span>
+                    <div class="rounded-3 p-2 bg-primary-subtle text-primary">
+                        <i class="bi bi-people-fill fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark mb-0" th:text="${gradebook.totalStudents}">0</h3>
+                <small class="text-muted">Tổng số học viên tham gia</small>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Đã tốt nghiệp khóa học</span>
+                    <div class="rounded-3 p-2 bg-success-subtle text-success">
+                        <i class="bi bi-award-fill fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-success mb-0" th:text="${gradebook.completedCount}">0</h3>
+                <small class="text-muted">Tỷ lệ tốt nghiệp: <strong class="text-success" th:text="${gradebook.passRate} + '%'">0%</strong></small>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Đang theo học</span>
+                    <div class="rounded-3 p-2 bg-info-subtle text-info">
+                        <i class="bi bi-hourglass-split fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-primary mb-0" th:text="${gradebook.inProgressCount}">0</h3>
+                <small class="text-muted">Chưa hoàn thành đủ module</small>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Điểm TB toàn khóa</span>
+                    <div class="rounded-3 p-2 bg-warning-subtle text-warning">
+                        <i class="bi bi-star-fill fs-5"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold text-dark mb-0" th:text="${gradebook.averageGrade} + ' / 10'">0.0 / 10</h3>
+                <small class="text-muted">Học viên đã tốt nghiệp có điểm</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="card-header bg-white border-0 p-3.5">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 450px;">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-pill text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="filterStudentInput" class="form-control bg-light border-start-0 rounded-end-pill" placeholder="Tìm theo tên, email, mã học viên...">
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <select id="statusFilterSelect" class="form-select rounded-pill px-3 py-1.5 small border" style="width: auto;">
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="COMPLETED">Đã tốt nghiệp</option>
+                        <option value="IN_PROGRESS">Đang theo học</option>
+                    </select>
+
+                    <span class="badge bg-light text-secondary border rounded-pill px-3 py-2" th:text="'Sĩ số: ' + ${gradebook.totalStudents} + ' học viên'">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="max-height: 650px;">
+            <table class="table table-hover align-middle mb-0 text-nowrap table-sticky-header" id="courseGradebookTable">
+                <thead class="table-light">
+                <tr>
+                    <th class="text-center" style="width: 50px;">STT</th>
+                    <th style="min-width: 240px;">Học viên</th>
+                    <th class="text-center" style="min-width: 130px;">Ngày ghi danh</th>
+                    <th:block th:each="mod, mStat : ${modules}">
+                        <th class="text-center" style="min-width: 140px;">
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" th:title="${mod.name}" th:text="${mod.name}">Tên Module</div>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill font-monospace" style="font-size: 10px;" th:text="${mod.code}">MOD-01</span>
+                        </th>
+                    </th:block>
+                    <th class="text-center" style="min-width: 120px;">ĐTB Khóa học</th>
+                    <th class="text-center" style="min-width: 140px;">Tiến độ Module</th>
+                    <th class="text-center" style="min-width: 140px;">Kết quả</th>
+                    <th class="text-center" style="min-width: 120px;">Chứng chỉ</th>
+                    <th class="text-center" style="width: 80px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${students == null or students.isEmpty()}">
+                    <td th:colspan="${7 + (modules != null ? modules.size() : 0)}" class="text-center py-5 text-muted">
+                        <i class="bi bi-people display-6 d-block mb-2 text-secondary opacity-50"></i>
+                        <span>Chưa có học viên nào đăng ký tham gia khóa học này.</span>
+                    </td>
+                </tr>
+                <tr th:each="st, stat : ${students}" class="student-row"
+                    th:attr="data-status=${st.isCompleted ? 'COMPLETED' : 'IN_PROGRESS'}, data-search=${(st.fullName != null ? st.fullName : '') + ' ' + (st.email != null ? st.email : '') + ' HV-' + st.userId}">
+                    <td class="text-center text-muted fw-semibold" th:text="${stat.index + 1}">1</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2.5">
+                            <img th:src="${st.avatarUrl != null && !st.avatarUrl.isBlank() ? st.avatarUrl : '/images/default-avatar.png'}"
+                                 class="rounded-circle border" width="36" height="36" alt="Avatar"
+                                 onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.getAttribute('data-name')) + '&background=0D8ABC&color=fff'"
+                                 th:attr="data-name=${st.fullName}">
+                            <div>
+                                <div class="fw-bold text-dark" th:text="${st.fullName}">Nguyễn Văn A</div>
+                                <div class="small text-muted" th:text="${st.email}">student@ute.edu.vn</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center small text-muted">
+                        <span th:if="${st.enrolledAt != null}" th:text="${#temporals.format(st.enrolledAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                        <span th:unless="${st.enrolledAt != null}">-</span>
+                    </td>
+
+                    <th:block th:each="mod : ${modules}">
+                        <td class="text-center">
+                            <th:block th:with="mg=${st.moduleGrades != null ? st.moduleGrades.get(mod.id) : null}">
+                                <div th:if="${mg != null and mg.enrolled}">
+                                    <span th:if="${mg.finalGrade != null}" class="badge bg-light text-dark border fw-bold px-2.5 py-1" th:text="${mg.finalGrade} + ' đ'">10 đ</span>
+                                    <span th:if="${mg.isPassed != null and mg.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 ms-1" style="font-size: 10px;">
+                                        <i class="bi bi-check-lg"></i> Đạt
+                                    </span>
+                                    <span th:if="${mg.isPassed != null and not mg.isPassed}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0.5 ms-1" style="font-size: 10px;">
+                                        Đang học
+                                    </span>
+                                </div>
+                                <div th:unless="${mg != null and mg.enrolled}">
+                                    <span class="badge bg-secondary-subtle text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Chưa đăng ký</span>
+                                </div>
+                            </th:block>
+                        </td>
+                    </th:block>
+
+                    <td class="text-center">
+                        <span th:if="${st.courseAverageGrade != null}" class="fw-bold text-primary fs-6" th:text="${st.courseAverageGrade} + ' / 10'">9.5 / 10</span>
+                        <span th:unless="${st.courseAverageGrade != null}" class="text-muted small">-</span>
+                    </td>
+
+                    <td class="text-center">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <div class="progress rounded-pill bg-light border flex-grow-1" style="height: 6px; max-width: 80px;">
+                                <div class="progress-bar" th:classappend="${st.isCompleted ? 'bg-success' : 'bg-primary'}" role="progressbar" th:style="'width: ' + ${st.progressPercent} + '%'"></div>
+                            </div>
+                            <span class="small fw-semibold" th:text="${st.completedModulesCount} + '/' + ${st.totalModulesCount}">0/0</span>
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        <span th:if="${st.isCompleted}" class="badge bg-success text-white rounded-pill px-3 py-1 fw-bold shadow-xs">
+                            <i class="bi bi-award-fill me-1"></i>Đã tốt nghiệp
+                        </span>
+                        <span th:unless="${st.isCompleted}" class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
+                            <i class="bi bi-hourglass-split me-1"></i>Đang theo học
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        <div th:if="${st.certificateUrl != null}">
+                            <a th:href="@{${st.certificateUrl}}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1" title="Xem chứng chỉ tốt nghiệp">
+                                <i class="bi bi-award-fill"></i> Chứng chỉ
+                            </a>
+                        </div>
+                        <div th:unless="${st.certificateUrl != null}">
+                            <span class="text-muted small">-</span>
+                        </div>
+                    </td>
+
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" th:attr="data-bs-target='#studentModal-' + ${st.userId}" data-bs-toggle="modal" title="Xem chi tiết điểm">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div th:each="st : ${students}" class="modal fade" th:id="'studentModal-' + ${st.userId}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4">
+                <div class="d-flex align-items-center gap-3">
+                    <img th:src="${st.avatarUrl != null && !st.avatarUrl.isBlank() ? st.avatarUrl : '/images/default-avatar.png'}"
+                         class="rounded-circle border border-2 border-white" width="48" height="48" alt="Avatar">
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" th:text="${st.fullName}">Họ và tên</h5>
+                        <div class="small text-light opacity-75" th:text="${st.email}">email@domain.com</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Kết quả tốt nghiệp</small>
+                            <span th:if="${st.isCompleted}" class="badge bg-success text-white rounded-pill px-3 py-1.5 fw-bold">
+                                <i class="bi bi-award-fill me-1"></i>ĐÃ TỐT NGHIỆP
+                            </span>
+                            <span th:unless="${st.isCompleted}" class="badge bg-secondary text-white rounded-pill px-3 py-1.5">
+                                <i class="bi bi-hourglass-split me-1"></i>ĐANG HỌC
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Điểm TB toàn khóa</small>
+                            <h4 class="fw-bold text-primary mb-0" th:text="${st.courseAverageGrade != null ? st.courseAverageGrade + ' / 10' : '-'}">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Module hoàn thành</small>
+                            <h4 class="fw-bold text-dark mb-0" th:text="${st.completedModulesCount} + ' / ' + ${st.totalModulesCount}">0/0</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-collection text-primary me-2"></i>Bảng điểm chi tiết từng Module:</h6>
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Module</th>
+                            <th class="text-center">Mã</th>
+                            <th class="text-center">Điểm tổng kết</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Chứng chỉ Module</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="mod : ${modules}">
+                            <td class="fw-semibold text-dark" th:text="${mod.name}">Tên Module</td>
+                            <td class="text-center font-monospace text-muted" th:text="${mod.code}">MOD-01</td>
+                            <th:block th:with="mg=${st.moduleGrades != null ? st.moduleGrades.get(mod.id) : null}">
+                                <td class="text-center">
+                                    <span th:if="${mg != null and mg.finalGrade != null}" class="fw-bold text-primary" th:text="${mg.finalGrade} + ' / 10'">9.0 / 10</span>
+                                    <span th:unless="${mg != null and mg.finalGrade != null}" class="text-muted">-</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${mg != null and mg.isPassed != null and mg.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Đã đạt
+                                    </span>
+                                    <span th:if="${mg != null and mg.enrolled and (mg.isPassed == null or not mg.isPassed)}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-hourglass-split me-1"></i>Đang học
+                                    </span>
+                                    <span th:unless="${mg != null and mg.enrolled}" class="badge bg-secondary-subtle text-muted rounded-pill px-2.5 py-1">
+                                        Chưa đăng ký
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:if="${mg != null and mg.certificateUrl != null}" th:href="@{${mg.certificateUrl}}" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5">
+                                        <i class="bi bi-award"></i> Xem
+                                    </a>
+                                    <span th:unless="${mg != null and mg.certificateUrl != null}" class="text-muted">-</span>
+                                </td>
+                            </th:block>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${st.certificateUrl != null}" class="alert alert-success border-success-subtle rounded-4 mt-4 d-flex align-items-center justify-content-between p-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-patch-check-fill fs-3 text-success"></i>
+                        <div>
+                            <div class="fw-bold text-dark">Chứng chỉ Tốt nghiệp Khóa học</div>
+                            <div class="small text-muted" th:text="'Mã xác thực: ' + ${st.certificateUrl}">Mã xác thực</div>
+                        </div>
+                    </div>
+                    <a th:href="@{${st.certificateUrl}}" target="_blank" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-award-fill me-1"></i>Xem chứng chỉ
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 p-3">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('filterStudentInput');
+        const statusSelect = document.getElementById('statusFilterSelect');
+        const rows = document.querySelectorAll('.student-row');
+
+        function applyFilter() {
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const status = statusSelect ? statusSelect.value : 'ALL';
+
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search') ? row.getAttribute('data-search').toLowerCase() : '';
+                const rowStatus = row.getAttribute('data-status') || '';
+
+                const matchesQuery = !query || searchData.includes(query);
+                const matchesStatus = (status === 'ALL') || (rowStatus === status);
+
+                if (matchesQuery && matchesStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', applyFilter);
+        if (statusSelect) statusSelect.addEventListener('change', applyFilter);
+    });
+</script>
+</body>
+</html>

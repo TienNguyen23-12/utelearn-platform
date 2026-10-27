@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/home",
+                                "/learn",
                                 "/courses/**",
                                 "/course/**",
                                 "/cohorts",
@@ -48,6 +49,7 @@ public class SecurityConfig {
                                 "/cohort/**",
                                 "/modules/**",
                                 "/module/**",
+                                "/certificates/**",
                                 "/login",
                                 "/register",
                                 "/forgot-password",
@@ -59,6 +61,7 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
+                                "/fonts/**",
                                 "/vendor/**",
                                 "/webjars/**",
                                 "/favicon.ico",
@@ -78,11 +81,16 @@ public class SecurityConfig {
                                 "/api/webhooks/**",
                                 "/api/orders/**",
                                 "/api/quizzes/**",
+                                "/api/assignments/**",
+                                "/api/notes",
+                                "/api/notes/**",
                                 "/oj/**")
                         .permitAll()
 
                         .requestMatchers("/admin/orders/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
                         .requestMatchers("/admin/**", "/dashboard/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/api/instructor/assignments/**")
+                        .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN", "MODERATOR", "ROLE_MODERATOR")
                         .requestMatchers("/instructor/**", "/api/instructor/**")
                         .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/moderator/**")

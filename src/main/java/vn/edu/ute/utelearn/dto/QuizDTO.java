@@ -23,6 +23,7 @@ public class QuizDTO {
     private Integer maxAttempts;
     private Boolean shuffleQuestions;
     private Boolean allowReview;
+    private String examRules;
     private Integer totalQuestions;
     private BigDecimal totalPoints;
     @Builder.Default

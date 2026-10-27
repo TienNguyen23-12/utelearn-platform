@@ -68,6 +68,9 @@ public class DataSeeder implements CommandLineRunner {
                 jdbcTemplate.execute("UPDATE cohorts SET visibility = 'PRIVATE' WHERE code LIKE '%-ALL' OR name ILIKE 'Toàn bộ khóa học%'");
                 try {
                     if (isTablePresent("cohort_members")) {
+                        jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS rating INT");
+                        jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS review_comment TEXT");
+                        jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ");
                         jdbcTemplate.execute("INSERT INTO cohort_members (cohort_id, user_id, enrolled_at, status, progress_percent, role) " +
                                 "SELECT real_c.id, cm.user_id, cm.enrolled_at, cm.status, cm.progress_percent, cm.role " +
                                 "FROM cohort_members cm " +

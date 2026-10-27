@@ -13,12 +13,15 @@ import vn.edu.ute.utelearn.dao.LessonRepository;
 import vn.edu.ute.utelearn.dto.CohortRequestDTO;
 import vn.edu.ute.utelearn.dto.CohortScheduleRequestDTO;
 import vn.edu.ute.utelearn.entity.Cohort;
+import vn.edu.ute.utelearn.entity.CohortMember;
 import vn.edu.ute.utelearn.entity.CohortSchedule;
 import vn.edu.ute.utelearn.entity.Course;
+import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CohortService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -37,6 +40,8 @@ public class CohortServiceImpl implements CohortService {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final vn.edu.ute.utelearn.dao.LessonCompletionRepository lessonCompletionRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @Override
     public Page<Cohort> getAllCohorts(Pageable pageable) {
@@ -116,6 +121,19 @@ public class CohortServiceImpl implements CohortService {
 
         String initialModerationStatus = (course == null) ? "DRAFT" : "APPROVED";
 
+        if ("WEIGHTED_GRADING".equalsIgnoreCase(dto.getGradingPolicy())) {
+            int pw = dto.getProcessWeight() != null ? dto.getProcessWeight() : 0;
+            int fw = dto.getFinalWeight() != null ? dto.getFinalWeight() : 0;
+            if (pw + fw != 100) {
+                throw new RuntimeException("Tổng trọng số điểm quá trình và cuối kỳ phải bằng 100%");
+            }
+        }
+
+        Lesson finalLesson = null;
+        if (dto.getFinalLessonId() != null) {
+            finalLesson = lessonRepository.findById(dto.getFinalLessonId()).orElse(null);
+        }
+
         Cohort cohort = Cohort.builder()
                 .course(course)
                 .createdBy(instructor)
@@ -135,6 +153,12 @@ public class CohortServiceImpl implements CohortService {
                 .objectives(formatObjectives(dto.getObjectives()))
                 .announcementTitle(dto.getAnnouncementTitle())
                 .announcementContent(dto.getAnnouncementContent())
+                .gradingPolicy(dto.getGradingPolicy() != null && !dto.getGradingPolicy().isBlank() ? dto.getGradingPolicy() : "PROGRESS_BASED")
+                .processWeight(dto.getProcessWeight() != null ? dto.getProcessWeight() : 50)
+                .finalWeight(dto.getFinalWeight() != null ? dto.getFinalWeight() : 50)
+                .finalLesson(finalLesson)
+                .minPassingGrade(dto.getMinPassingGrade() != null ? dto.getMinPassingGrade() : new BigDecimal("5.00"))
+                .minFinalExamScore(dto.getMinFinalExamScore() != null ? dto.getMinFinalExamScore() : new BigDecimal("3.00"))
                 .build();
 
         Cohort savedCohort = cohortRepository.save(cohort);
@@ -196,6 +220,25 @@ public class CohortServiceImpl implements CohortService {
         cohort.setObjectives(formatObjectives(dto.getObjectives()));
         cohort.setAnnouncementTitle(dto.getAnnouncementTitle());
         cohort.setAnnouncementContent(dto.getAnnouncementContent());
+
+        if ("WEIGHTED_GRADING".equalsIgnoreCase(dto.getGradingPolicy())) {
+            int pw = dto.getProcessWeight() != null ? dto.getProcessWeight() : 0;
+            int fw = dto.getFinalWeight() != null ? dto.getFinalWeight() : 0;
+            if (pw + fw != 100) {
+                throw new RuntimeException("Tổng trọng số điểm quá trình và cuối kỳ phải bằng 100%");
+            }
+        }
+
+        cohort.setGradingPolicy(dto.getGradingPolicy() != null && !dto.getGradingPolicy().isBlank() ? dto.getGradingPolicy() : "PROGRESS_BASED");
+        cohort.setProcessWeight(dto.getProcessWeight() != null ? dto.getProcessWeight() : 50);
+        cohort.setFinalWeight(dto.getFinalWeight() != null ? dto.getFinalWeight() : 50);
+        if (dto.getFinalLessonId() != null) {
+            cohort.setFinalLesson(lessonRepository.findById(dto.getFinalLessonId()).orElse(null));
+        } else {
+            cohort.setFinalLesson(null);
+        }
+        if (dto.getMinPassingGrade() != null) cohort.setMinPassingGrade(dto.getMinPassingGrade());
+        if (dto.getMinFinalExamScore() != null) cohort.setMinFinalExamScore(dto.getMinFinalExamScore());
 
         String finalThumbnail = dto.getThumbnailUrl();
         if (finalThumbnail == null || finalThumbnail.trim().isEmpty()) {
@@ -349,11 +392,44 @@ public class CohortServiceImpl implements CohortService {
                         .min(java.util.Comparator.naturalOrder())
                         .orElse(java.time.Instant.now());
 
+                checkAndSyncCourseCompletion(course, user);
+                vn.edu.ute.utelearn.entity.Enrollment enrollment = (enrollmentRepository != null)
+                        ? enrollmentRepository.findByUser_IdAndCourse_Id(user.getId(), courseId).orElse(null)
+                        : null;
+
+                int completedModulesCount = 0;
+                for (Cohort mod : modulesToConsider) {
+                    CohortMember modMember = memberships.stream()
+                            .filter(m -> m.getCohort() != null && m.getCohort().getId().equals(mod.getId()))
+                            .findFirst()
+                            .orElse(null);
+                    if (modMember != null && Boolean.TRUE.equals(modMember.getIsPassed())) {
+                        completedModulesCount++;
+                    }
+                }
+                int progressPercent = (modulesToConsider.size() > 0)
+                        ? (completedModulesCount * 100 / modulesToConsider.size()) : 0;
+                boolean isCompleted = (enrollment != null) ? Boolean.TRUE.equals(enrollment.getIsCompleted())
+                        : (!modulesToConsider.isEmpty() && completedModulesCount >= modulesToConsider.size());
+                java.math.BigDecimal averageGrade = (enrollment != null) ? enrollment.getAverageGrade() : null;
+                String certificateUrl = (enrollment != null) ? enrollment.getCertificateUrl() : null;
+                boolean hasReviewed = (enrollment != null && enrollment.hasReviewed());
+                Integer rating = (enrollment != null) ? enrollment.getRating() : null;
+                String reviewComment = (enrollment != null) ? enrollment.getReviewComment() : null;
+
                 enrolledCourses.add(vn.edu.ute.utelearn.dto.UserEnrollmentSummaryDTO.EnrolledCourseItem.builder()
                         .course(course)
                         .enrolledAt(earliestEnrolledAt)
                         .totalModules(modulesToConsider.size())
                         .enrolledModulesCount(modulesToConsider.size())
+                        .completedModulesCount(completedModulesCount)
+                        .progressPercent(progressPercent)
+                        .isCompleted(isCompleted)
+                        .averageGrade(averageGrade)
+                        .certificateUrl(certificateUrl)
+                        .hasReviewed(hasReviewed)
+                        .rating(rating)
+                        .reviewComment(reviewComment)
                         .build());
             } else {
                 List<vn.edu.ute.utelearn.entity.CohortMember> realMemberships = memberships.stream()
@@ -480,6 +556,9 @@ public class CohortServiceImpl implements CohortService {
                 isPassed = true;
             }
             cohortMemberRepository.save(member);
+            if (cohort.getCourse() != null) {
+                checkAndSyncCourseCompletion(cohort.getCourse(), user);
+            }
         }
 
         response.put("success", true);
@@ -585,6 +664,71 @@ public class CohortServiceImpl implements CohortService {
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void onApplicationReady() {
         syncCohortStatuses();
+    }
+
+    @Override
+    @Transactional
+    public void checkAndSyncCourseCompletion(Course course, User user) {
+        if (course == null || user == null) {
+            return;
+        }
+
+        List<Cohort> allCohortsOfCourse = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
+        List<Cohort> realModules = allCohortsOfCourse.stream()
+                .filter(c -> !isFullCourseCohort(c))
+                .toList();
+        if (realModules.isEmpty()) {
+            return;
+        }
+
+        List<CohortMember> memberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+        int completedModulesCount = 0;
+        java.math.BigDecimal sumGrades = java.math.BigDecimal.ZERO;
+        int gradedCount = 0;
+
+        for (Cohort mod : realModules) {
+            CohortMember cm = memberships.stream()
+                    .filter(m -> m.getCohort() != null && m.getCohort().getId().equals(mod.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (cm != null && Boolean.TRUE.equals(cm.getIsPassed())) {
+                completedModulesCount++;
+                if (cm.getFinalGrade() != null) {
+                    sumGrades = sumGrades.add(cm.getFinalGrade());
+                    gradedCount++;
+                }
+            }
+        }
+
+        boolean allPassed = (completedModulesCount >= realModules.size());
+        java.math.BigDecimal avgGrade = (gradedCount > 0)
+                ? sumGrades.divide(java.math.BigDecimal.valueOf(gradedCount), 2, java.math.RoundingMode.HALF_UP)
+                : null;
+        double progress = ((double) completedModulesCount / realModules.size()) * 100.0;
+
+        if (enrollmentRepository != null) {
+            vn.edu.ute.utelearn.entity.Enrollment enrollment = enrollmentRepository.findByUser_IdAndCourse_Id(user.getId(), course.getId())
+                    .orElseGet(() -> vn.edu.ute.utelearn.entity.Enrollment.builder()
+                            .user(user)
+                            .course(course)
+                            .build());
+
+            enrollment.setProgress(progress);
+            if (allPassed) {
+                enrollment.setIsCompleted(true);
+                if (enrollment.getCompletedAt() == null) {
+                    enrollment.setCompletedAt(java.time.Instant.now());
+                }
+                enrollment.setAverageGrade(avgGrade);
+                if (enrollment.getCertificateUrl() == null || enrollment.getCertificateUrl().isBlank()) {
+                    String certCode = "UTE-CERT-" + (course.getCode() != null ? course.getCode() : "CRS") + "-" + user.getId();
+                    enrollment.setCertificateUrl("/certificates/verify?code=" + certCode);
+                }
+                log.info("[CohortService] Học viên {} đã hoàn thành toàn bộ khóa học: {} (Điểm TB: {})",
+                        user.getEmail(), course.getCode(), avgGrade);
+            }
+            enrollmentRepository.save(enrollment);
+        }
     }
 }
 

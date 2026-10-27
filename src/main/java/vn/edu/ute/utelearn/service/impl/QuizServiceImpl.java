@@ -13,7 +13,9 @@ import vn.edu.ute.utelearn.dao.*;
 import vn.edu.ute.utelearn.dto.*;
 import vn.edu.ute.utelearn.entity.*;
 import vn.edu.ute.utelearn.service.QuizService;
+import vn.edu.ute.utelearn.service.GradebookService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
+import org.springframework.context.annotation.Lazy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -39,6 +41,8 @@ public class QuizServiceImpl implements QuizService {
     private final UserRepository userRepository;
     private final LessonCompletionRepository lessonCompletionRepository;
     private final CourseRepository courseRepository;
+    @Lazy
+    private final GradebookService gradebookService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -246,6 +250,7 @@ public class QuizServiceImpl implements QuizService {
                 .shuffleQuestions(quiz.getShuffleQuestions())
                 .allowReview(allowReview)
                 .allowLateSubmission(allowLate)
+                .examRules(quiz.getExamRules() != null && !quiz.getExamRules().isBlank() ? quiz.getExamRules() : Quiz.DEFAULT_EXAM_RULES)
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
@@ -281,6 +286,7 @@ public class QuizServiceImpl implements QuizService {
                     .shuffleQuestions(true)
                     .allowReview(true)
                     .allowLateSubmission(true)
+                    .examRules(Quiz.DEFAULT_EXAM_RULES)
                     .build();
             return quizRepository.save(newQuiz);
         });
@@ -305,6 +311,7 @@ public class QuizServiceImpl implements QuizService {
                 .shuffleQuestions(quiz.getShuffleQuestions())
                 .allowReview(quiz.getAllowReview() != null ? quiz.getAllowReview() : true)
                 .allowLateSubmission(quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true)
+                .examRules(quiz.getExamRules() != null && !quiz.getExamRules().isBlank() ? quiz.getExamRules() : Quiz.DEFAULT_EXAM_RULES)
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
@@ -361,6 +368,12 @@ public class QuizServiceImpl implements QuizService {
         if (request.getAllowLateSubmission() != null) {
             quiz.setAllowLateSubmission(request.getAllowLateSubmission());
         }
+        if (request.getExamRules() != null) {
+            String trimmedRules = request.getExamRules().trim();
+            if (!Objects.equals(quiz.getExamRules(), trimmedRules)) {
+                quiz.setExamRules(trimmedRules);
+            }
+        }
 
         Quiz saved = quizRepository.save(quiz);
         log.info("[QuizService] Đã cập nhật cấu hình Quiz ID: {}", saved.getId());
@@ -385,6 +398,7 @@ public class QuizServiceImpl implements QuizService {
                 .shuffleQuestions(saved.getShuffleQuestions())
                 .allowReview(saved.getAllowReview() != null ? saved.getAllowReview() : true)
                 .allowLateSubmission(saved.getAllowLateSubmission() != null ? saved.getAllowLateSubmission() : true)
+                .examRules(saved.getExamRules())
                 .totalQuestions(questions.size())
                 .totalPoints(totalPoints)
                 .build();
@@ -786,6 +800,12 @@ public class QuizServiceImpl implements QuizService {
                 log.info("[QuizService] Đã tự động đánh dấu hoàn thành bài học Quiz ID: {} cho User ID: {}",
                         lessonId, userId);
             }
+        }
+
+        try {
+            gradebookService.syncStudentGrade(cohort.getId(), user.getId());
+        } catch (Exception e) {
+            log.warn("[QuizService] Không thể đồng bộ bảng điểm cho Cohort {}: {}", cohort.getId(), e.getMessage());
         }
 
         int attemptNumber = (int) existingAttempts + 1;

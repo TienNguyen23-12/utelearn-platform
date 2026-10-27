@@ -74,6 +74,9 @@ public class ModuleDetailFeatureTest {
     @Mock
     private vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
 
+    @Mock
+    private vn.edu.ute.utelearn.service.GradebookService gradebookService;
+
     @InjectMocks
     private CourseController courseController;
 
@@ -99,6 +102,7 @@ public class ModuleDetailFeatureTest {
         homeResolver.setPrefix("/templates/");
         homeResolver.setSuffix(".html");
 
+        org.springframework.test.util.ReflectionTestUtils.setField(courseController, "gradebookService", gradebookService);
         courseMvc = MockMvcBuilders.standaloneSetup(courseController).setViewResolvers(courseResolver).build();
         homeMvc = MockMvcBuilders.standaloneSetup(homeController).setViewResolvers(homeResolver).build();
         apiMvc = MockMvcBuilders.standaloneSetup(courseApiController).build();
@@ -478,5 +482,96 @@ public class ModuleDetailFeatureTest {
                     org.junit.jupiter.api.Assertions.assertEquals(1, available.size());
                 });
     }
-}
 
+    @Test
+    void testGeneralLearnRedirectsToLoginWhenAnonymous() throws Exception {
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+
+        homeMvc.perform(get("/learn"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    void testGeneralLearnRedirectsToModuleWhenEnrolled() throws Exception {
+        User user = User.builder().id(10L).fullName("Test Student").email("test@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+
+        vn.edu.ute.utelearn.entity.Lesson lesson = vn.edu.ute.utelearn.entity.Lesson.builder().id(55L).build();
+        vn.edu.ute.utelearn.entity.CohortMember member = vn.edu.ute.utelearn.entity.CohortMember.builder()
+                .id(1L)
+                .user(user)
+                .cohort(sampleCohort)
+                .lastLesson(lesson)
+                .build();
+
+        when(cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user)).thenReturn(List.of(member));
+
+        homeMvc.perform(get("/learn"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/lap-trinh-web-co-ban/modules/1/learn?lesson=55"));
+    }
+
+    @Test
+    void testGeneralLearnRedirectsToMyCoursesWhenNoEnrollment() throws Exception {
+        User user = User.builder().id(10L).fullName("Test Student").email("test@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+        when(cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user)).thenReturn(Collections.emptyList());
+
+        homeMvc.perform(get("/learn"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/courses/my-courses"));
+    }
+
+    @Test
+    void testShowModuleDetailIncludesStudentGradeWhenEnrolled() throws Exception {
+        User user = User.builder().id(10L).fullName("Test Student").email("test@utelearn.edu.vn").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(user));
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findById(1L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(1L, 10L)).thenReturn(true);
+        when(cohortScheduleRepository.findByCohortIdWithDetails(1L)).thenReturn(Collections.emptyList());
+        when(sectionRepository.findSectionsForCohort(1L)).thenReturn(Collections.emptyList());
+
+        vn.edu.ute.utelearn.dto.StudentGradeItemDTO studentGrade = vn.edu.ute.utelearn.dto.StudentGradeItemDTO.builder()
+                .userId(10L)
+                .fullName("Test Student")
+                .finalGrade(BigDecimal.valueOf(8.5))
+                .isPassed(true)
+                .build();
+        when(gradebookService.getStudentGrade(1L, 10L)).thenReturn(studentGrade);
+
+        courseMvc.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("courses/module-detail"))
+                .andExpect(model().attributeExists("studentGrade"))
+                .andExpect(model().attribute("studentGrade", studentGrade));
+    }
+
+    @Test
+    void testModuleDetailThymeleafRenderingWithGradeAndReviewPrompt() throws Exception {
+        org.thymeleaf.templateresolver.ClassLoaderTemplateResolver templateResolver = new org.thymeleaf.templateresolver.ClassLoaderTemplateResolver();
+        templateResolver.setPrefix("templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setTemplateMode("HTML");
+        templateResolver.setCharacterEncoding("UTF-8");
+        org.thymeleaf.spring6.SpringTemplateEngine templateEngine = new org.thymeleaf.spring6.SpringTemplateEngine();
+        templateEngine.setTemplateResolver(templateResolver);
+        org.thymeleaf.spring6.view.ThymeleafViewResolver viewResolver = new org.thymeleaf.spring6.view.ThymeleafViewResolver();
+        viewResolver.setTemplateEngine(templateEngine);
+        viewResolver.setCharacterEncoding("UTF-8");
+
+        MockMvc mvcWithThymeleaf = MockMvcBuilders.standaloneSetup(courseController)
+                .setViewResolvers(viewResolver)
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findById(1L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortScheduleRepository.findByCohortIdWithDetails(1L)).thenReturn(Collections.emptyList());
+        when(sectionRepository.findSectionsForCohort(1L)).thenReturn(Collections.emptyList());
+
+        mvcWithThymeleaf.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
+                .andExpect(status().isOk());
+    }
+}

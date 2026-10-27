@@ -13,7 +13,9 @@ import vn.edu.ute.utelearn.dto.AssignmentSubmissionDTO;
 import vn.edu.ute.utelearn.entity.*;
 import vn.edu.ute.utelearn.service.AssignmentService;
 import vn.edu.ute.utelearn.service.CloudinaryService;
+import vn.edu.ute.utelearn.service.GradebookService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
+import org.springframework.context.annotation.Lazy;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -33,6 +35,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final LessonCompletionRepository lessonCompletionRepository;
     private final CohortMemberRepository cohortMemberRepository;
     private final CloudinaryService cloudinaryService;
+    @Lazy
+    private final GradebookService gradebookService;
 
     private boolean isInstructorAuthorized(Lesson lesson, Long instructorId) {
         if (instructorId == null || lesson == null) {
@@ -236,11 +240,21 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AssignmentDTO getAssignmentByLessonId(Long lessonId, Long cohortId, Long userId) {
         log.info("[AssignmentService] Tải thông tin Assignment cho lessonId: {}, cohortId: {}, userId: {}", lessonId, cohortId, userId);
-        Assignment assignment = assignmentRepository.findByLessonId(lessonId)
-                .orElseThrow(() -> new RuntimeException("Bài tập chưa được thiết lập cho bài học này"));
+        Assignment assignment = assignmentRepository.findByLessonId(lessonId).orElse(null);
+        if (assignment == null) {
+            Lesson lesson = lessonRepository.findById(lessonId).orElse(null);
+            if (lesson != null && "ASSIGNMENT".equalsIgnoreCase(lesson.getLessonType())) {
+                User user = userId != null ? userRepository.findById(userId).orElse(null) : null;
+                boolean isPrivileged = user != null && (SecurityUtils.isModerator(user) || SecurityUtils.isAdmin(user) || isInstructorAuthorized(lesson, userId));
+                if (isPrivileged) {
+                    return getOrCreateAssignmentForLesson(lessonId, userId);
+                }
+            }
+            throw new RuntimeException("Bài tập chưa được thiết lập cho bài học này");
+        }
 
         return mapToDTO(assignment, cohortId, userId);
     }
@@ -499,10 +513,28 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         AssignmentSubmission saved = assignmentSubmissionRepository.save(submission);
 
-        if (submission.getCohort() != null) {
+        Cohort cohort = submission.getCohort();
+        if (cohort == null && assignment.getLesson() != null && assignment.getLesson().getSection() != null) {
+            Course course = assignment.getLesson().getSection().getCourse();
+            if (course != null) {
+                List<CohortMember> cms = cohortMemberRepository.findByCourseIdAndUserIdWithCohort(course.getId(), submission.getUser().getId());
+                if (!cms.isEmpty()) {
+                    cohort = cms.get(0).getCohort();
+                    submission.setCohort(cohort);
+                    saved = assignmentSubmissionRepository.save(submission);
+                }
+            }
+        }
+
+        if (cohort != null) {
             boolean isPass = !requiresGrading || (request.getScore().compareTo(assignment.getPassingScore()) >= 0);
             if (isPass) {
-                recordLessonCompletion(submission.getCohort(), assignment.getLesson(), submission.getUser());
+                recordLessonCompletion(cohort, assignment.getLesson(), submission.getUser());
+            }
+            try {
+                gradebookService.syncStudentGrade(cohort.getId(), submission.getUser().getId());
+            } catch (Exception e) {
+                log.warn("[AssignmentService] Không thể đồng bộ bảng điểm cho Cohort {}: {}", cohort.getId(), e.getMessage());
             }
         }
 

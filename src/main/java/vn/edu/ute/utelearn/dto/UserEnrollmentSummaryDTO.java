@@ -8,6 +8,7 @@ import lombok.Setter;
 import vn.edu.ute.utelearn.entity.CohortMember;
 import vn.edu.ute.utelearn.entity.Course;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -31,5 +32,13 @@ public class UserEnrollmentSummaryDTO {
         private Instant enrolledAt;
         private int totalModules;
         private int enrolledModulesCount;
+        private int completedModulesCount;
+        private int progressPercent;
+        private boolean isCompleted;
+        private BigDecimal averageGrade;
+        private String certificateUrl;
+        private boolean hasReviewed;
+        private Integer rating;
+        private String reviewComment;
     }
 }

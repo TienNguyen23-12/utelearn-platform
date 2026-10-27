@@ -16,6 +16,7 @@ import vn.edu.ute.utelearn.service.CourseService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -294,6 +295,40 @@ public class CourseApiController {
             Map<String, Object> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.service.CertificateService certificateService;
+
+    @PostMapping(value = "/review", produces = "application/json")
+    public ResponseEntity<?> submitCourseReview(@RequestBody vn.edu.ute.utelearn.dto.CourseReviewRequestDTO req) {
+        if (req == null || req.getRating() == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Số sao đánh giá không được để trống"));
+        }
+        if (certificateService == null) {
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Dịch vụ chứng chỉ chưa sẵn sàng"));
+        }
+        Long userId = null;
+        if (authService != null) {
+            Optional<vn.edu.ute.utelearn.entity.User> uOpt = authService.getCurrentAuthenticatedUser();
+            if (uOpt.isPresent()) {
+                userId = uOpt.get().getId();
+            }
+        }
+        try {
+            vn.edu.ute.utelearn.dto.CertificateViewDTO cert = certificateService.submitCourseReview(
+                    userId, req.getCohortId(), req.getCertCode(), req.getRating(), req.getComment());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Đánh giá khóa học thành công! Giấy chứng nhận của bạn đã được kích hoạt.",
+                    "data", cert
+            ));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[CourseApiController] Lỗi khi lưu đánh giá khóa học: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Lỗi hệ thống khi lưu đánh giá"));
         }
     }
 }

@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS cohort_messages CASCADE;
+DROP TABLE IF EXISTS lesson_notes CASCADE;
 DROP TABLE IF EXISTS lesson_completions CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS moderation_tasks CASCADE;
@@ -176,6 +177,13 @@ CREATE TABLE cohorts (
     announcement_title VARCHAR(255),
     announcement_content TEXT,
     order_index INT DEFAULT 1,
+    grading_policy VARCHAR(30) DEFAULT 'PROGRESS_BASED',
+    process_weight INT DEFAULT 50,
+    final_weight INT DEFAULT 50,
+    final_lesson_id BIGINT REFERENCES lessons(id) ON DELETE SET NULL,
+    min_passing_grade NUMERIC(5, 2) DEFAULT 5.00,
+    min_final_exam_score NUMERIC(5, 2) DEFAULT 3.00,
+    is_grades_published BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT chk_enrollment_period CHECK (enrollment_start IS NULL OR enrollment_end IS NULL OR enrollment_start < enrollment_end),
@@ -186,11 +194,17 @@ CREATE TABLE cohort_members (
     id BIGSERIAL PRIMARY KEY,
     cohort_id BIGINT NOT NULL REFERENCES cohorts(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_in_cohort VARCHAR(30) DEFAULT 'STUDENT', -- 'STUDENT', 'TEACHER', 'TEACHING_ASSISTANT'
+    role_in_cohort VARCHAR(30) DEFAULT 'STUDENT',
     enrolled_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    process_grade NUMERIC(5, 2),
+    final_exam_grade NUMERIC(5, 2),
     final_grade NUMERIC(5, 2),
+    graded_at TIMESTAMPTZ,
     is_passed BOOLEAN DEFAULT FALSE,
     certificate_url TEXT,
+    rating INT,
+    review_comment TEXT,
+    reviewed_at TIMESTAMPTZ,
     last_lesson_id BIGINT REFERENCES lessons(id) ON DELETE SET NULL,
     last_accessed_at TIMESTAMPTZ,
     CONSTRAINT uq_cohort_user UNIQUE (cohort_id, user_id)
@@ -225,6 +239,19 @@ CREATE TABLE lesson_completions (
 CREATE INDEX idx_lesson_completions_cohort_user ON lesson_completions(cohort_id, user_id);
 CREATE INDEX idx_lesson_completions_lesson ON lesson_completions(lesson_id);
 
+CREATE TABLE lesson_notes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lesson_id BIGINT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE,
+    timestamp_seconds INT,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_lesson_notes_user_lesson ON lesson_notes(user_id, lesson_id);
+
 CREATE INDEX idx_cohorts_course ON cohorts(course_id);
 CREATE INDEX idx_cohorts_creator ON cohorts(created_by);
 CREATE INDEX idx_cohorts_visibility ON cohorts(visibility);
@@ -248,6 +275,9 @@ CREATE TABLE quizzes (
     allow_review BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS allow_late_submission BOOLEAN DEFAULT TRUE;
+ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS exam_rules TEXT;
 
 CREATE TABLE questions (
     id BIGSERIAL PRIMARY KEY,
@@ -450,3 +480,15 @@ CREATE TABLE cohort_messages (
 );
 
 CREATE INDEX idx_messages_cohort ON cohort_messages(cohort_id, created_at);
+
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS grading_policy VARCHAR(30) DEFAULT 'PROGRESS_BASED';
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS process_weight INT DEFAULT 50;
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS final_weight INT DEFAULT 50;
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS final_lesson_id BIGINT REFERENCES lessons(id) ON DELETE SET NULL;
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS min_passing_grade NUMERIC(4, 2) DEFAULT 5.00;
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS min_final_exam_score NUMERIC(4, 2) DEFAULT 3.00;
+ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS is_grades_published BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS process_grade NUMERIC(5, 2);
+ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS final_exam_grade NUMERIC(5, 2);
+ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS graded_at TIMESTAMPTZ;

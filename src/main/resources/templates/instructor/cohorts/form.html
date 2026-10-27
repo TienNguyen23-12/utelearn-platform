@@ -154,6 +154,87 @@
                         <label class="form-label fw-semibold">Nội dung thông báo hiển thị trong Module</label>
                         <textarea class="form-control" th:field="*{announcementContent}" rows="5" placeholder="Mặc định: Khóa học được thiết kế theo chuẩn sư phạm tích cực..."></textarea>
                     </div>
+
+                    <div class="col-md-12 mt-4">
+                        <div class="card border border-primary-subtle rounded-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);">
+                            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-award text-primary fs-5"></i>
+                                    <h6 class="fw-bold mb-0 text-dark">Tiêu chí Đánh giá &amp; Điều kiện Kết thúc khóa</h6>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">Quy chế hoàn thành</span>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-semibold">Mô hình đánh giá kết thúc khóa</label>
+                                        <select class="form-select rounded-3" id="gradingPolicySelect" th:field="*{gradingPolicy}">
+                                            <option value="PROGRESS_BASED">1. Theo tiến độ học tập (Hoàn thành 100% bài học)</option>
+                                            <option value="WEIGHTED_GRADING">2. Theo trọng số điểm số (Giảng viên tự cấu hình % Quá trình &amp; Cuối kỳ)</option>
+                                            <option value="EXIT_EXAM">3. Theo bài kiểm tra đầu ra (Exit Exam / Đồ án cuối khóa)</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="weightedGradingConfig" class="col-md-12">
+                                        <div class="p-3 bg-white rounded-3 border">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold d-flex justify-content-between">
+                                                        <span>Trọng số Điểm Quá trình (%)</span>
+                                                        <span class="text-primary fw-bold" id="processWeightLabel">50%</span>
+                                                    </label>
+                                                    <input type="number" min="0" max="100" class="form-control" id="processWeightInput" th:field="*{processWeight}">
+                                                    <div class="form-text">Điểm trung bình các bài Quiz &amp; Assignment trong kỳ.</div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold d-flex justify-content-between">
+                                                        <span>Trọng số Điểm Cuối kỳ (%)</span>
+                                                        <span class="text-danger fw-bold" id="finalWeightLabel">50%</span>
+                                                    </label>
+                                                    <input type="number" min="0" max="100" class="form-control" id="finalWeightInput" th:field="*{finalWeight}">
+                                                    <div class="form-text">Điểm bài thi/đồ án kiểm tra đầu ra.</div>
+                                                </div>
+                                                <div class="col-12" id="weightSumAlert" style="display: none;">
+                                                    <div class="alert alert-danger py-2 small mb-0 rounded-3">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Tổng trọng số Quá trình + Cuối kỳ phải bằng 100%. Hiện tại: <strong id="currentWeightSum">100</strong>%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="finalLessonConfig" class="col-md-12">
+                                        <div class="p-3 bg-white rounded-3 border">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-semibold">Chỉ định Bài kiểm tra cuối kỳ / Đồ án đầu ra</label>
+                                                    <select class="form-select rounded-3" th:field="*{finalLessonId}">
+                                                        <option value="">-- Chọn bài học làm bài thi cuối kỳ --</option>
+                                                        <option th:each="cs : ${cohortSchedules}" 
+                                                                th:value="${cs.lesson.id}"
+                                                                th:text="${'[' + cs.lesson.lessonType + '] ' + cs.lesson.title}">
+                                                            [QUIZ] Bài thi cuối kỳ
+                                                        </option>
+                                                    </select>
+                                                    <div class="form-text">Chọn bài học (Quiz hoặc Assignment) dùng làm căn cứ tính điểm cuối kỳ.</div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label fw-semibold">Điểm sàn đạt yêu cầu</label>
+                                                    <input type="number" step="0.1" min="0" max="10" class="form-control" th:field="*{minPassingGrade}" placeholder="Mặc định: 5.0">
+                                                    <div class="form-text">Điểm tổng kết tối thiểu để tốt nghiệp.</div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label fw-semibold">Điểm sàn bài cuối kỳ (Chống liệt)</label>
+                                                    <input type="number" step="0.1" min="0" max="10" class="form-control" th:field="*{minFinalExamScore}" placeholder="Mặc định: 3.0">
+                                                    <div class="form-text">Điểm bài cuối kỳ tối thiểu không bị liệt.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
@@ -198,6 +279,66 @@
                 this.src = defaultCover;
             });
         }
+
+        const policySelect = document.getElementById('gradingPolicySelect');
+        const weightedConfig = document.getElementById('weightedGradingConfig');
+        const finalLessonConfig = document.getElementById('finalLessonConfig');
+        const processInput = document.getElementById('processWeightInput');
+        const finalInput = document.getElementById('finalWeightInput');
+        const processLabel = document.getElementById('processWeightLabel');
+        const finalLabel = document.getElementById('finalWeightLabel');
+        const weightSumAlert = document.getElementById('weightSumAlert');
+        const currentWeightSum = document.getElementById('currentWeightSum');
+
+        function updateGradingUI() {
+            if (!policySelect) return;
+            const val = policySelect.value;
+            if (val === 'WEIGHTED_GRADING') {
+                if (weightedConfig) weightedConfig.style.display = 'block';
+                if (finalLessonConfig) finalLessonConfig.style.display = 'block';
+            } else if (val === 'EXIT_EXAM') {
+                if (weightedConfig) weightedConfig.style.display = 'none';
+                if (finalLessonConfig) finalLessonConfig.style.display = 'block';
+            } else {
+                if (weightedConfig) weightedConfig.style.display = 'none';
+                if (finalLessonConfig) finalLessonConfig.style.display = 'none';
+            }
+            validateWeights();
+        }
+
+        function validateWeights() {
+            if (!processInput || !finalInput) return;
+            const p = parseInt(processInput.value, 10) || 0;
+            const f = parseInt(finalInput.value, 10) || 0;
+            if (processLabel) processLabel.textContent = p + '%';
+            if (finalLabel) finalLabel.textContent = f + '%';
+            const sum = p + f;
+            if (currentWeightSum) currentWeightSum.textContent = sum;
+            if (policySelect && policySelect.value === 'WEIGHTED_GRADING' && sum !== 100) {
+                if (weightSumAlert) weightSumAlert.style.display = 'block';
+            } else {
+                if (weightSumAlert) weightSumAlert.style.display = 'none';
+            }
+        }
+
+        if (policySelect) {
+            policySelect.addEventListener('change', updateGradingUI);
+        }
+        if (processInput) {
+            processInput.addEventListener('input', function() {
+                const p = parseInt(this.value, 10) || 0;
+                if (finalInput) finalInput.value = Math.max(0, 100 - p);
+                validateWeights();
+            });
+        }
+        if (finalInput) {
+            finalInput.addEventListener('input', function() {
+                const f = parseInt(this.value, 10) || 0;
+                if (processInput) processInput.value = Math.max(0, 100 - f);
+                validateWeights();
+            });
+        }
+        updateGradingUI();
     });
 </script>
 </body>

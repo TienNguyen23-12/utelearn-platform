@@ -29,6 +29,12 @@ import vn.edu.ute.utelearn.service.SectionService;
 import vn.edu.ute.utelearn.service.LessonService;
 import vn.edu.ute.utelearn.service.ModerationService;
 import vn.edu.ute.utelearn.service.CohortService;
+import vn.edu.ute.utelearn.service.GradebookService;
+import vn.edu.ute.utelearn.dto.CourseGradebookDTO;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import vn.edu.ute.utelearn.dao.CohortRepository;
 import vn.edu.ute.utelearn.dao.CohortScheduleRepository;
 import vn.edu.ute.utelearn.dao.LessonRepository;
@@ -61,6 +67,8 @@ public class InstructorCourseController {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final CohortService cohortService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private GradebookService gradebookService;
 
     @GetMapping
     public String listCourses(@RequestParam(defaultValue = "0") int page,
@@ -652,6 +660,88 @@ public class InstructorCourseController {
         model.addAttribute("module", cohort);
         model.addAttribute("sections", sections);
         return "instructor/courses/module-curriculum";
+    }
+
+    @GetMapping("/{courseId}/modules/{moduleId}/gradebook")
+    @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
+    public String showModuleGradebook(@PathVariable Long courseId, @PathVariable Long moduleId) {
+        return "redirect:/instructor/cohorts/" + moduleId + "/gradebook";
+    }
+
+    @GetMapping("/{id}/gradebook")
+    public String showCourseGradebook(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
+        log.info("[InstructorCourseController] Truy cập bảng điểm khóa học id: {}", id);
+        User currentUser = authService.getCurrentAuthenticatedUser().orElse(null);
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+        if (gradebookService == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Dịch vụ bảng điểm chưa khả dụng");
+            return "redirect:/instructor/courses";
+        }
+
+        try {
+            CourseGradebookDTO gradebook = gradebookService.getCourseGradebook(id, currentUser.getId());
+            model.addAttribute("currentUser", currentUser);
+            model.addAttribute("gradebook", gradebook);
+            model.addAttribute("course", gradebook.getCourse());
+            model.addAttribute("modules", gradebook.getModules());
+            model.addAttribute("students", gradebook.getStudents());
+            return "instructor/courses/gradebook";
+        } catch (Exception e) {
+            log.error("[InstructorCourseController] Lỗi khi mở bảng điểm khóa học {}: {}", id, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/instructor/courses";
+        }
+    }
+
+    @PostMapping("/{id}/gradebook/calculate")
+    public String calculateCourseGrades(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElse(null);
+        if (currentUser == null) {
+            return "redirect:/login";
+        }
+        if (gradebookService == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Dịch vụ bảng điểm chưa khả dụng");
+            return "redirect:/instructor/courses";
+        }
+
+        try {
+            gradebookService.calculateAndSyncCourseGradebook(id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã tính toán và đồng bộ điểm số cùng trạng thái hoàn thành khóa học cho toàn bộ học viên!");
+        } catch (Exception e) {
+            log.error("[InstructorCourseController] Lỗi khi tính điểm khóa học {}: {}", id, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể tính điểm: " + e.getMessage());
+        }
+        return "redirect:/instructor/courses/" + id + "/gradebook";
+    }
+
+    @GetMapping("/{id}/gradebook/export")
+    public ResponseEntity<byte[]> exportCourseGradebook(@PathVariable("id") Long id) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElse(null);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (gradebookService == null) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
+        try {
+            byte[] excelBytes = gradebookService.exportCourseGradebookToExcel(id, currentUser.getId());
+            Course course = courseService.getCourseById(id);
+            String courseCode = (course != null && course.getCode() != null) ? course.getCode() : "CRS" + id;
+            String fileName = "Bang_Diem_Khoa_Hoc_" + courseCode + ".xlsx";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", fileName);
+            headers.setContentLength(excelBytes.length);
+
+            return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("[InstructorCourseController] Lỗi xuất Excel bảng điểm khóa học {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     private String parseObjectives(String objectivesStr) {

@@ -579,6 +579,79 @@
                                 </ul>
                             </div>
                         </div>
+                </div>
+
+                <div th:if="${studentCourseGrade != null && (isEnrolled || isCourseCompleted)}" class="card border-0 rounded-4 shadow-sm mt-4 p-4 bg-white">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                                <i class="bi bi-award-fill text-warning"></i>
+                                <span>Bảng điểm & Đánh giá kết quả khóa học</span>
+                            </h5>
+                            <div class="text-muted small">
+                                Kết quả tổng kết và đánh giá quá trình học tập của bạn trên từng module.
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span th:if="${studentCourseGrade.isCompleted}" class="badge bg-success rounded-pill px-3 py-1.5 fw-bold">
+                                <i class="bi bi-award-fill me-1"></i>ĐÃ TỐT NGHIỆP
+                            </span>
+                            <span th:unless="${studentCourseGrade.isCompleted}" class="badge bg-secondary rounded-pill px-3 py-1.5">
+                                <i class="bi bi-hourglass-split me-1"></i>ĐANG HỌC
+                            </span>
+                            <span th:if="${studentCourseGrade.courseAverageGrade != null}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5 fw-bold">
+                                ĐTB: <strong th:text="${studentCourseGrade.courseAverageGrade} + '/10'">0.0/10</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-hover align-middle mb-0 text-nowrap">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Module đào tạo</th>
+                                <th class="text-center">Mã</th>
+                                <th class="text-center">Quy tắc đánh giá</th>
+                                <th class="text-center">Điểm tổng kết</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-center">Chứng chỉ</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="mg : ${studentCourseGrade.moduleGrades}">
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${mg.moduleName}">Tên Module</div>
+                                </td>
+                                <td class="text-center font-monospace text-muted small" th:text="${mg.moduleCode}">MOD-01</td>
+                                <td class="text-center">
+                                    <span th:if="${mg.gradingPolicy == 'WEIGHTED_GRADING'}" class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill" style="font-size: 11px;">Trọng số</span>
+                                    <span th:if="${mg.gradingPolicy == 'EXIT_EXAM'}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size: 11px;">Bài thi đầu ra</span>
+                                    <span th:if="${mg.gradingPolicy == null or mg.gradingPolicy == 'PROGRESS_BASED'}" class="badge bg-secondary-subtle text-secondary rounded-pill" style="font-size: 11px;">Tiến độ 100%</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${mg.finalGrade != null}" class="fw-bold text-primary fs-6" th:text="${mg.finalGrade} + ' / 10'">9.0 / 10</span>
+                                    <span th:unless="${mg.finalGrade != null}" class="text-muted small">-</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${mg.isPassed != null and mg.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Đã đạt
+                                    </span>
+                                    <span th:if="${mg.isEnrolled and (mg.isPassed == null or not mg.isPassed)}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-hourglass-split me-1"></i>Đang học
+                                    </span>
+                                    <span th:unless="${mg.isEnrolled}" class="badge bg-secondary-subtle text-muted rounded-pill px-2.5 py-1">
+                                        Chưa ghi danh
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:if="${mg.certificateUrl != null}" th:href="@{${mg.certificateUrl}}" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5" title="Xem chứng chỉ module">
+                                        <i class="bi bi-award"></i> Xem
+                                    </a>
+                                    <span th:unless="${mg.certificateUrl != null}" class="text-muted small">-</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -617,8 +690,31 @@
                             <i class="bi bi-play-circle-fill me-1"></i><span th:text="${hasAccessRole ? 'Vào học / Giảng dạy' : 'Vào học ngay'}">Vào học</span>
                         </a>
 
-                        <div th:if="${isAllEnrolled}" class="alert alert-success rounded-3 mb-3 p-3 text-center">
-                            <i class="bi bi-patch-check-fill fs-4 text-success d-block mb-1"></i>
+                        <div th:if="${isCourseCompleted}" class="alert alert-success border-success border-opacity-50 bg-success bg-opacity-10 rounded-3 mb-3 p-3 text-center shadow-xs">
+                            <i class="bi bi-award-fill fs-3 text-success d-block mb-1"></i>
+                            <div class="fw-bold text-success mb-1">ĐÃ TỐT NGHIỆP KHÓA HỌC</div>
+                            <div class="small text-muted mb-2">Bạn đã hoàn thành xuất sắc tất cả các module của khóa học này!</div>
+                            <a th:if="${courseCertificateUrl != null}" th:href="${courseCertificateUrl}" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-patch-check-fill me-1"></i>Xem chứng chỉ khóa học
+                            </a>
+                        </div>
+
+                        <button th:if="${studentCourseGrade != null && (isEnrolled || isCourseCompleted)}" type="button" class="btn btn-outline-info rounded-pill w-100 mb-3 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#courseGradeModal">
+                            <i class="bi bi-table me-1"></i>Bảng điểm cá nhân
+                        </button>
+
+                        <div th:if="${isAllEnrolled && !isCourseCompleted}" class="card border-0 bg-light rounded-3 p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-dark">Tiến độ khóa học:</span>
+                                <span class="small fw-bold text-primary" th:text="${courseCompletedModulesCount} + '/' + ${courseTotalModulesCount} + ' Module (' + ${courseProgressPercent} + '%)'">0/0 Module</span>
+                            </div>
+                            <div class="progress rounded-pill bg-white border" style="height: 8px;">
+                                <div class="progress-bar bg-gradient bg-primary" role="progressbar" th:style="'width: ' + ${courseProgressPercent} + '%'"></div>
+                            </div>
+                        </div>
+
+                        <div th:if="${isAllEnrolled && !isCourseCompleted}" class="alert alert-success rounded-3 mb-3 p-2.5 text-center">
+                            <i class="bi bi-patch-check-fill fs-5 text-success me-1"></i>
                             <span class="small fw-semibold">Bạn đã sở hữu trọn bộ khóa học này</span>
                         </div>
 
@@ -1077,6 +1173,107 @@
         toast.showToast();
     }
 </script>
+
+<div th:if="${studentCourseGrade != null}" class="modal fade" id="courseGradeModal" tabindex="-1" aria-labelledby="courseGradeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="courseGradeModalLabel">
+                        <i class="bi bi-award-fill text-warning me-2"></i>Bảng điểm Khóa học Cá nhân
+                    </h5>
+                    <div class="small text-light opacity-75" th:text="${course.title}">Tên Khóa Học</div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Kết quả tốt nghiệp</small>
+                            <span th:if="${studentCourseGrade.isCompleted}" class="badge bg-success text-white rounded-pill px-3 py-1.5 fw-bold">
+                                <i class="bi bi-award-fill me-1"></i>ĐÃ TỐT NGHIỆP
+                            </span>
+                            <span th:unless="${studentCourseGrade.isCompleted}" class="badge bg-secondary text-white rounded-pill px-3 py-1.5">
+                                <i class="bi bi-hourglass-split me-1"></i>ĐANG HỌC
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Điểm TB tích lũy</small>
+                            <h4 class="fw-bold text-primary mb-0" th:text="${studentCourseGrade.courseAverageGrade != null ? studentCourseGrade.courseAverageGrade + ' / 10' : '-'}">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light p-3 rounded-4 border text-center">
+                            <small class="text-muted fw-semibold d-block mb-1">Tiến độ Module</small>
+                            <h4 class="fw-bold text-dark mb-0" th:text="${studentCourseGrade.completedModulesCount} + ' / ' + ${studentCourseGrade.totalModulesCount}">0/0</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-collection text-primary me-2"></i>Chi tiết từng Module:</h6>
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Module</th>
+                            <th class="text-center">Mã</th>
+                            <th class="text-center">Điểm số</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Chứng chỉ</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="mg : ${studentCourseGrade.moduleGrades}">
+                            <td class="fw-semibold text-dark" th:text="${mg.moduleName}">Tên Module</td>
+                            <td class="text-center font-monospace text-muted" th:text="${mg.moduleCode}">MOD-01</td>
+                            <td class="text-center">
+                                <span th:if="${mg.finalGrade != null}" class="fw-bold text-primary" th:text="${mg.finalGrade} + ' / 10'">9.0 / 10</span>
+                                <span th:unless="${mg.finalGrade != null}" class="text-muted">-</span>
+                            </td>
+                            <td class="text-center">
+                                <span th:if="${mg.isPassed != null and mg.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Đã đạt
+                                </span>
+                                <span th:if="${mg.isEnrolled and (mg.isPassed == null or not mg.isPassed)}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i>Đang học
+                                </span>
+                                <span th:unless="${mg.isEnrolled}" class="badge bg-secondary-subtle text-muted rounded-pill px-2.5 py-1">
+                                    Chưa đăng ký
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a th:if="${mg.certificateUrl != null}" th:href="@{${mg.certificateUrl}}" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5">
+                                    <i class="bi bi-award"></i> Xem
+                                </a>
+                                <span th:unless="${mg.certificateUrl != null}" class="text-muted">-</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${studentCourseGrade.isCompleted && studentCourseGrade.certificateUrl != null}" class="alert alert-success border-success-subtle rounded-4 mt-4 d-flex align-items-center justify-content-between p-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-patch-check-fill fs-3 text-success"></i>
+                        <div>
+                            <div class="fw-bold text-dark">Chứng chỉ Tốt nghiệp Khóa học</div>
+                            <div class="small text-muted">Bạn đã hoàn thành đủ điều kiện tốt nghiệp</div>
+                        </div>
+                    </div>
+                    <a th:href="@{${studentCourseGrade.certificateUrl}}" target="_blank" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-award-fill me-1"></i>Xem chứng chỉ
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 p-3">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <footer th:replace="~{fragments/footer :: footer}"></footer>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>

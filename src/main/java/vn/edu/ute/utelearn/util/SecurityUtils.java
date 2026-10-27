@@ -19,9 +19,13 @@ public final class SecurityUtils {
                 continue;
             }
             boolean matched = user.getRoles().stream()
-                    .map(Role::getCode)
                     .filter(Objects::nonNull)
-                    .anyMatch(c -> c.equalsIgnoreCase(target) || c.equalsIgnoreCase("ROLE_" + target));
+                    .anyMatch(r -> {
+                        String code = r.getCode();
+                        String name = r.getName();
+                        return (code != null && (code.equalsIgnoreCase(target) || code.equalsIgnoreCase("ROLE_" + target) || ("ROLE_" + code).equalsIgnoreCase(target)))
+                                || (name != null && (name.equalsIgnoreCase(target) || name.equalsIgnoreCase("ROLE_" + target)));
+                    });
             if (matched) {
                 return true;
             }

@@ -770,6 +770,14 @@
                 <input type="number" class="form-control rounded-3" id="quizCfgMaxAttempts" min="0" max="20" value="1">
                 <div class="form-text" style="font-size: 11px;">Nhập 0 nếu không giới hạn số lượt làm bài</div>
               </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-card-text text-primary me-1"></i>Quy chế làm bài thi</span>
+                  <span class="text-muted fw-normal" style="font-size: 11px;">(Mỗi dòng là một mục quy chế)</span>
+                </label>
+                <textarea class="form-control rounded-3" id="quizCfgExamRules" rows="6" placeholder="Nhập quy chế làm bài thi, mỗi quy chế trên một dòng..."></textarea>
+                <div class="form-text" style="font-size: 11px;">Quy chế này sẽ tự động hiển thị cho học viên tại màn hình bắt đầu làm bài kiểm tra.</div>
+              </div>
               <div class="col-12 mt-3">
                 <div class="p-3 border rounded-3 bg-light">
                   <div class="fw-semibold small text-dark mb-3 d-flex align-items-center gap-2">
@@ -1870,6 +1878,9 @@
             document.getElementById('quizCfgShuffle').checked = quiz.shuffleQuestions !== false;
             document.getElementById('quizCfgAllowReview').checked = quiz.allowReview !== false;
             document.getElementById('quizCfgAllowLate').checked = quiz.allowLateSubmission !== false;
+            if (document.getElementById('quizCfgExamRules')) {
+                document.getElementById('quizCfgExamRules').value = quiz.examRules || '';
+            }
 
             const badgeEl = document.getElementById('quizModalStatusBadge');
             if (badgeEl) {
@@ -1899,11 +1910,14 @@
             return;
         }
 
+        const examRulesVal = document.getElementById('quizCfgExamRules') ? document.getElementById('quizCfgExamRules').value.trim() : '';
+
         const payload = {
             title: titleVal,
             durationMinutes: parseInt(document.getElementById('quizCfgDuration').value) || 15,
             passingScore: parseFloat(document.getElementById('quizCfgPassingScore').value) || 5.0,
             maxAttempts: parseInt(document.getElementById('quizCfgMaxAttempts').value) || 0,
+            examRules: examRulesVal,
             shuffleQuestions: document.getElementById('quizCfgShuffle').checked,
             allowReview: document.getElementById('quizCfgAllowReview').checked,
             allowLateSubmission: document.getElementById('quizCfgAllowLate').checked

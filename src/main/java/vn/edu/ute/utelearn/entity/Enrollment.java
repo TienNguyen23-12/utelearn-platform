@@ -35,4 +35,30 @@ public class Enrollment {
     @Column(name = "progress")
     @Builder.Default
     private Double progress = 0.0;
+
+    @Column(name = "is_completed")
+    @Builder.Default
+    private Boolean isCompleted = false;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
+    @Column(name = "average_grade", precision = 5, scale = 2)
+    private java.math.BigDecimal averageGrade;
+
+    @Column(name = "certificate_url", columnDefinition = "TEXT")
+    private String certificateUrl;
+
+    @Column(name = "rating")
+    private Integer rating;
+
+    @Column(name = "review_comment", columnDefinition = "TEXT")
+    private String reviewComment;
+
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
+
+    public boolean hasReviewed() {
+        return rating != null && rating >= 1 && rating <= 5;
+    }
 }

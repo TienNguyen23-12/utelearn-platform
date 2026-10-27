@@ -48,5 +48,12 @@ public class CohortRequestDTO {
 
     private String thumbnailUrl;
 
+    private String gradingPolicy = "PROGRESS_BASED";
+    private Integer processWeight = 50;
+    private Integer finalWeight = 50;
+    private Long finalLessonId;
+    private BigDecimal minPassingGrade = new BigDecimal("5.00");
+    private BigDecimal minFinalExamScore = new BigDecimal("3.00");
+
     private java.util.List<CohortScheduleRequestDTO> schedules = new java.util.ArrayList<>();
 }

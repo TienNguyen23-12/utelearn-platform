@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Bảng điểm & Tổng kết - ' + ${cohort.name} + ' - UTELearn'">Bảng điểm & Tổng kết - UTELearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+
+<body>
+
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <aside th:replace="~{fragments/sidebar :: sidebar('cohorts')}"></aside>
+
+    <div class="app-content-wrapper">
+        <header th:replace="~{fragments/navbar :: navbar('Bảng điểm & Tổng kết')}"></header>
+
+        <main class="app-main-content">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a th:href="@{/instructor/cohorts}" class="text-decoration-none text-muted">Module &amp; Đợt học</a></li>
+                    <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Bảng điểm &amp; Đánh giá kết thúc khóa</li>
+                </ol>
+            </nav>
+
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+                <i class="bi bi-check-circle-fill fs-5"></i>
+                <div th:text="${successMessage}">Thao tác thành công!</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                <div th:text="${errorMessage}">Đã xảy ra lỗi!</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${warningMessage}" class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0 d-flex flex-column gap-2 mb-4" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <div class="fw-semibold" th:text="${warningMessage}">Cảnh báo khi nhập file!</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <ul th:if="${importErrors != null and !importErrors.isEmpty()}" class="mb-0 ps-3 small text-secondary">
+                    <li th:each="err : ${importErrors}" th:text="${err}">Chi tiết lỗi</li>
+                </ul>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace" th:text="${cohort.code}">MOD-CODE</span>
+                                <span th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold">
+                                    <i class="bi bi-pie-chart-fill me-1 text-danger"></i>Mô hình Trọng số
+                                </span>
+                                <span th:if="${cohort.gradingPolicy == 'EXIT_EXAM'}" class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold">
+                                    <i class="bi bi-shield-check me-1"></i>Mô hình Bài thi đầu ra
+                                </span>
+                                <span th:if="${cohort.gradingPolicy == null or cohort.gradingPolicy == 'PROGRESS_BASED'}" class="badge bg-secondary rounded-pill px-3 py-1">
+                                    <i class="bi bi-check2-circle me-1"></i>Theo tiến độ 100% bài học
+                                </span>
+                                <span th:if="${cohort.isGradesPublished}" class="badge bg-success rounded-pill px-3 py-1">
+                                    <i class="bi bi-broadcast me-1"></i>Đã công bố điểm
+                                </span>
+                                <span th:unless="${cohort.isGradesPublished}" class="badge bg-secondary-subtle text-light border border-secondary rounded-pill px-3 py-1">
+                                    <i class="bi bi-eye-slash me-1"></i>Chưa công bố (Bản nháp)
+                                </span>
+                            </div>
+                            <h3 class="fw-bold mb-1" th:text="${cohort.name}">Tên Module / Đợt học</h3>
+                            <div class="text-light opacity-75 small">
+                                <span th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}">
+                                    Quy tắc: <strong>[[${cohort.processWeight}]]%</strong> Điểm quá trình + <strong>[[${cohort.finalWeight}]]%</strong> Điểm cuối kỳ 
+                                    | Điểm sàn đạt: <strong>[[${cohort.minPassingGrade}]]/10</strong> 
+                                    | Điểm sàn bài cuối: <strong>[[${cohort.minFinalExamScore}]]/10</strong>
+                                    <span th:if="${cohort.finalLesson != null}"> | Bài cuối kỳ: <strong th:text="${cohort.finalLesson != null ? cohort.finalLesson.title : ''}">Final Exam</strong></span>
+                                </span>
+                                <span th:if="${cohort.gradingPolicy == 'EXIT_EXAM'}">
+                                    Quy tắc: Bắt buộc đạt Bài kiểm tra đầu ra | Điểm sàn: <strong>[[${cohort.minPassingGrade}]]/10</strong>
+                                </span>
+                                <span th:if="${cohort.gradingPolicy == null or cohort.gradingPolicy == 'PROGRESS_BASED'}">
+                                    Quy tắc: Học viên hoàn thành tất cả các bài giảng và bài tập trắc nghiệm trong giáo trình.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <a th:href="@{/instructor/cohorts/{id}/gradebook/export(id=${cohort.id})}" class="btn btn-outline-success bg-success bg-opacity-25 text-white border-success-subtle rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm">
+                                <i class="bi bi-file-earmark-excel"></i>
+                                <span>Xuất Excel</span>
+                            </a>
+
+                            <button type="button" class="btn btn-outline-info bg-info bg-opacity-25 text-white border-info-subtle rounded-pill px-3 d-flex align-items-center gap-1.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#importGradebookModal">
+                                <i class="bi bi-file-earmark-arrow-up"></i>
+                                <span>Nhập Excel</span>
+                            </button>
+
+                            <form th:action="@{/instructor/cohorts/{id}/gradebook/calculate(id=${cohort.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center gap-1.5" onclick="return confirm('Bạn có chắc muốn tự động quét và tính toán điểm cho toàn bộ học viên theo quy tắc hiện tại?');">
+                                    <i class="bi bi-calculator"></i>
+                                    <span>Tính điểm tự động</span>
+                                </button>
+                            </form>
+
+                            <form th:unless="${cohort.isGradesPublished}" th:action="@{/instructor/cohorts/{id}/gradebook/publish(id=${cohort.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center gap-1.5" onclick="return confirm('Sau khi công bố, học viên sẽ nhìn thấy điểm tổng kết và được cấp chứng chỉ nếu đạt. Tiếp tục?');">
+                                    <i class="bi bi-send-check"></i>
+                                    <span>Công bố bảng điểm</span>
+                                </button>
+                            </form>
+
+                            <a th:href="@{/instructor/cohorts/{id}/edit(id=${cohort.id})}" class="btn btn-outline-light rounded-pill px-3 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-sliders"></i>
+                                <span>Cấu hình trọng số</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Sĩ số ghi danh</span>
+                            <div class="rounded-3 p-2 bg-primary-subtle text-primary">
+                                <i class="bi bi-people-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="${gradebook.totalStudents}">0</h3>
+                        <small class="text-muted">Học viên tham gia đợt học</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Số học viên ĐẠT</span>
+                            <div class="rounded-3 p-2 bg-success-subtle text-success">
+                                <i class="bi bi-patch-check-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-success mb-0" th:text="${gradebook.passedCount}">0</h3>
+                        <small class="text-muted">Tỷ lệ đạt: <strong class="text-success" th:text="${gradebook.passRate} + '%'">0%</strong></small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Chưa đạt / Dở dang</span>
+                            <div class="rounded-3 p-2 bg-danger-subtle text-danger">
+                                <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-danger mb-0" th:text="${gradebook.failedCount}">0</h3>
+                        <small class="text-muted">Cần hoàn thành thêm bài</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Điểm TB toàn lớp</span>
+                            <div class="rounded-3 p-2 bg-warning-subtle text-warning">
+                                <i class="bi bi-star-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="${gradebook.averageGrade} + ' / 10'">0.0 / 10</h3>
+                        <small class="text-muted">Theo thang điểm 10</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+                <div class="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-table text-primary"></i>
+                        <span>Danh sách Bảng điểm Học viên</span>
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5" th:text="'Tổng số: ' + ${gradebook.totalStudents} + ' học viên'">0</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase text-secondary" style="font-size: 11px; letter-spacing: 0.5px;">
+                                <th class="ps-4" style="width: 50px;">STT</th>
+                                <th style="min-width: 200px;">Học viên</th>
+                                <th style="min-width: 140px;">Tiến độ bài học</th>
+                                <th th:each="col : ${gradebook.processColumns}" class="text-center" style="min-width: 120px;">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span th:if="${col.lessonType == 'QUIZ'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5 mb-1" style="font-size: 10px;">
+                                            <i class="bi bi-question-circle me-1"></i>Trắc nghiệm
+                                        </span>
+                                        <span th:if="${col.lessonType == 'ASSIGNMENT'}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5 mb-1" style="font-size: 10px;">
+                                            <i class="bi bi-file-earmark-code me-1"></i>Bài tập
+                                        </span>
+                                        <span th:if="${col.lessonType != 'QUIZ' and col.lessonType != 'ASSIGNMENT'}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5 mb-1" style="font-size: 10px;" th:text="${col.lessonType}">
+                                            Cột điểm
+                                        </span>
+                                        <span class="text-truncate d-inline-block text-dark fw-bold" style="max-width: 120px;" th:title="${col.title}" th:text="${col.title}">Bài tập</span>
+                                        <span class="text-muted" style="font-size: 10px;" th:text="'(Hệ ' + ${#numbers.formatDecimal(col.maxScore != null ? col.maxScore : 10, 1, 0)} + ')'">(Hệ 10)</span>
+                                    </div>
+                                </th>
+                                <th class="text-center" style="min-width: 110px; background-color: #f8fafc;">
+                                    <div class="fw-bold text-dark">Điểm Quá trình</div>
+                                    <span th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2" style="font-size: 10px;" th:text="${cohort.processWeight} + '%'">40%</span>
+                                    <span th:unless="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" class="text-muted" style="font-size: 10px;">(Trung bình)</span>
+                                </th>
+                                <th class="text-center" style="min-width: 120px; background-color: #f8fafc;">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5 mb-1" style="font-size: 10px;" th:text="'Cuối kỳ (' + ${cohort.finalWeight} + '%)'">Cuối kỳ</span>
+                                        <span th:if="${cohort.gradingPolicy == 'EXIT_EXAM'}" class="badge bg-info-subtle text-info rounded-pill px-2 py-0.5 mb-1" style="font-size: 10px;">Thi đầu ra</span>
+                                        <span class="fw-bold text-dark">Điểm Cuối kỳ</span>
+                                        <span th:if="${gradebook.finalExamColumn != null}" class="text-truncate d-inline-block text-muted" style="max-width: 120px; font-size: 10px;" th:title="${gradebook.finalExamColumn.title}" th:text="${gradebook.finalExamColumn.title}">Đồ án</span>
+                                    </div>
+                                </th>
+                                <th class="text-center text-primary" style="min-width: 110px; background-color: #eff6ff;">
+                                    <div class="fw-bold">Điểm Tổng kết</div>
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2" style="font-size: 10px;">Thang 10</span>
+                                </th>
+                                <th class="text-center" style="min-width: 95px;">Kết quả</th>
+                                <th class="text-center" style="min-width: 95px;">Chứng chỉ</th>
+                                <th class="text-center pe-4" style="min-width: 90px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${gradebook.students == null or gradebook.students.isEmpty()}">
+                                <td th:colspan="${8 + (gradebook.processColumns != null ? gradebook.processColumns.size() : 0) + 1}" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox display-4 mb-2 d-block text-secondary opacity-50"></i>
+                                    <h6>Chưa có học viên nào ghi danh vào đợt học này.</h6>
+                                </td>
+                            </tr>
+                            <tr th:each="st, stat : ${gradebook.students}">
+                                <td class="ps-4 fw-bold text-muted" th:text="${stat.count}">1</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <div class="rounded-circle overflow-hidden flex-shrink-0" style="width: 38px; height: 38px; background-color: #f1f5f9;">
+                                            <img th:if="${st.avatarUrl}" th:src="${st.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
+                                            <div th:unless="${st.avatarUrl}" class="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-primary" th:text="${st.fullName != null and !st.fullName.isEmpty() ? #strings.substring(st.fullName, 0, 1) : 'U'}">U</div>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark" th:text="${st.fullName != null ? st.fullName : 'Học viên'}">Họ và tên</div>
+                                            <div class="text-muted small" th:text="${st.email != null ? st.email : ''}">email@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2" style="min-width: 140px;">
+                                        <div class="progress flex-grow-1" style="height: 6px;">
+                                            <div class="progress-bar bg-primary rounded-pill" role="progressbar" th:style="'width: ' + ${st.progressPercent} + '%;'"></div>
+                                        </div>
+                                        <span class="small fw-semibold text-secondary" style="font-size: 11px;" th:text="${st.progressPercent} + '%'">0%</span>
+                                    </div>
+                                    <small class="text-muted d-block" style="font-size: 11px;">
+                                        <span th:text="${st.completedLessonsCount}">0</span> / <span th:text="${st.totalLessonsCount}">0</span> bài học
+                                    </small>
+                                </td>
+                                <td th:each="col : ${gradebook.processColumns}" class="text-center">
+                                    <div th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
+                                        <span th:if="${cGrade != null and cGrade.score != null}" 
+                                              class="badge rounded-pill px-2.5 py-1.5 fw-bold"
+                                              th:classappend="${cGrade.score.doubleValue() >= 5.0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}"
+                                              th:text="${#numbers.formatDecimal(cGrade.score, 1, 1)}">8.5</span>
+                                        <span th:if="${cGrade != null and cGrade.score == null and cGrade.status == 'SUBMITTED'}" 
+                                              class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 small">
+                                            Chờ chấm
+                                        </span>
+                                        <span th:if="${cGrade == null or (cGrade.score == null and cGrade.status != 'SUBMITTED')}" 
+                                              class="text-muted small">--</span>
+                                    </div>
+                                </td>
+                                <td class="text-center" style="background-color: #f8fafc;">
+                                    <span th:if="${st.processGrade != null}" class="fw-bold text-dark fs-6" th:text="${#numbers.formatDecimal(st.processGrade, 1, 1)}">0.0</span>
+                                    <span th:unless="${st.processGrade != null}" class="text-muted small">--</span>
+                                </td>
+                                <td class="text-center" style="background-color: #f8fafc;">
+                                    <span th:if="${st.finalExamGrade != null}" class="fw-bold text-dark fs-6" th:text="${#numbers.formatDecimal(st.finalExamGrade, 1, 1)}">0.0</span>
+                                    <span th:if="${st.finalExamGrade == null and st.finalExamColumnGrade != null and st.finalExamColumnGrade.status == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 small">Chờ chấm</span>
+                                    <span th:if="${st.finalExamGrade == null and (st.finalExamColumnGrade == null or st.finalExamColumnGrade.status != 'SUBMITTED')}" class="text-muted small">--</span>
+                                </td>
+                                <td class="text-center" style="background-color: #eff6ff;">
+                                    <span th:if="${st.finalGrade != null}" class="fw-bold fs-5" th:classappend="${st.isPassed != null and st.isPassed ? 'text-success' : 'text-danger'}" th:text="${#numbers.formatDecimal(st.finalGrade, 1, 1)}">0.0</span>
+                                    <span th:unless="${st.finalGrade != null}" class="text-muted small">Chưa tính</span>
+                                </td>
+                                <td class="text-center">
+                                    <span th:if="${st.isPassed != null and st.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-bold">
+                                        <i class="bi bi-patch-check-fill me-1"></i>ĐẠT
+                                    </span>
+                                    <span th:unless="${st.isPassed != null and st.isPassed}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5 fw-bold">
+                                        <i class="bi bi-x-circle-fill me-1"></i>CHƯA ĐẠT
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a th:if="${st.isPassed != null and st.isPassed and st.certificateUrl != null}" 
+                                       th:href="@{${st.certificateUrl}}" target="_blank"
+                                       class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small text-decoration-none" title="Bấm để xem chứng chỉ">
+                                        <i class="bi bi-award-fill me-1"></i>Xem
+                                    </a>
+                                    <span th:unless="${st.isPassed != null and st.isPassed and st.certificateUrl != null}" class="text-muted small">
+                                        Chưa cấp
+                                    </span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-sm"
+                                            data-bs-toggle="modal" 
+                                            th:data-bs-target="'#studentGradeModal-' + ${st.memberId}">
+                                        <i class="bi bi-eye"></i>
+                                        <span class="small">Chi tiết</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div th:each="st : ${gradebook.students}" class="modal fade" th:id="'studentGradeModal-' + ${st.memberId}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <div class="modal-header border-bottom p-3">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle overflow-hidden flex-shrink-0" style="width: 42px; height: 42px; background-color: #f1f5f9;">
+                                    <img th:if="${st.avatarUrl}" th:src="${st.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
+                                    <div th:unless="${st.avatarUrl}" class="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-primary" th:text="${st.fullName != null and !st.fullName.isEmpty() ? #strings.substring(st.fullName, 0, 1) : 'U'}">U</div>
+                                </div>
+                                <div>
+                                    <h6 class="modal-title fw-bold text-dark mb-0" th:text="${st.fullName}">Họ và tên</h6>
+                                    <span class="text-muted small" th:text="${st.email}">email@example.com</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 ms-auto pe-2">
+                                <span th:if="${st.isPassed != null and st.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-bold">
+                                    <i class="bi bi-patch-check-fill me-1"></i>ĐẠT
+                                </span>
+                                <span th:unless="${st.isPassed != null and st.isPassed}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 fw-bold">
+                                    <i class="bi bi-x-circle-fill me-1"></i>CHƯA ĐẠT
+                                </span>
+                                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="row g-3 mb-4">
+                                <div class="col-sm-4">
+                                    <div class="card border rounded-3 p-3 bg-light text-center h-100">
+                                        <span class="text-muted small fw-semibold">Điểm Quá trình</span>
+                                        <h4 class="fw-bold text-dark mt-1 mb-0" th:text="${st.processGrade != null ? #numbers.formatDecimal(st.processGrade, 1, 1) : '--'}">0.0</h4>
+                                        <small class="text-muted" th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${cohort.processWeight} + '%'">40%</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="card border rounded-3 p-3 bg-light text-center h-100">
+                                        <span class="text-muted small fw-semibold">Điểm Cuối kỳ</span>
+                                        <h4 class="fw-bold text-dark mt-1 mb-0" th:text="${st.finalExamGrade != null ? #numbers.formatDecimal(st.finalExamGrade, 1, 1) : '--'}">0.0</h4>
+                                        <small class="text-muted" th:if="${cohort.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${cohort.finalWeight} + '%'">60%</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <div class="card border rounded-3 p-3 bg-primary-subtle text-center h-100">
+                                        <span class="text-primary small fw-semibold">Điểm Tổng kết</span>
+                                        <h4 class="fw-bold text-primary mt-1 mb-0" th:text="${st.finalGrade != null ? #numbers.formatDecimal(st.finalGrade, 1, 1) : 'Chưa tính'}">0.0</h4>
+                                        <small class="text-primary" th:text="${st.isPassed != null and st.isPassed ? 'Đủ điều kiện cấp chứng chỉ' : 'Chưa đạt điều kiện'}">Kết quả</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-list-check text-primary"></i>
+                                <span>Bảng điểm chi tiết từng cột</span>
+                            </h6>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr class="small text-uppercase text-secondary" style="font-size: 11px;">
+                                            <th style="width: 40px;" class="text-center">STT</th>
+                                            <th>Bài đánh giá</th>
+                                            <th style="width: 110px;" class="text-center">Loại bài</th>
+                                            <th style="width: 120px;" class="text-center">Phân loại</th>
+                                            <th style="width: 100px;" class="text-center">Điểm số</th>
+                                            <th style="width: 120px;" class="text-center">Trạng thái</th>
+                                            <th>Nhận xét</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:if="${gradebook.columns == null or gradebook.columns.isEmpty()}">
+                                            <td colspan="7" class="text-center py-3 text-muted small">Không có bài kiểm tra hoặc bài tập nào trong module này.</td>
+                                        </tr>
+                                        <tr th:each="col, colStat : ${gradebook.columns}">
+                                            <td class="text-center fw-bold text-muted small" th:text="${colStat.count}">1</td>
+                                            <td>
+                                                <div class="fw-semibold text-dark small" th:text="${col.title}">Tên bài</div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span th:if="${col.lessonType == 'QUIZ'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5" style="font-size: 10px;">Trắc nghiệm</span>
+                                                <span th:if="${col.lessonType == 'ASSIGNMENT'}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5" style="font-size: 10px;">Bài tập</span>
+                                                <span th:if="${col.lessonType != 'QUIZ' and col.lessonType != 'ASSIGNMENT'}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5" style="font-size: 10px;" th:text="${col.lessonType}">Khác</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span th:if="${col.isFinalExam}" class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">Điểm Cuối kỳ</span>
+                                                <span th:unless="${col.isFinalExam}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5" style="font-size: 10px;">Điểm Quá trình</span>
+                                            </td>
+                                            <td class="text-center" th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
+                                                <span th:if="${cGrade != null and cGrade.score != null}" class="fw-bold fs-6 text-dark" th:text="${#numbers.formatDecimal(cGrade.score, 1, 1)} + ' / ' + ${#numbers.formatDecimal(cGrade.maxScore != null ? cGrade.maxScore : 10, 1, 0)}">8.5 / 10</span>
+                                                <span th:unless="${cGrade != null and cGrade.score != null}" class="text-muted small">--</span>
+                                            </td>
+                                            <td class="text-center" th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
+                                                <span th:if="${cGrade != null and cGrade.status == 'GRADED'}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size: 10px;">Đã chấm</span>
+                                                <span th:if="${cGrade != null and cGrade.status == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size: 10px;">Chờ chấm</span>
+                                                <span th:if="${cGrade == null or cGrade.status == 'NOT_SUBMITTED'}" class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 10px;">Chưa nộp</span>
+                                            </td>
+                                            <td th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
+                                                <span th:if="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="small text-secondary" th:text="${cGrade.feedback}">Nhận xét</span>
+                                                <span th:unless="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="text-muted small">--</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top p-2">
+                            <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="importGradebookModal" tabindex="-1" aria-labelledby="importGradebookModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content rounded-4 border-0 shadow">
+                        <form th:action="@{/instructor/cohorts/{id}/gradebook/import(id=${cohort.id})}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header border-bottom-0 pb-0">
+                                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="importGradebookModalLabel">
+                                    <i class="bi bi-file-earmark-excel text-success fs-4"></i>
+                                    <span>Nhập điểm từ file Excel</span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body py-4">
+                                <p class="text-secondary small mb-3">
+                                    Tải file Excel đã xuất từ hệ thống, chỉnh sửa các cột <strong>Điểm Quá trình</strong> và <strong>Điểm Cuối kỳ</strong> (thang điểm 10), sau đó tải lên lại để hệ thống cập nhật và tính điểm tự động.
+                                </p>
+
+                                <div class="alert alert-light border rounded-3 p-3 small mb-3">
+                                    <div class="fw-bold mb-1 text-dark"><i class="bi bi-info-circle me-1 text-primary"></i>Lưu ý:</div>
+                                    <ul class="mb-0 ps-3 text-secondary">
+                                        <li>Giữ nguyên cấu trúc cột và tiêu đề của Sheet <code>Bang_Diem</code>.</li>
+                                        <li>Không sửa đổi cột <code>Mã HV</code> hoặc <code>Email</code> để đảm bảo đối chiếu đúng học viên.</li>
+                                        <li>Điểm hợp lệ từ <strong>0.0</strong> đến <strong>10.0</strong>. Để trống nếu chưa có điểm.</li>
+                                    </ul>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="excelFile" class="form-label fw-semibold small text-dark">Chọn file Excel (.xlsx, .xls)</label>
+                                    <input class="form-control rounded-3" type="file" id="excelFile" name="file" accept=".xlsx, .xls" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <span>Tải lên và Cập nhật</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/admin-layout.js}"></script>
+</body>
+</html>

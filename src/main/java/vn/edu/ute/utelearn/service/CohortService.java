@@ -47,5 +47,7 @@ public interface CohortService {
     void revertToDraftIfApproved(Cohort cohort);
 
     void syncCohortStatuses();
+
+    void checkAndSyncCourseCompletion(vn.edu.ute.utelearn.entity.Course course, User user);
 }
 

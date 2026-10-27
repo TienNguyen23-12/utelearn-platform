@@ -1056,4 +1056,58 @@ public class QuizFeatureTest {
         verify(lessonRepository, never()).save(any(Lesson.class));
         verify(courseRepository, never()).save(any(Course.class));
     }
+
+    @Test
+    void testGetOrCreateQuizInitializesDefaultExamRules() {
+        Lesson newLesson = Lesson.builder()
+                .id(99L)
+                .title("Bài kiểm tra mới")
+                .lessonType("QUIZ")
+                .section(section)
+                .build();
+
+        when(lessonRepository.findById(99L)).thenReturn(Optional.of(newLesson));
+        when(quizRepository.findByLessonId(99L)).thenReturn(Optional.empty());
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> {
+            Quiz q = invocation.getArgument(0);
+            q.setId(999L);
+            return q;
+        });
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(999L)).thenReturn(Collections.emptyList());
+
+        QuizDTO created = quizService.getOrCreateQuizForLesson(99L, 2L);
+
+        assertNotNull(created);
+        assertNotNull(created.getExamRules());
+        assertEquals(Quiz.DEFAULT_EXAM_RULES, created.getExamRules());
+    }
+
+    @Test
+    void testUpdateExamRulesSuccess() {
+        lesson.setStatus("PUBLISHED");
+        course.setStatus("PUBLISHED");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(instructor));
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(50L)).thenReturn(Collections.emptyList());
+
+        String customRules = "Quy chế 1: Nghiêm cấm mở tab mới.\nQuy chế 2: Bật camera suốt thời gian thi.";
+        QuizRequestDTO request = QuizRequestDTO.builder()
+                .title(quiz.getTitle())
+                .durationMinutes(quiz.getDurationMinutes())
+                .passingScore(quiz.getPassingScore())
+                .maxAttempts(quiz.getMaxAttempts())
+                .examRules(customRules)
+                .build();
+
+        QuizDTO updated = quizService.updateQuiz(50L, request, 2L);
+
+        assertNotNull(updated);
+        assertEquals(customRules, updated.getExamRules());
+        assertEquals(customRules, quiz.getExamRules());
+        assertEquals("PUBLISHED", lesson.getStatus());
+        assertEquals("PUBLISHED", course.getStatus());
+        verify(lessonRepository, never()).save(any(Lesson.class));
+        verify(courseRepository, never()).save(any(Course.class));
+    }
 }

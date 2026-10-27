@@ -46,9 +46,20 @@ public class Quiz {
     @Builder.Default
     private Boolean allowReview = true;
 
+    public static final String DEFAULT_EXAM_RULES = "Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn nhấn nút \"Bắt đầu làm bài thi\".\n"
+            + "Khi hết thời gian quy định, hệ thống sẽ tự động thu và chấm bài thi của bạn.\n"
+            + "Đạt từ 5.0 điểm trở lên để được hệ thống tự động ghi nhận hoàn thành bài học.\n"
+            + "Thời hạn nộp bài: Áp dụng theo thời hạn quy định của đợt học.\n"
+            + "Xem lại bài làm: Được phép xem lại chi tiết câu hỏi & đáp án sau khi nộp bài.\n"
+            + "Tránh tải lại trang (F5) hoặc thoát khỏi trình duyệt trong suốt quá trình làm bài.";
+
     @Column(name = "allow_late_submission")
     @Builder.Default
     private Boolean allowLateSubmission = true;
+
+    @Column(name = "exam_rules", columnDefinition = "TEXT")
+    @Builder.Default
+    private String examRules = DEFAULT_EXAM_RULES;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
