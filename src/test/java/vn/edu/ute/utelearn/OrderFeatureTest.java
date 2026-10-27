@@ -403,7 +403,8 @@ public class OrderFeatureTest {
 
         when(orderRepository.findByOrderCode("UTE333444")).thenReturn(Optional.of(successOrder));
 
-        SepayWebhookApiController controller = new SepayWebhookApiController(orderService);
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(sampleUser));
+        SepayWebhookApiController controller = new SepayWebhookApiController(orderService, authService);
         ResponseEntity<Map<String, Object>> response = controller.checkOrderStatus("UTE333444");
 
         assertEquals(200, response.getStatusCode().value());

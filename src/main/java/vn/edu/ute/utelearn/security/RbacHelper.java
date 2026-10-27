@@ -20,7 +20,7 @@ public class RbacHelper {
     public List<String> getCurrentUserRoles() {
         return getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
-            .filter(a -> !a.startsWith("ROLE_")) // Lấy mã role gốc: ADMIN, INSTRUCTOR, ...
+            .filter(a -> !a.startsWith("ROLE_"))
             .collect(Collectors.toList());
     }
 
@@ -61,14 +61,9 @@ public class RbacHelper {
         return false;
     }
 
-    /**
-     * So sánh danh sách role được phép của một menu/tính năng (từ JSON) với role của người dùng hiện tại
-     * @param allowedRoles Danh sách các vai trò được phép truy cập
-     * @return true nếu người dùng có ít nhất một vai trò hợp lệ, hoặc nếu allowedRoles rỗng
-     */
-    public boolean isAllowed(Collection<String> allowedRoles) {
+        public boolean isAllowed(Collection<String> allowedRoles) {
         if (allowedRoles == null || allowedRoles.isEmpty()) {
-            return true; // Công khai nếu không yêu cầu role
+            return true;
         }
         if (!isLoggedIn()) {
             return false;

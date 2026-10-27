@@ -31,7 +31,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/api/**",
+                                "/ws/**",
+                                "/oauth2/**"
+                        ))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
@@ -79,12 +84,13 @@ public class SecurityConfig {
                                 "/api/cohorts",
                                 "/api/cohorts/**",
                                 "/api/webhooks/**",
-                                "/api/orders/**",
                                 "/api/quizzes/**",
                                 "/api/assignments/**",
                                 "/api/notes",
                                 "/api/notes/**",
-                                "/oj/**")
+                                "/oj/**",
+                                "/ws",
+                                "/ws/**")
                         .permitAll()
 
                         .requestMatchers("/admin/orders/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")

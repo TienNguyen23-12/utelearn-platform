@@ -508,11 +508,9 @@ public class OrderServiceImpl implements OrderService {
             return false;
         }
         String configuredKey = properties.getPayment().getSepayApiKey();
-        if (configuredKey != null && !configuredKey.isBlank()) {
-            if (authorizationHeader == null || !authorizationHeader.contains(configuredKey)) {
-                log.warn("[OrderService] SePay webhook bị từ chối do API key không hợp lệ.");
-                return false;
-            }
+        if (configuredKey == null || configuredKey.isBlank() || authorizationHeader == null || !authorizationHeader.contains(configuredKey)) {
+            log.warn("[OrderService] SePay webhook bi tu choi do API key chua duoc cau hinh hoac khong hop le.");
+            return false;
         }
         String extractedCode = null;
         if (payload.getCode() != null && !payload.getCode().isBlank()) {

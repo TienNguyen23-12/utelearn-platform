@@ -1,4 +1,5 @@
 package vn.edu.ute.utelearn.controller;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -25,18 +26,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.util.Objects;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 import vn.edu.ute.utelearn.service.OrderService;
 import vn.edu.ute.utelearn.util.CurrencyUtils;
 import vn.edu.ute.utelearn.util.SecurityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import vn.edu.ute.utelearn.config.UtelearnProperties;
 import vn.edu.ute.utelearn.dao.OrderRepository;
 import vn.edu.ute.utelearn.entity.Order;
+
 @Slf4j
 @Controller
 @Transactional
 @RequestMapping("/checkout")
+@RequiredArgsConstructor
 public class CheckoutController {
+
     private final CohortRepository cohortRepository;
     private final CohortMemberRepository cohortMemberRepository;
     private final CourseRepository courseRepository;
@@ -46,34 +54,7 @@ public class CheckoutController {
     private final OrderService orderService;
     private final UtelearnProperties properties;
     private final OrderRepository orderRepository;
-    public CheckoutController(CohortRepository cohortRepository,
-                              CohortMemberRepository cohortMemberRepository,
-                              CourseRepository courseRepository,
-                              AuthService authService,
-                              CohortScheduleRepository cohortScheduleRepository,
-                              LessonRepository lessonRepository) {
-        this(cohortRepository, cohortMemberRepository, courseRepository, authService, cohortScheduleRepository, lessonRepository, null, null, null);
-    }
-    @Autowired
-    public CheckoutController(CohortRepository cohortRepository,
-                              CohortMemberRepository cohortMemberRepository,
-                              CourseRepository courseRepository,
-                              AuthService authService,
-                              CohortScheduleRepository cohortScheduleRepository,
-                              LessonRepository lessonRepository,
-                              OrderService orderService,
-                              UtelearnProperties properties,
-                              OrderRepository orderRepository) {
-        this.cohortRepository = cohortRepository;
-        this.cohortMemberRepository = cohortMemberRepository;
-        this.courseRepository = courseRepository;
-        this.authService = authService;
-        this.cohortScheduleRepository = cohortScheduleRepository;
-        this.lessonRepository = lessonRepository;
-        this.orderService = orderService;
-        this.properties = properties;
-        this.orderRepository = orderRepository;
-    }
+
     @GetMapping("/{cohortId}")
     public String showCheckoutPage(@PathVariable Long cohortId, Model model, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -90,12 +71,12 @@ public class CheckoutController {
             redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
             return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
         }
-        if (cohort.getPrice() == null || cohort.getPrice().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        if (cohort.getPrice() == null || cohort.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
         }
         Course course = cohort.getCourse() != null ? courseRepository.findById(cohort.getCourse().getId()).orElse(null) : null;
         log.info("[CheckoutController] Hiển thị trang checkout cho module id: {}, user: {}", cohortId, user.getEmail());
-        java.math.BigDecimal userBalance = orderService != null ? orderService.getUserBalance(user) : java.math.BigDecimal.ZERO;
+        BigDecimal userBalance = orderService != null ? orderService.getUserBalance(user) : BigDecimal.ZERO;
         model.addAttribute("isFullCourse", false);
         model.addAttribute("cohort", cohort);
         model.addAttribute("course", course);
@@ -105,6 +86,7 @@ public class CheckoutController {
         model.addAttribute("formattedUserBalance", CurrencyUtils.formatVnd(userBalance));
         return "checkout/index";
     }
+
     @PostMapping("/{cohortId}/process")
     public String processPayment(@PathVariable Long cohortId, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -156,6 +138,7 @@ public class CheckoutController {
         }
         return "redirect:/cohorts/" + cohort.getId() + "/learn";
     }
+
     @PostMapping("/{cohortId}/initiate")
     public String initiateCohortPayment(@PathVariable Long cohortId, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -179,6 +162,7 @@ public class CheckoutController {
             return "redirect:/checkout/" + cohortId;
         }
     }
+
     @PostMapping("/{cohortId}/offline")
     public String initiateCohortOfflinePayment(@PathVariable Long cohortId,
                                                @RequestParam(required = false) String discountCode,
@@ -197,12 +181,13 @@ public class CheckoutController {
             return "redirect:/checkout/" + cohortId;
         }
     }
+
     private List<Cohort> getOrCreateAvailableCohorts(Course course) {
         List<Cohort> cohorts = cohortRepository.findByCourseIdAndStatusIn(course.getId(),
                 List.of("ENROLLING", "UPCOMING", "IN_PROGRESS"));
         List<Cohort> realModules = cohorts.stream()
                 .filter(c -> !(c != null && c.isFullCourseCohort()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         if (!realModules.isEmpty()) {
             return realModules;
         }
@@ -213,7 +198,7 @@ public class CheckoutController {
                 .course(course)
                 .name("Toàn bộ khóa học: " + course.getTitle())
                 .code(course.getCode() + "-ALL")
-                .price(course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO)
+                .price(course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO)
                 .status("ENROLLING")
                 .visibility("PRIVATE")
                 .moderationStatus("APPROVED")
@@ -234,6 +219,7 @@ public class CheckoutController {
         }
         return List.of(defaultCohort);
     }
+
     @GetMapping("/course/{slug}")
     public String showCourseCheckoutPage(@PathVariable String slug, Model model, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -250,41 +236,41 @@ public class CheckoutController {
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         List<CohortMember> realUserMemberships = userMemberships.stream()
                 .filter(cm -> !(cm.getCohort() != null && cm.getCohort().isFullCourseCohort()))
-                .collect(java.util.stream.Collectors.toList());
-        java.util.Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toList());
+        Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(Collectors.toSet());
         List<Cohort> unenrolledCohorts = availableCohorts.stream()
                 .filter(c -> !enrolledCohortIds.contains(c.getId()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         if (unenrolledCohorts.isEmpty()) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
             Long firstModId = availableCohorts.get(0).getId();
             return "redirect:/courses/" + slug + "/modules/" + firstModId + "/learn";
         }
-        java.math.BigDecimal sumOfCohorts = unenrolledCohorts.stream()
+        BigDecimal sumOfCohorts = unenrolledCohorts.stream()
                 .map(Cohort::getPrice)
-                .filter(java.util.Objects::nonNull)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-        java.math.BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : java.math.BigDecimal.ZERO;
-        java.math.BigDecimal totalPaidAmount = realUserMemberships.stream()
-                .map(cm -> cm.getCohort() != null && cm.getCohort().getPrice() != null ? cm.getCohort().getPrice() : java.math.BigDecimal.ZERO)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal coursePrice = course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO;
+        BigDecimal totalPaidAmount = realUserMemberships.stream()
+                .map(cm -> cm.getCohort() != null && cm.getCohort().getPrice() != null ? cm.getCohort().getPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         boolean isUpgrade = !realUserMemberships.isEmpty();
-        java.math.BigDecimal totalPrice;
+        BigDecimal totalPrice;
         if (isUpgrade) {
-            java.math.BigDecimal diff = coursePrice.subtract(totalPaidAmount);
-            totalPrice = diff.compareTo(java.math.BigDecimal.ZERO) > 0 ? diff : java.math.BigDecimal.ZERO;
-            if (sumOfCohorts.compareTo(java.math.BigDecimal.ZERO) > 0 && sumOfCohorts.compareTo(totalPrice) < 0) {
+            BigDecimal diff = coursePrice.subtract(totalPaidAmount);
+            totalPrice = diff.compareTo(BigDecimal.ZERO) > 0 ? diff : BigDecimal.ZERO;
+            if (sumOfCohorts.compareTo(BigDecimal.ZERO) > 0 && sumOfCohorts.compareTo(totalPrice) < 0) {
                 totalPrice = sumOfCohorts;
             }
         } else {
-            totalPrice = (coursePrice.compareTo(java.math.BigDecimal.ZERO) > 0) ? coursePrice : sumOfCohorts;
+            totalPrice = (coursePrice.compareTo(BigDecimal.ZERO) > 0) ? coursePrice : sumOfCohorts;
         }
-        java.math.BigDecimal discountAmount = (sumOfCohorts.compareTo(totalPrice) > 0)
+        BigDecimal discountAmount = (sumOfCohorts.compareTo(totalPrice) > 0)
                 ? sumOfCohorts.subtract(totalPrice)
-                : java.math.BigDecimal.ZERO;
+                : BigDecimal.ZERO;
         log.info("[CheckoutController] Checkout trọn gói course: {}, user: {}, isUpgrade: {}, totalPaid: {}, total: {}, discount: {}",
                 slug, user.getEmail(), isUpgrade, totalPaidAmount, totalPrice, discountAmount);
-        java.math.BigDecimal userBalance = orderService != null ? orderService.getUserBalance(user) : java.math.BigDecimal.ZERO;
+        BigDecimal userBalance = orderService != null ? orderService.getUserBalance(user) : BigDecimal.ZERO;
         model.addAttribute("isFullCourse", true);
         model.addAttribute("isUpgrade", isUpgrade);
         model.addAttribute("course", course);
@@ -299,6 +285,7 @@ public class CheckoutController {
         model.addAttribute("formattedUserBalance", CurrencyUtils.formatVnd(userBalance));
         return "checkout/index";
     }
+
     @PostMapping("/course/{slug}/initiate")
     public String initiateCoursePayment(@PathVariable String slug,
                                         @RequestParam(required = false) List<Long> cohortIds,
@@ -320,6 +307,7 @@ public class CheckoutController {
             return "redirect:/checkout/course/" + slug;
         }
     }
+
     @PostMapping("/course/{slug}/offline")
     public String initiateCourseOfflinePayment(@PathVariable String slug,
                                                @RequestParam(required = false) List<Long> cohortIds,
@@ -339,6 +327,7 @@ public class CheckoutController {
             return "redirect:/checkout/course/" + slug;
         }
     }
+
     @PostMapping("/course/{slug}/process")
     public String processCoursePayment(@PathVariable String slug,
                                        @RequestParam(required = false) List<Long> cohortIds,
@@ -361,11 +350,11 @@ public class CheckoutController {
         List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
         List<CohortMember> realUserMemberships = userMemberships.stream()
                 .filter(cm -> !(cm.getCohort() != null && cm.getCohort().isFullCourseCohort()))
-                .collect(java.util.stream.Collectors.toList());
-        java.util.Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toList());
+        Set<Long> enrolledCohortIds = realUserMemberships.stream().map(cm -> cm.getCohort().getId()).collect(Collectors.toSet());
         List<Cohort> unenrolledCohorts = availableCohorts.stream()
                 .filter(c -> !enrolledCohortIds.contains(c.getId()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         if (unenrolledCohorts.isEmpty()) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia tất cả các module của khóa học này.");
             Long firstModId = availableCohorts.get(0).getId();
@@ -373,10 +362,10 @@ public class CheckoutController {
         }
         List<Cohort> targetCohorts = unenrolledCohorts;
         if (cohortIds != null && !cohortIds.isEmpty()) {
-            java.util.Set<Long> selectedSet = new java.util.HashSet<>(cohortIds);
+            Set<Long> selectedSet = new HashSet<>(cohortIds);
             targetCohorts = unenrolledCohorts.stream()
                     .filter(c -> selectedSet.contains(c.getId()))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
             if (targetCohorts.isEmpty()) {
                 redirectAttributes.addFlashAttribute("error", "Vui lòng chọn ít nhất 1 module để thanh toán.");
                 return "redirect:/checkout/course/" + slug;
@@ -397,7 +386,7 @@ public class CheckoutController {
         }
         List<Cohort> realModules = availableCohorts.stream()
                 .filter(c -> !(c != null && c.isFullCourseCohort()))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         boolean allRealEnrolled = !realModules.isEmpty() && realModules.stream()
                 .allMatch(m -> cohortMemberRepository.existsByCohort_IdAndUser_Id(m.getId(), user.getId()));
         if (allRealEnrolled) {
@@ -440,6 +429,7 @@ public class CheckoutController {
         Long targetId = targetCohorts.get(0).getId();
         return "redirect:/courses/" + slug + "/modules/" + targetId + "/learn";
     }
+
     @GetMapping("/payment/{orderCode}")
     public String showPaymentPage(@PathVariable String orderCode, Model model, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -474,6 +464,7 @@ public class CheckoutController {
         model.addAttribute("currentUser", user);
         return "checkout/payment";
     }
+
     @PostMapping("/payment/{orderCode}/simulate")
     public String simulatePayment(@PathVariable String orderCode, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();

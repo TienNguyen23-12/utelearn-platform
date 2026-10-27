@@ -26,7 +26,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         String baseFolder = properties.getCloudinary().getFolderBase();
         String fullPath = baseFolder + (folder.startsWith("/") ? folder : "/" + folder);
 
-        // Generate unqiue name
+       
         String fileName = file.getOriginalFilename();
         String extension = "";
         if (fileName != null && fileName.contains(".")) {
@@ -42,7 +42,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         Map<String, Object> options = ObjectUtils.asMap(
                 "folder", fullPath,
                 "public_id", publicId,
-                "resource_type", resourceType // "auto", "image", "video", "raw"
+                "resource_type", resourceType
         );
 
         log.info("Uploading file to Cloudinary: {} (type: {})", fileName, resourceType);
@@ -69,7 +69,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             fileName = fileName.substring(0, fileName.lastIndexOf("."));
         }
         
-        // Remove spaces and special characters from fileName to avoid Cloudinary signature bugs
+       
         fileName = fileName.replaceAll("[^a-zA-Z0-9_-]", "_");
         
         String publicId = fullPath + fileName + "_" + UUID.randomUUID().toString().substring(0, 8);
@@ -82,7 +82,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         Map<String, Object> paramsToSign = new java.util.HashMap<>();
         paramsToSign.put("timestamp", timestamp);
         paramsToSign.put("public_id", publicId);
-        // Note: we don't sign resource_type, it's sent in the endpoint URL
+       
 
         String signature = cloudinary.apiSignRequest(paramsToSign, cloudinary.config.apiSecret);
 

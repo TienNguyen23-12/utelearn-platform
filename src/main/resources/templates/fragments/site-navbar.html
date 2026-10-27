@@ -50,6 +50,27 @@
                     <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                 </a>
 
+                <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
+                    <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
+                    <button class="btn btn-light position-relative border rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
+                        style="width: 40px; height: 40px; background-color: #f8fafc;" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thảo luận lớp học">
+                        <i class="bi bi-bell-fill text-muted fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none nav-notification-badge" style="font-size: 10px;">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 380px; max-width: 95vw;">
+                        <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
+                            <span class="fw-bold small text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Thảo luận Lớp học</span>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill small">Trực tuyến</span>
+                        </div>
+                        <div class="p-2 overflow-auto nav-notification-list" style="max-height: 320px;">
+                            <div class="text-center text-muted py-4 small nav-notification-empty">
+                                <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                                Chưa có thông báo thảo luận mới
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div th:if="${currentUser != null}" class="dropdown">
                     <button class="btn btn-light d-flex align-items-center gap-2 border py-2 px-3 rounded-pill" type="button" data-bs-toggle="dropdown">
                         <div th:if="${currentUser.avatarUrl}" class="rounded-circle overflow-hidden" style="width: 34px; height: 34px;">
@@ -188,6 +209,7 @@
             showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
         }
     </script>
+    <script th:if="${currentUser != null}" th:src="@{/js/chat-notification.js}"></script>
 </nav>
 
 </body>

@@ -6,7 +6,6 @@ server:
       charset: UTF-8
       force: true
       enabled: true
-  # Apache Tomcat 11
   tomcat:
     max-threads: 200
     min-spare-threads: 20
@@ -40,7 +39,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:utelearn_db}?reWriteBatchedInserts=true&stringtype=unspecified&sslmode=${DB_SSL_MODE:disable}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:14092006}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: UTELearnHikariPool
@@ -54,7 +53,7 @@ spring:
 
   sql:
     init:
-      mode: never # Đã tự động tạo xong, đổi về never để không bị mất dữ liệu
+      mode: never
       schema-locations: classpath:schema.sql
       continue-on-error: true
 
@@ -108,7 +107,6 @@ spring:
     suffix: .html
     prefix: classpath:/templates/
 
-  # Static resources handling
   web:
     resources:
       chain:
@@ -118,39 +116,34 @@ spring:
         - classpath:/templates/
 
 utelearn:
-  # JWT
   jwt:
     secret: ${JWT_SECRET:uTeLeArn_sUpEr_sEcReT_kEy_fOr_jWt_tOkEn_gEnErAtIoN_2026_mIn_64_bYtEs_lOnG!}
-    access-token-expiration-ms: 900000 # 15 minutes (15 * 60 * 1000 ms)
-    refresh-token-expiration-ms: 604800000 # 7 days
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
     cookie-name: UTELearn_Token
     header-prefix: "Bearer "
 
-  # Cloudinary
   cloudinary:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:utelearn}
     api-key: ${CLOUDINARY_API_KEY:your_cloudinary_api_key}
     api-secret: ${CLOUDINARY_API_SECRET:your_cloudinary_api_secret}
     folder-base: utelearn_assets
 
-  # Moderation
   moderation:
     max-daily-minutes: 480
     default-review-minutes: 60
     sla-timeout-hours: 24
 
-  # WebSocket
   websocket:
     endpoint: /ws
     app-destination-prefix: /app
     topic-destination-prefix: /topic
     queue-destination-prefix: /queue
 
-  # Data Seeder
   seeder:
     enabled: true
     seed-sample-users: true
-    default-password: ${DEFAULT_SEED_PASSWORD:Abc@123}
+    default-password: ${DEFAULT_SEED_PASSWORD:}
 
   payment:
     bank-id: ${VIETQR_BANK_ID:Vietcombank}
@@ -163,5 +156,3 @@ utelearn:
   render:
     keep-alive-url: ${RENDER_EXTERNAL_URL:https://utelearn-platform.onrender.com}
     keep-alive-enabled: ${RENDER_KEEP_ALIVE_ENABLED:true}
-
-

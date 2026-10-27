@@ -264,7 +264,7 @@ public class CohortServiceImpl implements CohortService {
     private void saveSchedules(Cohort cohort, List<CohortScheduleRequestDTO> scheduleDTOs) {
         if (scheduleDTOs == null || scheduleDTOs.isEmpty()) return;
         for (CohortScheduleRequestDTO req : scheduleDTOs) {
-            if (req.getUnlockAt() == null) continue; // Skip if no unlock time
+            if (req.getUnlockAt() == null) continue;
             lessonRepository.findById(req.getLessonId()).ifPresent(lesson -> {
                 CohortSchedule schedule = CohortSchedule.builder()
                         .cohort(cohort)

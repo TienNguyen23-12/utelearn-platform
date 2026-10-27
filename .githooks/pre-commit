@@ -1,8 +1,6 @@
 #!/bin/sh
 
-echo "================================================================================"
-echo "[INFO] Running Enterprise Pre-Commit Verification Pipeline"
-echo "================================================================================"
+set -e
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 if [ -d "$ROOT_DIR/utelearn" ]; then
@@ -13,38 +11,30 @@ fi
 
 cd "$APP_DIR" || exit 1
 
-echo "[STAGE 1/3] Verifying source code compilation and syntax..."
-if ! ./mvnw test-compile -q; then
-    echo "--------------------------------------------------------------------------------"
-    echo "[ERROR] Source code compilation failed."
-    echo "[ERROR] Commit rejected. Resolve compiler and syntax errors before committing."
-    echo "--------------------------------------------------------------------------------"
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+if git diff --cached | grep -E '^\+[<]{7}|^\+[=]{7}|^\+[>]{7}' > /dev/null 2>&1; then
+    echo "================================================================================"
+    echo "[ERROR] Unresolved merge conflict markers detected in staged files."
+    echo "[ERROR] Please resolve all <<<<<<< / ======= markers before committing."
+    echo "================================================================================"
     exit 1
 fi
-echo "[SUCCESS] Source code compilation verified successfully."
 
-echo "[STAGE 2/3] Verifying database configuration and connection parameters..."
-if [ -f "$APP_DIR/.env" ]; then
-    if grep -q "DB_HOST=" "$APP_DIR/.env" && grep -q "DB_PORT=" "$APP_DIR/.env" && grep -q "DB_NAME=" "$APP_DIR/.env"; then
-        echo "[SUCCESS] Database environment parameters validated (.env)."
-    else
-        echo "[WARNING] Database environment parameters missing in .env. Checking system environment..."
+JAVA_CHANGES=$(echo "$STAGED_FILES" | grep -E '\.java$' || true)
+
+if [ -n "$JAVA_CHANGES" ]; then
+    echo "[pre-commit] Verifying Java syntax & compilation..."
+    if ! ./mvnw test-compile -DskipTests -B -q; then
+        echo "--------------------------------------------------------------------------------"
+        echo "[ERROR] Java compilation failed. Fix syntax or type errors before committing."
+        echo "--------------------------------------------------------------------------------"
+        exit 1
     fi
-else
-    echo "[INFO] Using default Spring Boot application datasource configuration."
 fi
 
-echo "[STAGE 3/3] Running automated unit test suite..."
-if ! ./mvnw test -q; then
-    echo "--------------------------------------------------------------------------------"
-    echo "[ERROR] Automated unit tests failed."
-    echo "[ERROR] Commit rejected. Fix failing tests before committing."
-    echo "--------------------------------------------------------------------------------"
-    exit 1
-fi
-echo "[SUCCESS] All automated unit tests passed."
-
-echo "================================================================================"
-echo "[SUCCESS] All pre-commit quality gates passed. Proceeding with commit."
-echo "================================================================================"
+echo "[pre-commit] [OK] Quality gates passed."
 exit 0

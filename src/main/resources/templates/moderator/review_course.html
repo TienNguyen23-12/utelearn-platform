@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
@@ -143,11 +143,11 @@
                     <h5 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Giới thiệu & Mục tiêu đào tạo</h5>
                     <div class="mb-3">
                         <label class="form-label text-muted small fw-semibold">Mô tả nội dung</label>
-                        <div class="bg-light p-3 rounded-3" th:utext="${task.itemType == 'COHORT' ? (cohort?.description != null ? cohort.description : 'Chưa có mô tả') : (course?.description != null ? course.description : 'Chưa có mô tả')}">Chưa có mô tả</div>
+                        <div class="bg-light p-3 rounded-3" th:text="${task.itemType == 'COHORT' ? (cohort?.description != null ? cohort.description : 'Chưa có mô tả') : (course?.description != null ? course.description : 'Chưa có mô tả')}">Chưa có mô tả</div>
                     </div>
                     <div>
                         <label class="form-label text-muted small fw-semibold">Kiến thức / Kỹ năng đạt được</label>
-                        <div class="bg-light p-3 rounded-3" th:if="${task.itemType == 'COURSE' and course != null}" th:utext="${course.objectives}">Chưa thiết lập mục tiêu</div>
+                        <div class="bg-light p-3 rounded-3" th:if="${task.itemType == 'COURSE' and course != null}" th:text="${course.objectives}">Chưa thiết lập mục tiêu</div>
                         <div class="bg-light p-3 rounded-3" th:if="${task.itemType == 'COHORT' and cohort != null}">
                             <ul class="mb-0 ps-3" th:if="${cohort.parsedObjectives != null and !#lists.isEmpty(cohort.parsedObjectives)}">
                                 <li th:each="obj : ${cohort.parsedObjectives}" th:text="${obj}" class="mb-1"></li>

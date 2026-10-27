@@ -70,7 +70,7 @@
 ### 🟡 MỨC ĐỘ 2: TRUNG BÌNH – HOÀN THIỆN CHI TIẾT TƯƠNG TÁC & QUẢN TRỊ (MEDIUM / P2)
 *Lý do: Nâng cấp trải nghiệm tương tác thời gian thực, thúc đẩy chuyển đổi mua trọn gói khóa học và hoàn thiện các nghiệp vụ kiểm duyệt theo SLA (Phân hệ Quản trị Danh mục UC-11 đã hoàn thành 100%).*
 
-#### 2.1. Phòng Chat Thảo luận Lớp học Thời gian thực qua WebSocket (`UC-35`)
+#### 2.1. Phòng Chat Thảo luận Lớp học Thời gian thực qua WebSocket (`UC-35`) - [ĐÃ HOÀN THÀNH 100%]
 - **Hiện trạng trong code:**
   - Đã khai báo thư viện `spring-boot-starter-websocket` trong `pom.xml`, cấu hình STOMP `/ws`, `/app`, `/topic` trong `application.yml` và có sẵn Entity `CohortMessage.java`.
   - **Chưa có:** `WebSocketConfig.java`, `CohortChatController.java`, `CohortMessageRepository.java` và khung giao diện chat realtime.
