@@ -72,7 +72,7 @@
                     </div>
                 </div>
                 <div class="col-md-auto text-muted small">
-                    Hiển thị <span class="fw-bold text-dark" th:text="${#lists.size(users)}">4</span> tài khoản trong hệ thống
+                    Hiển thị <span class="fw-bold text-dark" th:text="${users != null ? #lists.size(users) : 0}">4</span> tài khoản trong hệ thống
                 </div>
             </div>
 
@@ -93,7 +93,7 @@
                             <td class="text-muted fw-semibold" th:text="${iter.count}">1</td>
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="user-avatar-placeholder" style="width: 42px; height: 42px; font-size: 15px;" th:text="${#strings.substring(u.fullName, 0, 1)}">U</div>
+                                    <div class="user-avatar-placeholder" style="width: 42px; height: 42px; font-size: 15px;" th:text="${u.fullName != null and !u.fullName.isEmpty() ? #strings.substring(u.fullName, 0, 1) : 'U'}">U</div>
                                     <div>
                                         <div class="fw-bold text-dark" th:text="${u.fullName}">Nguyễn Văn A</div>
                                         <div class="text-muted" style="font-size: 12px;">@<span th:text="${u.username}">admin</span></div>
@@ -111,14 +111,14 @@
                                     <span th:each="r : ${u.roles}" class="badge-pill-soft badge-pill-primary">
                                         <i class="bi bi-shield-fill me-1"></i><span th:text="${r.name + ' (' + r.code + ')'}">Học viên (STUDENT)</span>
                                     </span>
-                                    <span th:if="${#lists.isEmpty(u.roles)}" class="text-muted small fst-italic">Chưa có vai trò nào</span>
+                                    <span th:if="${u.roles == null || #sets.isEmpty(u.roles)}" class="text-muted small fst-italic">Chưa có vai trò nào</span>
                                 </div>
                             </td>
                             <td class="text-center">
-                                <span th:if="${u.isActive}" class="badge-pill-soft badge-pill-success">
+                                <span th:if="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-success">
                                     <i class="bi bi-check-circle-fill"></i> Hoạt động
                                 </span>
-                                <span th:unless="${u.isActive}" class="badge-pill-soft badge-pill-danger">
+                                <span th:unless="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-danger">
                                     <i class="bi bi-lock-fill"></i> Đã khóa
                                 </span>
                             </td>
@@ -130,12 +130,12 @@
                                     <button th:if="${u.username != 'admin'}" 
                                             type="button" 
                                             class="btn btn-sm rounded-circle p-2" 
-                                            th:classappend="${u.isActive} ? 'btn-soft-danger' : 'btn-soft-primary'" 
-                                            th:title="${u.isActive ? 'Khóa tài khoản' : 'Mở khóa'}"
+                                            th:classappend="${u.isActive != null and u.isActive} ? 'btn-soft-danger' : 'btn-soft-primary'" 
+                                            th:title="${u.isActive != null and u.isActive ? 'Khóa tài khoản' : 'Mở khóa'}"
                                             th:data-id="${u.id}"
-                                            th:data-is-active="${u.isActive}"
+                                            th:data-is-active="${u.isActive != null and u.isActive}"
                                             onclick="toggleUserStatus(this)">
-                                        <i th:class="${u.isActive ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'}"></i>
+                                        <i th:class="${u.isActive != null and u.isActive ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'}"></i>
                                     </button>
                                 </div>
                             </td>
@@ -152,7 +152,6 @@
 <script th:src="@{/js/admin-layout.js}"></script>
 
 <script>
-    // Real-time table search filter
     document.getElementById('userSearchInput').addEventListener('input', function() {
         const query = this.value.toLowerCase().trim();
         const rows = document.querySelectorAll('#userTable tbody tr');
@@ -162,7 +161,7 @@
         });
     });
 
-                    function showToast(message, type) {
+    function showToast(message, type) {
         let iconHtml = '';
         if (type === 'success') {
             iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
@@ -205,7 +204,6 @@
         const userId = button.getAttribute('data-id');
         const isActive = button.getAttribute('data-is-active') === 'true';
         
-        // Gọi AJAX bằng fetch
         fetch(`/admin/api/users/${userId}/toggle-status`, {
             method: 'POST',
             headers: {
@@ -215,11 +213,9 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Cập nhật thuộc tính của button
                 const newIsActive = data.isActive;
                 button.setAttribute('data-is-active', newIsActive);
                 
-                // Cập nhật icon và màu sắc
                 const icon = button.querySelector('i');
                 if (newIsActive) {
                     button.classList.remove('btn-soft-primary');
@@ -233,7 +229,6 @@
                     icon.className = 'bi bi-unlock-fill';
                 }
                 
-                // Cập nhật badge trạng thái
                 const tr = button.closest('tr');
                 const statusTd = tr.querySelector('td:nth-child(5)');
                 if (newIsActive) {
@@ -242,7 +237,6 @@
                     statusTd.innerHTML = '<span class="badge-pill-soft badge-pill-danger"><i class="bi bi-lock-fill"></i> Đã khóa</span>';
                 }
                 
-                // Hiển thị toast thành công
                 showToast(data.message, 'success');
             } else {
                 showToast('Lỗi: ' + data.message, 'error');

@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import vn.edu.ute.utelearn.controller.instructor.InstructorCohortController;
 
 @ExtendWith(MockitoExtension.class)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 public class ModuleDetailFeatureTest {
 
     private MockMvc courseMvc;
@@ -77,6 +78,9 @@ public class ModuleDetailFeatureTest {
     @Mock
     private vn.edu.ute.utelearn.service.GradebookService gradebookService;
 
+    @Mock
+    private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
+
     @InjectMocks
     private CourseController courseController;
 
@@ -103,6 +107,7 @@ public class ModuleDetailFeatureTest {
         homeResolver.setSuffix(".html");
 
         org.springframework.test.util.ReflectionTestUtils.setField(courseController, "gradebookService", gradebookService);
+        org.springframework.test.util.ReflectionTestUtils.setField(courseController, "enrollmentRepository", enrollmentRepository);
         courseMvc = MockMvcBuilders.standaloneSetup(courseController).setViewResolvers(courseResolver).build();
         homeMvc = MockMvcBuilders.standaloneSetup(homeController).setViewResolvers(homeResolver).build();
         apiMvc = MockMvcBuilders.standaloneSetup(courseApiController).build();
@@ -602,5 +607,241 @@ public class ModuleDetailFeatureTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("upcomingSchedules", org.hamcrest.Matchers.hasSize(1)))
                 .andExpect(model().attribute("upcomingSchedules", org.hamcrest.Matchers.contains(futureSchedule)));
+    }
+
+    @Test
+    void testShowModuleDetailIncludesReviewAttributes() throws Exception {
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findById(1L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortScheduleRepository.findByCohortIdWithDetails(1L)).thenReturn(Collections.emptyList());
+        when(cohortMemberRepository.getAverageRatingByCohortId(1L)).thenReturn(4.5);
+        when(cohortMemberRepository.countRatingsByCohortId(1L)).thenReturn(2L);
+        when(cohortMemberRepository.findReviewsByCohortIdWithUser(1L)).thenReturn(Collections.emptyList());
+
+        courseMvc.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("moduleRating", "totalReviewsCount", "moduleReviews", "ratingBreakdown"))
+                .andExpect(model().attribute("moduleRating", 4.5))
+                .andExpect(model().attribute("totalReviewsCount", 2L));
+    }
+
+    @Test
+    void testSubmitCohortReview_Success() throws Exception {
+        User student = User.builder().id(99L).fullName("Sinh Vien Test").build();
+        vn.edu.ute.utelearn.entity.CohortMember member = vn.edu.ute.utelearn.entity.CohortMember.builder()
+                .id(10L)
+                .user(student)
+                .cohort(sampleCohort)
+                .isPassed(false)
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(student));
+        when(cohortMemberRepository.findByCohort_IdAndUser_Id(1L, 99L)).thenReturn(Optional.of(member));
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Môn học rất thực tế và hữu ích!"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/modules/1/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Cảm ơn bạn đã gửi đánh giá cho môn học!"));
+    }
+
+    @Test
+    void testSubmitCohortReview_Unauthenticated() throws Exception {
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Môn học tốt"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/modules/1/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testSubmitCohortReview_NotEnrolled() throws Exception {
+        User student = User.builder().id(99L).fullName("Sinh Vien Test").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(student));
+        when(cohortMemberRepository.findByCohort_IdAndUser_Id(1L, 99L)).thenReturn(Optional.empty());
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Môn học tốt"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/modules/1/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testShowCourseDetailIncludesRatingBreakdown() throws Exception {
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findByCourseIdAndStatusInOrdered(anyLong(), anyList()))
+                .thenReturn(List.of(sampleCohort));
+        when(cohortRepository.findByCourseIdOrdered(anyLong()))
+                .thenReturn(List.of(sampleCohort));
+        when(enrollmentRepository.countRatingsByCourseId(anyLong())).thenReturn(2L);
+        when(enrollmentRepository.getAverageRatingByCourseId(anyLong())).thenReturn(4.5);
+
+        vn.edu.ute.utelearn.entity.Enrollment r1 = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                .id(101L)
+                .rating(5)
+                .reviewComment("Khóa học rất hay!")
+                .reviewedAt(java.time.Instant.now())
+                .build();
+        vn.edu.ute.utelearn.entity.Enrollment r2 = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                .id(102L)
+                .rating(4)
+                .reviewComment("Rất bổ ích!")
+                .reviewedAt(java.time.Instant.now())
+                .build();
+        when(enrollmentRepository.findReviewsByCourseIdWithUser(anyLong()))
+                .thenReturn(List.of(r1, r2));
+
+        courseMvc.perform(get("/courses/lap-trinh-web-co-ban"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("courses/detail"))
+                .andExpect(model().attributeExists("courseRating", "totalReviewsCount", "courseReviews", "ratingBreakdown"));
+    }
+
+    @Test
+    void testSubmitCourseReview_Success() throws Exception {
+        User student = User.builder().id(99L).fullName("Sinh Vien Test").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(student));
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+
+        vn.edu.ute.utelearn.entity.Enrollment enrollment = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                .id(1L)
+                .user(student)
+                .course(sampleCourse)
+                .isCompleted(true)
+                .build();
+        when(enrollmentRepository.findByUser_IdAndCourse_Id(99L, sampleCourse.getId()))
+                .thenReturn(Optional.of(enrollment));
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Khóa học tuyệt vời!"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Cảm ơn bạn đã gửi đánh giá cho khóa học!"));
+    }
+
+    @Test
+    void testSubmitCourseReview_Unauthenticated() throws Exception {
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Khóa học tốt"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testSubmitCourseReview_NotCompleted() throws Exception {
+        User student = User.builder().id(99L).fullName("Sinh Vien Test").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(student));
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+
+        vn.edu.ute.utelearn.entity.Enrollment enrollment = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                .id(1L)
+                .user(student)
+                .course(sampleCourse)
+                .isCompleted(false)
+                .build();
+        when(enrollmentRepository.findByUser_IdAndCourse_Id(99L, sampleCourse.getId()))
+                .thenReturn(Optional.of(enrollment));
+        when(cohortRepository.findByCourseIdOrdered(sampleCourse.getId()))
+                .thenReturn(List.of(sampleCohort));
+        when(cohortMemberRepository.findByCohort_Course_IdAndUser_Id(sampleCourse.getId(), 99L))
+                .thenReturn(Collections.emptyList());
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Khóa học tốt"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Bạn cần hoàn thành toàn bộ khóa học để có thể gửi đánh giá"));
+    }
+
+    @Test
+    void testSubmitCourseReview_NotEnrolled() throws Exception {
+        User student = User.builder().id(99L).fullName("Sinh Vien Test").build();
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(student));
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(enrollmentRepository.findByUser_IdAndCourse_Id(99L, sampleCourse.getId()))
+                .thenReturn(Optional.empty());
+        when(cohortRepository.findByCourseIdOrdered(sampleCourse.getId()))
+                .thenReturn(Collections.emptyList());
+
+        String jsonPayload = """
+                {
+                    "rating": 5,
+                    "comment": "Khóa học tốt"
+                }
+                """;
+
+        courseMvc.perform(post("/courses/lap-trinh-web-co-ban/review")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(jsonPayload))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testReviewTimestampFormattedGmt7() {
+        java.time.Instant utcInstant = java.time.Instant.parse("2026-10-28T20:00:00Z");
+        vn.edu.ute.utelearn.entity.Enrollment enrollment = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                .reviewedAt(utcInstant)
+                .build();
+        vn.edu.ute.utelearn.entity.CohortMember member = vn.edu.ute.utelearn.entity.CohortMember.builder()
+                .reviewedAt(utcInstant)
+                .build();
+        vn.edu.ute.utelearn.dto.StudentGradeItemDTO dto = new vn.edu.ute.utelearn.dto.StudentGradeItemDTO();
+        dto.setReviewedAt(utcInstant);
+
+        org.junit.jupiter.api.Assertions.assertEquals("29/10/2026 03:00", enrollment.getFormattedReviewedAt());
+        org.junit.jupiter.api.Assertions.assertEquals("29/10/2026 03:00", member.getFormattedReviewedAt());
+        org.junit.jupiter.api.Assertions.assertEquals("29/10/2026 03:00", dto.getFormattedReviewedAt());
+
+        enrollment.setReviewedAt(null);
+        org.junit.jupiter.api.Assertions.assertEquals("", enrollment.getFormattedReviewedAt());
     }
 }

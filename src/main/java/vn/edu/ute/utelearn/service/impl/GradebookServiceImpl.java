@@ -1615,6 +1615,9 @@ public class GradebookServiceImpl implements GradebookService {
                     .moduleId(mod.getId())
                     .moduleCode(mod.getCode())
                     .moduleName(mod.getName())
+                    .cohortName(mod.getName())
+                    .orderIndex(mod.getOrderIndex() != null ? mod.getOrderIndex() : 1)
+                    .passingGrade(5.0)
                     .gradingPolicy(mod.getGradingPolicy())
                     .isGradesPublished(Boolean.TRUE.equals(mod.getIsGradesPublished()));
 
@@ -1650,6 +1653,9 @@ public class GradebookServiceImpl implements GradebookService {
 
         return StudentCourseGradeDTO.builder()
                 .course(course)
+                .courseId(course != null ? course.getId() : courseId)
+                .courseTitle(course != null ? course.getTitle() : null)
+                .courseSlug(course != null ? course.getSlug() : null)
                 .userId(userId)
                 .fullName(user.getFullName())
                 .email(user.getEmail())

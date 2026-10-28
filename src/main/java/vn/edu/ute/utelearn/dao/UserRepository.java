@@ -28,6 +28,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = {"roles", "roles.permissions"})
     Optional<User> findById(Long id);
 
+    @Override
+    @EntityGraph(attributePaths = {"roles"})
+    @Query("SELECT DISTINCT u FROM User u ORDER BY u.id ASC")
+    List<User> findAll();
+
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);

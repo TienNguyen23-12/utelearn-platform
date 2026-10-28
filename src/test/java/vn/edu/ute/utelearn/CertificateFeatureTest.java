@@ -175,6 +175,7 @@ public class CertificateFeatureTest {
 
         assertEquals("certificates/verify", view);
         assertEquals(false, model.getAttribute("hasSearched"));
+        assertEquals("https://utelearn-platform.onrender.com", model.getAttribute("baseUrl"));
     }
 
     @Test
@@ -189,6 +190,7 @@ public class CertificateFeatureTest {
         assertEquals(true, model.getAttribute("hasSearched"));
         assertEquals(true, model.getAttribute("isValid"));
         assertNotNull(model.getAttribute("cert"));
+        assertEquals("https://utelearn-platform.onrender.com", model.getAttribute("baseUrl"));
     }
 
     @Test

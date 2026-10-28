@@ -36,6 +36,8 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.dao.CartItemRepository cartItemRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.WishlistRepository wishlistRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -118,11 +120,16 @@ public class CourseApiController {
                     isPartiallyEnrolled = (enrolledCount > 0 && enrolledCount < cohorts.size());
                 }
             }
+            boolean inWishlist = false;
+            if (currentUserOpt.isPresent() && wishlistRepository != null) {
+                inWishlist = wishlistRepository.existsByUser_IdAndCourse_Id(currentUserOpt.get().getId(), course.getId());
+            }
             map.put("isAdmin", isAdmin);
             map.put("isEnrolled", isEnrolled);
             map.put("isPartiallyEnrolled", isPartiallyEnrolled);
             map.put("isOwner", isOwner);
             map.put("isCourseInCart", isCourseInCart);
+            map.put("inWishlist", inWishlist);
             map.put("userEnrolledCohortsCount", userEnrolledCohortsCount);
             return map;
         }).collect(Collectors.toList());
@@ -289,7 +296,14 @@ public class CourseApiController {
                     r.getCode().equals("MODERATOR") ||
                     r.getCode().equals("INSTRUCTOR"));
 
+            List<vn.edu.ute.utelearn.entity.Section> cohortSections = sectionService.getSectionsByCohortId(module.getId());
+            java.util.Set<Long> validSectionIds = cohortSections.stream().map(vn.edu.ute.utelearn.entity.Section::getId).collect(Collectors.toSet());
             List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
+            if (!validSectionIds.isEmpty()) {
+                schedules = schedules.stream()
+                        .filter(cs -> cs.getLesson() != null && cs.getLesson().getSection() != null && validSectionIds.contains(cs.getLesson().getSection().getId()))
+                        .toList();
+            }
             List<Map<String, Object>> lessons = schedules.stream()
                     .filter(cs -> isPrivilegedUser || cs.getLesson().isPublished())
                     .map(cs -> {

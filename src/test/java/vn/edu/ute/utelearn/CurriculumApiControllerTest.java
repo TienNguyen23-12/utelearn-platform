@@ -118,7 +118,7 @@ public class CurriculumApiControllerTest {
     @Test
     void testCourseControllerRedirectToCurriculum() {
         vn.edu.ute.utelearn.controller.CourseController courseController = new vn.edu.ute.utelearn.controller.CourseController(
-                authService, null, null, null, null, null, null, null
+                authService, null, null, null, null, null, null, null, null
         );
         String redirect = courseController.redirectToCurriculum(12L);
         org.junit.jupiter.api.Assertions.assertEquals("redirect:/instructor/courses/12/curriculum", redirect);

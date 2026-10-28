@@ -36,12 +36,104 @@
         }
 
         .course-card-hover {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 18px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            background: #ffffff;
         }
 
         .course-card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 25px -4px rgba(15, 23, 42, 0.12) !important;
+            transform: translateY(-5px);
+            box-shadow: 0 18px 30px -8px rgba(15, 23, 42, 0.12) !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .course-card-hover .course-thumb-box {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+        }
+
+        .course-card-hover .course-thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .course-card-hover:hover .course-thumb-box img {
+            transform: scale(1.05);
+        }
+
+        .card-glass-badge {
+            position: absolute;
+            top: 12px;
+            backdrop-filter: blur(8px);
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 50rem;
+            letter-spacing: 0.2px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+        }
+
+        .card-glass-badge.badge-primary-glass {
+            left: 12px;
+            background: rgba(37, 99, 235, 0.9);
+            color: #ffffff;
+        }
+
+        .card-glass-badge.badge-dark-glass {
+            left: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            color: #ffffff;
+        }
+
+        .card-glass-badge.badge-success-glass {
+            right: 12px;
+            background: rgba(16, 185, 129, 0.92);
+            color: #ffffff;
+        }
+
+        .card-glass-badge.badge-info-glass {
+            right: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #0284c7;
+            border: 1px solid rgba(2, 132, 199, 0.2);
+        }
+
+        .course-title-hover {
+            color: #0f172a;
+            transition: color 0.2s ease;
+        }
+
+        .course-card-hover:hover .course-title-hover {
+            color: #2563eb;
+        }
+
+        .btn-action-ghost {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            font-weight: 600;
+            font-size: 12.5px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-ghost:hover {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #2563eb;
+        }
+
+        .btn-action-ghost:active {
+            transform: scale(0.98);
+        }
+
+        .course-card-hover .card-body {
+            padding: 1.25rem;
         }
     </style>
 </head>
@@ -94,37 +186,45 @@
 
                             <div th:if="${enrolledCourses != null && !enrolledCourses.isEmpty()}" class="row g-4">
                                 <div th:each="item : ${enrolledCourses}" class="col-md-6 col-lg-4">
-                                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
-                                        <div class="position-relative">
+                                    <div class="card h-100 shadow-sm border-0 course-card-hover">
+                                        <div class="course-thumb-box">
                                             <img th:src="${item.course.thumbnailUrl != null && !item.course.thumbnailUrl.isBlank() ? item.course.thumbnailUrl : '/images/courses/default-cover.png'}"
-                                                 class="card-img-top" alt="Course thumbnail" style="aspect-ratio: 16 / 9; width: 100%; object-fit: cover;">
-                                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white shadow-sm rounded-pill px-3 py-1">
+                                                 alt="Course thumbnail">
+                                            <span class="card-glass-badge badge-primary-glass">
                                                 <i class="bi bi-patch-check-fill me-1"></i>Trọn gói khóa học
                                             </span>
-                                            <span th:if="${item.isCompleted}" class="position-absolute top-0 end-0 m-2 badge bg-success text-white shadow-sm rounded-pill px-2.5 py-1 fw-bold">
+                                            <span th:if="${item.isCompleted}" class="card-glass-badge badge-success-glass">
                                                 <i class="bi bi-award-fill me-1"></i>Đã tốt nghiệp
                                             </span>
                                         </div>
-                                        <div class="card-body p-3 d-flex flex-column">
-                                            <div class="d-flex align-items-center gap-1 mb-1" th:if="${item.course.category != null}">
-                                                <span class="badge bg-light text-primary border small" th:text="${item.course.category.name}">Danh mục</span>
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex align-items-center gap-1.5 mb-2" th:if="${item.course.category != null}">
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;" th:text="${item.course.category.name}">Danh mục</span>
                                             </div>
-                                            <h6 class="card-title fw-bold text-dark mb-2 line-clamp-2" th:text="${item.course.title}" style="line-height: 1.4; min-height: 44px;">Tiêu đề khóa học</h6>
-                                            <p class="text-muted small mb-2">
-                                                <i class="bi bi-person-circle me-1"></i><span th:text="${item.course.createdBy != null ? item.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
-                                                <br>
-                                                <i class="bi bi-layers-fill me-1 text-info"></i><span th:text="${item.totalModules > 0 ? 'Bao gồm ' + item.totalModules + ' Module' : 'Trọn bộ bài giảng'}">Lộ trình</span>
-                                            </p>
-                                            <div class="bg-light p-2.5 rounded-3 border mb-3">
-                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                    <small class="text-muted fw-semibold" style="font-size: 11.5px;">Tiến độ hoàn thành:</small>
-                                                    <small class="fw-bold" th:classappend="${item.isCompleted ? 'text-success' : 'text-primary'}"
-                                                           th:text="${item.completedModulesCount} + '/' + ${item.totalModules} + ' Module (' + ${item.progressPercent} + '%)'">0/0 Module (0%)</small>
+                                            <h6 class="card-title fw-bold mb-2 line-clamp-2 course-title-hover" th:text="${item.course.title}" style="line-height: 1.45; min-height: 44px; font-size: 15px;">Tiêu đề khóa học</h6>
+                                            <div class="d-flex flex-column gap-1.5 mb-3 text-secondary small">
+                                                <div class="d-flex align-items-center gap-2 text-truncate">
+                                                    <i class="bi bi-person-circle text-muted"></i>
+                                                    <span class="text-truncate" th:text="${item.course.createdBy != null ? item.course.createdBy.fullName : 'Giảng viên UTELearn'}">Giảng viên</span>
                                                 </div>
-                                                <div class="progress rounded-pill bg-white border" style="height: 6px;">
-                                                    <div class="progress-bar" th:classappend="${item.isCompleted ? 'bg-success' : 'bg-primary'}" role="progressbar" th:style="'width: ' + ${item.progressPercent} + '%'"></div>
+                                                <div class="d-flex align-items-center gap-2 text-truncate">
+                                                    <i class="bi bi-collection-play-fill text-primary"></i>
+                                                    <span class="text-dark fw-medium" th:text="${item.totalModules > 0 ? 'Bao gồm ' + item.totalModules + ' Module' : 'Trọn bộ bài giảng'}">Lộ trình</span>
                                                 </div>
-                                                <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top" th:if="${item.isCompleted}">
+                                            </div>
+                                            <div class="bg-light bg-opacity-75 p-3 rounded-3 border mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                                    <span class="text-muted fw-semibold d-inline-flex align-items-center gap-1" style="font-size: 12px;">
+                                                        <i class="bi bi-speedometer2 text-primary"></i> Tiến độ hoàn thành:
+                                                    </span>
+                                                    <span class="fw-bold" style="font-size: 12px;"
+                                                          th:classappend="${item.isCompleted ? 'text-success' : 'text-primary'}"
+                                                          th:text="${item.completedModulesCount} + '/' + ${item.totalModules} + ' Module (' + ${item.progressPercent} + '%)'">0/0 Module (0%)</span>
+                                                </div>
+                                                <div class="progress rounded-pill bg-white border" style="height: 7px;">
+                                                    <div class="progress-bar rounded-pill" th:classappend="${item.isCompleted ? 'bg-success' : 'bg-primary'}" role="progressbar" th:style="'width: ' + ${item.progressPercent} + '%'"></div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" th:if="${item.isCompleted}">
                                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size: 11px;">
                                                         <i class="bi bi-check-all me-1"></i>Đã đạt tất cả module
                                                     </span>
@@ -133,35 +233,47 @@
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div class="mt-auto d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
-                                                <div class="d-flex align-items-center gap-1.5">
-                                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-2.5"
+                                            <div class="mt-auto pt-3 border-top d-flex flex-column gap-2">
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <button type="button" class="btn btn-sm btn-action-ghost rounded-pill px-3 d-inline-flex align-items-center gap-1.5"
                                                             th:data-course-id="${item.course.id}"
                                                             th:data-course-title="${item.course.title}"
                                                             onclick="openStudentCourseGradebook(this.getAttribute('data-course-id'), this.getAttribute('data-course-title'))"
                                                             title="Xem bảng điểm chi tiết khóa học">
-                                                        <i class="bi bi-journal-check me-1"></i>Bảng điểm
+                                                        <i class="bi bi-journal-check text-primary"></i>
+                                                        <span>Bảng điểm</span>
                                                     </button>
-                                                    <button th:if="${item.isCompleted}" type="button" 
-                                                            th:class="${item.hasReviewed ? 'btn btn-sm btn-outline-success rounded-pill px-2.5' : 'btn btn-sm btn-warning rounded-pill px-2.5 fw-semibold shadow-xs text-dark'}" 
-                                                            th:data-course-id="${item.course.id}"
-                                                            th:data-course-name="${item.course.title}"
-                                                            th:data-student-name="${currentUser.fullName}"
-                                                            th:data-grade="${item.averageGrade != null ? item.averageGrade : '10'}"
-                                                            th:data-code="${item.certificateUrl != null ? item.certificateUrl : 'UTE-CERT-CRS'}"
-                                                            th:data-has-reviewed="${item.hasReviewed}"
-                                                            onclick="handleCourseCertificateAction(this.getAttribute('data-course-id'), this.getAttribute('data-course-name'), this.getAttribute('data-student-name'), this.getAttribute('data-grade'), this.getAttribute('data-code'), this.getAttribute('data-has-reviewed') === 'true')">
-                                                        <i th:class="${item.hasReviewed ? 'bi bi-award-fill me-1' : 'bi bi-star-fill me-1 text-warning-emphasis'}"></i>
-                                                        <span th:text="${item.hasReviewed ? 'Chứng chỉ' : 'Nhận chứng chỉ'}">Chứng chỉ</span>
-                                                    </button>
+                                                    <a th:href="@{'/courses/' + ${item.course.slug}}" class="btn btn-sm btn-action-ghost rounded-pill px-3 d-inline-flex align-items-center gap-1.5 ms-auto"
+                                                       title="Xem chi tiết lộ trình khóa học">
+                                                        <i class="bi bi-info-circle text-muted"></i>
+                                                        <span>Chi tiết</span>
+                                                    </a>
                                                 </div>
-                                                <div class="d-flex align-items-center gap-1.5 ms-auto">
-                                                    <a th:unless="${item.isCompleted}" th:href="@{'/courses/' + ${item.course.slug}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                                        <i class="bi bi-info-circle me-1"></i>Chi tiết
+                                                <div>
+                                                    <a th:unless="${item.isCompleted}" th:href="@{'/courses/' + ${item.course.slug} + '/learn'}" 
+                                                       class="btn btn-sm btn-primary btn-gradient rounded-pill py-2 w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                                                        <i class="bi bi-play-circle-fill fs-6"></i>
+                                                        <span>Vào học ngay</span>
                                                     </a>
-                                                    <a th:href="@{'/courses/' + ${item.course.slug} + '/learn'}" class="btn btn-sm btn-primary btn-gradient rounded-pill px-3">
-                                                        <i class="bi bi-play-circle-fill me-1"></i>Vào học ngay
-                                                    </a>
+                                                    <div th:if="${item.isCompleted}" class="d-flex align-items-center gap-2">
+                                                        <button type="button" 
+                                                                th:class="${item.hasReviewed ? 'btn btn-sm btn-outline-success rounded-pill flex-fill py-2 fw-semibold' : 'btn btn-sm btn-warning rounded-pill flex-fill py-2 fw-bold shadow-xs text-dark'}" 
+                                                                th:data-course-id="${item.course.id}"
+                                                                th:data-course-name="${item.course.title}"
+                                                                th:data-student-name="${currentUser.fullName}"
+                                                                th:data-grade="${item.averageGrade != null ? item.averageGrade : '10'}"
+                                                                th:data-code="${item.certificateUrl != null ? item.certificateUrl : 'UTE-CERT-CRS'}"
+                                                                th:data-has-reviewed="${item.hasReviewed}"
+                                                                onclick="handleCourseCertificateAction(this.getAttribute('data-course-id'), this.getAttribute('data-course-name'), this.getAttribute('data-student-name'), this.getAttribute('data-grade'), this.getAttribute('data-code'), this.getAttribute('data-has-reviewed') === 'true')">
+                                                            <i th:class="${item.hasReviewed ? 'bi bi-award-fill me-1' : 'bi bi-star-fill me-1 text-warning-emphasis'}"></i>
+                                                            <span th:text="${item.hasReviewed ? 'Chứng chỉ' : 'Nhận chứng chỉ'}">Chứng chỉ</span>
+                                                        </button>
+                                                        <a th:href="@{'/courses/' + ${item.course.slug} + '/learn'}" 
+                                                           class="btn btn-sm btn-outline-primary rounded-pill flex-fill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                            <span>Ôn tập</span>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -238,54 +350,82 @@
 
                             <div th:if="${enrolledModules != null && !enrolledModules.isEmpty()}" class="row g-4">
                                 <div th:each="cm : ${enrolledModules}" class="col-md-6 col-lg-4">
-                                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden course-card-hover">
-                                        <div class="position-relative">
+                                    <div class="card h-100 shadow-sm border-0 course-card-hover">
+                                        <div class="course-thumb-box">
                                             <img th:src="${cm.cohort.thumbnailUrl != null && !cm.cohort.thumbnailUrl.isBlank() ? cm.cohort.thumbnailUrl : (cm.cohort.course != null && cm.cohort.course.thumbnailUrl != null && !cm.cohort.course.thumbnailUrl.isBlank() ? cm.cohort.course.thumbnailUrl : '/images/courses/default-cover.png')}"
-                                                 class="card-img-top" alt="Module thumbnail" style="aspect-ratio: 16 / 9; width: 100%; object-fit: cover;">
-                                            <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white shadow-sm rounded-pill px-3 py-1" th:text="${cm.cohort.code}">
+                                                 alt="Module thumbnail">
+                                            <span class="card-glass-badge badge-dark-glass" th:text="${cm.cohort.code}">
                                                 MOD-WEB-01
                                             </span>
-                                            <span class="position-absolute top-0 end-0 m-2 badge bg-info-subtle text-info border border-info-subtle shadow-sm rounded-pill px-2 py-1 small">
-                                                Học phần lẻ
+                                            <span class="card-glass-badge badge-info-glass">
+                                                <i class="bi bi-layers me-1"></i>Học phần lẻ
                                             </span>
                                         </div>
-                                        <div class="card-body p-3 d-flex flex-column">
-                                            <small class="text-primary fw-semibold text-truncate d-block mb-1">
-                                                <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course != null ? cm.cohort.course.title : 'Module độc lập'}">Khóa học</span>
-                                            </small>
-                                            <h6 class="card-title fw-bold text-dark mb-2 line-clamp-2" th:text="${cm.cohort.name}" style="line-height: 1.4; min-height: 44px;">Tên Module</h6>
-                                            <p class="text-muted small mb-3">
-                                                <i class="bi bi-person-circle me-1"></i><span th:text="${cm.cohort.course != null && cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : (cm.cohort.createdBy != null ? cm.cohort.createdBy.fullName : 'Giảng viên')}">Giảng viên</span>
-                                                <br>
-                                                <span th:if="${cm.isPassed != null and cm.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 mt-1">
-                                                    <i class="bi bi-patch-check-fill me-1"></i>Đã hoàn thành module
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="mb-1 text-truncate" th:if="${cm.cohort.course != null}">
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-semibold text-truncate" style="font-size: 11px; max-width: 100%;">
+                                                    <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course.title}">Khóa học</span>
                                                 </span>
-                                                <span th:unless="${cm.isPassed != null and cm.isPassed}" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 mt-1">
-                                                    <i class="bi bi-clock-history me-1"></i>Đang trong tiến trình học
-                                                </span>
-                                                <span th:if="${cm.cohort != null and cm.cohort.isGradesPublished != null and cm.cohort.isGradesPublished and cm.finalGrade != null}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 mt-1 ms-1">
-                                                    Điểm: <strong th:text="${cm.finalGrade} + ' / 10'">8.5 / 10</strong>
-                                                </span>
-                                            </p>
-                                            <div class="mt-auto d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
-                                                <button th:if="${cm.isPassed != null and cm.isPassed}" type="button" 
-                                                        th:class="${cm.hasReviewed() ? 'btn btn-sm btn-outline-success rounded-pill px-2.5' : 'btn btn-sm btn-warning rounded-pill px-2.5 fw-semibold shadow-xs text-dark'}" 
-                                                        th:data-cohort-id="${cm.cohort.id}"
-                                                        th:data-course-name="${cm.cohort.name}"
-                                                        th:data-student-name="${currentUser.fullName}"
-                                                        th:data-grade="${cm.finalGrade != null ? cm.finalGrade : '10'}"
-                                                        th:data-code="${cm.certificateUrl != null ? cm.certificateUrl : 'UTE-CERT'}"
-                                                        th:data-has-reviewed="${cm.hasReviewed()}"
-                                                        onclick="handleCertificateAction(this.getAttribute('data-cohort-id'), this.getAttribute('data-course-name'), this.getAttribute('data-student-name'), this.getAttribute('data-grade'), this.getAttribute('data-code'), this.getAttribute('data-has-reviewed') === 'true')">
-                                                    <i th:class="${cm.hasReviewed() ? 'bi bi-award-fill me-1' : 'bi bi-star-fill me-1 text-warning-emphasis'}"></i>
-                                                    <span th:text="${cm.hasReviewed() ? 'Chứng chỉ' : 'Nhận chứng chỉ'}">Chứng chỉ</span>
-                                                </button>
-                                                <a th:unless="${cm.isPassed != null and cm.isPassed}" th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id : '/courses/standalone/modules/' + cm.cohort.id}}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                                    <i class="bi bi-eye me-1"></i>Chi tiết
-                                                </a>
-                                                <a th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id + '/learn' : '/courses/standalone/modules/' + cm.cohort.id + '/learn'}}" class="btn btn-sm btn-primary rounded-pill px-3">
-                                                    <i class="bi bi-play-circle-fill me-1"></i>Vào học
-                                                </a>
+                                            </div>
+                                            <h6 class="card-title fw-bold mb-2 line-clamp-2 course-title-hover" th:text="${cm.cohort.name}" style="line-height: 1.45; min-height: 44px; font-size: 15px;">Tên Module</h6>
+                                            <div class="d-flex flex-column gap-1.5 mb-3 text-secondary small">
+                                                <div class="d-flex align-items-center gap-2 text-truncate">
+                                                    <i class="bi bi-person-circle text-muted"></i>
+                                                    <span class="text-truncate" th:text="${cm.cohort.course != null && cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : (cm.cohort.createdBy != null ? cm.cohort.createdBy.fullName : 'Giảng viên UTELearn')}">Giảng viên</span>
+                                                </div>
+                                            </div>
+                                            <div class="bg-light bg-opacity-75 p-3 rounded-3 border mb-3">
+                                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                    <span th:if="${cm.isPassed != null and cm.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                                        <i class="bi bi-patch-check-fill me-1"></i>Đã hoàn thành module
+                                                    </span>
+                                                    <span th:unless="${cm.isPassed != null and cm.isPassed}" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">
+                                                        <i class="bi bi-clock-history me-1"></i>Đang trong tiến trình học
+                                                    </span>
+                                                    <span th:if="${cm.cohort != null and cm.cohort.isGradesPublished != null and cm.cohort.isGradesPublished and cm.finalGrade != null}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">
+                                                        Điểm: <strong th:text="${cm.finalGrade} + ' / 10'">8.5 / 10</strong>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="mt-auto pt-3 border-top d-flex flex-column gap-2">
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="text-muted small fw-medium d-inline-flex align-items-center gap-1">
+                                                        <i class="bi bi-calendar-event text-secondary"></i><span>Học phần</span>
+                                                    </span>
+                                                    <a th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id : '/courses/standalone/modules/' + cm.cohort.id}}" 
+                                                       class="btn btn-sm btn-action-ghost rounded-pill px-3 d-inline-flex align-items-center gap-1.5 ms-auto"
+                                                       title="Xem chi tiết học phần">
+                                                        <i class="bi bi-info-circle text-muted"></i>
+                                                        <span>Chi tiết</span>
+                                                    </a>
+                                                </div>
+                                                <div>
+                                                    <a th:unless="${cm.isPassed != null and cm.isPassed}" 
+                                                       th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id + '/learn' : '/courses/standalone/modules/' + cm.cohort.id + '/learn'}}" 
+                                                       class="btn btn-sm btn-primary btn-gradient rounded-pill py-2 w-100 fw-bold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                                                        <i class="bi bi-play-circle-fill fs-6"></i>
+                                                        <span>Vào học ngay</span>
+                                                    </a>
+                                                    <div th:if="${cm.isPassed != null and cm.isPassed}" class="d-flex align-items-center gap-2">
+                                                        <button type="button" 
+                                                                th:class="${cm.hasReviewed() ? 'btn btn-sm btn-outline-success rounded-pill flex-fill py-2 fw-semibold' : 'btn btn-sm btn-warning rounded-pill flex-fill py-2 fw-bold shadow-xs text-dark'}" 
+                                                                th:data-cohort-id="${cm.cohort.id}"
+                                                                th:data-course-name="${cm.cohort.name}"
+                                                                th:data-student-name="${currentUser.fullName}"
+                                                                th:data-grade="${cm.finalGrade != null ? cm.finalGrade : '10'}"
+                                                                th:data-code="${cm.certificateUrl != null ? cm.certificateUrl : 'UTE-CERT'}"
+                                                                th:data-has-reviewed="${cm.hasReviewed()}"
+                                                                onclick="handleCertificateAction(this.getAttribute('data-cohort-id'), this.getAttribute('data-course-name'), this.getAttribute('data-student-name'), this.getAttribute('data-grade'), this.getAttribute('data-code'), this.getAttribute('data-has-reviewed') === 'true')">
+                                                            <i th:class="${cm.hasReviewed() ? 'bi bi-award-fill me-1' : 'bi bi-star-fill me-1 text-warning-emphasis'}"></i>
+                                                            <span th:text="${cm.hasReviewed() ? 'Chứng chỉ' : 'Nhận chứng chỉ'}">Chứng chỉ</span>
+                                                        </button>
+                                                        <a th:href="@{${cm.cohort.course != null ? '/courses/' + cm.cohort.course.slug + '/modules/' + cm.cohort.id + '/learn' : '/courses/standalone/modules/' + cm.cohort.id + '/learn'}}" 
+                                                           class="btn btn-sm btn-outline-primary rounded-pill flex-fill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                            <span>Ôn tập</span>
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -628,7 +768,12 @@
         let studentGradebookModalInstance = null;
         async function openStudentCourseGradebook(courseId, courseTitle) {
             document.getElementById('studentGradebookCourseTitle').textContent = courseTitle || 'Bảng điểm khóa học';
-            document.getElementById('studentGradebookLoading').style.display = 'block';
+            const loadingEl = document.getElementById('studentGradebookLoading');
+            loadingEl.style.display = 'block';
+            loadingEl.innerHTML = `
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted fw-semibold">Đang tải bảng điểm chi tiết...</p>
+            `;
             document.getElementById('studentGradebookContent').style.display = 'none';
 
             if (!studentGradebookModalInstance) {
@@ -639,12 +784,19 @@
             try {
                 const res = await fetch(`/courses/${courseId}/grades/json`);
                 if (!res.ok) {
-                    throw new Error('Không thể tải dữ liệu bảng điểm');
+                    let errMsg = 'Không thể tải dữ liệu bảng điểm';
+                    try {
+                        const errJson = await res.json();
+                        if (errJson && errJson.message) {
+                            errMsg = errJson.message;
+                        }
+                    } catch (_) {}
+                    throw new Error(errMsg);
                 }
                 const data = await res.json();
                 renderStudentGradebook(data);
             } catch (err) {
-                document.getElementById('studentGradebookLoading').innerHTML = `
+                loadingEl.innerHTML = `
                     <div class="text-danger py-4">
                         <i class="bi bi-exclamation-triangle display-6 mb-2 d-block"></i>
                         <p class="fw-semibold mb-0">${err.message || 'Lỗi khi tải bảng điểm'}</p>
@@ -657,21 +809,28 @@
             document.getElementById('studentGradebookLoading').style.display = 'none';
             document.getElementById('studentGradebookContent').style.display = 'block';
 
-            document.getElementById('studentGradebookAvg').textContent = data.averageGrade !== null ? Number(data.averageGrade).toFixed(1) : '--';
-            document.getElementById('studentGradebookProgress').textContent = `${data.completedModulesCount}/${data.totalModules}`;
-            document.getElementById('studentGradebookPercent').textContent = `${data.progressPercent}% hoàn thành`;
+            const avg = data.averageGrade !== undefined ? data.averageGrade : (data.courseAverageGrade !== undefined ? data.courseAverageGrade : null);
+            document.getElementById('studentGradebookAvg').textContent = (avg !== null && avg !== undefined) ? Number(avg).toFixed(1) : '--';
+
+            const completedCount = data.completedModulesCount !== undefined ? data.completedModulesCount : 0;
+            const totalCount = data.totalModules !== undefined ? data.totalModules : (data.totalModulesCount !== undefined ? data.totalModulesCount : 0);
+            document.getElementById('studentGradebookProgress').textContent = `${completedCount}/${totalCount}`;
+
+            const percent = data.progressPercent !== undefined ? data.progressPercent : (totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
+            document.getElementById('studentGradebookPercent').textContent = `${percent}% hoàn thành`;
 
             const statusBadge = document.getElementById('studentGradebookStatusBadge');
             const eligibleText = document.getElementById('studentGradebookEligibleText');
             const subText = document.getElementById('studentGradebookSubText');
 
-            if (data.completed) {
+            const isDone = data.completed === true || data.isCompleted === true;
+            if (isDone) {
                 statusBadge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-bold';
                 statusBadge.innerHTML = '<i class="bi bi-award-fill me-1"></i>Đã tốt nghiệp';
                 eligibleText.className = 'fs-5 fw-bold text-success';
                 eligibleText.textContent = 'Đã tốt nghiệp';
                 subText.textContent = 'Đạt chứng chỉ khóa học';
-            } else if (data.completedModulesCount === data.totalModules && data.totalModules > 0) {
+            } else if (completedCount === totalCount && totalCount > 0) {
                 statusBadge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small fw-bold';
                 statusBadge.innerHTML = '<i class="bi bi-check-all me-1"></i>Đủ điều kiện';
                 eligibleText.className = 'fs-5 fw-bold text-primary';
@@ -682,29 +841,35 @@
                 statusBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Đang học';
                 eligibleText.className = 'fs-5 fw-bold text-warning-emphasis';
                 eligibleText.textContent = 'Chưa hoàn thành';
-                subText.textContent = `Còn ${data.totalModules - data.completedModulesCount} module`;
+                subText.textContent = `Còn ${totalCount - completedCount} module`;
             }
 
             const tbody = document.getElementById('studentGradebookTableBody');
             tbody.innerHTML = '';
-            if (!data.modules || data.modules.length === 0) {
+            const modules = data.modules || data.moduleGrades || [];
+            if (modules.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Chưa có thông tin module nào</td></tr>';
                 return;
             }
 
-            data.modules.forEach(m => {
+            modules.forEach((m, idx) => {
                 const tr = document.createElement('tr');
-                const gradeDisplay = m.finalGrade !== null ? `<span class="fw-bold ${m.passed ? 'text-success' : 'text-danger'}">${Number(m.finalGrade).toFixed(1)}</span>` : '<span class="text-muted">--</span>';
-                const passBadge = m.passed ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small"><i class="bi bi-check-circle-fill me-1"></i>Đạt</span>' : '<span class="badge bg-secondary-subtle text-muted border border-secondary-subtle rounded-pill px-2 py-1 small"><i class="bi bi-dash-circle me-1"></i>Chưa đạt</span>';
-                
+                const finalGrade = m.finalGrade !== undefined && m.finalGrade !== null ? m.finalGrade : null;
+                const isPassed = m.passed === true || m.isPassed === true;
+                const gradeDisplay = finalGrade !== null ? `<span class="fw-bold ${isPassed ? 'text-success' : 'text-danger'}">${Number(finalGrade).toFixed(1)}</span>` : '<span class="text-muted">--</span>';
+                const passBadge = isPassed ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small"><i class="bi bi-check-circle-fill me-1"></i>Đạt</span>' : '<span class="badge bg-secondary-subtle text-muted border border-secondary-subtle rounded-pill px-2 py-1 small"><i class="bi bi-dash-circle me-1"></i>Chưa đạt</span>';
+                const title = m.moduleTitle || m.moduleName || `Module ${idx + 1}`;
+                const code = m.moduleCode || '';
+                const passingVal = m.passingGrade !== null && m.passingGrade !== undefined ? m.passingGrade : 5.0;
+
                 tr.innerHTML = `
-                    <td class="ps-3 fw-semibold text-muted">${m.orderIndex || 1}</td>
+                    <td class="ps-3 fw-semibold text-muted">${m.orderIndex || idx + 1}</td>
                     <td>
-                        <div class="fw-semibold text-dark">${m.moduleTitle}</div>
-                        ${m.cohortName ? `<small class="text-muted"><i class="bi bi-collection me-1"></i>Lớp: ${m.cohortName}</small>` : ''}
+                        <div class="fw-semibold text-dark">${title}</div>
+                        ${code ? `<small class="text-muted"><i class="bi bi-upc-scan me-1"></i>Mã: ${code}</small>` : ''}
                     </td>
                     <td class="text-center">${gradeDisplay}</td>
-                    <td class="text-center text-muted small">&ge; ${m.passingGrade !== null ? Number(m.passingGrade).toFixed(1) : '5.0'}</td>
+                    <td class="text-center text-muted small">&ge; ${Number(passingVal).toFixed(1)}</td>
                     <td class="text-center pe-3">${passBadge}</td>
                 `;
                 tbody.appendChild(tr);

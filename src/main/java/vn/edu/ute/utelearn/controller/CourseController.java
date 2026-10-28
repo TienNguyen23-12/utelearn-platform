@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.service.AuthService;
@@ -43,6 +44,7 @@ public class CourseController {
     private final CohortRepository cohortRepository;
     private final CohortScheduleRepository cohortScheduleRepository;
     private final LessonRepository lessonRepository;
+    private final vn.edu.ute.utelearn.service.SectionService sectionService;
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.security.RbacHelper rbacHelper;
@@ -56,6 +58,12 @@ public class CourseController {
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
             return null;
+        }
+        if (slugOrId.matches("^\\d+$")) {
+            try {
+                return courseService.getCourseById(Long.parseLong(slugOrId));
+            } catch (Exception ignored) {
+            }
         }
         try {
             return courseService.getCourseBySlug(slugOrId);
@@ -271,6 +279,7 @@ public class CourseController {
         java.math.BigDecimal courseAvgGrade = null;
         String courseCertificateUrl = null;
         boolean courseHasReviewed = false;
+        vn.edu.ute.utelearn.entity.Enrollment userEnrollment = null;
         int courseCompletedModulesCount = 0;
         int courseTotalModulesCount = allCourseCohorts.size();
         int courseProgressPercent = 0;
@@ -292,11 +301,11 @@ public class CourseController {
                 java.util.Optional<vn.edu.ute.utelearn.entity.Enrollment> enrollOpt =
                         enrollmentRepository.findByUser_IdAndCourse_Id(user.getId(), course.getId());
                 if (enrollOpt.isPresent()) {
-                    vn.edu.ute.utelearn.entity.Enrollment en = enrollOpt.get();
-                    isCourseCompleted = Boolean.TRUE.equals(en.getIsCompleted());
-                    courseAvgGrade = en.getAverageGrade();
-                    courseCertificateUrl = en.getCertificateUrl();
-                    courseHasReviewed = en.hasReviewed();
+                    userEnrollment = enrollOpt.get();
+                    isCourseCompleted = Boolean.TRUE.equals(userEnrollment.getIsCompleted());
+                    courseAvgGrade = userEnrollment.getAverageGrade();
+                    courseCertificateUrl = userEnrollment.getCertificateUrl();
+                    courseHasReviewed = userEnrollment.hasReviewed();
                 }
             }
             if (!isCourseCompleted && courseTotalModulesCount > 0 && courseCompletedModulesCount >= courseTotalModulesCount) {
@@ -408,6 +417,25 @@ public class CourseController {
         long totalReviewsCount = (enrollmentRepository != null) ? enrollmentRepository.countRatingsByCourseId(course.getId()) : 0L;
         Double courseRating = (avgRatingVal != null && totalReviewsCount > 0) ? Math.round(avgRatingVal * 10.0) / 10.0 : null;
         List<vn.edu.ute.utelearn.entity.Enrollment> courseReviews = (enrollmentRepository != null) ? enrollmentRepository.findReviewsByCourseIdWithUser(course.getId()) : java.util.Collections.emptyList();
+
+        long star5 = courseReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 5).count();
+        long star4 = courseReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 4).count();
+        long star3 = courseReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 3).count();
+        long star2 = courseReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 2).count();
+        long star1 = courseReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 1).count();
+
+        java.util.Map<Object, Long> ratingBreakdown = new java.util.HashMap<>();
+        ratingBreakdown.put(5, star5);
+        ratingBreakdown.put("5", star5);
+        ratingBreakdown.put(4, star4);
+        ratingBreakdown.put("4", star4);
+        ratingBreakdown.put(3, star3);
+        ratingBreakdown.put("3", star3);
+        ratingBreakdown.put(2, star2);
+        ratingBreakdown.put("2", star2);
+        ratingBreakdown.put(1, star1);
+        ratingBreakdown.put("1", star1);
+
         boolean inWishlist = false;
         if (currentUserOpt.isPresent() && wishlistRepository != null) {
             inWishlist = wishlistRepository.existsByUser_IdAndCourse_Id(currentUserOpt.get().getId(), course.getId());
@@ -415,6 +443,8 @@ public class CourseController {
         model.addAttribute("courseRating", courseRating);
         model.addAttribute("totalReviewsCount", totalReviewsCount);
         model.addAttribute("courseReviews", courseReviews);
+        model.addAttribute("ratingBreakdown", ratingBreakdown);
+        model.addAttribute("userEnrollment", userEnrollment);
         model.addAttribute("inWishlist", inWishlist);
 
         return "courses/detail";
@@ -500,12 +530,18 @@ public class CourseController {
         long enrolledCount = cohortMemberRepository.countByCohort_Id(module.getId());
         module.setCurrentEnrolled((int) enrolledCount);
 
-        List<Section> cohortSections = sectionRepository.findSectionsForCohort(module.getId());
+        List<Section> cohortSections = sectionService.getSectionsByCohortId(module.getId());
         if (cohortSections.isEmpty() && course != null) {
             cohortSections = sectionRepository.findByCourseIdOrderByOrderIndexAsc(course.getId());
         }
 
         List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
+        java.util.Set<Long> validSectionIds = cohortSections.stream().map(Section::getId).collect(java.util.stream.Collectors.toSet());
+        if (!validSectionIds.isEmpty()) {
+            schedules = schedules.stream()
+                    .filter(cs -> cs.getLesson() != null && cs.getLesson().getSection() != null && validSectionIds.contains(cs.getLesson().getSection().getId()))
+                    .toList();
+        }
         List<Lesson> moduleLessons;
         if (!schedules.isEmpty()) {
             moduleLessons = schedules.stream().map(CohortSchedule::getLesson).toList();
@@ -604,6 +640,34 @@ public class CourseController {
             return "QUIZ".equals(t) || "ASSIGNMENT".equals(t) || "CODE_PRACTICE".equals(t) || "EXAM".equals(t) || "PROJECT".equals(t);
         });
 
+        Double avgRatingVal = cohortMemberRepository.getAverageRatingByCohortId(module.getId());
+        long totalReviewsCount = cohortMemberRepository.countRatingsByCohortId(module.getId());
+        Double moduleRating = (avgRatingVal != null && totalReviewsCount > 0) ? Math.round(avgRatingVal * 10.0) / 10.0 : null;
+        List<CohortMember> moduleReviews = cohortMemberRepository.findReviewsByCohortIdWithUser(module.getId());
+        log.info("[CourseController] Module {}: totalReviewsCount={}, moduleReviews size={}", module.getId(), totalReviewsCount, moduleReviews != null ? moduleReviews.size() : 0);
+
+        CohortMember userCohortMember = null;
+        if (currentUserOpt.isPresent()) {
+            userCohortMember = cohortMemberRepository.findByCohort_IdAndUser_Id(module.getId(), currentUserOpt.get().getId()).orElse(null);
+        }
+
+        long star5 = moduleReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 5).count();
+        long star4 = moduleReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 4).count();
+        long star3 = moduleReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 3).count();
+        long star2 = moduleReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 2).count();
+        long star1 = moduleReviews.stream().filter(r -> r.getRating() != null && r.getRating() == 1).count();
+        java.util.Map<Object, Long> ratingBreakdown = new java.util.HashMap<>();
+        ratingBreakdown.put(5, star5);
+        ratingBreakdown.put("5", star5);
+        ratingBreakdown.put(4, star4);
+        ratingBreakdown.put("4", star4);
+        ratingBreakdown.put(3, star3);
+        ratingBreakdown.put("3", star3);
+        ratingBreakdown.put(2, star2);
+        ratingBreakdown.put("2", star2);
+        ratingBreakdown.put(1, star1);
+        ratingBreakdown.put("1", star1);
+
         model.addAttribute("course", course);
         model.addAttribute("module", module);
         model.addAttribute("moduleLessons", moduleLessons);
@@ -617,7 +681,125 @@ public class CourseController {
         model.addAttribute("progressPercent", progressPercent);
         model.addAttribute("scheduleMap", scheduleMap);
         model.addAttribute("upcomingSchedules", upcomingSchedules);
+        model.addAttribute("moduleRating", moduleRating);
+        model.addAttribute("totalReviewsCount", totalReviewsCount);
+        model.addAttribute("moduleReviews", moduleReviews);
+        model.addAttribute("userCohortMember", userCohortMember);
+        model.addAttribute("ratingBreakdown", ratingBreakdown);
         return "courses/module-detail";
+    }
+
+    @PostMapping(value = {"/{slug}/modules/{moduleId}/review", "/modules/{moduleId}/review"}, produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<?> submitCohortReview(
+            @PathVariable(required = false) String slug,
+            @PathVariable Long moduleId,
+            @RequestBody vn.edu.ute.utelearn.dto.CourseReviewRequestDTO req) {
+        if (req == null || req.getRating() == null || req.getRating() < 1 || req.getRating() > 5) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Số sao đánh giá phải từ 1 đến 5 sao"));
+        }
+
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Vui lòng đăng nhập để gửi đánh giá"));
+        }
+
+        User user = currentUserOpt.get();
+        CohortMember member = cohortMemberRepository.findByCohort_IdAndUser_Id(moduleId, user.getId()).orElse(null);
+        if (member == null) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Bạn cần tham gia đợt học này để có thể gửi đánh giá"));
+        }
+
+        member.setRating(req.getRating());
+        if (req.getComment() != null) {
+            member.setReviewComment(req.getComment().trim());
+        }
+        member.setReviewedAt(java.time.Instant.now());
+
+        if (Boolean.TRUE.equals(member.getIsPassed()) && (member.getCertificateUrl() == null || member.getCertificateUrl().isBlank())) {
+            Cohort c = member.getCohort();
+            String code = "UTE-CERT-" + (c != null && c.getCode() != null ? c.getCode() : "MOD") + "-" + user.getId();
+            member.setCertificateUrl("/certificates/verify?code=" + code);
+        }
+
+        cohortMemberRepository.save(member);
+        log.info("[CourseController] Học viên {} đã đánh giá {} sao cho cohort {}", user.getId(), req.getRating(), moduleId);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Cảm ơn bạn đã gửi đánh giá cho môn học!"
+        ));
+    }
+
+    @PostMapping(value = {"/{slug}/review", "/courses/{slug}/review"}, produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<?> submitCourseReview(
+            @PathVariable(required = false) String slug,
+            @RequestBody vn.edu.ute.utelearn.dto.CourseReviewRequestDTO req) {
+        if (req == null || req.getRating() == null || req.getRating() < 1 || req.getRating() > 5) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Số sao đánh giá phải từ 1 đến 5 sao"));
+        }
+
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Vui lòng đăng nhập để gửi đánh giá"));
+        }
+
+        Course course = resolveCourse(slug);
+        if (course == null) {
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", "Khóa học không tồn tại"));
+        }
+
+        User user = currentUserOpt.get();
+        vn.edu.ute.utelearn.entity.Enrollment enrollment = enrollmentRepository.findByUser_IdAndCourse_Id(user.getId(), course.getId()).orElse(null);
+        boolean isCourseCompleted = enrollment != null && Boolean.TRUE.equals(enrollment.getIsCompleted());
+        if (!isCourseCompleted) {
+            List<Cohort> allCourseCohorts = cohortRepository.findByCourseIdOrdered(course.getId())
+                    .stream()
+                    .filter(c -> c != null && !c.isFullCourseCohort())
+                    .toList();
+            if (!allCourseCohorts.isEmpty()) {
+                List<CohortMember> memberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+                long completedModulesCount = allCourseCohorts.stream()
+                        .filter(mod -> memberships.stream().anyMatch(m -> m.getCohort() != null && m.getCohort().getId().equals(mod.getId()) && Boolean.TRUE.equals(m.getIsPassed())))
+                        .count();
+                if (completedModulesCount >= allCourseCohorts.size()) {
+                    isCourseCompleted = true;
+                }
+            }
+        }
+
+        if (!isCourseCompleted) {
+            return ResponseEntity.status(403).body(Map.of("success", false, "message", "Bạn cần hoàn thành toàn bộ khóa học để có thể gửi đánh giá"));
+        }
+
+        if (enrollment == null) {
+            enrollment = vn.edu.ute.utelearn.entity.Enrollment.builder()
+                    .user(user)
+                    .course(course)
+                    .progress(100.0)
+                    .isCompleted(true)
+                    .build();
+        }
+
+        enrollment.setRating(req.getRating());
+        if (req.getComment() != null) {
+            enrollment.setReviewComment(req.getComment().trim());
+        }
+        enrollment.setReviewedAt(java.time.Instant.now());
+
+        if (Boolean.TRUE.equals(enrollment.getIsCompleted()) && (enrollment.getCertificateUrl() == null || enrollment.getCertificateUrl().isBlank())) {
+            String code = "UTE-CERT-" + (course.getCode() != null ? course.getCode() : "CRS") + "-" + user.getId();
+            enrollment.setCertificateUrl("/certificates/verify?code=" + code);
+        }
+
+        enrollmentRepository.save(enrollment);
+        log.info("[CourseController] Học viên {} đã đánh giá {} sao cho khóa học {}", user.getId(), req.getRating(), course.getId());
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Cảm ơn bạn đã gửi đánh giá cho khóa học!"
+        ));
     }
 
     @Transactional
@@ -828,7 +1010,14 @@ public class CourseController {
             return "redirect:/courses/" + slug + "/modules/" + moduleId;
         }
 
+        List<Section> cohortSections = sectionService.getSectionsByCohortId(module.getId());
         List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
+        java.util.Set<Long> validSectionIds = cohortSections.stream().map(Section::getId).collect(java.util.stream.Collectors.toSet());
+        if (!validSectionIds.isEmpty()) {
+            schedules = schedules.stream()
+                    .filter(cs -> cs.getLesson() != null && cs.getLesson().getSection() != null && validSectionIds.contains(cs.getLesson().getSection().getId()))
+                    .toList();
+        }
         List<Lesson> rawLessons;
         if (!schedules.isEmpty()) {
             rawLessons = schedules.stream().map(CohortSchedule::getLesson).toList();

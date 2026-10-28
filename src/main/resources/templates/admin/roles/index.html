@@ -85,11 +85,11 @@
                                     <span th:each="perm : ${role.permissions}" class="badge-pill-soft badge-pill-primary" style="font-size: 11.5px;" th:title="${perm.name}">
                                         <i class="bi bi-key-fill me-1"></i><span th:text="${perm.code}">COURSE_CREATE</span>
                                     </span>
-                                    <span th:if="${#lists.isEmpty(role.permissions)}" class="text-muted fst-italic small">Chưa gán quyền hạn nào</span>
+                                    <span th:if="${role.permissions == null || #sets.isEmpty(role.permissions)}" class="text-muted fst-italic small">Chưa gán quyền hạn nào</span>
                                 </div>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-bold" th:text="${#lists.size(role.permissions)}">0</span>
+                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-bold" th:text="${role.permissions != null ? #sets.size(role.permissions) : 0}">0</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center gap-2">
@@ -119,7 +119,7 @@
 <script th:src="@{/js/admin-layout.js}"></script>
 
 <script>
-                    function showToast(message, type) {
+    function showToast(message, type) {
         let iconHtml = '';
         if (type === 'success') {
             iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
@@ -170,11 +170,9 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Xóa dòng tr tương ứng khỏi bảng
                 const tr = button.closest('tr');
                 tr.remove();
                 
-                // Cập nhật lại STT của các hàng
                 const tbody = document.querySelector('tbody');
                 const rows = tbody.querySelectorAll('tr');
                 rows.forEach((row, index) => {
