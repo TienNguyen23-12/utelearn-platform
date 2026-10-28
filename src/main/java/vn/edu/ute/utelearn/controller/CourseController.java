@@ -50,6 +50,8 @@ public class CourseController {
     private vn.edu.ute.utelearn.service.GradebookService gradebookService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.WishlistRepository wishlistRepository;
 
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
@@ -401,6 +403,18 @@ public class CourseController {
         model.addAttribute("courseCompletedModulesCount", courseCompletedModulesCount);
         model.addAttribute("courseTotalModulesCount", courseTotalModulesCount);
         model.addAttribute("courseProgressPercent", courseProgressPercent);
+        Double avgRatingVal = (enrollmentRepository != null) ? enrollmentRepository.getAverageRatingByCourseId(course.getId()) : null;
+        long totalReviewsCount = (enrollmentRepository != null) ? enrollmentRepository.countRatingsByCourseId(course.getId()) : 0L;
+        Double courseRating = (avgRatingVal != null && totalReviewsCount > 0) ? Math.round(avgRatingVal * 10.0) / 10.0 : null;
+        List<vn.edu.ute.utelearn.entity.Enrollment> courseReviews = (enrollmentRepository != null) ? enrollmentRepository.findReviewsByCourseIdWithUser(course.getId()) : java.util.Collections.emptyList();
+        boolean inWishlist = false;
+        if (currentUserOpt.isPresent() && wishlistRepository != null) {
+            inWishlist = wishlistRepository.existsByUser_IdAndCourse_Id(currentUserOpt.get().getId(), course.getId());
+        }
+        model.addAttribute("courseRating", courseRating);
+        model.addAttribute("totalReviewsCount", totalReviewsCount);
+        model.addAttribute("courseReviews", courseReviews);
+        model.addAttribute("inWishlist", inWishlist);
 
         return "courses/detail";
     }

@@ -12,8 +12,7 @@
   - **Cloud Media & CDN:** Cloudinary API (Direct Signed Upload sử dụng chữ ký mật mã SHA-1 từ trình duyệt cho Video, PDF, Slide, ZIP; bảo vệ quyền tải tài liệu qua Backend Security Proxy).
   - **Cổng thanh toán điện tử (Payment Gateway):** Tích hợp cổng thanh toán trực tuyến (VNPay / MoMo / VietQR Webhook) xử lý giao dịch tự động theo chuẩn IPN (Instant Payment Notification).
   - **Định danh Liên kết (Federated Identity):** Google OAuth 2.0 / OpenID Connect.
-- **Định hướng phát triển (Future Development Scope – Phase 2):**
-  - **Online Judge (OJ) Microservice Sandbox:** Tích hợp Judge0 Engine / Docker Isolated Sandbox và trình soạn thảo Monaco/CodeMirror để biên dịch, chấm bài tập lập trình tự động.
+- **Phân hệ Bài tập Nộp file Đa định dạng (Assignments & File Submissions):** Tích hợp phân hệ giao bài tập, nộp bài tập bằng file (PDF, Word, Excel, Slide, ZIP) và chấm điểm thang 10 kèm nhận xét trực tiếp từ Giảng viên/Kiểm duyệt viên.
 - **Trạng thái dự án:** In Progress – Active Development.
 
 ---
@@ -48,8 +47,8 @@ Tài liệu Đặc tả Yêu cầu Phần mềm (SRS) này xác định toàn di
    - Kiểm duyệt viên (Moderator) thực hiện điểm danh ca trực (`Check-in / Check-out`), theo dõi năng suất làm việc thực tế và nhận nhiệm vụ duyệt khóa học/nội dung theo SLA.
    - Đảm bảo quy tắc **Chống tự duyệt bài** (`author_id <> assigned_to`), hỗ trợ **Phê duyệt (`PUBLISHED`)**, **Từ chối kèm nhận xét phản hồi (`REJECTED`)** và **Chuyển cấp thẩm quyền (`ESCALATED`)** lên Admin khi gặp trường hợp phức tạp.
 
-6. **Định hướng Phát triển Mở rộng – Hệ thống Chấm Code Tự động (Online Judge - OJ):**
-   - *Phạm vi giai đoạn 2 (Future Scope):* Phân hệ Online Judge (soạn đề lập trình, nộp mã nguồn Java/C++/Python, chấm tự động qua Sandbox theo bộ test case mẫu/ẩn) đã được thiết kế sẵn lược đồ cơ sở dữ liệu (`coding_problems`, `coding_submissions`) và đặc tả Use Case (`UC-26` đến `UC-29`), sẵn sàng mở rộng theo kiến trúc Microservice trong giai đoạn tiếp theo.
+6. **Phân hệ Đánh giá Học tập Đa dạng & Nộp Bài tập File (Assignment System):**
+   - Hệ thống chuyển đổi toàn diện sang sàn thương mại kinh doanh mọi khóa học tổng quát đa lĩnh vực (Kinh tế, Ngoại ngữ, Thiết kế, Kỹ năng mềm...), tập trung vào phân hệ Bài tập nộp file (`assignments`, `assignment_submissions`) hỗ trợ nộp file đính kèm đa định dạng, chấm điểm trực tiếp và gửi nhận xét đến học viên.
 
 ---
 
@@ -125,8 +124,9 @@ Tài liệu Đặc tả Yêu cầu Phần mềm (SRS) này xác định toàn di
 * **FR-AST-01 (Direct Signed Upload & Quản lý Kho tài nguyên - UC-30, UC-31):** Tải file trực tiếp lên Cloudinary với chữ ký bảo mật SHA-1, tự động kiểm tra định dạng file theo danh mục và chuẩn hóa phần mở rộng; quản lý theo thư mục ảo và quyền hiển thị (`PRIVATE`, `DEPARTMENT_SHARED`, `COHORT_PUBLIC`).
 * **FR-AST-02 (Tái sử dụng & Tải tài nguyên bảo mật - UC-32):** Nhúng nhanh tài nguyên từ kho vào bài giảng qua Asset Picker; tải xuống an toàn qua Proxy Controller (`/assets/download/{id}`) có kiểm tra phân quyền RBAC.
 
-### 1.6.8 Phân hệ 8: Hệ thống Chấm Code Tự động – Online Judge (ĐỊNH HƯỚNG PHÁT TRIỂN - UC-26 đến UC-29)
-* **FR-OJ-01 (Định hướng phát triển - Future Scope):** Các chức năng xem đề bài lập trình (`UC-26`), nộp mã nguồn chấm tự động qua Sandbox (`UC-27`), xem kết quả từng test case (`UC-28`) và soạn đề bài lập trình kèm test case ẩn/mẫu JSONB (`UC-29`) đã được thiết kế sẵn cấu trúc bảng CSDL (`coding_problems`, `coding_submissions`) để sẵn sàng tích hợp microservice Judge Engine trong giai đoạn phát triển tiếp theo.
+### 1.6.8 Phân hệ 8: Hệ thống Bài tập Nộp file & Đánh giá Học viên (Assignments & File Submissions - UC-26 đến UC-29)
+* **FR-ASM-01 (Giao bài tập & Cấu hình nộp file):** Giảng viên tạo bài tập gắn với bài học (`assignments`), cho phép nộp file đính kèm (`allow_file_submission = true`, giới hạn loại file `pdf,doc,docx,zip,rar,txt`, dung lượng tối đa 20MB) hoặc nộp nội dung văn bản (`allow_text_submission = true`).
+* **FR-ASM-02 (Nộp bài & Chấm điểm phản hồi):** Học viên tải file bài làm lên hệ thống; Giảng viên hoặc Moderator thẩm định chấm điểm thang 10 và nhập nhận xét (`feedback`) gửi thông báo kết quả cho học viên.
 
 ---
 

@@ -103,6 +103,6 @@
 ### 🟢 MỨC ĐỘ 3: ĐỊNH HƯỚNG PHÁT TRIỂN TƯƠNG LAI (FUTURE SCOPE / P3 – KHÔNG CODE)
 *Đúng theo đặc tả trong `UC06_OnlineJudge.md` và `UTELearn_SRS.md`:*
 
-- **Phân hệ 8 – Online Judge Sandbox (`UC-26`, `UC-27`, `UC-28`, `UC-29`):**
-  - Soạn bài tập lập trình (`CodingProblem`), nộp mã nguồn (`CodingSubmission`), biên dịch và chấm tự động qua Judge0 Microservice / Docker Sandbox.
-  - **Hành động:** Giữ nguyên Database Schema (`coding_problems`, `coding_submissions`), router an toàn `/oj/problems` và tài liệu Use Case để trình bày trong chương **"Định hướng phát triển (Future Work / Phase 2)"** của báo cáo đồ án tốt nghiệp/khóa luận.
+- **Phân hệ 8 – Hệ thống Bài tập Nộp file & Đánh giá Năng lực (`UC-26`, `UC-27`, `UC-28`, `UC-29`) [ĐÃ HOÀN THÀNH 100%]:**
+  - Thay thế phạm vi Online Judge để định hướng UTELearn thành nền tảng thương mại kinh doanh mọi khóa học tổng quát đa ngành (không phụ thuộc riêng mảng lập trình).
+  - Triển khai toàn diện phân hệ Bài tập nộp file (`Assignment`, `AssignmentSubmission`): Giảng viên giao bài tập, học viên nộp file đính kèm đa định dạng (PDF, DOCX, ZIP, v.v.), Giảng viên/Kiểm duyệt viên chấm điểm thang 10 kèm nhận xét phản hồi chi tiết.

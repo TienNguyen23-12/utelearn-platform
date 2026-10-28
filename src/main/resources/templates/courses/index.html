@@ -398,10 +398,13 @@
                             <span class="fw-bold text-success fs-6">${priceFormatted}</span>
                         </div>
                     </div>
-                    <div class="mt-3 w-100">
-                        <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill w-100 fw-semibold btn-sm py-2">
+                    <div class="mt-3 w-100 d-flex gap-2">
+                        <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
                             <i class="bi bi-info-circle me-1"></i>Chi tiết
                         </a>
+                        <button type="button" class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="Lưu vào yêu thích" onclick="toggleCatalogWishlist(event, ${course.id}, this)">
+                            <i class="bi bi-heart"></i>
+                        </button>
                         <a href="/courses/${course.slug}/enroll-all" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2 mt-2 text-decoration-none">
                             <i class="bi bi-cart-plus me-1"></i>Đăng ký
                         </a>
@@ -608,6 +611,30 @@
         }
         showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
     }
+async function toggleCatalogWishlist(event, courseId, btn) {
+    event.stopPropagation();
+    try {
+        const res = await fetch('/api/wishlist/toggle/' + courseId, { method: 'POST' });
+        const data = await res.json();
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        if (data.success) {
+            const icon = btn.querySelector('i');
+            if (data.inWishlist) {
+                icon.className = 'bi bi-heart-fill text-danger';
+            } else {
+                icon.className = 'bi bi-heart';
+            }
+            if (typeof Toastify === 'function') {
+                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
 </script>
 </body>
 </html>
