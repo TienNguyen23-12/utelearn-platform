@@ -18,10 +18,34 @@
     <style>
         :root {
             --primary-color: #2563eb;
-            --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #4f46e5 100%);
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
             --banner-gradient: linear-gradient(135deg, #0b1329 0%, #172554 60%, #1e1b4b 100%);
             --surface-bg: #f8fafc;
             --border-color: #e2e8f0;
+        }
+
+        .btn-gradient {
+            background: var(--primary-gradient);
+            color: #ffffff !important;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.5) !important;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
+            color: #ffffff !important;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -4px rgba(37, 99, 235, 0.6) !important;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -76,6 +100,15 @@
         .secondary-nav-link.active {
             color: var(--primary-color);
             border-bottom-color: var(--primary-color);
+        }
+
+        .module-tab-pane {
+            animation: fadeInTab 0.2s ease-in-out;
+        }
+
+        @keyframes fadeInTab {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .moodle-card {
@@ -368,10 +401,18 @@
             </div>
 
             <div class="col-lg-4 text-lg-end" th:if="${isModEnrolled || hasAccessRole}">
-                <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-primary btn-lg rounded-pill px-4 py-2.5 fw-bold shadow-lg d-inline-flex align-items-center gap-2">
+                <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-gradient btn-lg rounded-pill px-4 py-2.5 fw-semibold d-inline-flex align-items-center gap-2 text-white">
                     <i class="bi bi-play-circle-fill fs-5"></i>
                     <span>Vào phòng học ngay</span>
                 </a>
+            </div>
+            <div class="col-lg-4 text-lg-end" th:unless="${isModEnrolled || hasAccessRole}">
+                <form th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${module.id}}" method="post" class="d-inline-block">
+                    <button type="submit" class="btn btn-gradient btn-lg rounded-pill px-4 py-2.5 fw-semibold d-inline-flex align-items-center gap-2 text-white">
+                        <i class="bi bi-cart-plus-fill fs-5"></i>
+                        <span>Đăng ký ngay</span>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -380,17 +421,21 @@
 <nav class="secondary-nav-bar">
     <div class="container d-flex align-items-center justify-content-between overflow-x-auto">
         <div class="d-flex align-items-center">
-            <a href="#tab-overview" class="secondary-nav-link active">
+            <a href="#tab-overview" class="secondary-nav-link active" id="navLinkOverview" onclick="switchModuleTab('overview', event)">
                 <i class="bi bi-grid-fill"></i>
                 <span>Nội dung môn học</span>
             </a>
-            <a href="#tab-objectives" class="secondary-nav-link">
-                <i class="bi bi-bullseye"></i>
-                <span>Mục tiêu đầu ra</span>
+            <a th:if="${currentUser != null}" href="#tab-grades" class="secondary-nav-link" id="navLinkGrades" onclick="switchModuleTab('grades', event)">
+                <i class="bi bi-award-fill"></i>
+                <span>Điểm số</span>
             </a>
             <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="secondary-nav-link">
                 <i class="bi bi-easel-fill"></i>
                 <span>Không gian học tập (Focus View)</span>
+            </a>
+            <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?tab=chat'}" class="secondary-nav-link">
+                <i class="bi bi-chat-dots-fill text-primary"></i>
+                <span>Thảo luận Lớp học</span>
             </a>
         </div>
         
@@ -442,8 +487,9 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
+    <div id="moduleTabOverview" class="module-tab-pane">
+        <div class="row g-4">
+            <div class="col-lg-8">
             <div class="announcement-box mb-4 d-flex align-items-start gap-3 shadow-sm">
                 <div class="p-2.5 rounded-circle bg-primary bg-opacity-10 text-primary flex-shrink-0">
                     <i class="bi bi-megaphone-fill fs-5"></i>
@@ -643,9 +689,22 @@
 
                                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
                                         <div class="instructor-edit-ctrl align-items-center gap-1">
-                                            <a th:if="${l.lessonType == 'ASSIGNMENT'}" th:href="@{'/instructor/cohorts/' + ${module.id} + '/curriculum'}" class="btn btn-sm btn-outline-info text-dark border me-1 fw-semibold" title="Cấu hình &amp; Chấm bài">
+                                            <button type="button" th:if="${l.lessonType == 'ASSIGNMENT'}" 
+                                                    class="btn btn-sm btn-outline-info text-dark border me-1 fw-semibold" 
+                                                    th:data-lesson-id="${l.id}" 
+                                                    th:data-lesson-title="${l.title}"
+                                                    onclick="openAssignmentConfigModal(this.getAttribute('data-lesson-id'), this.getAttribute('data-lesson-title'), event)" 
+                                                    title="Cấu hình &amp; Chấm bài">
                                                 <i class="bi bi-journal-check text-info me-1"></i>Chấm bài &amp; Cấu hình
-                                            </a>
+                                            </button>
+                                            <button type="button" th:if="${l.lessonType == 'QUIZ'}" 
+                                                    class="btn btn-sm btn-outline-warning text-dark border me-1 fw-semibold" 
+                                                    th:data-lesson-id="${l.id}" 
+                                                    th:data-lesson-title="${l.title}"
+                                                    onclick="openQuizConfigModal(this.getAttribute('data-lesson-id'), this.getAttribute('data-lesson-title'), event)" 
+                                                    title="Soạn đề &amp; Cấu hình Quiz">
+                                                <i class="bi bi-patch-question-fill text-warning me-1"></i>Soạn đề
+                                            </button>
                                             <span class="btn btn-sm btn-light border text-muted px-2 py-1 lesson-drag-handle" title="Kéo thả đổi thứ tự bài học" style="cursor: grab;">
                                                 <i class="bi bi-grip-vertical"></i>
                                             </span>
@@ -750,13 +809,13 @@
                         </div>
                     </div>
 
-                    <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                    <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-gradient w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 text-white">
                         <i class="bi bi-play-circle-fill fs-5"></i>
                         <span>Tiếp tục học tập</span>
                     </a>
                 </div>
 
-                <div class="moodle-card p-4" th:if="${upcomingSchedules != null && !upcomingSchedules.empty}">
+                <div class="moodle-card p-4" th:if="${currentUser != null && upcomingSchedules != null && !upcomingSchedules.empty}">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
                             <i class="bi bi-alarm-fill text-danger"></i>
@@ -798,9 +857,9 @@
                     </div>
 
                     <form th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${module.id}}" method="post">
-                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                        <button type="submit" class="btn btn-gradient w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 text-white">
                             <i class="bi bi-cart-plus-fill"></i>
-                            <span>Đăng ký tham gia học</span>
+                            <span>Đăng ký ngay</span>
                         </button>
                     </form>
                 </div>
@@ -845,12 +904,404 @@
                     <p class="text-muted small mb-3">
                         Nếu gặp khó khăn trong quá trình học tập hoặc làm bài tập, sinh viên có thể đặt câu hỏi trong phòng học hoặc liên hệ trực tiếp bộ môn.
                     </p>
-                    <a th:href="@{'/courses/' + ${course.slug}}" class="btn btn-outline-secondary btn-sm rounded-pill w-100 fw-semibold">
-                        <i class="bi bi-journal-bookmark me-1"></i>Xem trọn bộ môn học
+                    <a th:if="${isModEnrolled || hasAccessRole}"
+                       th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?tab=chat'}"
+                       class="btn btn-outline-primary w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-xs">
+                        <i class="bi bi-chat-dots-fill"></i>
+                        <span>Vào phòng thảo luận Realtime</span>
+                        <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 ms-1" style="font-size: 10px;">Trực tuyến</span>
+                    </a>
+                    <a th:unless="${isModEnrolled || hasAccessRole}"
+                       th:href="${currentUser == null ? '/login' : ('/courses/' + course.slug + '/enroll/' + module.id)}"
+                       class="btn btn-outline-secondary w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-lock-fill"></i>
+                        <span th:text="${currentUser == null ? 'Đăng nhập để vào thảo luận' : 'Ghi danh để vào thảo luận'}">Vào phòng thảo luận</span>
                     </a>
                 </div>
-
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="moduleTabGrades" class="module-tab-pane" style="display: none;" th:if="${currentUser != null}">
+    <a id="tab-grades" class="d-block" style="position: relative; top: -80px; visibility: hidden;"></a>
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                            <span class="badge bg-primary rounded-pill px-3 py-1 font-monospace" th:text="${module.code}">MOD-CODE</span>
+                            <span th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}" class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold">
+                                <i class="bi bi-pie-chart-fill me-1 text-danger"></i>Mô hình Trọng số
+                            </span>
+                            <span th:if="${module.gradingPolicy == 'EXIT_EXAM'}" class="badge bg-info text-white rounded-pill px-3 py-1 fw-bold">
+                                <i class="bi bi-shield-check me-1"></i>Mô hình Bài thi đầu ra
+                            </span>
+                            <span th:if="${module.gradingPolicy == null or module.gradingPolicy == 'PROGRESS_BASED'}" class="badge bg-secondary rounded-pill px-3 py-1">
+                                <i class="bi bi-check2-circle me-1"></i>Theo tiến độ 100% bài học
+                            </span>
+                            <span th:if="${module.isGradesPublished}" class="badge bg-success rounded-pill px-3 py-1">
+                                <i class="bi bi-broadcast me-1"></i>Đã công bố điểm chính thức
+                            </span>
+                            <span th:unless="${module.isGradesPublished}" class="badge bg-secondary-subtle text-light border border-secondary rounded-pill px-3 py-1">
+                                <i class="bi bi-clock-history me-1"></i>Kết quả tạm tính (Chưa công bố)
+                            </span>
+                        </div>
+                        <h3 class="fw-bold mb-1 text-white" th:text="${module.name}">Tên Module / Đợt học</h3>
+                        <div class="text-light opacity-75 small">
+                            <span th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}">
+                                Quy tắc: <strong>[[${module.processWeight}]]%</strong> Điểm quá trình + <strong>[[${module.finalWeight}]]%</strong> Điểm cuối kỳ 
+                                | Điểm sàn đạt: <strong>[[${module.minPassingGrade}]]/10</strong> 
+                                | Điểm sàn bài cuối: <strong>[[${module.minFinalExamScore}]]/10</strong>
+                            </span>
+                            <span th:if="${module.gradingPolicy == 'EXIT_EXAM'}">
+                                Quy tắc: Bắt buộc đạt Bài kiểm tra đầu ra | Điểm sàn: <strong>[[${module.minPassingGrade}]]/10</strong>
+                            </span>
+                            <span th:if="${module.gradingPolicy == null or module.gradingPolicy == 'PROGRESS_BASED'}">
+                                Quy tắc: Học viên hoàn thành tất cả các bài giảng và bài tập trong giáo trình để được công nhận hoàn thành.
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-flex align-items-center gap-2">
+                            <i class="bi bi-play-circle-fill"></i>
+                            <span>Vào phòng học</span>
+                        </a>
+
+                        <th:block th:if="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed and studentGrade.certificateUrl != null}">
+                            <a th:if="${studentGrade.hasReviewed}"
+                               th:href="@{${studentGrade.certificateUrl}}" target="_blank"
+                               class="btn btn-success fw-bold rounded-pill px-3.5 py-2 shadow-sm d-flex align-items-center gap-2">
+                                <i class="bi bi-award-fill"></i>
+                                <span>Xem Giấy chứng nhận</span>
+                            </a>
+                            <button th:unless="${studentGrade.hasReviewed}"
+                                    type="button"
+                                    th:data-cohort-id="${module.id}"
+                                    th:data-module-name="${module.name}"
+                                    th:data-cert-url="${studentGrade.certificateUrl}"
+                                    onclick="openModuleReviewModal(this.getAttribute('data-cohort-id'), this.getAttribute('data-module-name'), this.getAttribute('data-cert-url'))"
+                                    class="btn btn-warning text-dark fw-bold rounded-pill px-3.5 py-2 shadow-sm d-flex align-items-center gap-2">
+                                <i class="bi bi-star-fill text-warning-emphasis"></i>
+                                <span>Đánh giá nhận chứng chỉ</span>
+                            </button>
+                        </th:block>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${!isModEnrolled and !hasAccessRole}" class="alert alert-info border-0 shadow-sm rounded-4 d-flex align-items-center justify-content-between p-3 mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle-fill text-primary fs-4"></i>
+                <div>
+                    <div class="fw-bold text-dark">Bạn đang xem bảng cấu trúc điểm chuẩn của học phần</div>
+                    <div class="text-secondary small">Hãy ghi danh vào học phần để bắt đầu làm bài kiểm tra, tích lũy điểm số và nhận chứng chỉ chính thức.</div>
+                </div>
+            </div>
+            <form th:action="@{'/courses/' + ${course.slug} + '/enroll/' + ${module.id}}" method="post" class="mb-0">
+                <button type="submit" class="btn btn-gradient rounded-pill px-3.5 py-1.5 fw-semibold d-flex align-items-center gap-1.5 text-white">
+                    <i class="bi bi-cart-plus-fill"></i>
+                    <span>Đăng ký ngay</span>
+                </button>
+            </form>
+        </div>
+
+        <div>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Điểm Quá trình</span>
+                            <div class="rounded-3 p-2 bg-primary-subtle text-primary">
+                                <i class="bi bi-clock-history fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="${studentGrade != null and studentGrade.processGrade != null ? #numbers.formatDecimal(studentGrade.processGrade, 1, 1) : '--'}">--</h3>
+                        <small class="text-muted">
+                            <span th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${module.processWeight} + '%'">40%</span>
+                            <span th:unless="${module.gradingPolicy == 'WEIGHTED_GRADING'}">Trung bình các bài</span>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Điểm Cuối kỳ</span>
+                            <div class="rounded-3 p-2 bg-info-subtle text-info">
+                                <i class="bi bi-mortarboard-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0" th:text="${studentGrade != null and studentGrade.finalExamGrade != null ? #numbers.formatDecimal(studentGrade.finalExamGrade, 1, 1) : '--'}">--</h3>
+                        <small class="text-muted">
+                            <span th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${module.finalWeight} + '%'">60%</span>
+                            <span th:if="${module.gradingPolicy == 'EXIT_EXAM'}">Bài thi đầu ra</span>
+                            <span th:if="${module.gradingPolicy == null or module.gradingPolicy == 'PROGRESS_BASED'}">Bài tổng kết</span>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Điểm Tổng kết</span>
+                            <div class="rounded-3 p-2 bg-warning-subtle text-warning">
+                                <i class="bi bi-star-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-0" th:classappend="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed ? 'text-success' : (studentGrade != null and studentGrade.finalGrade != null ? 'text-danger' : 'text-primary')}" th:text="${studentGrade != null and studentGrade.finalGrade != null ? #numbers.formatDecimal(studentGrade.finalGrade, 1, 1) + ' / 10' : '-- / 10'}">-- / 10</h3>
+                        <small class="text-muted">Thang điểm 10 chuẩn</small>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small fw-semibold">Kết quả học phần</span>
+                            <div class="rounded-3 p-2" th:classappend="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed ? 'bg-success-subtle text-success' : (studentGrade != null and studentGrade.finalGrade != null ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary')}">
+                                <i class="bi bi-patch-check-fill fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="mb-1">
+                            <span th:if="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-bold fs-6">
+                                <i class="bi bi-check-circle-fill me-1"></i>ĐẠT CHUẨN
+                            </span>
+                            <span th:if="${studentGrade != null and (studentGrade.isPassed == null or !studentGrade.isPassed) and studentGrade.finalGrade != null}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1.5 fw-bold fs-6">
+                                <i class="bi bi-x-circle-fill me-1"></i>CHƯA ĐẠT
+                            </span>
+                            <span th:if="${studentGrade == null or studentGrade.finalGrade == null}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1.5 fw-bold fs-6">
+                                <i class="bi bi-hourglass-split me-1"></i>ĐANG HỌC
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            <span th:if="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed}">Đã đủ điều kiện cấp chứng chỉ</span>
+                            <span th:unless="${studentGrade != null and studentGrade.isPassed != null and studentGrade.isPassed}">Cần hoàn thành đạt điểm sàn</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+                <div class="card-header bg-white border-bottom p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-table text-primary"></i>
+                        <span>Chi tiết các bài kiểm tra &amp; cột điểm thành phần</span>
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5" 
+                              th:if="${studentGrade != null and studentGrade.allColumnGrades != null}" 
+                              th:text="${studentGrade.allColumnGrades.size()} + ' bài đánh giá'">0 bài đánh giá</span>
+                        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5" 
+                              th:unless="${studentGrade != null and studentGrade.allColumnGrades != null}" 
+                              th:text="${moduleLessons != null ? moduleLessons.size() : 0} + ' bài học'">0 bài</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase text-secondary" style="font-size: 11px; letter-spacing: 0.5px;">
+                                <th class="ps-4" style="width: 50px;">STT</th>
+                                <th style="min-width: 220px;">Bài kiểm tra / Đánh giá</th>
+                                <th class="text-center" style="min-width: 130px;">Hình thức</th>
+                                <th class="text-center" style="min-width: 120px;">Phân loại</th>
+                                <th class="text-center" style="min-width: 100px;">Thang điểm</th>
+                                <th class="text-center" style="min-width: 130px; background-color: #f8fafc;">Điểm số đạt được</th>
+                                <th class="text-center" style="min-width: 120px;">Trạng thái</th>
+                                <th style="min-width: 180px;">Nhận xét của Giảng viên</th>
+                                <th class="text-center pe-4" style="min-width: 110px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <th:block th:if="${studentGrade != null and studentGrade.allColumnGrades != null and !studentGrade.allColumnGrades.isEmpty()}">
+                                <tr th:each="cg, iter : ${studentGrade.allColumnGrades}">
+                                    <td class="ps-4 fw-bold text-muted" th:text="${iter.count}">1</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" 
+                                                 th:classappend="${cg.lessonType == 'QUIZ' ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'}" 
+                                                 style="width: 34px; height: 34px;">
+                                                <i th:class="${cg.lessonType == 'QUIZ' ? 'bi bi-question-circle-fill' : 'bi bi-file-earmark-code-fill'}"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark" th:text="${cg.lessonTitle}">Tên bài kiểm tra</div>
+                                                <small class="text-muted" th:if="${cg.submittedAt != null}">Nộp lúc: <span th:text="${#temporals.format(cg.submittedAt, 'dd/MM/yyyy HH:mm')}">Thời gian</span></small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span th:if="${cg.lessonType == 'QUIZ'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            <i class="bi bi-question-circle me-1"></i>Trắc nghiệm
+                                        </span>
+                                        <span th:if="${cg.lessonType == 'ASSIGNMENT'}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            <i class="bi bi-file-earmark-code me-1"></i>Bài tập nộp file
+                                        </span>
+                                        <span th:if="${cg.lessonType != 'QUIZ' and cg.lessonType != 'ASSIGNMENT'}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 11px;" th:text="${cg.lessonType}">
+                                            Đánh giá
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span th:if="${cg.isFinalExam}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                                            <i class="bi bi-shield-lock-fill me-1"></i>Cuối kỳ
+                                        </span>
+                                        <span th:unless="${cg.isFinalExam}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            Quá trình
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-muted small">
+                                        <span th:text="'Hệ ' + ${#numbers.formatDecimal(cg.maxScore != null ? cg.maxScore : 10, 1, 0)}">Hệ 10</span>
+                                    </td>
+                                    <td class="text-center" style="background-color: #f8fafc;">
+                                        <span th:if="${cg.score != null}" 
+                                              class="badge rounded-pill px-3 py-1.5 fw-bold fs-6"
+                                              th:classappend="${cg.score.doubleValue() >= 5.0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}"
+                                              th:text="${#numbers.formatDecimal(cg.score, 1, 1)} + ' / ' + ${#numbers.formatDecimal(cg.maxScore != null ? cg.maxScore : 10, 1, 0)}">8.5 / 10</span>
+                                        <span th:if="${cg.score == null and cg.status == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1 small">
+                                            <i class="bi bi-hourglass-split me-1"></i>Chờ chấm
+                                        </span>
+                                        <span th:if="${cg.score == null and cg.status != 'SUBMITTED'}" class="text-muted small">--</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span th:if="${cg.status == 'GRADED'}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Đã chấm
+                                        </span>
+                                        <span th:if="${cg.status == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            <i class="bi bi-hourglass-split me-1"></i>Đã nộp bài
+                                        </span>
+                                        <span th:if="${cg.status == null or cg.status == 'NOT_SUBMITTED'}" class="badge bg-light text-muted border rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                            Chưa nộp
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${cg.feedback != null and !cg.feedback.isBlank()}" class="p-2 rounded-3 bg-light border text-dark small" th:text="${cg.feedback}">Lời phê của giảng viên</div>
+                                        <span th:unless="${cg.feedback != null and !cg.feedback.isBlank()}" class="text-muted small">--</span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?lesson=' + ${cg.lessonId}}" 
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 11.5px;">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                            <span th:text="${cg.status == 'GRADED' ? 'Xem lại' : (cg.status == 'SUBMITTED' ? 'Xem bài nộp' : 'Làm bài')}">Làm bài</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </th:block>
+
+                            <th:block th:unless="${studentGrade != null and studentGrade.allColumnGrades != null and !studentGrade.allColumnGrades.isEmpty()}">
+                                <tr th:if="${!hasGradedLessons}">
+                                    <td colspan="9" class="text-center py-5 text-muted">
+                                        <div class="d-inline-flex p-3 rounded-circle bg-primary-subtle text-primary mb-3">
+                                            <i class="bi bi-patch-check-fill fs-2"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1">Học phần công nhận hoàn thành theo tiến độ 100% bài học</h6>
+                                        <p class="small text-muted mb-0">Học phần này không có cột điểm trắc nghiệm hay bài tập nộp file riêng. Bạn chỉ cần hoàn thành đầy đủ các bài giảng lý thuyết và video để đạt 100% tiến độ và nhận Giấy chứng nhận.</p>
+                                    </td>
+                                </tr>
+                                <th:block th:if="${hasGradedLessons}" th:each="l, iter : ${moduleLessons}">
+                                    <tr th:if="${l.lessonType == 'QUIZ' or l.lessonType == 'ASSIGNMENT' or l.lessonType == 'CODE_PRACTICE' or l.lessonType == 'EXAM' or l.lessonType == 'PROJECT'}">
+                                        <td class="ps-4 fw-bold text-muted" th:text="${iter.count}">1</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-3 p-2 d-flex align-items-center justify-content-center" 
+                                                     th:classappend="${l.lessonType == 'QUIZ' ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'}" 
+                                                     style="width: 34px; height: 34px;">
+                                                    <i th:class="${l.lessonType == 'QUIZ' ? 'bi bi-question-circle-fill' : 'bi bi-file-earmark-code-fill'}"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-dark" th:text="${l.title}">Tên bài kiểm tra</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span th:if="${l.lessonType == 'QUIZ'}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                                <i class="bi bi-question-circle me-1"></i>Trắc nghiệm
+                                            </span>
+                                            <span th:if="${l.lessonType == 'ASSIGNMENT'}" class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                                <i class="bi bi-file-earmark-code me-1"></i>Bài tập nộp file
+                                            </span>
+                                            <span th:if="${l.lessonType != 'QUIZ' and l.lessonType != 'ASSIGNMENT'}" class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 11px;" th:text="${l.lessonType}">
+                                                Đánh giá
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                                Quá trình
+                                            </span>
+                                        </td>
+                                        <td class="text-center text-muted small">
+                                            <span>Hệ 10</span>
+                                        </td>
+                                        <td class="text-center" style="background-color: #f8fafc;">
+                                            <span class="text-muted small">--</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1" style="font-size: 11px;">
+                                                Chưa làm
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted small">--</span>
+                                        </td>
+                                        <td class="text-center pe-4">
+                                            <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?lesson=' + ${l.id}}" 
+                                               class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 11.5px;">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                                <span>Làm bài</span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </th:block>
+                            </th:block>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                            <i class="bi bi-info-circle-fill text-primary"></i>
+                            <span>Quy chế đánh giá &amp; Công nhận hoàn thành</span>
+                        </h6>
+                        <ul class="mb-0 ps-3 small text-secondary d-flex flex-column gap-1.5">
+                            <li th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}">
+                                Điểm môn học được tổng hợp từ: <strong>[[${module.processWeight}]]%</strong> điểm quá trình và <strong>[[${module.finalWeight}]]%</strong> điểm thi cuối kỳ.
+                            </li>
+                            <li th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}">
+                                Điều kiện đạt môn: Điểm tổng kết &ge; <strong>[[${module.minPassingGrade}]]/10</strong> và điểm thi cuối kỳ &ge; <strong>[[${module.minFinalExamScore}]]/10</strong>.
+                            </li>
+                            <li th:if="${module.gradingPolicy == 'EXIT_EXAM'}">
+                                Bắt buộc vượt qua bài thi/kiểm tra đầu ra với điểm số &ge; <strong>[[${module.minPassingGrade}]]/10</strong>.
+                            </li>
+                            <li th:if="${module.gradingPolicy == null or module.gradingPolicy == 'PROGRESS_BASED'}">
+                                Hoàn thành 100% tất cả các hoạt động và bài học trong cấu trúc môn học.
+                            </li>
+                            <li>Chứng chỉ điện tử được cấp tự động sau khi đạt chuẩn và có thể tra cứu trực tuyến với mã QR bảo mật.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                            <i class="bi bi-question-diamond-fill text-info"></i>
+                            <span>Kênh giải đáp thắc mắc &amp; Phúc khảo</span>
+                        </h6>
+                        <p class="text-secondary small mb-2">
+                            Nếu bạn có bất kỳ thắc mắc nào về kết quả chấm điểm hoặc nhận xét của giảng viên, vui lòng liên hệ trực tiếp qua diễn đàn học tập hoặc ban giảng huấn phụ trách.
+                        </p>
+                        <div class="d-flex align-items-center gap-2 mt-auto">
+                            <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-chat-dots me-1"></i>Vào phòng trao đổi
+                            </a>
+                            <a th:href="@{'/courses/' + ${course.slug}}" class="btn btn-sm btn-light border rounded-pill px-3">
+                                Xem trọn bộ môn học
+                            </a>
+                        </div>
+                    </div>
+                </div>
         </div>
     </div>
 </main>
@@ -1078,6 +1529,24 @@
                     <textarea class="form-control rounded-3" id="documentContent" rows="4" placeholder="Viết hướng dẫn hoặc tài liệu bài học..."></textarea>
                 </div>
 
+                <div class="col-md-12" id="fieldQuizInfo" style="display: none;">
+                    <div class="alert alert-warning border-0 rounded-3 p-3 mb-0 d-flex align-items-center gap-2 small">
+                        <i class="bi bi-patch-question-fill text-warning fs-5"></i>
+                        <div>
+                            <strong>Bài kiểm tra trắc nghiệm (Quiz):</strong> Sau khi lưu bài học, hãy bật Chế độ chỉnh sửa và bấm <strong>Soạn đề</strong> để thiết lập ngân hàng câu hỏi và cấu hình bài thi.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12" id="fieldAssignmentInfo" style="display: none;">
+                    <div class="alert alert-info border-0 rounded-3 p-3 mb-0 d-flex align-items-center gap-2 small">
+                        <i class="bi bi-journal-check text-info fs-5"></i>
+                        <div>
+                            <strong>Bài tập tự luận (Assignment):</strong> Sau khi lưu bài học, hãy bấm nút <strong>Chấm bài &amp; Cấu hình</strong> để thiết lập đề bài đính kèm, thang điểm và quản lý danh sách bài nộp của học viên.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-md-12">
                     <div class="form-check form-switch mt-2">
                         <input class="form-check-input" type="checkbox" id="isFreePreview">
@@ -1210,6 +1679,461 @@
   </div>
 </div>
 
+<div class="modal fade" id="quizConfigModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom px-4 py-3 bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-3 p-2 bg-warning-subtle text-warning">
+            <i class="bi bi-patch-question-fill fs-5"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center flex-wrap gap-2">
+              <span id="quizModalTitle">Soạn đề &amp; Cấu hình Quiz</span>
+              <span id="quizModalLessonTitle" class="text-primary"></span>
+              <span id="quizModalStatusBadge" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fs-6 fw-normal">Bản nháp (Chờ gửi duyệt)</span>
+            </h5>
+            <small class="text-muted" id="quizModalSubtitle">Thiết lập tham số và quản lý ngân hàng câu hỏi</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="quizModalQuizId">
+        <input type="hidden" id="quizModalLessonId">
+
+        <div class="alert alert-info border-0 rounded-3 py-2 px-3 mb-3 d-flex align-items-center justify-content-between small">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-primary"></i>
+            <span>Quiz này đang ở trạng thái <strong>Bản nháp (DRAFT)</strong>. Sau khi soạn xong câu hỏi và lưu cấu hình, vui lòng bấm <strong>Gửi duyệt</strong> trên thanh công cụ để Kiểm duyệt viên thẩm định.</span>
+          </div>
+        </div>
+
+        <ul class="nav nav-pills mb-4" id="quizModalTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active rounded-pill px-4 fw-semibold" id="tab-quiz-settings" data-bs-toggle="pill" data-bs-target="#pane-quiz-settings" type="button">
+              <i class="bi bi-sliders me-1"></i>1. Cấu hình bài thi
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link rounded-pill px-4 fw-semibold" id="tab-quiz-questions" data-bs-toggle="pill" data-bs-target="#pane-quiz-questions" type="button">
+              <i class="bi bi-card-checklist me-1"></i>2. Ngân hàng câu hỏi (<span id="quizQuestionsCountBadge">0</span>)
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="pane-quiz-settings">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark">Tiêu đề bài kiểm tra</label>
+                <input type="text" class="form-control rounded-3" id="quizCfgTitle" placeholder="Nhập tiêu đề quiz...">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small text-dark">Thời gian làm bài (Phút)</label>
+                <input type="number" class="form-control rounded-3" id="quizCfgDuration" min="1" max="180" value="15" onchange="saveQuizConfig(true)">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small text-dark">Điểm sàn đạt (Thang 10)</label>
+                <input type="number" class="form-control rounded-3" id="quizCfgPassingScore" min="0" max="10" step="0.5" value="5.0">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small text-dark">Số lượt làm bài tối đa</label>
+                <input type="number" class="form-control rounded-3" id="quizCfgMaxAttempts" min="0" max="20" value="1">
+                <div class="form-text" style="font-size: 11px;">Nhập 0 nếu không giới hạn số lượt làm bài</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-card-text text-primary me-1"></i>Quy chế làm bài thi</span>
+                  <span class="text-muted fw-normal" style="font-size: 11px;">(Mỗi dòng là một mục quy chế)</span>
+                </label>
+                <textarea class="form-control rounded-3" id="quizCfgExamRules" rows="6" placeholder="Nhập quy chế làm bài thi, mỗi quy chế trên một dòng..."></textarea>
+                <div class="form-text" style="font-size: 11px;">Quy chế này sẽ tự động hiển thị cho học viên tại màn hình bắt đầu làm bài kiểm tra.</div>
+              </div>
+              <div class="col-12 mt-3">
+                <div class="p-3 border rounded-3 bg-light">
+                  <div class="fw-semibold small text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-primary fs-5"></i>
+                    <span>Kiểm soát làm bài &amp; Cảnh báo</span>
+                  </div>
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="quizCfgShuffle" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgShuffle">Tự động xáo trộn thứ tự câu hỏi khi học viên làm bài (Shuffle)</label>
+                  </div>
+                  <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="quizCfgAllowReview" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgAllowReview">Cho phép học viên xem lại bài làm và đáp án chi tiết sau khi nộp</label>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="quizCfgAllowLate" checked>
+                    <label class="form-check-label fw-semibold small text-dark" for="quizCfgAllowLate">Cho phép làm trễ sau hạn nộp (Deadline)</label>
+                    <div class="text-muted" style="font-size: 11px;">Nếu bật, học viên vẫn có thể làm bài sau khi hết hạn nộp và bài nộp sẽ ghi nhận làm trễ. Nếu tắt, học viên sẽ bị chặn làm bài khi quá hạn.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="pane-quiz-questions">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <h6 class="fw-bold text-dark mb-0">Danh sách câu hỏi trong đề:</h6>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="exportCurrentQuizQuestions()">
+                  <i class="bi bi-download me-1"></i>Tải câu hỏi hiện tại
+                </button>
+                <a th:href="@{/api/instructor/quizzes/template}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" target="_blank" download="Mau_Cau_Hoi_Quiz_UTELearn.xlsx">
+                  <i class="bi bi-file-earmark-excel me-1"></i>Tải mẫu Excel
+                </a>
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold" onclick="openImportExcelModal()">
+                  <i class="bi bi-file-earmark-arrow-up me-1"></i>Tải lên từ Excel
+                </button>
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="openNewQuestionForm()">
+                  <i class="bi bi-plus-lg me-1"></i>Thêm câu hỏi mới
+                </button>
+              </div>
+            </div>
+
+            <div class="small text-muted mb-3">
+              <i class="bi bi-info-circle me-1"></i>Bạn có thể kéo thả biểu tượng <i class="bi bi-grip-vertical"></i> hoặc sử dụng các nút mũi tên <i class="bi bi-arrow-up"></i> <i class="bi bi-arrow-down"></i> để thay đổi thứ tự câu hỏi trong đề thi.
+            </div>
+
+            <div id="quizQuestionEditorCard" class="card border border-primary-subtle rounded-4 p-4 mb-4 bg-light" style="display: none;">
+              <input type="hidden" id="editQuestionId">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-bold text-primary mb-0" id="questionEditorTitle">Soạn câu hỏi mới</h6>
+                <button type="button" class="btn-close btn-sm" onclick="closeQuestionForm()"></button>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label fw-semibold small text-dark">Loại câu hỏi</label>
+                  <select class="form-select rounded-3" id="qTypeSelect" onchange="onQuestionTypeChanged()">
+                    <option value="SINGLE_CHOICE">Trắc nghiệm 1 đáp án đúng (Single Choice)</option>
+                    <option value="MULTI_SELECT">Trắc nghiệm nhiều đáp án đúng (Multiple Select)</option>
+                    <option value="TRUE_FALSE">Đúng / Sai (True / False)</option>
+                    <option value="FILL_BLANK">Điền từ vào ô trống (Fill in the Blank)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small text-dark">Điểm số</label>
+                  <input type="number" class="form-control rounded-3" id="qPoints" min="0.5" max="100" step="0.5" value="1.0">
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small text-dark">Nội dung câu hỏi</label>
+                  <textarea class="form-control rounded-3" id="qContent" rows="3" placeholder="Nhập câu hỏi..."></textarea>
+                </div>
+                <div class="col-12">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label class="form-label fw-semibold small text-dark mb-0" id="qOptionsLabel">Các lựa chọn đáp án:</label>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0.5" id="btnAddOptionBtn" onclick="addQuestionOptionRow()" style="font-size: 11px;">
+                      <i class="bi bi-plus-circle me-1"></i>Thêm lựa chọn
+                    </button>
+                  </div>
+                  <div id="qOptionsList" class="d-flex flex-column gap-2"></div>
+                  <div class="form-text mt-1 text-muted" id="fillBlankHelpText" style="display: none; font-size: 11.5px;">
+                    <i class="bi bi-info-circle me-1 text-primary"></i>Học viên điền đúng 1 trong các đáp án dự đoán bên dưới là được tính điểm tối đa. Có thể nhập nhiều dòng hoặc phân tách bằng dấu phẩy (,).
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small text-dark">Lời giải thích chi tiết</label>
+                  <textarea class="form-control rounded-3" id="qExplanation" rows="2" placeholder="Giải thích lý do đáp án đúng..."></textarea>
+                </div>
+                <div class="col-12 text-end pt-2">
+                  <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 me-1" onclick="closeQuestionForm()">Hủy</button>
+                  <button type="button" class="btn btn-sm btn-success rounded-pill px-4 fw-semibold" onclick="saveQuestionItem()">
+                    <i class="bi bi-check-lg me-1"></i>Lưu câu hỏi
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="quizQuestionsListContainer" class="d-flex flex-column gap-3">
+              <div class="text-center py-4 text-muted small">Đang tải danh sách câu hỏi...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top px-4 py-2 bg-light d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light border rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold" onclick="saveQuizConfig()">
+          <i class="bi bi-check2 me-1"></i>Lưu cấu hình Quiz
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="quizExcelImportModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-success text-white px-4 py-3 border-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-white text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-file-earmark-excel-fill fs-5"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-white mb-0">Tải câu hỏi lên từ Excel</h5>
+            <small class="text-white-50">Nhập danh sách câu hỏi hàng loạt bằng file Excel (.xlsx)</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="card bg-success-subtle border-success-subtle rounded-3 p-3 mb-4">
+          <div class="d-flex align-items-start">
+            <i class="bi bi-lightbulb-fill text-success fs-5 me-3 mt-1"></i>
+            <div>
+              <h6 class="fw-bold text-success mb-1">Hướng dẫn nhanh 3 bước:</h6>
+              <ol class="small text-dark mb-2 ps-3">
+                <li>Tải file mẫu Excel chuẩn: <a th:href="@{/api/instructor/quizzes/template}" class="fw-bold text-success text-decoration-underline" download="Mau_Cau_Hoi_Quiz_UTELearn.xlsx"><i class="bi bi-download me-1"></i>Tải file mẫu (.xlsx)</a></li>
+                <li>Điền danh sách câu hỏi theo các cột quy định (hỗ trợ 4 loại: Trắc nghiệm 1 đáp án, nhiều đáp án, Đúng/Sai, Điền từ).</li>
+                <li>Chọn file Excel đã hoàn thiện bên dưới rồi nhấn <strong>"Bắt đầu tải lên"</strong>.</li>
+              </ol>
+              <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Hệ thống tự động kiểm tra cú pháp và thêm tất cả câu hỏi hợp lệ vào đề thi.</div>
+            </div>
+          </div>
+        </div>
+
+        <form id="quizExcelImportForm" onsubmit="submitQuizExcelImport(event)">
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-dark">Chọn file Excel (.xlsx) <span class="text-danger">*</span></label>
+            <input type="file" class="form-control form-control-lg rounded-3" id="quizExcelFileInput" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+            <div class="form-text">Chỉ chấp nhận file định dạng Microsoft Excel (.xlsx), kích thước tối đa 10MB.</div>
+          </div>
+
+          <div id="quizExcelImportFeedback" class="mt-3" style="display: none;"></div>
+        </form>
+      </div>
+      <div class="modal-footer border-top px-4 py-3 bg-light">
+        <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="btnSubmitQuizExcel" onclick="submitQuizExcelImport(event)">
+          <i class="bi bi-cloud-arrow-up me-1"></i>Bắt đầu tải lên
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="assignmentConfigModal" tabindex="-1" data-bs-backdrop="static" style="z-index: 1060;">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom px-4 py-3 bg-light">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-3 p-2 bg-info-subtle text-info">
+            <i class="bi bi-journal-check fs-5"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center flex-wrap gap-2">
+              <span>Cấu hình &amp; Chấm bài tập:</span>
+              <span id="assignmentModalLessonTitle" class="text-primary"></span>
+            </h5>
+            <small class="text-muted">Thiết lập yêu cầu bài tập và xem danh sách nộp bài của sinh viên</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="assignmentModalAssignmentId">
+        <input type="hidden" id="assignmentModalLessonId">
+
+        <ul class="nav nav-pills mb-4" id="assignmentModalTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active rounded-pill px-4 fw-semibold" id="tab-assignment-settings" data-bs-toggle="pill" data-bs-target="#pane-assignment-settings" type="button">
+              <i class="bi bi-sliders me-1"></i>1. Cấu hình bài tập
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link rounded-pill px-4 fw-semibold" id="tab-assignment-submissions" data-bs-toggle="pill" data-bs-target="#pane-assignment-submissions" type="button" onclick="loadAssignmentSubmissions()">
+              <i class="bi bi-people me-1"></i>2. Danh sách bài nộp &amp; Chấm điểm (<span id="assignmentSubmissionsCountBadge">0</span>)
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="pane-assignment-settings">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark">Tiêu đề bài tập <span class="text-danger">*</span></label>
+                <input type="text" class="form-control rounded-3" id="assignmentCfgTitle" placeholder="Nhập tiêu đề bài tập..." required>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark">Đề bài &amp; Hướng dẫn chi tiết</label>
+                <textarea class="form-control rounded-3" id="assignmentCfgInstruction" rows="5" placeholder="Nhập yêu cầu, tiêu chí chấm điểm hoặc nội dung bài tập..."></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-dark">Tệp tin đề bài đính kèm (PDF, Word, ZIP...)</label>
+                <div class="input-group">
+                  <input type="url" class="form-control" id="assignmentCfgAttachmentUrl" placeholder="https://... hoặc chọn từ Kho tài nguyên số">
+                  <button class="btn btn-primary px-3 fw-semibold" type="button" onclick="openAssetPicker('assignment')">
+                    <i class="bi bi-folder2-open me-1"></i>Kho tài nguyên số
+                  </button>
+                  <input type="file" id="assignmentAttachmentFileInput" style="display: none;" onchange="handleUploadAssignmentAttachment(this)">
+                  <button class="btn btn-outline-secondary px-3" type="button" onclick="document.getElementById('assignmentAttachmentFileInput').click()" title="Tải tệp mới từ máy tính">
+                    <i class="bi bi-upload me-1"></i>Tải lên
+                  </button>
+                </div>
+                <div class="form-text small" style="font-size: 11px;">Chọn tệp từ <strong>Kho tài nguyên số</strong> hoặc tải lên tệp mới để học viên tải về tham khảo.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-dark">Thang điểm tối đa</label>
+                <input type="number" class="form-control rounded-3" id="assignmentCfgMaxScore" min="0" max="100" step="0.5" value="10.0" oninput="handleMaxScoreChange(this.value)">
+                <div class="form-text small" style="font-size: 11px;" id="assignmentMaxScoreHint">Nhập <strong>0</strong> để không cần chấm điểm (học viên nộp là hoàn thành).</div>
+              </div>
+              <div class="col-md-6" id="assignmentPassingScoreCol">
+                <label class="form-label fw-semibold small text-dark">Điểm sàn đạt</label>
+                <input type="number" class="form-control rounded-3" id="assignmentCfgPassingScore" min="0" max="100" step="0.5" value="5.0">
+                <div class="form-text small" style="font-size: 11px;">Điểm tối thiểu cần đạt để qua bài học.</div>
+              </div>
+              <div class="col-12 mt-1">
+                <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                  <div>
+                    <div class="fw-semibold small text-dark d-flex align-items-center gap-2">
+                      <i class="bi bi-clock-history text-primary"></i> Cho phép nộp trễ (Sau khi hết hạn Deadline)
+                    </div>
+                    <div class="text-muted" style="font-size: 11px;">
+                      Nếu bật, học viên vẫn được nộp bài khi quá hạn và được gắn nhãn "Nộp trễ". Nếu tắt, hệ thống sẽ chặn nộp bài khi hết hạn.
+                    </div>
+                  </div>
+                  <div class="form-check form-switch fs-5 mb-0 ms-3">
+                    <input class="form-check-input" type="checkbox" id="assignmentCfgAllowLate" checked role="switch">
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 mt-2">
+                <label class="form-label fw-semibold small text-dark d-block mb-2">
+                  Kiểu nộp bài yêu cầu cho học viên <span class="text-danger">*</span>
+                </label>
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <label class="d-flex align-items-center p-3 border rounded-3 h-100 bg-light" for="modeFileOnly" style="cursor: pointer;">
+                      <input class="form-check-input me-2 mt-0 flex-shrink-0" type="radio" name="assignmentSubmissionMode" id="modeFileOnly" value="FILE" onchange="handleSubmissionModeChange('FILE')">
+                      <div>
+                        <div class="fw-semibold small text-dark"><i class="bi bi-file-earmark-arrow-up text-primary me-1"></i>Chỉ nộp tệp tin (File)</div>
+                        <div class="text-muted" style="font-size: 11px;">Học viên bắt buộc phải tải lên tệp bài làm</div>
+                      </div>
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="d-flex align-items-center p-3 border rounded-3 h-100 bg-light" for="modeTextOnly" style="cursor: pointer;">
+                      <input class="form-check-input me-2 mt-0 flex-shrink-0" type="radio" name="assignmentSubmissionMode" id="modeTextOnly" value="TEXT" onchange="handleSubmissionModeChange('TEXT')">
+                      <div>
+                        <div class="fw-semibold small text-dark"><i class="bi bi-card-text text-success me-1"></i>Chỉ nhập văn bản / Link</div>
+                        <div class="text-muted" style="font-size: 11px;">Nhập câu trả lời hoặc dán liên kết online</div>
+                      </div>
+                    </label>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="d-flex align-items-center p-3 border rounded-3 h-100 bg-light" for="modeBoth" style="cursor: pointer;">
+                      <input class="form-check-input me-2 mt-0 flex-shrink-0" type="radio" name="assignmentSubmissionMode" id="modeBoth" value="BOTH" checked onchange="handleSubmissionModeChange('BOTH')">
+                      <div>
+                        <div class="fw-semibold small text-dark"><i class="bi bi-ui-checks-grid text-warning me-1"></i>Cả 2 hình thức (Linh hoạt)</div>
+                        <div class="text-muted" style="font-size: 11px;">Cho phép nộp tệp, văn bản/link hoặc cả hai</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12" id="assignmentFileConfigRow">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-dark">Định dạng tệp cho phép nộp</label>
+                    <input type="text" class="form-control rounded-3" id="assignmentCfgAllowedTypes" value="pdf,doc,docx,zip,rar,txt" placeholder="pdf,doc,docx,zip,rar,txt">
+                    <div class="form-text small" style="font-size: 11px;">Phân tách bằng dấu phẩy. VD: pdf,doc,docx,zip</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold small text-dark">Dung lượng tệp tối đa (MB)</label>
+                    <input type="number" class="form-control rounded-3" id="assignmentCfgMaxSize" min="1" max="100" value="20">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="pane-assignment-submissions">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-light rounded-3 border">
+              <div>
+                <span class="text-muted small me-3">Tổng số bài nộp: <strong class="text-dark" id="assignmentStatTotal">0</strong></span>
+                <span class="text-muted small me-3">Đã chấm: <strong class="text-success" id="assignmentStatGraded">0</strong></span>
+                <span class="text-muted small">Chờ chấm: <strong class="fw-bold" style="color: #b45309;" id="assignmentStatPending">0</strong></span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadAssignmentSubmissions()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Làm mới danh sách
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" style="width: 25%;">Học viên</th>
+                    <th scope="col" style="width: 20%;">Thời gian nộp</th>
+                    <th scope="col" style="width: 25%;">Bài nộp</th>
+                    <th scope="col" style="width: 15%;">Điểm &amp; Trạng thái</th>
+                    <th scope="col" style="width: 15%; text-align: right;">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="assignmentSubmissionsTableBody">
+                  <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">Đang tải danh sách bài nộp...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top px-4 py-2 bg-light d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light border px-4 rounded-pill fw-semibold" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold" onclick="saveAssignmentConfig()">
+          <i class="bi bi-check2 me-1"></i>Lưu cấu hình Bài tập
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="gradeModal" tabindex="-1" style="z-index: 1070;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-bottom px-4 py-3 bg-light">
+        <h6 class="modal-title fw-bold text-dark mb-0">
+          <i class="bi bi-award text-primary me-2"></i>Chấm điểm bài tập
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="gradeSubmissionId">
+        <div class="p-3 bg-light rounded-3 border mb-3">
+          <div class="small text-muted mb-1">Học viên:</div>
+          <div class="fw-bold text-dark fs-6" id="gradeStudentName">Nguyễn Văn A</div>
+          <div class="small text-muted" id="gradeStudentEmail">email@example.com</div>
+        </div>
+
+        <div class="mb-3" id="gradeSubmissionDetails">
+          <label class="form-label small fw-semibold text-secondary">Nội dung học viên đã nộp:</label>
+          <div class="p-3 border rounded-3 bg-white small" id="gradeSubmissionContent" style="max-height: 150px; overflow-y: auto; white-space: pre-wrap;"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-dark">Điểm số (<span id="gradeMaxScoreHint">Thang 10</span>) <span class="text-danger">*</span></label>
+          <input type="number" class="form-control rounded-3" id="gradeScoreInput" min="0" max="100" step="0.1" required placeholder="Nhập điểm...">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-dark">Lời nhận xét / Phản hồi (Feedback)</label>
+          <textarea class="form-control rounded-3" id="gradeFeedbackInput" rows="3" placeholder="Nhập nhận xét ưu/nhược điểm cho học viên..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light">
+        <button type="button" class="btn btn-sm btn-light border px-3 rounded-pill" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold" onclick="submitGrade()">
+          <i class="bi bi-check2 me-1"></i>Lưu điểm &amp; Phản hồi
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer th:replace="~{fragments/footer :: footer}"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1231,9 +2155,61 @@
     let pendingConfirmAction = null;
     let pendingSectionId = null;
 
+    function switchModuleTab(tabId, evt) {
+        if (evt) {
+            evt.preventDefault();
+        }
+        const overviewPane = document.getElementById('moduleTabOverview');
+        const gradesPane = document.getElementById('moduleTabGrades');
+        const navOverview = document.getElementById('navLinkOverview');
+        const navGrades = document.getElementById('navLinkGrades');
+
+        if (!overviewPane || !gradesPane) return;
+
+        if (tabId === 'grades') {
+            overviewPane.style.display = 'none';
+            gradesPane.style.display = 'block';
+            if (navOverview) navOverview.classList.remove('active');
+            if (navGrades) navGrades.classList.add('active');
+            if (window.location.hash !== '#tab-grades') {
+                history.replaceState(null, null, '#tab-grades');
+            }
+        } else {
+            gradesPane.style.display = 'none';
+            overviewPane.style.display = 'block';
+            if (navGrades) navGrades.classList.remove('active');
+            if (navOverview) navOverview.classList.add('active');
+            if (window.location.hash !== '#tab-overview' && window.location.hash !== '') {
+                history.replaceState(null, null, '#tab-overview');
+            }
+        }
+    }
+    window.switchModuleTab = switchModuleTab;
+
+    window.addEventListener('hashchange', function() {
+        if (window.location.hash === '#tab-grades') {
+            switchModuleTab('grades');
+        } else if (window.location.hash === '#tab-overview') {
+            switchModuleTab('overview');
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", function() {
+        if (window.location.hash === '#tab-grades' || window.location.search.includes('tab=grades')) {
+            switchModuleTab('grades');
+        }
+
         if (canEdit) {
             setupInstructorEditMode();
+            const urlParams = new URLSearchParams(window.location.search);
+            const openQuizLessonId = urlParams.get('openQuiz');
+            if (openQuizLessonId) {
+                openQuizConfigModal(openQuizLessonId);
+            }
+            const openAssignmentLessonId = urlParams.get('openAssignment');
+            if (openAssignmentLessonId) {
+                openAssignmentConfigModal(openAssignmentLessonId);
+            }
         }
 
         const serverCompleted = /*[[${completedLessonIds}]]*/ [];
@@ -1260,6 +2236,28 @@
             textEl.textContent = percent + '%';
             subEl.textContent = `Đã hoàn thành ${count}/${totalLessonsCount} bài`;
         }
+
+        document.querySelectorAll('.secondary-nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const targetHref = this.getAttribute('href');
+                if (targetHref === '#tab-grades') {
+                    switchModuleTab('grades', e);
+                } else if (targetHref === '#tab-overview') {
+                    switchModuleTab('overview', e);
+                } else if (targetHref && targetHref.startsWith('#')) {
+                    document.querySelectorAll('.secondary-nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+
+        if (window.location.hash) {
+            const activeLink = document.querySelector(`.secondary-nav-link[href="${window.location.hash}"]`);
+            if (activeLink) {
+                document.querySelectorAll('.secondary-nav-link').forEach(l => l.classList.remove('active'));
+                activeLink.classList.add('active');
+            }
+        }
     });
 
     function setupInstructorEditMode() {
@@ -1269,6 +2267,26 @@
         lessonModal = new bootstrap.Modal(document.getElementById('lessonModal'));
         assetPickerModal = new bootstrap.Modal(document.getElementById('assetPickerModal'));
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+        const pickerModalEl = document.getElementById('assetPickerModal');
+        if (pickerModalEl) {
+            pickerModalEl.addEventListener('hidden.bs.modal', () => {
+                const assignmentModal = document.getElementById('assignmentConfigModal');
+                if (assignmentModal && assignmentModal.classList.contains('show')) {
+                    document.body.classList.add('modal-open');
+                }
+            });
+        }
+
+        const gradeModalEl = document.getElementById('gradeModal');
+        if (gradeModalEl) {
+            gradeModalEl.addEventListener('hidden.bs.modal', () => {
+                const assignmentModal = document.getElementById('assignmentConfigModal');
+                if (assignmentModal && assignmentModal.classList.contains('show')) {
+                    document.body.classList.add('modal-open');
+                }
+            });
+        }
 
         document.getElementById('confirmModalBtn').addEventListener('click', () => {
             if (pendingConfirmAction) {
@@ -1573,8 +2591,12 @@
         const type = document.getElementById('lessonType').value;
         const videoField = document.getElementById('fieldVideoUrl');
         const docField = document.getElementById('fieldDocumentContent');
+        const quizField = document.getElementById('fieldQuizInfo');
+        const assignmentField = document.getElementById('fieldAssignmentInfo');
         if (videoField) videoField.style.display = (type === 'VIDEO') ? 'block' : 'none';
         if (docField) docField.style.display = (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') ? 'block' : 'none';
+        if (quizField) quizField.style.display = (type === 'QUIZ') ? 'block' : 'none';
+        if (assignmentField) assignmentField.style.display = (type === 'ASSIGNMENT') ? 'block' : 'none';
     }
 
     async function saveLesson() {
@@ -1654,8 +2676,30 @@
         });
     }
 
-    function openAssetPicker() {
+    let currentAssetPickerTarget = 'lesson';
+
+    function openAssetPicker(target = 'lesson') {
+        currentAssetPickerTarget = target;
+        const pickerEl = document.getElementById('assetPickerModal');
+        if (target === 'assignment') {
+            pickerEl.style.zIndex = '1080';
+        } else {
+            pickerEl.style.zIndex = '';
+        }
+        const searchInput = document.getElementById('assetSearchInput');
+        if (searchInput) searchInput.value = '';
+        if (!assetPickerModal) {
+            assetPickerModal = new bootstrap.Modal(pickerEl);
+        }
         assetPickerModal.show();
+        setTimeout(() => {
+            if (target === 'assignment') {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    backdrops[backdrops.length - 1].style.zIndex = '1075';
+                }
+            }
+        }, 50);
         fetchAssets('');
     }
 
@@ -1704,14 +2748,19 @@
 
     function selectAsset(url) {
         if (url) {
-            document.getElementById('assetUrl').value = url;
-            const currentType = document.getElementById('lessonType').value;
-            const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
-            if (currentType === 'VIDEO' || isVideoUrl) {
-                if (!document.getElementById('videoUrl').value || document.getElementById('videoUrl').value.trim() === '') {
-                    document.getElementById('videoUrl').value = url;
+            if (currentAssetPickerTarget === 'assignment') {
+                const attachInput = document.getElementById('assignmentCfgAttachmentUrl');
+                if (attachInput) attachInput.value = url;
+            } else {
+                document.getElementById('assetUrl').value = url;
+                const currentType = document.getElementById('lessonType').value;
+                const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
+                if (currentType === 'VIDEO' || isVideoUrl) {
+                    if (!document.getElementById('videoUrl').value || document.getElementById('videoUrl').value.trim() === '') {
+                        document.getElementById('videoUrl').value = url;
+                    }
+                    handleVideoUrlChange(url);
                 }
-                handleVideoUrlChange(url);
             }
         }
         assetPickerModal.hide();
@@ -2089,7 +3138,1154 @@
             Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
         }
     }
+
+    let quizConfigModalInstance;
+    let currentQuizData = null;
+    let currentQuizQuestionsList = [];
+
+    async function openQuizConfigModal(lessonId, lessonTitle = '', event = null) {
+        if (event) event.stopPropagation();
+        const modalEl = document.getElementById('quizConfigModal');
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        const excelEl = document.getElementById('quizExcelImportModal');
+        if (excelEl && excelEl.parentElement !== document.body) {
+            document.body.appendChild(excelEl);
+        }
+        if (!quizConfigModalInstance) {
+            quizConfigModalInstance = new bootstrap.Modal(modalEl);
+            const qTab = document.getElementById('tab-quiz-questions');
+            if (qTab) {
+                qTab.addEventListener('show.bs.tab', () => saveQuizConfig(true));
+            }
+        }
+
+        document.getElementById('quizModalLessonId').value = lessonId;
+        const titleEl = document.getElementById('quizModalLessonTitle');
+        if (titleEl) titleEl.textContent = lessonTitle ? ` - ${lessonTitle}` : '';
+        document.getElementById('quizModalSubtitle').textContent = 'Bài học ID: ' + lessonId;
+
+        const firstTab = new bootstrap.Tab(document.getElementById('tab-quiz-settings'));
+        firstTab.show();
+        closeQuestionForm();
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/by-lesson/' + lessonId);
+            if (!res.ok) throw new Error('Không thể tải thông tin Quiz');
+            const quiz = await res.json();
+            currentQuizData = quiz;
+
+            document.getElementById('quizModalQuizId').value = quiz.id;
+            document.getElementById('quizCfgTitle').value = quiz.title || lessonTitle || '';
+            if (titleEl && quiz.title) titleEl.textContent = ` - ${quiz.title}`;
+            document.getElementById('quizCfgDuration').value = quiz.durationMinutes || 15;
+            document.getElementById('quizCfgPassingScore').value = quiz.passingScore || 5.0;
+            document.getElementById('quizCfgMaxAttempts').value = quiz.maxAttempts !== null ? quiz.maxAttempts : 1;
+            document.getElementById('quizCfgShuffle').checked = quiz.shuffleQuestions !== false;
+            document.getElementById('quizCfgAllowReview').checked = quiz.allowReview !== false;
+            document.getElementById('quizCfgAllowLate').checked = quiz.allowLateSubmission !== false;
+            if (document.getElementById('quizCfgExamRules')) {
+                document.getElementById('quizCfgExamRules').value = quiz.examRules || '';
+            }
+
+            const badgeEl = document.getElementById('quizModalStatusBadge');
+            if (badgeEl) {
+                if (quiz.lessonStatus === 'PUBLISHED') {
+                    badgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-6 fw-normal';
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i>Đã duyệt & Xuất bản';
+                } else {
+                    badgeEl.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fs-6 fw-normal';
+                    badgeEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>Bản nháp (Chờ gửi duyệt)';
+                }
+            }
+
+            loadQuizQuestions(quiz.id);
+            quizConfigModalInstance.show();
+        } catch (err) {
+            Toastify({ text: err.message || 'Lỗi khi mở cấu hình Quiz', style: { background: '#ef4444' } }).showToast();
+        }
+    }
+
+    async function saveQuizConfig(silent = false) {
+        const quizId = document.getElementById('quizModalQuizId').value;
+        if (!quizId) return;
+
+        const titleVal = document.getElementById('quizCfgTitle').value.trim();
+        if (!titleVal) {
+            if (!silent) alert('Tiêu đề không được để trống');
+            return;
+        }
+
+        const examRulesVal = document.getElementById('quizCfgExamRules') ? document.getElementById('quizCfgExamRules').value.trim() : '';
+
+        const payload = {
+            title: titleVal,
+            durationMinutes: parseInt(document.getElementById('quizCfgDuration').value) || 15,
+            passingScore: parseFloat(document.getElementById('quizCfgPassingScore').value) || 5.0,
+            maxAttempts: parseInt(document.getElementById('quizCfgMaxAttempts').value) || 0,
+            examRules: examRulesVal,
+            shuffleQuestions: document.getElementById('quizCfgShuffle').checked,
+            allowReview: document.getElementById('quizCfgAllowReview').checked,
+            allowLateSubmission: document.getElementById('quizCfgAllowLate').checked
+        };
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/' + quizId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('Lỗi khi lưu cấu hình');
+            const data = await res.json();
+            const badgeEl = document.getElementById('quizModalStatusBadge');
+            if (badgeEl && data) {
+                if (data.lessonStatus === 'PUBLISHED') {
+                    badgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-6 fw-normal';
+                    badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i>Đã duyệt & Xuất bản';
+                } else {
+                    badgeEl.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fs-6 fw-normal';
+                    badgeEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>Bản nháp (Chờ gửi duyệt)';
+                }
+            }
+            if (!silent) {
+                if (data && data.lessonStatus === 'DRAFT') {
+                    Toastify({ text: 'Đã lưu cấu hình bài kiểm tra! Hãy bấm "Gửi duyệt" khi hoàn tất các thay đổi lớn.', duration: 4000, style: { background: '#10b981' } }).showToast();
+                } else {
+                    Toastify({ text: 'Đã lưu cấu hình bài kiểm tra thành công!', duration: 3000, style: { background: '#10b981' } }).showToast();
+                }
+            }
+        } catch (err) {
+            if (!silent) {
+                Toastify({ text: err.message || 'Lỗi khi lưu cấu hình Quiz', style: { background: '#ef4444' } }).showToast();
+            }
+        }
+    }
+
+    async function loadQuizQuestions(quizId) {
+        const container = document.getElementById('quizQuestionsListContainer');
+        const badge = document.getElementById('quizQuestionsCountBadge');
+        container.innerHTML = '<div class="text-center py-4 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Đang tải câu hỏi...</div>';
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/' + quizId + '/questions');
+            if (!res.ok) throw new Error('Không thể tải danh sách câu hỏi');
+            const list = await res.json();
+            currentQuizQuestionsList = list;
+            badge.textContent = list.length;
+
+            if (list.length === 0) {
+                container.innerHTML = '<div class="card border rounded-4 p-5 text-center text-muted small bg-light">Chưa có câu hỏi nào trong đề thi này. Hãy nhấn <strong>"Thêm câu hỏi mới"</strong> để bắt đầu soạn đề.</div>';
+                return;
+            }
+
+            let html = '';
+            list.forEach((q, idx) => {
+                let optionsPreview = '';
+                if (q.questionType === 'FILL_BLANK') {
+                    const ans = (q.options || []).map(o => o.text).join(' | ');
+                    optionsPreview = '<div class="small text-success mt-1 fw-semibold"><i class="bi bi-check2-all me-1"></i>Đáp án chấp nhận: <span class="badge bg-success-subtle text-success border border-success-subtle">' + ans + '</span></div>';
+                } else {
+                    optionsPreview = '<div class="d-flex flex-wrap gap-2 mt-2">';
+                    (q.options || []).forEach(o => {
+                        const isC = o.isCorrect;
+                        optionsPreview += `
+                            <span class="badge ${isC ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-light text-secondary border'}">
+                                ${isC ? '<i class="bi bi-check-lg me-1"></i>' : ''}${o.text}
+                            </span>
+                        `;
+                    });
+                    optionsPreview += '</div>';
+                }
+
+                html += `
+                    <div class="card border rounded-4 p-3 shadow-none bg-white quiz-question-item mb-3" data-question-id="${q.id}">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="question-drag-handle text-muted" style="cursor: grab;" title="Kéo thả để đổi thứ tự"><i class="bi bi-grip-vertical fs-5"></i></span>
+                                <span class="badge bg-dark rounded-pill">Câu ${idx + 1}</span>
+                                <span class="badge bg-primary-subtle text-primary border">${q.questionType}</span>
+                                <span class="badge bg-light text-dark border">${q.points} điểm</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-light border text-secondary me-1 rounded-pill px-2 py-1" onclick="moveQuestionItem(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Chuyển lên trên">
+                                    <i class="bi bi-arrow-up"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-secondary me-2 rounded-pill px-2 py-1" onclick="moveQuestionItem(${idx}, 1)" ${idx === list.length - 1 ? 'disabled' : ''} title="Chuyển xuống dưới">
+                                    <i class="bi bi-arrow-down"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-primary me-1 rounded-pill px-2.5 py-1" onclick="editQuestionItem(${q.id})" title="Chỉnh sửa câu hỏi">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger rounded-pill px-2.5 py-1" onclick="deleteQuestionItem(${q.id})" title="Xóa câu hỏi">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="fw-bold text-dark mb-1" style="font-size: 14.5px;">${q.content}</div>
+                        ${optionsPreview}
+                        ${q.explanation ? '<div class="small text-muted mt-2 border-top pt-1"><i class="bi bi-lightbulb text-warning me-1"></i>' + q.explanation + '</div>' : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            if (typeof Sortable !== 'undefined') {
+                if (window.quizQuestionsSortable) {
+                    window.quizQuestionsSortable.destroy();
+                }
+                window.quizQuestionsSortable = Sortable.create(container, {
+                    handle: '.question-drag-handle',
+                    animation: 180,
+                    ghostClass: 'bg-primary-subtle',
+                    onEnd: function() {
+                        saveQuestionsOrder(false);
+                    }
+                });
+            }
+        } catch (err) {
+            container.innerHTML = '<div class="alert alert-danger small">Không thể tải danh sách câu hỏi: ' + err.message + '</div>';
+        }
+    }
+
+    function moveQuestionItem(idx, direction) {
+        if (!currentQuizQuestionsList || currentQuizQuestionsList.length <= 1) return;
+        const targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= currentQuizQuestionsList.length) return;
+        const temp = currentQuizQuestionsList[idx];
+        currentQuizQuestionsList[idx] = currentQuizQuestionsList[targetIdx];
+        currentQuizQuestionsList[targetIdx] = temp;
+        saveQuestionsOrder(true);
+    }
+
+    async function saveQuestionsOrder(useMemoryList = false) {
+        const quizId = document.getElementById('quizModalQuizId').value;
+        if (!quizId) return;
+        const container = document.getElementById('quizQuestionsListContainer');
+        let questionIds = [];
+        if (useMemoryList) {
+            questionIds = currentQuizQuestionsList.map(q => q.id);
+        } else {
+            const items = container.querySelectorAll('.quiz-question-item');
+            questionIds = Array.from(items).map(item => parseInt(item.getAttribute('data-question-id'))).filter(id => !isNaN(id));
+        }
+        if (questionIds.length === 0) return;
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/' + quizId + '/questions/reorder', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(questionIds)
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Lỗi khi cập nhật thứ tự câu hỏi');
+            }
+            Toastify({ text: 'Đã cập nhật thứ tự câu hỏi thành công', style: { background: '#10b981' } }).showToast();
+            loadQuizQuestions(quizId);
+        } catch (err) {
+            Toastify({ text: err.message || 'Lỗi khi đổi thứ tự câu hỏi', style: { background: '#ef4444' } }).showToast();
+            loadQuizQuestions(quizId);
+        }
+    }
+
+    function openNewQuestionForm() {
+        document.getElementById('editQuestionId').value = '';
+        document.getElementById('questionEditorTitle').textContent = 'Soạn câu hỏi mới';
+        document.getElementById('qTypeSelect').value = 'SINGLE_CHOICE';
+        document.getElementById('qPoints').value = '1.0';
+        document.getElementById('qContent').value = '';
+        document.getElementById('qExplanation').value = '';
+
+        onQuestionTypeChanged();
+        document.getElementById('quizQuestionEditorCard').style.display = 'block';
+        document.getElementById('quizQuestionEditorCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function closeQuestionForm() {
+        const card = document.getElementById('quizQuestionEditorCard');
+        if (card) card.style.display = 'none';
+    }
+
+    function onQuestionTypeChanged() {
+        const type = document.getElementById('qTypeSelect').value;
+        const listContainer = document.getElementById('qOptionsList');
+        const addBtn = document.getElementById('btnAddOptionBtn');
+        const label = document.getElementById('qOptionsLabel');
+        const helpText = document.getElementById('fillBlankHelpText');
+        listContainer.innerHTML = '';
+
+        if (type === 'TRUE_FALSE') {
+            if (addBtn) addBtn.style.display = 'none';
+            if (label) label.textContent = 'Các lựa chọn đáp án:';
+            if (helpText) helpText.style.display = 'none';
+            addQuestionOptionRow({ text: 'Đúng', isCorrect: true, fixed: true });
+            addQuestionOptionRow({ text: 'Sai', isCorrect: false, fixed: true });
+        } else if (type === 'FILL_BLANK') {
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Thêm đáp án dự đoán khác';
+            }
+            if (label) label.textContent = 'Danh sách các đáp án đúng dự đoán (Học viên điền 1 trong các đáp án này là được điểm):';
+            if (helpText) helpText.style.display = 'block';
+            addQuestionOptionRow({ text: '', isCorrect: true, isFill: true });
+            addQuestionOptionRow({ text: '', isCorrect: true, isFill: true });
+        } else {
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Thêm lựa chọn';
+            }
+            if (label) label.textContent = 'Các lựa chọn đáp án:';
+            if (helpText) helpText.style.display = 'none';
+            addQuestionOptionRow({ text: '', isCorrect: true });
+            addQuestionOptionRow({ text: '', isCorrect: false });
+            addQuestionOptionRow({ text: '', isCorrect: false });
+            addQuestionOptionRow({ text: '', isCorrect: false });
+        }
+    }
+
+    function addQuestionOptionRow(data) {
+        const type = document.getElementById('qTypeSelect').value;
+        const listContainer = document.getElementById('qOptionsList');
+        const optIndex = listContainer.children.length + 1;
+        const optText = data && data.text !== undefined ? data.text : '';
+        const isCorrect = data && data.isCorrect !== undefined ? data.isCorrect : (type === 'FILL_BLANK');
+        const isFixed = data && data.fixed;
+        const isFill = (type === 'FILL_BLANK') || (data && data.isFill);
+
+        const row = document.createElement('div');
+        row.className = 'input-group option-row-item';
+
+        let controlInput = '';
+        if (isFill) {
+            controlInput = '<span class="input-group-text bg-success-subtle text-success fw-bold small"><i class="bi bi-check2 me-1"></i>Đáp án #' + optIndex + '</span>';
+        } else if (type === 'MULTI_SELECT') {
+            controlInput = `
+                <div class="input-group-text bg-light">
+                    <input class="form-check-input mt-0 opt-correct-cb" type="checkbox" title="Đánh dấu đáp án đúng" ${isCorrect ? 'checked' : ''}>
+                </div>
+            `;
+        } else {
+            controlInput = `
+                <div class="input-group-text bg-light">
+                    <input class="form-check-input mt-0 opt-correct-radio" type="radio" name="correctOptRadioGroup" title="Chọn đáp án đúng" ${isCorrect ? 'checked' : ''}>
+                </div>
+            `;
+        }
+
+        row.innerHTML = `
+            ${controlInput}
+            <input type="text" class="form-control opt-text-input" placeholder="${isFill ? 'Nhập từ khóa / cách viết đúng (VD: ' + (optIndex === 1 ? 'Java' : (optIndex === 2 ? 'java' : 'ngôn ngữ Java')) + ')...' : 'Lựa chọn ' + optIndex + '...'}" value="${optText}" ${isFixed ? 'readonly' : ''}>
+            ${!isFixed ? '<button type="button" class="btn btn-outline-danger" onclick="this.closest(\'.option-row-item\').remove()" title="Xóa"><i class="bi bi-trash"></i></button>' : ''}
+        `;
+
+        listContainer.appendChild(row);
+    }
+
+    function editQuestionItem(qId) {
+        const q = currentQuizQuestionsList.find(item => item.id === qId);
+        if (!q) return;
+
+        document.getElementById('editQuestionId').value = q.id;
+        document.getElementById('questionEditorTitle').textContent = 'Chỉnh sửa câu hỏi (ID: ' + q.id + ')';
+        document.getElementById('qTypeSelect').value = q.questionType;
+        document.getElementById('qPoints').value = q.points || 1.0;
+        document.getElementById('qContent').value = q.content || '';
+        document.getElementById('qExplanation').value = q.explanation || '';
+
+        const type = q.questionType;
+        const listContainer = document.getElementById('qOptionsList');
+        const addBtn = document.getElementById('btnAddOptionBtn');
+        const label = document.getElementById('qOptionsLabel');
+        const helpText = document.getElementById('fillBlankHelpText');
+        listContainer.innerHTML = '';
+
+        if (type === 'TRUE_FALSE') {
+            if (addBtn) addBtn.style.display = 'none';
+            if (label) label.textContent = 'Các lựa chọn đáp án:';
+            if (helpText) helpText.style.display = 'none';
+        } else if (type === 'FILL_BLANK') {
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Thêm đáp án dự đoán khác';
+            }
+            if (label) label.textContent = 'Danh sách các đáp án đúng dự đoán (Học viên điền 1 trong các đáp án này là được điểm):';
+            if (helpText) helpText.style.display = 'block';
+        } else {
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Thêm lựa chọn';
+            }
+            if (label) label.textContent = 'Các lựa chọn đáp án:';
+            if (helpText) helpText.style.display = 'none';
+        }
+
+        if (q.options && q.options.length > 0) {
+            q.options.forEach(opt => {
+                addQuestionOptionRow({ text: opt.text, isCorrect: opt.isCorrect, fixed: type === 'TRUE_FALSE', isFill: type === 'FILL_BLANK' });
+            });
+        } else {
+            onQuestionTypeChanged();
+        }
+
+        document.getElementById('quizQuestionEditorCard').style.display = 'block';
+        document.getElementById('quizQuestionEditorCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function saveQuestionItem() {
+        const quizId = document.getElementById('quizModalQuizId').value;
+        const editId = document.getElementById('editQuestionId').value;
+        const content = document.getElementById('qContent').value.trim();
+        const type = document.getElementById('qTypeSelect').value;
+        const points = parseFloat(document.getElementById('qPoints').value) || 1.0;
+        const explanation = document.getElementById('qExplanation').value.trim();
+
+        if (!content) {
+            alert('Vui lòng nhập nội dung câu hỏi');
+            return;
+        }
+
+        const optionRows = document.querySelectorAll('#qOptionsList .option-row-item');
+        const options = [];
+
+        if (type === 'FILL_BLANK') {
+            optionRows.forEach((row, i) => {
+                const text = row.querySelector('.opt-text-input').value.trim();
+                if (text) {
+                    const subParts = text.split(/[,;\n]/).map(s => s.trim()).filter(s => s.length > 0);
+                    if (subParts.length > 1) {
+                        subParts.forEach(part => {
+                            if (!options.some(o => o.text.toLowerCase() === part.toLowerCase())) {
+                                options.push({ id: 'opt_' + (options.length + 1), text: part, isCorrect: true });
+                            }
+                        });
+                    } else {
+                        if (!options.some(o => o.text.toLowerCase() === text.toLowerCase())) {
+                            options.push({ id: 'opt_' + (options.length + 1), text: text, isCorrect: true });
+                        }
+                    }
+                }
+            });
+            if (options.length === 0) {
+                alert('Vui lòng nhập ít nhất 1 từ khóa đáp án đúng');
+                return;
+            }
+        } else if (type === 'MULTI_SELECT') {
+            let correctCount = 0;
+            optionRows.forEach((row, i) => {
+                const text = row.querySelector('.opt-text-input').value.trim();
+                const isC = row.querySelector('.opt-correct-cb').checked;
+                if (text) {
+                    options.push({ id: 'opt_' + (i + 1), text: text, isCorrect: isC });
+                    if (isC) correctCount++;
+                }
+            });
+            if (options.length < 2) {
+                alert('Trắc nghiệm cần ít nhất 2 phương án lựa chọn');
+                return;
+            }
+            if (correctCount === 0) {
+                alert('Vui lòng đánh dấu ít nhất 1 đáp án đúng');
+                return;
+            }
+        } else {
+            let hasCorrect = false;
+            optionRows.forEach((row, i) => {
+                const text = row.querySelector('.opt-text-input').value.trim();
+                const isC = row.querySelector('.opt-correct-radio').checked;
+                if (text) {
+                    options.push({ id: 'opt_' + (i + 1), text: text, isCorrect: isC });
+                    if (isC) hasCorrect = true;
+                }
+            });
+            if (options.length < 2) {
+                alert('Cần ít nhất 2 phương án lựa chọn');
+                return;
+            }
+            if (!hasCorrect) {
+                alert('Vui lòng chọn 1 đáp án đúng');
+                return;
+            }
+        }
+
+        const payload = {
+            content: content,
+            questionType: type,
+            points: points,
+            explanation: explanation,
+            options: options
+        };
+
+        try {
+            let url = '/api/instructor/quizzes/' + quizId + '/questions';
+            let method = 'POST';
+            if (editId) {
+                url = '/api/instructor/quizzes/questions/' + editId;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error('Không thể lưu câu hỏi');
+
+            Toastify({ text: 'Đã lưu câu hỏi thành công!', style: { background: '#10b981' } }).showToast();
+            closeQuestionForm();
+            loadQuizQuestions(quizId);
+        } catch (err) {
+            Toastify({ text: err.message || 'Lỗi khi lưu câu hỏi', style: { background: '#ef4444' } }).showToast();
+        }
+    }
+
+    async function deleteQuestionItem(qId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này khỏi đề thi không?')) return;
+        const quizId = document.getElementById('quizModalQuizId').value;
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/questions/' + qId, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Không thể xóa câu hỏi');
+            Toastify({ text: 'Đã xóa câu hỏi thành công!', style: { background: '#10b981' } }).showToast();
+            loadQuizQuestions(quizId);
+        } catch (err) {
+            Toastify({ text: err.message || 'Lỗi khi xóa câu hỏi', style: { background: '#ef4444' } }).showToast();
+        }
+    }
+
+    function exportCurrentQuizQuestions() {
+        const quizId = document.getElementById('quizModalQuizId').value;
+        if (!quizId) {
+            Toastify({ text: 'Không xác định được bài kiểm tra', style: { background: '#ef4444' } }).showToast();
+            return;
+        }
+        if (!currentQuizQuestionsList || currentQuizQuestionsList.length === 0) {
+            Toastify({ text: 'Đề thi hiện chưa có câu hỏi nào để tải về', style: { background: '#f59e0b' } }).showToast();
+            return;
+        }
+        window.location.href = '/api/instructor/quizzes/' + quizId + '/export';
+    }
+
+    let quizExcelImportModalInstance;
+
+    function openImportExcelModal() {
+        if (!quizExcelImportModalInstance) {
+            quizExcelImportModalInstance = new bootstrap.Modal(document.getElementById('quizExcelImportModal'));
+        }
+        document.getElementById('quizExcelFileInput').value = '';
+        const feedbackEl = document.getElementById('quizExcelImportFeedback');
+        feedbackEl.style.display = 'none';
+        feedbackEl.innerHTML = '';
+        const submitBtn = document.getElementById('btnSubmitQuizExcel');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i>Bắt đầu tải lên';
+        quizExcelImportModalInstance.show();
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function submitQuizExcelImport(e) {
+        if (e) e.preventDefault();
+        const quizId = document.getElementById('quizModalQuizId').value;
+        if (!quizId) {
+            Toastify({ text: 'Không xác định được bài kiểm tra', style: { background: '#ef4444' } }).showToast();
+            return;
+        }
+        const fileInput = document.getElementById('quizExcelFileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            Toastify({ text: 'Vui lòng chọn một file Excel (.xlsx)', style: { background: '#ef4444' } }).showToast();
+            return;
+        }
+        const file = fileInput.files[0];
+        if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+            Toastify({ text: 'Định dạng file không hợp lệ. Vui lòng chọn file .xlsx', style: { background: '#ef4444' } }).showToast();
+            return;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitQuizExcel');
+        const feedbackEl = document.getElementById('quizExcelImportFeedback');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang xử lý tải lên...';
+        feedbackEl.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/instructor/quizzes/' + quizId + '/import-excel', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Lỗi khi nhập câu hỏi từ file Excel');
+            }
+
+            if (data.importedCount > 0) {
+                loadQuizQuestions(quizId);
+                const badgeEl = document.getElementById('quizModalStatusBadge');
+                if (badgeEl) {
+                    badgeEl.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fs-6 fw-normal';
+                    badgeEl.innerHTML = '<i class="bi bi-clock-history me-1"></i>Bản nháp (Chờ gửi duyệt)';
+                }
+            }
+
+            let feedbackHtml = '';
+            if (data.importedCount > 0 && (!data.errors || data.errors.length === 0)) {
+                feedbackHtml = `
+                    <div class="alert alert-success border-success rounded-3 mb-0">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                            <div>
+                                <div class="fw-bold">Thành công! Đã nhập ${data.importedCount} câu hỏi vào đề thi.</div>
+                                <div class="small text-muted mt-1">Danh sách câu hỏi đã được cập nhật tự động vào đề kiểm tra.</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => {
+                    if (quizExcelImportModalInstance) quizExcelImportModalInstance.hide();
+                }, 1800);
+                Toastify({ text: `Đã nhập thành công ${data.importedCount} câu hỏi!`, duration: 4000, style: { background: '#10b981' } }).showToast();
+            } else {
+                feedbackHtml = `
+                    <div class="alert alert-warning border-warning rounded-3 mb-0">
+                        <div class="fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Kết quả nhập dữ liệu:</div>
+                        <div class="small mt-1">Đã nhập thành công <strong>${data.importedCount}</strong> câu hỏi. Có <strong>${data.failedCount}</strong> dòng không hợp lệ.</div>
+                        ${data.errors && data.errors.length > 0 ? `
+                            <hr class="my-2">
+                            <div class="small fw-semibold text-danger mb-1">Chi tiết lỗi cần chỉnh sửa:</div>
+                            <ul class="small mb-0 ps-3 text-danger" style="max-height: 140px; overflow-y: auto;">
+                                ${data.errors.map(err => `<li>${escapeHtml(err)}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+                    </div>
+                `;
+                if (data.importedCount > 0) {
+                    Toastify({ text: `Đã nhập ${data.importedCount} câu hỏi. Vui lòng xem các dòng lỗi bên dưới.`, duration: 5000, style: { background: '#f59e0b' } }).showToast();
+                }
+            }
+            feedbackEl.innerHTML = feedbackHtml;
+            feedbackEl.style.display = 'block';
+        } catch (err) {
+            feedbackEl.innerHTML = `
+                <div class="alert alert-danger border-danger rounded-3 mb-0">
+                    <i class="bi bi-x-circle-fill text-danger me-2"></i>${escapeHtml(err.message || 'Lỗi khi nhập câu hỏi từ Excel')}
+                </div>
+            `;
+            feedbackEl.style.display = 'block';
+            Toastify({ text: err.message || 'Lỗi xử lý file Excel', style: { background: '#ef4444' } }).showToast();
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i>Bắt đầu tải lên';
+        }
+    }
+
+    let assignmentModalInstance;
+    let gradeModalInstance;
+    let currentAssignmentData = null;
+    let currentAssignmentSubmissions = [];
+
+    function handleSubmissionModeChange(mode) {
+        const fileRow = document.getElementById('assignmentFileConfigRow');
+        if (fileRow) {
+            fileRow.style.display = (mode === 'TEXT') ? 'none' : 'block';
+        }
+    }
+
+    async function openAssignmentConfigModal(lessonId, lessonTitle = '', event = null) {
+        if (event) event.stopPropagation();
+        const modalEl = document.getElementById('assignmentConfigModal');
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        const gradeEl = document.getElementById('gradeModal');
+        if (gradeEl && gradeEl.parentElement !== document.body) {
+            document.body.appendChild(gradeEl);
+        }
+        if (!assignmentModalInstance) {
+            assignmentModalInstance = new bootstrap.Modal(modalEl);
+        }
+        if (!gradeModalInstance) {
+            gradeModalInstance = new bootstrap.Modal(gradeEl);
+        }
+
+        document.getElementById('assignmentModalLessonId').value = lessonId;
+        const titleEl = document.getElementById('assignmentModalLessonTitle');
+        if (titleEl) titleEl.textContent = lessonTitle ? ` - ${lessonTitle}` : '';
+
+        const tabBtn = document.getElementById('tab-assignment-settings');
+        if (tabBtn) {
+            const firstTab = bootstrap.Tab.getInstance(tabBtn) || new bootstrap.Tab(tabBtn);
+            firstTab.show();
+        }
+
+        assignmentModalInstance.show();
+
+        try {
+            const res = await fetch('/api/instructor/assignments/by-lesson/' + lessonId);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Không thể tải thông tin Bài tập');
+            }
+            const assignment = await res.json();
+            currentAssignmentData = assignment;
+
+            document.getElementById('assignmentModalAssignmentId').value = assignment.id;
+            document.getElementById('assignmentCfgTitle').value = assignment.title || '';
+            if (titleEl && assignment.title) titleEl.textContent = ` - ${assignment.title}`;
+            document.getElementById('assignmentCfgInstruction').value = assignment.instruction || '';
+            document.getElementById('assignmentCfgAttachmentUrl').value = assignment.attachmentUrl || '';
+            const maxScore = assignment.maxScore != null ? assignment.maxScore : 10.0;
+            document.getElementById('assignmentCfgMaxScore').value = maxScore;
+            document.getElementById('assignmentCfgPassingScore').value = assignment.passingScore != null ? assignment.passingScore : 5.0;
+            document.getElementById('assignmentCfgAllowLate').checked = assignment.allowLateSubmission !== false;
+            handleMaxScoreChange(maxScore);
+            document.getElementById('assignmentCfgAllowedTypes').value = assignment.allowedFileTypes || 'pdf,doc,docx,zip,rar,txt';
+            document.getElementById('assignmentCfgMaxSize').value = assignment.maxFileSizeMb != null ? assignment.maxFileSizeMb : 20;
+
+            if (assignment.allowFileSubmission && !assignment.allowTextSubmission) {
+                document.getElementById('modeFileOnly').checked = true;
+                handleSubmissionModeChange('FILE');
+            } else if (!assignment.allowFileSubmission && assignment.allowTextSubmission) {
+                document.getElementById('modeTextOnly').checked = true;
+                handleSubmissionModeChange('TEXT');
+            } else {
+                document.getElementById('modeBoth').checked = true;
+                handleSubmissionModeChange('BOTH');
+            }
+
+            document.getElementById('assignmentSubmissionsCountBadge').textContent = assignment.totalSubmissions || 0;
+            document.getElementById('assignmentStatTotal').textContent = assignment.totalSubmissions || 0;
+            document.getElementById('assignmentStatGraded').textContent = assignment.gradedSubmissions || 0;
+            document.getElementById('assignmentStatPending').textContent = (assignment.totalSubmissions || 0) - (assignment.gradedSubmissions || 0);
+        } catch (e) {
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+            } else {
+                alert('Lỗi: ' + e.message);
+            }
+        }
+    }
+
+    function handleMaxScoreChange(val) {
+        const num = parseFloat(val);
+        const passingInput = document.getElementById('assignmentCfgPassingScore');
+        const hintEl = document.getElementById('assignmentMaxScoreHint');
+        if (!isNaN(num) && num === 0) {
+            passingInput.value = 0;
+            passingInput.disabled = true;
+            if (hintEl) {
+                hintEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>Không cần chấm điểm (Học viên nộp bài là hoàn thành)</span>';
+            }
+        } else {
+            passingInput.disabled = false;
+            if (hintEl) {
+                hintEl.innerHTML = 'Nhập <strong>0</strong> để không cần chấm điểm (học viên nộp là hoàn thành).';
+            }
+        }
+    }
+
+    async function saveAssignmentConfig() {
+        const assignmentId = document.getElementById('assignmentModalAssignmentId').value;
+        const title = document.getElementById('assignmentCfgTitle').value.trim();
+        if (!title) {
+            Toastify({ text: 'Vui lòng nhập tiêu đề bài tập', style: { background: '#dc3545' } }).showToast();
+            return;
+        }
+
+        const modeInput = document.querySelector('input[name="assignmentSubmissionMode"]:checked');
+        const mode = modeInput ? modeInput.value : 'BOTH';
+        const allowFile = (mode === 'FILE' || mode === 'BOTH');
+        const allowText = (mode === 'TEXT' || mode === 'BOTH');
+
+        const maxScoreVal = parseFloat(document.getElementById('assignmentCfgMaxScore').value);
+        const passingScoreVal = parseFloat(document.getElementById('assignmentCfgPassingScore').value);
+        const allowLate = document.getElementById('assignmentCfgAllowLate').checked;
+
+        const payload = {
+            title: title,
+            instruction: document.getElementById('assignmentCfgInstruction').value.trim(),
+            attachmentUrl: document.getElementById('assignmentCfgAttachmentUrl').value.trim(),
+            maxScore: !isNaN(maxScoreVal) ? maxScoreVal : 10.0,
+            passingScore: (!isNaN(maxScoreVal) && maxScoreVal === 0) ? 0.0 : (!isNaN(passingScoreVal) ? passingScoreVal : 5.0),
+            allowLateSubmission: allowLate,
+            allowedFileTypes: document.getElementById('assignmentCfgAllowedTypes').value.trim(),
+            maxFileSizeMb: parseInt(document.getElementById('assignmentCfgMaxSize').value, 10) || 20,
+            allowFileSubmission: allowFile,
+            allowTextSubmission: allowText
+        };
+
+        try {
+            const res = await fetch('/api/instructor/assignments/' + assignmentId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Lỗi khi lưu cấu hình');
+            }
+            Toastify({ text: 'Đã lưu cấu hình bài tập thành công!', style: { background: '#10b981' } }).showToast();
+            setTimeout(() => location.reload(), 600);
+        } catch (e) {
+            Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+        }
+    }
+
+    async function handleUploadAssignmentAttachment(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        Toastify({ text: 'Đang tải tệp đính kèm...', style: { background: '#3b82f6' } }).showToast();
+
+        try {
+            const res = await fetch('/api/instructor/assignments/upload-attachment', {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) throw new Error('Không thể tải tệp lên');
+            const data = await res.json();
+            document.getElementById('assignmentCfgAttachmentUrl').value = data.url;
+            Toastify({ text: 'Tải tệp thành công!', style: { background: '#10b981' } }).showToast();
+        } catch (e) {
+            Toastify({ text: 'Lỗi tải tệp: ' + e.message, style: { background: '#dc3545' } }).showToast();
+        } finally {
+            input.value = '';
+        }
+    }
+
+    async function loadAssignmentSubmissions() {
+        const assignmentId = document.getElementById('assignmentModalAssignmentId').value;
+        const tbody = document.getElementById('assignmentSubmissionsTableBody');
+        if (!tbody || !assignmentId) return;
+
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Đang tải danh sách bài nộp...</td></tr>';
+
+        try {
+            const url = (typeof currentModuleId !== 'undefined' && currentModuleId) 
+                ? `/api/instructor/assignments/${assignmentId}/submissions?cohortId=${currentModuleId}`
+                : `/api/instructor/assignments/${assignmentId}/submissions`;
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Không thể tải danh sách bài nộp');
+            const submissions = await res.json();
+            currentAssignmentSubmissions = submissions;
+
+            let total = submissions.length;
+            let graded = submissions.filter(s => s.status === 'GRADED').length;
+            let pending = total - graded;
+
+            document.getElementById('assignmentSubmissionsCountBadge').textContent = total;
+            document.getElementById('assignmentStatTotal').textContent = total;
+            document.getElementById('assignmentStatGraded').textContent = graded;
+            document.getElementById('assignmentStatPending').textContent = pending;
+
+            if (submissions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3 d-block mb-2"></i>Chưa có học viên nào nộp bài tập này.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            submissions.forEach((sub, idx) => {
+                const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '---';
+                let statusBadge = '<span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;"><i class="bi bi-hourglass-split me-1"></i>Chờ chấm điểm</span>';
+                if (sub.status === 'GRADED') {
+                    statusBadge = sub.isPassed
+                        ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">Đạt yêu cầu</span>'
+                        : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">Chưa đạt</span>';
+                }
+
+                let fileLink = '';
+                if (sub.fileUrl) {
+                    fileLink = `<a href="${sub.fileUrl}" target="_blank" download class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 fw-semibold me-1 mb-1" style="font-size: 11px;">
+                        <i class="bi bi-paperclip me-1"></i>${escapeHtml(sub.fileName || 'Tải file đính kèm')}
+                    </a>`;
+                }
+
+                let textPreview = '';
+                if (sub.submissionText) {
+                    const cleanText = escapeHtml(sub.submissionText);
+                    const isUrl = sub.submissionText.startsWith('http://') || sub.submissionText.startsWith('https://');
+                    if (isUrl) {
+                        textPreview = `<a href="${cleanText}" target="_blank" class="small text-truncate d-block text-primary" style="max-width: 220px;" title="${cleanText}"><i class="bi bi-link-45deg me-1"></i>${cleanText}</a>`;
+                    } else {
+                        textPreview = `<div class="small text-muted text-truncate" style="max-width: 220px;" title="${cleanText}">${cleanText}</div>`;
+                    }
+                }
+
+                let isLateBadge = sub.isLate ? '<span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1 fw-semibold" style="font-size: 10px;"><i class="bi bi-clock-history me-1"></i>Nộp trễ</span>' : '';
+                const requiresGrading = sub.requiresGrading !== false && (sub.maxScore == null || sub.maxScore > 0);
+
+                let scoreDisplay = '';
+                if (!requiresGrading) {
+                    scoreDisplay = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">Không chấm điểm</span>';
+                } else if (sub.score != null) {
+                    scoreDisplay = `<strong class="text-dark fs-6">${sub.score}</strong> / ${sub.maxScore || 10}`;
+                } else {
+                    scoreDisplay = '<span class="badge bg-secondary-subtle text-dark border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size: 11px;">Chưa chấm</span>';
+                }
+
+                const gradeBtnLabel = requiresGrading ? '<i class="bi bi-pencil-square me-1"></i>Chấm điểm' : '<i class="bi bi-chat-left-text me-1"></i>Nhận xét';
+
+                html += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 13px;">
+                                    ${(sub.studentName || 'H').charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark small">${escapeHtml(sub.studentName || 'Học viên')}</div>
+                                    <div class="text-muted" style="font-size: 11px;">${escapeHtml(sub.studentEmail || '')}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="small text-secondary">${subDate} ${isLateBadge}</td>
+                        <td>
+                            ${fileLink}
+                            ${textPreview}
+                        </td>
+                        <td>
+                            <div class="mb-1">${statusBadge}</div>
+                            <div class="small">${scoreDisplay}</div>
+                        </td>
+                        <td style="text-align: right;">
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="openGradeModal(${sub.id})">
+                                ${gradeBtnLabel}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>${e.message}</td></tr>`;
+        }
+    }
+
+    function openGradeModal(submissionId) {
+        const sub = currentAssignmentSubmissions.find(s => s.id === submissionId);
+        if (!sub) return;
+
+        document.getElementById('gradeSubmissionId').value = sub.id;
+        document.getElementById('gradeStudentName').textContent = sub.studentName || 'Học viên';
+        document.getElementById('gradeStudentEmail').textContent = sub.studentEmail || '';
+
+        let contentHtml = '';
+        if (sub.fileUrl) {
+            contentHtml += `<div class="mb-2"><strong class="text-dark">Tệp đính kèm:</strong> <a href="${sub.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 ms-2"><i class="bi bi-download me-1"></i>${escapeHtml(sub.fileName || 'Tải file')}</a></div>`;
+        }
+        if (sub.submissionText) {
+            const isUrl = sub.submissionText.startsWith('http://') || sub.submissionText.startsWith('https://');
+            if (isUrl) {
+                contentHtml += `<div><strong class="text-dark">Liên kết:</strong> <a href="${escapeHtml(sub.submissionText)}" target="_blank" class="ms-1">${escapeHtml(sub.submissionText)}</a></div>`;
+            } else {
+                contentHtml += `<div><strong class="text-dark">Văn bản bài làm:</strong><div class="mt-1 p-2 bg-light rounded">${escapeHtml(sub.submissionText)}</div></div>`;
+            }
+        }
+        if (!contentHtml) {
+            contentHtml = '<span class="text-muted">Không có nội dung đính kèm.</span>';
+        }
+
+        document.getElementById('gradeSubmissionContent').innerHTML = contentHtml;
+
+        const requiresGrading = sub.requiresGrading !== false && (sub.maxScore == null || sub.maxScore > 0);
+        const scoreInputWrap = document.getElementById('gradeScoreInput').closest('.mb-3');
+        if (!requiresGrading) {
+            document.getElementById('gradeScoreInput').value = 0;
+            if (scoreInputWrap) scoreInputWrap.style.display = 'none';
+        } else {
+            document.getElementById('gradeScoreInput').value = sub.score != null ? sub.score : '';
+            if (scoreInputWrap) scoreInputWrap.style.display = 'block';
+        }
+
+        document.getElementById('gradeMaxScoreHint').textContent = requiresGrading ? ('Thang ' + (sub.maxScore || 10)) : 'Không chấm điểm';
+        document.getElementById('gradeFeedbackInput').value = sub.feedback || '';
+
+        if (!gradeModalInstance) {
+            gradeModalInstance = new bootstrap.Modal(document.getElementById('gradeModal'));
+        }
+        gradeModalInstance.show();
+    }
+
+    async function submitGrade() {
+        const subId = document.getElementById('gradeSubmissionId').value;
+        const sub = currentAssignmentSubmissions.find(s => s.id == subId);
+        const requiresGrading = sub ? (sub.requiresGrading !== false && (sub.maxScore == null || sub.maxScore > 0)) : true;
+
+        let score = 0;
+        if (requiresGrading) {
+            const scoreVal = document.getElementById('gradeScoreInput').value;
+            if (scoreVal === '' || isNaN(scoreVal)) {
+                Toastify({ text: 'Vui lòng nhập điểm số hợp lệ', style: { background: '#dc3545' } }).showToast();
+                return;
+            }
+            score = parseFloat(scoreVal);
+        }
+
+        const feedback = document.getElementById('gradeFeedbackInput').value.trim();
+
+        try {
+            const res = await fetch('/api/instructor/assignments/submissions/' + subId + '/grade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ score: score, feedback: feedback })
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Lỗi khi lưu điểm');
+            }
+            Toastify({ text: requiresGrading ? 'Đã lưu điểm và phản hồi thành công!' : 'Đã gửi phản hồi nhận xét thành công!', style: { background: '#10b981' } }).showToast();
+            if (gradeModalInstance) gradeModalInstance.hide();
+            loadAssignmentSubmissions();
+        } catch (e) {
+            Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+        }
+    }
+
+    let moduleReviewModalInstance = null;
+
+    function openModuleReviewModal(cohortId, moduleName, certUrl) {
+        document.getElementById('moduleReviewCohortId').value = cohortId;
+        document.getElementById('moduleReviewTitle').textContent = moduleName;
+        document.getElementById('moduleReviewCertUrl').value = certUrl || '';
+        document.getElementById('moduleReviewRating').value = 5;
+        document.getElementById('moduleReviewComment').value = '';
+        setDetailStars(5);
+
+        if (!moduleReviewModalInstance) {
+            moduleReviewModalInstance = new bootstrap.Modal(document.getElementById('moduleReviewModal'));
+        }
+        moduleReviewModalInstance.show();
+    }
+
+    function setDetailStars(val) {
+        document.getElementById('moduleReviewRating').value = val;
+        const labels = {
+            1: '1 sao - Rất không hài lòng',
+            2: '2 sao - Cần cải thiện',
+            3: '3 sao - Đạt yêu cầu / Bình thường',
+            4: '4 sao - Tốt & Hài lòng',
+            5: '5 sao - Tuyệt vời & Xuất sắc!'
+        };
+        document.getElementById('detailStarLabel').textContent = labels[val] || (val + ' sao');
+        document.querySelectorAll('.detail-star-btn').forEach(btn => {
+            const bVal = parseInt(btn.getAttribute('data-val'), 10);
+            if (bVal <= val) {
+                btn.className = 'bi bi-star-fill fs-2 text-warning detail-star-btn';
+            } else {
+                btn.className = 'bi bi-star fs-2 text-muted detail-star-btn';
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.detail-star-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const val = parseInt(this.getAttribute('data-val'), 10);
+                setDetailStars(val);
+            });
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.2)';
+            });
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    });
+
+    async function submitDetailReview() {
+        const cohortId = document.getElementById('moduleReviewCohortId').value;
+        const certUrl = document.getElementById('moduleReviewCertUrl').value;
+        const rating = parseInt(document.getElementById('moduleReviewRating').value, 10);
+        const comment = document.getElementById('moduleReviewComment').value.trim();
+
+        const btn = document.getElementById('btnSubmitDetailReview');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi...';
+
+        try {
+            const res = await fetch('/certificates/api/review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cohortId: cohortId ? parseInt(cohortId, 10) : null, certCode: certUrl, rating: rating, comment: comment })
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || 'Lỗi khi gửi đánh giá');
+            }
+
+            Toastify({ text: 'Cảm ơn bạn đã đánh giá! Giấy chứng nhận của bạn đã sẵn sàng.', style: { background: '#10b981' } }).showToast();
+            if (moduleReviewModalInstance) {
+                moduleReviewModalInstance.hide();
+            }
+
+            const targetUrl = (result.data && result.data.verifyUrl) ? result.data.verifyUrl : certUrl;
+            if (targetUrl) {
+                window.open(targetUrl, '_blank');
+            }
+            setTimeout(() => location.reload(), 1500);
+        } catch (e) {
+            Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-patch-check-fill me-1"></i> Gửi đánh giá & Nhận chứng chỉ';
+        }
+    }
 </script>
+
+<div class="modal fade" id="moduleReviewModal" tabindex="-1" aria-labelledby="moduleReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 pb-0 justify-content-end">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-0 text-center">
+                <div class="rounded-circle bg-warning-subtle text-warning mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-star-fill fs-3 text-warning"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Đánh giá khóa học để nhận chứng chỉ</h5>
+                <p class="text-secondary small mb-3">
+                    Bạn đã hoàn thành đạt môn học <strong class="text-dark" id="moduleReviewTitle">Module</strong>! Hãy gửi đánh giá (1-5 sao) để kích hoạt và nhận Giấy chứng nhận điện tử.
+                </p>
+
+                <input type="hidden" id="moduleReviewCohortId">
+                <input type="hidden" id="moduleReviewCertUrl">
+                <input type="hidden" id="moduleReviewRating" value="5">
+
+                <div class="bg-light p-3.5 rounded-4 border mb-3">
+                    <label class="form-label fw-bold text-dark small mb-2 d-block">Mức độ hài lòng của bạn:</label>
+                    <div class="d-flex justify-content-center gap-2 mb-2" id="detailStarWrap">
+                        <i class="bi bi-star-fill fs-2 text-warning detail-star-btn" data-val="1" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                        <i class="bi bi-star-fill fs-2 text-warning detail-star-btn" data-val="2" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                        <i class="bi bi-star-fill fs-2 text-warning detail-star-btn" data-val="3" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                        <i class="bi bi-star-fill fs-2 text-warning detail-star-btn" data-val="4" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                        <i class="bi bi-star-fill fs-2 text-warning detail-star-btn" data-val="5" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                    </div>
+                    <div class="fw-semibold text-warning small mb-3" id="detailStarLabel">5 sao - Tuyệt vời &amp; Xuất sắc!</div>
+
+                    <textarea id="moduleReviewComment" class="form-control rounded-3" rows="3" placeholder="Chia sẻ cảm nhận, góp ý về nội dung bài giảng và giảng viên (không bắt buộc)..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Để sau</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitDetailReview" onclick="submitDetailReview()">
+                        <i class="bi bi-patch-check-fill me-1"></i> Gửi đánh giá &amp; Nhận chứng chỉ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

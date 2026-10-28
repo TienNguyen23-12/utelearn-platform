@@ -16,6 +16,8 @@ public interface CohortService {
     
     Page<Cohort> searchCohortsByInstructor(Long instructorId, String keyword, String status, Pageable pageable);
     
+    Page<Cohort> searchAllCohorts(String keyword, String status, Pageable pageable);
+    
     Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable);
     
     Cohort getCohortById(Long id);
@@ -47,5 +49,7 @@ public interface CohortService {
     void revertToDraftIfApproved(Cohort cohort);
 
     void syncCohortStatuses();
+
+    void checkAndSyncCourseCompletion(vn.edu.ute.utelearn.entity.Course course, User user);
 }
 

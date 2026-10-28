@@ -60,6 +60,9 @@ public class QuizFeatureTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private QuizServiceImpl quizService;
 
@@ -96,6 +99,7 @@ public class QuizFeatureTest {
 
         cohort = Cohort.builder()
                 .id(20L)
+                .name("Spring Boot Cohort 01")
                 .code("JAVA-01")
                 .course(course)
                 .build();
@@ -1055,5 +1059,174 @@ public class QuizFeatureTest {
         assertEquals("PUBLISHED", course.getStatus());
         verify(lessonRepository, never()).save(any(Lesson.class));
         verify(courseRepository, never()).save(any(Course.class));
+    }
+
+    @Test
+    void testGetOrCreateQuizInitializesDefaultExamRules() {
+        Lesson newLesson = Lesson.builder()
+                .id(99L)
+                .title("Bài kiểm tra mới")
+                .lessonType("QUIZ")
+                .section(section)
+                .build();
+
+        when(lessonRepository.findById(99L)).thenReturn(Optional.of(newLesson));
+        when(quizRepository.findByLessonId(99L)).thenReturn(Optional.empty());
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> {
+            Quiz q = invocation.getArgument(0);
+            q.setId(999L);
+            return q;
+        });
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(999L)).thenReturn(Collections.emptyList());
+
+        QuizDTO created = quizService.getOrCreateQuizForLesson(99L, 2L);
+
+        assertNotNull(created);
+        assertNotNull(created.getExamRules());
+        assertEquals(Quiz.DEFAULT_EXAM_RULES, created.getExamRules());
+    }
+
+    @Test
+    void testUpdateExamRulesSuccess() {
+        lesson.setStatus("PUBLISHED");
+        course.setStatus("PUBLISHED");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(instructor));
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(quizRepository.save(any(Quiz.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(50L)).thenReturn(Collections.emptyList());
+
+        String customRules = "Quy chế 1: Nghiêm cấm mở tab mới.\nQuy chế 2: Bật camera suốt thời gian thi.";
+        QuizRequestDTO request = QuizRequestDTO.builder()
+                .title(quiz.getTitle())
+                .durationMinutes(quiz.getDurationMinutes())
+                .passingScore(quiz.getPassingScore())
+                .maxAttempts(quiz.getMaxAttempts())
+                .examRules(customRules)
+                .build();
+
+        QuizDTO updated = quizService.updateQuiz(50L, request, 2L);
+
+        assertNotNull(updated);
+        assertEquals(customRules, updated.getExamRules());
+        assertEquals(customRules, quiz.getExamRules());
+        assertEquals("PUBLISHED", lesson.getStatus());
+        assertEquals("PUBLISHED", course.getStatus());
+        verify(lessonRepository, never()).save(any(Lesson.class));
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
+    @Test
+    void testInstructorGetSubmissionDetail_SuccessWithStudentAndCohortMetadata() {
+        Role instructorRole = Role.builder().name("INSTRUCTOR").build();
+        instructor.setRoles(Set.of(instructorRole));
+
+        Instant start = Instant.now().minusSeconds(300);
+        Instant submit = Instant.now();
+        QuizSubmission submission = QuizSubmission.builder()
+                .id(999L)
+                .quiz(quiz)
+                .cohort(cohort)
+                .user(student)
+                .startedAt(start)
+                .submittedAt(submit)
+                .score(new BigDecimal("8.50"))
+                .isPassed(true)
+                .isLate(false)
+                .answers("[]")
+                .build();
+
+        when(quizSubmissionRepository.findById(999L)).thenReturn(Optional.of(submission));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(instructor));
+        when(quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(50L, 1L, 20L)).thenReturn(1L);
+
+        QuizResultDTO result = quizService.getSubmissionDetail(999L, 2L);
+
+        assertNotNull(result);
+        assertEquals(999L, result.getSubmissionId());
+        assertEquals("student1@ute.edu.vn", result.getStudentEmail());
+        assertEquals("Nguyen Van Hoc", result.getStudentName());
+        assertEquals(1L, result.getUserId());
+        assertEquals(20L, result.getCohortId());
+        assertEquals("Spring Boot Cohort 01", result.getCohortName());
+        assertEquals("JAVA-01", result.getCohortCode());
+        assertTrue(result.getAllowReview());
+        assertNotNull(result.getDurationSeconds());
+        assertEquals(300L, result.getDurationSeconds());
+        assertEquals(new BigDecimal("8.50"), result.getScore());
+    }
+
+    @Test
+    void testOtherStudentGetSubmissionDetail_ThrowsForbiddenException() {
+        Role studentRole = Role.builder().name("STUDENT").build();
+        User otherStudent = User.builder().id(3L).username("student2").roles(Set.of(studentRole)).build();
+
+        QuizSubmission submission = QuizSubmission.builder()
+                .id(999L)
+                .quiz(quiz)
+                .cohort(cohort)
+                .user(student)
+                .build();
+
+        when(quizSubmissionRepository.findById(999L)).thenReturn(Optional.of(submission));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(otherStudent));
+
+        assertThrows(RuntimeException.class, () -> quizService.getSubmissionDetail(999L, 3L));
+    }
+
+    @Test
+    void testInstructorGetSubmissionsForQuiz_ReturnsAllStudentsSubmissions() {
+        Role instructorRole = Role.builder().name("INSTRUCTOR").build();
+        instructor.setRoles(Set.of(instructorRole));
+
+        QuizSubmission sub1 = QuizSubmission.builder()
+                .id(101L)
+                .quiz(quiz)
+                .cohort(cohort)
+                .user(student)
+                .score(new BigDecimal("9.00"))
+                .isPassed(true)
+                .startedAt(Instant.now().minusSeconds(120))
+                .submittedAt(Instant.now())
+                .build();
+
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(instructor));
+        when(quizSubmissionRepository.findByQuizIdOrderBySubmittedAtDesc(50L)).thenReturn(List.of(sub1));
+        when(quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(50L, 1L, 20L)).thenReturn(1L);
+
+        List<QuizResultDTO> list = quizService.getSubmissionsForInstructor(50L, null, 2L);
+
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals(101L, list.get(0).getSubmissionId());
+        assertEquals("Nguyen Van Hoc", list.get(0).getStudentName());
+        assertEquals(new BigDecimal("9.00"), list.get(0).getScore());
+    }
+
+    @Test
+    void testInstructorGetSubmissionsForQuiz_FilteredByCohort() {
+        Role instructorRole = Role.builder().name("INSTRUCTOR").build();
+        instructor.setRoles(Set.of(instructorRole));
+
+        QuizSubmission sub1 = QuizSubmission.builder()
+                .id(102L)
+                .quiz(quiz)
+                .cohort(cohort)
+                .user(student)
+                .score(new BigDecimal("7.50"))
+                .isPassed(true)
+                .build();
+
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(instructor));
+        when(quizSubmissionRepository.findByQuizIdAndCohortIdOrderBySubmittedAtDesc(50L, 20L)).thenReturn(List.of(sub1));
+        when(quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(50L, 1L, 20L)).thenReturn(2L);
+
+        List<QuizResultDTO> list = quizService.getSubmissionsForInstructor(50L, 20L, 2L);
+
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals(102L, list.get(0).getSubmissionId());
+        assertEquals(2, list.get(0).getAttemptNumber());
     }
 }

@@ -143,7 +143,7 @@ utelearn:
   seeder:
     enabled: true
     seed-sample-users: true
-    default-password: ${DEFAULT_SEED_PASSWORD:}
+    default-password: ${DEFAULT_SEED_PASSWORD:Abc@1234}
 
   payment:
     bank-id: ${VIETQR_BANK_ID:Vietcombank}

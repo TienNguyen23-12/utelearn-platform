@@ -67,12 +67,31 @@ public class CheckoutController {
             return "redirect:/courses";
         }
         User user = currentUserOpt.get();
+        String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+                ? cohort.getCourse().getSlug() : "standalone";
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
-            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này.");
-            return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
+            redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này rồi.");
+            return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
         }
         if (cohort.getPrice() == null || cohort.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            return (cohort.getCourse() != null) ? "redirect:/courses/" + cohort.getCourse().getSlug() : "redirect:/cohorts";
+            if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(cohort.getStatus())) {
+                if (cohort.getCurrentEnrolled() < cohort.getMaxCapacity()) {
+                    CohortMember cohortMember = CohortMember.builder()
+                            .user(user)
+                            .cohort(cohort)
+                            .build();
+                    cohortMemberRepository.save(cohortMember);
+                    cohort.setCurrentEnrolled((int) cohortMemberRepository.countByCohort_Id(cohort.getId()));
+                    cohortRepository.save(cohort);
+                    log.info("[CheckoutController] Ghi danh module miễn phí thành công cho user: {}, cohort id: {}", user.getEmail(), cohortId);
+                    redirectAttributes.addFlashAttribute("success", "Ghi danh module miễn phí thành công!");
+                } else {
+                    redirectAttributes.addFlashAttribute("error", "Module đã đủ số lượng học viên.");
+                }
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Module này hiện không mở đăng ký.");
+            }
+            return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
         }
         Course course = cohort.getCourse() != null ? courseRepository.findById(cohort.getCourse().getId()).orElse(null) : null;
         log.info("[CheckoutController] Hiển thị trang checkout cho module id: {}, user: {}", cohortId, user.getEmail());

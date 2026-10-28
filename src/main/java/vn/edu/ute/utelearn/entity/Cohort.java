@@ -88,6 +88,34 @@ public class Cohort {
     @Builder.Default
     private Integer orderIndex = 1;
 
+    @Column(name = "grading_policy", length = 30)
+    @Builder.Default
+    private String gradingPolicy = "PROGRESS_BASED";
+
+    @Column(name = "process_weight")
+    @Builder.Default
+    private Integer processWeight = 50;
+
+    @Column(name = "final_weight")
+    @Builder.Default
+    private Integer finalWeight = 50;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "final_lesson_id")
+    private Lesson finalLesson;
+
+    @Column(name = "min_passing_grade", precision = 4, scale = 2)
+    @Builder.Default
+    private BigDecimal minPassingGrade = new BigDecimal("5.00");
+
+    @Column(name = "min_final_exam_score", precision = 4, scale = 2)
+    @Builder.Default
+    private BigDecimal minFinalExamScore = new BigDecimal("3.00");
+
+    @Column(name = "is_grades_published")
+    @Builder.Default
+    private Boolean isGradesPublished = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

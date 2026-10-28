@@ -69,6 +69,6 @@ public class UtelearnProperties {
     public static class Seeder {
         private boolean enabled = true;
         private boolean seedSampleUsers = true;
-        private String defaultPassword = "Abc@123";
+        private String defaultPassword = "Abc@1234";
     }
 }

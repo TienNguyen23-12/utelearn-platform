@@ -18,6 +18,7 @@ import vn.edu.ute.utelearn.service.CohortService;
 import vn.edu.ute.utelearn.service.CourseService;
 import vn.edu.ute.utelearn.service.CohortChatService;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -61,8 +62,11 @@ public class InstructorCohortController {
         String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword);
         String safeStatus = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(status);
 
+        boolean isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(currentUser);
         Page<Cohort> cohorts;
-        if ((safeKeyword != null && !safeKeyword.isBlank()) || (safeStatus != null && !safeStatus.isBlank())) {
+        if (isAdmin) {
+            cohorts = cohortService.searchAllCohorts(safeKeyword, safeStatus, PageRequest.of(page, size));
+        } else if ((safeKeyword != null && !safeKeyword.isBlank()) || (safeStatus != null && !safeStatus.isBlank())) {
             cohorts = cohortService.searchCohortsByInstructor(currentUser.getId(), safeKeyword, safeStatus,
                     PageRequest.of(page, size));
         } else {
@@ -150,12 +154,20 @@ public class InstructorCohortController {
             dto.setAnnouncementContent(cohort.getAnnouncementContent());
             dto.setThumbnailUrl(cohort.getThumbnailUrl());
 
+            dto.setGradingPolicy(cohort.getGradingPolicy() != null ? cohort.getGradingPolicy() : "PROGRESS_BASED");
+            dto.setProcessWeight(cohort.getProcessWeight() != null ? cohort.getProcessWeight() : 50);
+            dto.setFinalWeight(cohort.getFinalWeight() != null ? cohort.getFinalWeight() : 50);
+            dto.setFinalLessonId(cohort.getFinalLesson() != null ? cohort.getFinalLesson().getId() : null);
+            dto.setMinPassingGrade(cohort.getMinPassingGrade() != null ? cohort.getMinPassingGrade() : new BigDecimal("5.00"));
+            dto.setMinFinalExamScore(cohort.getMinFinalExamScore() != null ? cohort.getMinFinalExamScore() : new BigDecimal("3.00"));
+
             model.addAttribute("cohortDto", dto);
             model.addAttribute("cohortId", id);
             model.addAttribute("cohort", cohort);
 
             Page<Course> courses = courseService.getCoursesByInstructor(currentUser.getId(), PageRequest.of(0, 100));
             model.addAttribute("courses", courses.getContent());
+            model.addAttribute("cohortSchedules", cohortScheduleRepository.findByCohortIdWithDetails(id));
 
             return "instructor/cohorts/form";
         } catch (Exception e) {

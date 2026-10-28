@@ -28,6 +28,10 @@ import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.EmailService;
 import vn.edu.ute.utelearn.service.OrderService;
 import vn.edu.ute.utelearn.util.CurrencyUtils;
+import org.springframework.context.ApplicationEventPublisher;
+import vn.edu.ute.utelearn.dto.NotificationEvent;
+import vn.edu.ute.utelearn.entity.NotificationCategory;
+import vn.edu.ute.utelearn.entity.NotificationType;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +63,11 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final UtelearnProperties properties;
     private final EmailService emailService;
+    private ApplicationEventPublisher eventPublisher;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
     private vn.edu.ute.utelearn.service.DiscountService discountService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setDiscountService(vn.edu.ute.utelearn.service.DiscountService discountService) {
@@ -1473,6 +1482,20 @@ public class OrderServiceImpl implements OrderService {
     public void sendPaymentReceiptEmail(Order order) {
         if (emailService != null) {
             emailService.sendPaymentReceiptEmail(order);
+        }
+        if (eventPublisher != null && order != null && order.getUser() != null) {
+            NotificationEvent paymentEvent = NotificationEvent.builder()
+                    .recipientId(order.getUser().getId())
+                    .senderId(null)
+                    .title("Thanh toán thành công")
+                    .content("Đơn hàng #" + order.getOrderCode() + " đã được thanh toán thành công với số tiền " + CurrencyUtils.formatVnd(order.getTotalAmount()) + ".")
+                    .type(NotificationType.PAYMENT_SUCCESS)
+                    .category(NotificationCategory.TRANSACTION)
+                    .actionUrl("/orders")
+                    .referenceId(order.getId())
+                    .referenceType("ORDER")
+                    .build();
+            eventPublisher.publishEvent(paymentEvent);
         }
     }
 }

@@ -16,6 +16,7 @@ import vn.edu.ute.utelearn.service.CourseService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +33,8 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -59,6 +62,12 @@ public class CourseApiController {
                     course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("modulesCount", cohortRepository.countByCourseId(course.getId()));
             map.put("enrolledCount", cohortMemberRepository.countDistinctUsersByCourseId(course.getId()));
+
+            Double avgEnrollment = (enrollmentRepository != null) ? enrollmentRepository.getAverageRatingByCourseId(course.getId()) : null;
+            long countEnrollment = (enrollmentRepository != null) ? enrollmentRepository.countRatingsByCourseId(course.getId()) : 0L;
+            Double rating = (avgEnrollment != null && countEnrollment > 0) ? Math.round(avgEnrollment * 10.0) / 10.0 : null;
+            map.put("rating", rating);
+            map.put("ratingCount", countEnrollment);
 
             List<vn.edu.ute.utelearn.entity.Cohort> cohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
             java.math.BigDecimal sumOfCohorts = cohorts.stream()
@@ -294,6 +303,40 @@ public class CourseApiController {
             Map<String, Object> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.service.CertificateService certificateService;
+
+    @PostMapping(value = "/review", produces = "application/json")
+    public ResponseEntity<?> submitCourseReview(@RequestBody vn.edu.ute.utelearn.dto.CourseReviewRequestDTO req) {
+        if (req == null || req.getRating() == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Số sao đánh giá không được để trống"));
+        }
+        if (certificateService == null) {
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Dịch vụ chứng chỉ chưa sẵn sàng"));
+        }
+        Long userId = null;
+        if (authService != null) {
+            Optional<vn.edu.ute.utelearn.entity.User> uOpt = authService.getCurrentAuthenticatedUser();
+            if (uOpt.isPresent()) {
+                userId = uOpt.get().getId();
+            }
+        }
+        try {
+            vn.edu.ute.utelearn.dto.CertificateViewDTO cert = certificateService.submitCourseReview(
+                    userId, req.getCohortId(), req.getCertCode(), req.getRating(), req.getComment());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Đánh giá khóa học thành công! Giấy chứng nhận của bạn đã được kích hoạt.",
+                    "data", cert
+            ));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[CourseApiController] Lỗi khi lưu đánh giá khóa học: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "message", "Lỗi hệ thống khi lưu đánh giá"));
         }
     }
 }

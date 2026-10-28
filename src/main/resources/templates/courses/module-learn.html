@@ -849,6 +849,21 @@
             </div>
         </div>
 
+        <div th:if="${module != null and module.gradingPolicy == 'WEIGHTED_GRADING'}" class="d-none d-xxl-flex align-items-center gap-1.5 px-2.5 py-1 bg-warning-subtle text-dark border border-warning-subtle rounded-pill shadow-sm" style="font-size: 11.5px;" title="Chính sách tính điểm kết thúc khóa">
+            <i class="bi bi-pie-chart-fill text-danger"></i>
+            <span class="fw-semibold">Trọng số: [[${module.processWeight}]]% QT + [[${module.finalWeight}]]% CK</span>
+        </div>
+
+        <a th:if="${isInstructor or isAdmin}" th:href="@{'/instructor/cohorts/' + ${module.id} + '/gradebook'}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" title="Quản lý Sổ điểm lớp học">
+            <i class="bi bi-mortarboard-fill"></i>
+            <span class="d-none d-md-inline small fw-semibold">Sổ điểm</span>
+        </a>
+
+        <button th:if="${currentMember != null}" type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#studentGradebookModal" title="Xem Bảng điểm cá nhân">
+            <i class="bi bi-award-fill"></i>
+            <span class="d-none d-md-inline small fw-semibold">Bảng điểm</span>
+        </button>
+
         <button class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-flex align-items-center gap-1" id="toggleSidebarBtn" title="Đóng/Mở giáo trình">
             <i class="bi bi-layout-sidebar-reverse"></i>
             <span class="d-none d-md-inline small fw-semibold">Bài học</span>
@@ -989,6 +1004,115 @@
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" id="btnConfirmSubmitQuizAction">
                     <i class="bi bi-send-fill me-1"></i>Xác nhận nộp bài
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="studentGradebookModal" tabindex="-1" aria-labelledby="studentGradebookModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 bg-dark text-white px-4 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary bg-opacity-25 p-2 d-flex align-items-center justify-content-center text-primary" style="width: 38px; height: 38px;">
+                        <i class="bi bi-award-fill fs-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="studentGradebookModalLabel">Bảng điểm &amp; Đánh giá kết thúc khóa</h5>
+                        <small class="text-white-50" th:text="${module != null ? module.code + ' - ' + module.name : ''}">Module</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" th:if="${currentMember != null}">
+                <div class="card border-0 rounded-4 mb-4" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <div class="text-light opacity-75 small text-uppercase" style="letter-spacing: 0.5px;">Trạng thái tổng kết</div>
+                                <h4 class="fw-bold mb-1">
+                                    <span th:if="${module.isGradesPublished != null and module.isGradesPublished and currentMember.isPassed != null and currentMember.isPassed}" class="text-success d-flex align-items-center gap-1.5">
+                                        <i class="bi bi-patch-check-fill"></i> ĐÃ HOÀN THÀNH &amp; TỐT NGHIỆP
+                                    </span>
+                                    <span th:if="${module.isGradesPublished != null and module.isGradesPublished and (currentMember.isPassed == null or not currentMember.isPassed)}" class="text-danger d-flex align-items-center gap-1.5">
+                                        <i class="bi bi-x-circle-fill"></i> CHƯA ĐẠT ĐIỀU KIỆN
+                                    </span>
+                                    <span th:unless="${module.isGradesPublished != null and module.isGradesPublished}" class="text-warning d-flex align-items-center gap-1.5">
+                                        <i class="bi bi-hourglass-split"></i> ĐANG CHỜ CÔNG BỐ ĐIỂM
+                                    </span>
+                                </h4>
+                                <div class="small text-light opacity-75" th:if="${currentMember.certificateUrl != null}">
+                                    Mã chứng chỉ: <strong class="font-monospace text-warning" th:text="${currentMember.certificateUrl}">UTE-CERT</strong>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-light opacity-75 small">Điểm tổng kết (FinalGrade)</div>
+                                <div class="display-6 fw-bold text-warning" th:text="${currentMember.finalGrade != null ? currentMember.finalGrade + ' / 10' : '--'}">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-4 border text-center h-100">
+                            <div class="text-muted small mb-1">Điểm quá trình (QT)</div>
+                            <div class="fs-4 fw-bold text-primary" th:text="${currentMember.processGrade != null ? currentMember.processGrade + ' / 10' : 'Chưa tính'}">--</div>
+                            <small class="text-muted" th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${module.processWeight} + '%'"></small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-4 border text-center h-100">
+                            <div class="text-muted small mb-1">Điểm cuối kỳ (CK)</div>
+                            <div class="fs-4 fw-bold text-primary" th:text="${currentMember.finalExamGrade != null ? currentMember.finalExamGrade + ' / 10' : 'Chưa có'}">--</div>
+                            <small class="text-muted" th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}" th:text="'Trọng số: ' + ${module.finalWeight} + '%'"></small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-4 border text-center h-100">
+                            <div class="text-muted small mb-1">Tiến độ bài giảng</div>
+                            <div class="fs-4 fw-bold text-success" th:text="${progressPercent} + '%'">0%</div>
+                            <small class="text-muted" th:text="${completedCount} + '/' + ${#lists.size(moduleLessons)} + ' bài'"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border rounded-4 mb-3">
+                    <div class="card-header bg-white border-0 py-3 px-4">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-info-circle me-1.5 text-primary"></i>Quy chế đánh giá &amp; Tiêu chuẩn tốt nghiệp</h6>
+                    </div>
+                    <div class="card-body px-4 pt-0 pb-3">
+                        <ul class="list-group list-group-flush small">
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Mô hình tính điểm:</span>
+                                <span class="fw-bold" th:if="${module.gradingPolicy == 'WEIGHTED_GRADING'}">Mô hình Trọng số (Weighted Grading)</span>
+                                <span class="fw-bold" th:if="${module.gradingPolicy == 'EXIT_EXAM'}">Bài kiểm tra đầu ra (Exit Exam)</span>
+                                <span class="fw-bold" th:if="${module.gradingPolicy == null or module.gradingPolicy == 'PROGRESS_BASED'}">Theo tiến độ 100% bài học</span>
+                            </li>
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" th:if="${module.minPassingGrade != null}">
+                                <span class="text-muted">Điểm sàn tổng kết để đạt chứng chỉ:</span>
+                                <span class="fw-bold text-primary" th:text="${module.minPassingGrade} + ' / 10'">5.0 / 10</span>
+                            </li>
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" th:if="${module.minFinalExamScore != null}">
+                                <span class="text-muted">Điểm sàn bài thi cuối kỳ chống điểm liệt:</span>
+                                <span class="fw-bold text-danger" th:text="${module.minFinalExamScore} + ' / 10'">4.0 / 10</span>
+                            </li>
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Trạng thái công bố từ Giảng viên:</span>
+                                <span th:if="${module.isGradesPublished != null and module.isGradesPublished}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Đã công bố</span>
+                                <span th:unless="${module.isGradesPublished != null and module.isGradesPublished}" class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1">Chưa công bố (Bản nháp)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-info border-0 rounded-4 d-flex align-items-center gap-2 mb-0" th:unless="${module.isGradesPublished != null and module.isGradesPublished}">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <div class="small">Bảng điểm chính thức sẽ được Giảng viên công bố sau khi hoàn tất kiểm tra và tính điểm toàn bộ học viên trong đợt học.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light px-4 py-3">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
@@ -1877,8 +2001,8 @@
             objectivesHtml = `<p class="text-muted small">Hoàn thành bài giảng và thực hành ứng dụng theo lộ trình ${moduleName}.</p>`;
         }
 
-        const noteStorageKey = 'utelearn_notes_mod_' + moduleId + '_' + lesson.id;
-        const savedNote = localStorage.getItem(noteStorageKey) || '';
+        const isQuizOrAssignment = Boolean(lesson.lessonType && ['QUIZ', 'ASSIGNMENT'].includes(String(lesson.lessonType).trim().toUpperCase()));
+        const showNotesTab = !isQuizOrAssignment;
 
         mainContent.innerHTML = `
             ${mainMediaHtml}
@@ -1913,11 +2037,14 @@
                             <i class="bi bi-bullseye me-1"></i>Mục tiêu Module
                         </button>
                     </li>
+                    ${showNotesTab ? `
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="tab-notes-btn" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button" role="tab">
                             <i class="bi bi-pencil-square me-1"></i>Ghi chú cá nhân
+                            <span id="tabNotesCountBadge" class="badge rounded-pill bg-primary-subtle text-primary ms-1" style="display: none; font-size: 11px;">0</span>
                         </button>
                     </li>
+                    ` : ''}
                     <li class="nav-item" role="presentation">
                         <button class="nav-link position-relative" id="tab-chat-btn" data-bs-toggle="tab" data-bs-target="#tab-chat" type="button" role="tab" onclick="ensureChatRendered()">
                             <i class="bi bi-chat-dots-fill text-primary me-1"></i>Thảo luận Lớp học
@@ -1939,16 +2066,77 @@
                         ${objectivesHtml}
                     </div>
 
+                    ${showNotesTab ? `
                     <div class="tab-pane fade" id="tab-notes" role="tabpanel">
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary">Ghi chú của bạn cho bài học này:</label>
-                            <textarea id="lessonUserNotes" class="form-control rounded-3" rows="4" placeholder="Nhập ghi chú quan trọng hoặc câu hỏi cần nhớ...">${savedNote}</textarea>
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-journal-text text-primary"></i>
+                                    Ghi chú bài học
+                                </h6>
+                                <span class="text-muted small">Lưu lại các mốc thời gian và kiến thức quan trọng của bài giảng</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-xs" onclick="openNewNoteForm(false)" style="gap: 6px;">
+                                    <i class="bi bi-pencil-square text-primary"></i>
+                                    <span>Thêm ghi chú</span>
+                                </button>
+                                ${resolvedVideoUrl ? `
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center shadow-xs" onclick="openNewNoteForm(true)" style="gap: 8px;">
+                                    <i class="bi bi-stopwatch-fill text-danger fs-6"></i>
+                                    <span>Tạo ghi chú tại</span>
+                                    <span id="activeVideoCurrentTimeBadge" class="badge rounded-pill bg-primary text-white px-2.5 py-1 fw-bold" style="font-size: 11px; letter-spacing: 0.5px; line-height: 1.2;">00:00</span>
+                                </button>
+                                ` : ''}
+                            </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="savePersonalNote(${lesson.id})">
-                            <i class="bi bi-save me-1"></i>Lưu ghi chú
-                        </button>
-                        <span id="noteSaveNotice" class="ms-2 small text-success fw-semibold" style="display: none;"><i class="bi bi-check-circle me-1"></i>Đã lưu!</span>
+
+                        <div id="newNoteFormContainer" class="card border-0 bg-light-subtle rounded-4 p-3 mb-3 border shadow-xs" style="display: none;">
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="small fw-bold text-dark" id="noteFormModeTitle">Ghi chú mới</span>
+                                    <span id="noteFormTimestampBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-bold align-items-center gap-1" style="display: none;">
+                                        <i class="bi bi-stopwatch-fill text-danger"></i>
+                                        <span id="noteFormTimeDisplay">00:00</span>
+                                    </span>
+                                    <span id="noteFormNoTimestampBadge" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 align-items-center gap-1" style="display: none;">
+                                        <i class="bi bi-card-text me-1"></i>Toàn bài học (không mốc thời gian)
+                                    </span>
+                                    <button type="button" id="btnClearNoteTimestampBtn" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5 small align-items-center gap-1" style="display: none; font-size: 11px;" onclick="clearFormTimestamp()" title="Xóa mốc thời gian">
+                                        <i class="bi bi-x-circle"></i> Bỏ mốc thời gian
+                                    </button>
+                                    <button type="button" id="btnAttachCurrentVideoTimeBtn" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5 small align-items-center gap-1" style="display: none; font-size: 11px;" onclick="attachCurrentVideoTime()" title="Lấy mốc thời gian video hiện tại">
+                                        <i class="bi bi-stopwatch"></i> Lấy mốc thời gian video
+                                    </button>
+                                </div>
+                                <button type="button" class="btn-close btn-close-sm" onclick="closeNoteForm()" aria-label="Đóng"></button>
+                            </div>
+                            <input type="hidden" id="editingNoteId" value="" />
+                            <input type="hidden" id="noteTimestampSeconds" value="" />
+                            <div class="mb-2">
+                                <textarea id="lessonUserNotesInput" class="form-control rounded-3" rows="3" placeholder="Nhập ghi chú quan trọng hoặc nội dung cần lưu nhớ..."></textarea>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="small text-muted" id="noteFormHint">
+                                    <i class="bi bi-info-circle me-1"></i>Video sẽ tự động tạm dừng để bạn nhập nội dung
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="closeNoteForm()">Hủy</button>
+                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" id="btnSaveLessonNote" onclick="submitLessonNote(${lesson.id})">
+                                        <i class="bi bi-check2 me-1"></i>Lưu ghi chú
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="lessonNotesList" class="d-flex flex-column gap-2 mb-2">
+                            <div class="text-center py-4 text-muted" id="notesLoadingState">
+                                <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                                <div class="small">Đang tải ghi chú...</div>
+                            </div>
+                        </div>
                     </div>
+                    ` : ''}
 
                     <div class="tab-pane fade" id="tab-chat" role="tabpanel">
                         <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
@@ -2024,6 +2212,10 @@
             </div>
         `;
 
+        if (showNotesTab) {
+            loadNotesForLesson(lesson.id);
+        }
+
         if (initPlyr) {
             const playerEl = document.getElementById('player');
             if (playerEl) {
@@ -2032,6 +2224,7 @@
                         controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
                         youtube: { noCookie: true, rel: 0, showinfo: 0, iv_load_policy: 3, modestbranding: 1 }
                     });
+                    attachPlyrTimeListeners();
                 } catch (e) {
                     console.error('Error initializing Plyr:', e);
                 }
@@ -2085,15 +2278,369 @@
         }
     }
 
-    function savePersonalNote(lessonId) {
-        const textarea = document.getElementById('lessonUserNotes');
-        const notice = document.getElementById('noteSaveNotice');
-        if (!textarea) return;
-        const key = 'utelearn_notes_mod_' + moduleId + '_' + lessonId;
-        localStorage.setItem(key, textarea.value);
-        if (notice) {
-            notice.style.display = 'inline';
-            setTimeout(() => { notice.style.display = 'none'; }, 2000);
+    function attachPlyrTimeListeners() {
+        if (!player) return;
+        player.on('timeupdate', () => {
+            const currentTime = Math.floor(player.currentTime || 0);
+            const badge = document.getElementById('activeVideoCurrentTimeBadge');
+            if (badge) {
+                badge.textContent = formatSecondsToTime(currentTime);
+            }
+        });
+    }
+
+    function formatSecondsToTime(totalSec) {
+        if (totalSec === null || totalSec === undefined || isNaN(totalSec) || totalSec < 0) {
+            return '00:00';
+        }
+        const hrs = Math.floor(totalSec / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        const secs = Math.floor(totalSec % 60);
+        const mm = String(mins).padStart(2, '0');
+        const ss = String(secs).padStart(2, '0');
+        if (hrs > 0) {
+            return String(hrs).padStart(2, '0') + ':' + mm + ':' + ss;
+        }
+        return mm + ':' + ss;
+    }
+
+    function formatNoteDate(isoStr) {
+        if (!isoStr) return '';
+        try {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#039;');
+    }
+
+    function updateNoteTimestampUI(timestampSec) {
+        const hasTimestamp = (timestampSec !== null && timestampSec !== undefined && timestampSec !== '' && !isNaN(Number(timestampSec)));
+        const timestampInput = document.getElementById('noteTimestampSeconds');
+        const timeBadge = document.getElementById('noteFormTimestampBadge');
+        const timeDisplay = document.getElementById('noteFormTimeDisplay');
+        const noTimeBadge = document.getElementById('noteFormNoTimestampBadge');
+        const clearBtn = document.getElementById('btnClearNoteTimestampBtn');
+        const attachBtn = document.getElementById('btnAttachCurrentVideoTimeBtn');
+        const hintEl = document.getElementById('noteFormHint');
+
+        if (timestampInput) {
+            timestampInput.value = hasTimestamp ? Number(timestampSec) : '';
+        }
+
+        const canAttachVideoTime = (typeof player !== 'undefined' && player !== null);
+
+        if (hasTimestamp) {
+            const sec = Number(timestampSec);
+            if (timeDisplay) timeDisplay.textContent = formatSecondsToTime(sec);
+            if (timeBadge) timeBadge.style.setProperty('display', 'inline-flex', 'important');
+            if (clearBtn) clearBtn.style.setProperty('display', 'inline-flex', 'important');
+            if (noTimeBadge) noTimeBadge.style.setProperty('display', 'none', 'important');
+            if (attachBtn) attachBtn.style.setProperty('display', 'none', 'important');
+            if (hintEl) hintEl.innerHTML = '<i class="bi bi-info-circle me-1"></i>Ghi chú được gắn tại mốc ' + formatSecondsToTime(sec);
+        } else {
+            if (timeBadge) timeBadge.style.setProperty('display', 'none', 'important');
+            if (clearBtn) clearBtn.style.setProperty('display', 'none', 'important');
+            if (noTimeBadge) noTimeBadge.style.setProperty('display', 'inline-flex', 'important');
+            if (attachBtn) attachBtn.style.setProperty('display', canAttachVideoTime ? 'inline-flex' : 'none', 'important');
+            if (hintEl) hintEl.innerHTML = '<i class="bi bi-info-circle me-1"></i>Ghi chú chung cho bài học (không kèm mốc thời gian)';
+        }
+    }
+
+    function openNewNoteForm(withTimestamp) {
+        const container = document.getElementById('newNoteFormContainer');
+        const input = document.getElementById('lessonUserNotesInput');
+        const editingId = document.getElementById('editingNoteId');
+        const modeTitle = document.getElementById('noteFormModeTitle');
+        if (!container) return;
+
+        if (editingId) editingId.value = '';
+        if (input) input.value = '';
+        if (modeTitle) modeTitle.textContent = 'Ghi chú mới';
+
+        if (withTimestamp && typeof player !== 'undefined' && player) {
+            let curSec = Math.floor(player.currentTime || 0);
+            try {
+                player.pause();
+            } catch (e) {}
+            updateNoteTimestampUI(curSec);
+        } else {
+            updateNoteTimestampUI(null);
+        }
+
+        container.style.display = 'block';
+        if (input) input.focus();
+
+        const notesTabBtn = document.getElementById('tab-notes-btn');
+        if (notesTabBtn && !notesTabBtn.classList.contains('active')) {
+            const bsTab = bootstrap.Tab.getOrCreateInstance(notesTabBtn);
+            bsTab.show();
+        }
+    }
+
+    function openNewTimestampNoteForm() {
+        openNewNoteForm(true);
+    }
+
+    function clearFormTimestamp() {
+        updateNoteTimestampUI(null);
+    }
+
+    function attachCurrentVideoTime() {
+        let curSec = 0;
+        if (typeof player !== 'undefined' && player) {
+            curSec = Math.floor(player.currentTime || 0);
+            try {
+                player.pause();
+            } catch (e) {}
+        }
+        updateNoteTimestampUI(curSec);
+    }
+
+    function closeNoteForm() {
+        const container = document.getElementById('newNoteFormContainer');
+        if (container) container.style.display = 'none';
+    }
+
+    async function submitLessonNote(lessonId) {
+        const input = document.getElementById('lessonUserNotesInput');
+        const editingId = document.getElementById('editingNoteId');
+        const timestampInput = document.getElementById('noteTimestampSeconds');
+        const btn = document.getElementById('btnSaveLessonNote');
+        if (!input) return;
+
+        const content = input.value.trim();
+        if (!content) {
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: 'Vui lòng nhập nội dung ghi chú.', style: { background: '#ef4444' } }).showToast();
+            }
+            input.focus();
+            return;
+        }
+
+        const noteId = editingId.value ? editingId.value.trim() : null;
+        const timestampSeconds = (timestampInput.value !== '' && !isNaN(Number(timestampInput.value))) ? Number(timestampInput.value) : null;
+
+        const payload = {
+            lessonId: lessonId,
+            cohortId: (typeof moduleId !== 'undefined') ? moduleId : null,
+            timestampSeconds: timestampSeconds,
+            content: content
+        };
+
+        if (btn) btn.disabled = true;
+
+        try {
+            let res;
+            if (noteId) {
+                res = await fetch('/api/notes/' + noteId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch('/api/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.status === 401) {
+                if (typeof Toastify !== 'undefined') {
+                    Toastify({ text: 'Vui lòng đăng nhập để lưu ghi chú.', style: { background: '#f59e0b' } }).showToast();
+                }
+                return;
+            }
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Lỗi khi lưu ghi chú');
+            }
+
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: noteId ? 'Đã cập nhật ghi chú!' : 'Đã lưu ghi chú thành công!',
+                    style: { background: '#10b981' }
+                }).showToast();
+            }
+
+            closeNoteForm();
+            loadNotesForLesson(lessonId);
+        } catch (err) {
+            console.error('Lỗi lưu ghi chú:', err);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: err.message || 'Không thể lưu ghi chú.', style: { background: '#ef4444' } }).showToast();
+            }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    async function loadNotesForLesson(lessonId) {
+        const listEl = document.getElementById('lessonNotesList');
+        const countBadge = document.getElementById('tabNotesCountBadge');
+        if (!listEl) return;
+
+        try {
+            const res = await fetch('/api/notes/lesson/' + lessonId);
+            if (res.status === 401) {
+                listEl.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-lock-fill text-warning fs-3 mb-2 d-block"></i>
+                        <div class="small fw-semibold">Đăng nhập để sử dụng tính năng ghi chú cá nhân</div>
+                    </div>
+                `;
+                if (countBadge) countBadge.style.display = 'none';
+                return;
+            }
+
+            if (!res.ok) {
+                throw new Error('Lỗi tải danh sách ghi chú');
+            }
+
+            const notes = await res.json();
+            window.currentLessonNotes = notes || [];
+
+            if (countBadge) {
+                if (notes && notes.length > 0) {
+                    countBadge.textContent = notes.length;
+                    countBadge.style.display = 'inline-block';
+                } else {
+                    countBadge.style.display = 'none';
+                }
+            }
+
+            if (!notes || notes.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-journal-plus fs-2 text-secondary opacity-50 mb-2 d-block"></i>
+                        <div class="small fw-semibold text-dark">Chưa có ghi chú nào cho bài học này</div>
+                        <div class="text-muted" style="font-size: 12px;">Nhấn vào "Tạo ghi chú tại..." để ghi lại những điểm kiến thức quan trọng!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = notes.map(note => {
+                const hasTimestamp = (note.timestampSeconds !== null && note.timestampSeconds !== undefined);
+                const timeBadgeHtml = hasTimestamp ? `
+                    <button type="button" class="btn btn-sm btn-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 fw-bold d-inline-flex align-items-center gap-1 shadow-xs" onclick="seekVideoTo(${note.timestampSeconds})" title="Nhảy tới mốc thời gian này">
+                        <i class="bi bi-play-fill fs-6"></i>
+                        <span>${note.formattedTime || formatSecondsToTime(note.timestampSeconds)}</span>
+                    </button>
+                ` : `
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 11px;">
+                        <i class="bi bi-card-text me-1"></i>Toàn bài
+                    </span>
+                `;
+
+                const dateStr = note.createdAt ? formatNoteDate(note.createdAt) : '';
+
+                return `
+                    <div class="card border rounded-3 p-3 shadow-xs bg-white hover-shadow-sm transition-all" id="note-card-${note.id}">
+                        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                ${timeBadgeHtml}
+                                <span class="text-muted" style="font-size: 11px;">${dateStr}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-link text-secondary p-1" onclick="editLessonNote(${note.id})" title="Chỉnh sửa ghi chú">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-link text-danger p-1" onclick="deleteLessonNote(${note.id}, ${lessonId})" title="Xóa ghi chú">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-secondary small lh-base" style="white-space: pre-wrap;" id="note-content-${note.id}">${escapeHtml(note.content)}</div>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Lỗi nạp danh sách ghi chú:', err);
+            listEl.innerHTML = `
+                <div class="text-center py-3 text-danger small">
+                    <i class="bi bi-exclamation-circle me-1"></i>Không thể tải danh sách ghi chú. Vui lòng thử lại sau.
+                </div>
+            `;
+        }
+    }
+
+    function editLessonNote(noteId) {
+        if (!window.currentLessonNotes) return;
+        const note = window.currentLessonNotes.find(n => n.id === noteId);
+        if (!note) return;
+
+        const container = document.getElementById('newNoteFormContainer');
+        const input = document.getElementById('lessonUserNotesInput');
+        const editingId = document.getElementById('editingNoteId');
+        const modeTitle = document.getElementById('noteFormModeTitle');
+        if (!container) return;
+
+        if (editingId) editingId.value = note.id;
+        if (input) input.value = note.content;
+        if (modeTitle) modeTitle.textContent = 'Chỉnh sửa ghi chú';
+
+        updateNoteTimestampUI(note.timestampSeconds);
+
+        container.style.display = 'block';
+        if (input) input.focus();
+    }
+
+    async function deleteLessonNote(noteId, lessonId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa ghi chú này?')) return;
+        try {
+            const res = await fetch('/api/notes/' + noteId, { method: 'DELETE' });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || 'Không thể xóa ghi chú');
+            }
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: 'Đã xóa ghi chú!', style: { background: '#64748b' } }).showToast();
+            }
+            loadNotesForLesson(lessonId);
+        } catch (err) {
+            console.error('Lỗi xóa ghi chú:', err);
+            if (typeof Toastify !== 'undefined') {
+                Toastify({ text: err.message || 'Lỗi khi xóa ghi chú.', style: { background: '#ef4444' } }).showToast();
+            }
+        }
+    }
+
+    function seekVideoTo(seconds) {
+        if (seconds === null || seconds === undefined || isNaN(seconds)) return;
+        if (player) {
+            try {
+                player.currentTime = Number(seconds);
+                player.play();
+            } catch (e) {
+                console.error('Error seeking video:', e);
+            }
+        }
+        const playerWrapper = document.querySelector('.cinema-player-wrapper') || document.getElementById('player');
+        if (playerWrapper) {
+            playerWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (typeof Toastify !== 'undefined') {
+            Toastify({
+                text: 'Đang phát tại ' + formatSecondsToTime(seconds),
+                duration: 2500,
+                gravity: 'top',
+                position: 'right',
+                style: { background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }
+            }).showToast();
         }
     }
 
@@ -2625,6 +3172,24 @@
             `;
         }
 
+        let examRulesHtml = '';
+        if (quiz.examRules && quiz.examRules.trim()) {
+            const ruleLines = quiz.examRules.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            examRulesHtml = ruleLines.map(line => {
+                const cleanLine = line.replace(/^[-*•]\s*/, '');
+                return `<li>${cleanLine}</li>`;
+            }).join('');
+        } else {
+            examRulesHtml = `
+                <li>Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn nhấn nút <strong>"Bắt đầu làm bài thi"</strong>.</li>
+                <li>Khi hết thời gian quy định, hệ thống sẽ <strong>tự động thu và chấm bài thi</strong> của bạn.</li>
+                <li>Đạt từ <strong>${quiz.passingScore || 5.0} điểm</strong> trở lên để được hệ thống tự động ghi nhận hoàn thành bài học.</li>
+                <li>Thời hạn nộp bài: <strong>${displayDeadline || 'Không giới hạn thời hạn'}</strong>${isPastDeadline ? ' <span class="badge bg-danger text-white">Đã quá hạn</span>' : ''}.</li>
+                <li>Xem lại bài làm: <strong>${quiz.allowReview !== false ? 'Được phép xem lại chi tiết câu hỏi & đáp án' : 'Không cho phép xem lại chi tiết sau khi nộp'}</strong>.</li>
+                <li>Tránh tải lại trang (F5) hoặc thoát khỏi trình duyệt trong suốt quá trình làm bài.</li>
+            `;
+        }
+
         container.innerHTML = `
             <div class="quiz-hero-banner">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
@@ -2684,12 +3249,7 @@
                 <div class="border rounded-4 p-4 bg-light mb-4">
                     <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle-fill text-primary me-2"></i>Quy chế làm bài thi:</h6>
                     <ul class="text-secondary small mb-0 ps-3" style="line-height: 1.8;">
-                        <li>Đồng hồ đếm ngược sẽ bắt đầu chạy ngay khi bạn nhấn nút <strong>"Bắt đầu làm bài thi"</strong>.</li>
-                        <li>Khi hết thời gian quy định, hệ thống sẽ <strong>tự động thu và chấm bài thi</strong> của bạn.</li>
-                        <li>Đạt từ <strong>${quiz.passingScore || 5.0} điểm</strong> trở lên để được hệ thống tự động ghi nhận hoàn thành bài học.</li>
-                        <li>Thời hạn nộp bài: <strong>${displayDeadline || 'Không giới hạn thời hạn'}</strong>${isPastDeadline ? ' <span class="badge bg-danger text-white">Đã quá hạn</span>' : ''}.</li>
-                        <li>Xem lại bài làm: <strong>${quiz.allowReview !== false ? 'Được phép xem lại chi tiết câu hỏi & đáp án' : 'Không cho phép xem lại chi tiết sau khi nộp'}</strong>.</li>
-                        <li>Tránh tải lại trang (F5) hoặc thoát khỏi trình duyệt trong suốt quá trình làm bài.</li>
+                        ${examRulesHtml}
                     </ul>
                 </div>
 
@@ -3480,6 +4040,8 @@
         const container = document.getElementById('assignmentPlayerContainer');
         if (!container) return;
 
+        const isReviewerMode = Boolean(isModerator || isAdmin || assignment.isReviewer);
+
         if (assignment.isPassed) {
             const currentLessonId = assignment.lessonId;
             let completed = getCompletedLessons();
@@ -3651,9 +4213,25 @@
         }
 
         const isDeadlineBlocked = assignment.isPastDeadline && assignment.allowLateSubmission === false;
-        const showFormInitially = (!sub || isAssignmentResubmitting) && !isDeadlineBlocked;
+        const showFormInitially = (!sub || isAssignmentResubmitting) && (!isDeadlineBlocked || isReviewerMode);
         const allowFile = assignment.allowFileSubmission !== false;
         const allowText = assignment.allowTextSubmission !== false;
+
+        let reviewerBannerHtml = '';
+        if (isReviewerMode) {
+            reviewerBannerHtml = `
+                <div class="alert alert-info border-0 rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background-color: #f0f9ff; border: 1px solid #bae6fd !important; color: #0369a1;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check fs-4 text-primary"></i>
+                        <div>
+                            <div class="fw-bold">Chế độ Kiểm duyệt &amp; Xem trước (Review Mode)</div>
+                            <div class="small text-secondary">Bạn đang xem nội dung bài tập với quyền Kiểm duyệt viên / Giảng viên.</div>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary text-white rounded-pill px-3 py-1.5 fw-semibold">Kiểm duyệt viên</span>
+                </div>
+            `;
+        }
 
         let modeBadgeHtml = '';
         if (allowFile && !allowText) {
@@ -3697,7 +4275,7 @@
         }
 
         let formHtml = '';
-        if (isDeadlineBlocked && !sub) {
+        if (isDeadlineBlocked && !sub && !isReviewerMode) {
             formHtml = `
                 <div class="alert alert-danger rounded-4 p-4 mb-4 border-0 shadow-sm d-flex align-items-center gap-3">
                     <i class="bi bi-calendar-x fs-1 text-danger"></i>
@@ -3758,6 +4336,7 @@
             : `<span class="badge bg-secondary-subtle text-secondary border">Không tính điểm (Nộp bài là hoàn thành)</span>`) + deadlineSummaryText;
 
         container.innerHTML = `
+            ${reviewerBannerHtml}
             <div class="p-4 p-md-5 bg-white rounded-4 border shadow-sm mb-4">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pb-4 mb-4 border-bottom">
                     <div>
@@ -3989,7 +4568,13 @@
         loadChatHistory();
     }
 
-    setTimeout(initCohortChat, 300);
+    setTimeout(() => {
+        initCohortChat();
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'chat' || window.location.hash === '#tab-chat') {
+            setTimeout(openCohortChatTab, 200);
+        }
+    }, 300);
 </script>
 
 </body>

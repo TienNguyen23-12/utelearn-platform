@@ -92,6 +92,13 @@ public class CohortApiController {
                 map.put("visibility", cohort.getVisibility() != null ? cohort.getVisibility() : "PUBLIC");
                 map.put("price", cohort.getPrice());
                 map.put("currentEnrolled", cohortMemberRepository.countByCohort_Id(cohort.getId()));
+
+                Double avgCohort = cohortMemberRepository.getAverageRatingByCohortId(cohort.getId());
+                long countCohort = cohortMemberRepository.countRatingsByCohortId(cohort.getId());
+                Double rating = (avgCohort != null && countCohort > 0) ? Math.round(avgCohort * 10.0) / 10.0 : null;
+                map.put("rating", rating);
+                map.put("ratingCount", countCohort);
+
                 map.put("maxCapacity", cohort.getMaxCapacity());
                 map.put("description", cohort.getDescription());
                 map.put("objectives", cohort.getObjectives());
