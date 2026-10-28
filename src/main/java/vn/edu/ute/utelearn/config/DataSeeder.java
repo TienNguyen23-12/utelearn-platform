@@ -252,6 +252,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedRoles() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM roles", Integer.class);
+        if (count != null && count > 0) {
+            return;
+        }
         log.info("[DataSeeder] Nạp danh sách Vai trò (Roles)...");
         String sql = "INSERT INTO roles (code, name, description) VALUES (?, ?, ?) ON CONFLICT (code) DO NOTHING";
 
@@ -270,6 +274,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedPermissions() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM permissions", Integer.class);
+        if (count != null && count > 0) {
+            return;
+        }
         log.info("[DataSeeder] Nạp danh sách Quyền hạn (Permissions)...");
         String sql = "INSERT INTO permissions (code, name, module) VALUES (?, ?, ?) ON CONFLICT (code) DO NOTHING";
 
@@ -289,6 +297,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void assignPermissionsToRoles() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM role_permissions", Integer.class);
+        if (count != null && count > 0) {
+            return;
+        }
         log.info("[DataSeeder] Ánh xạ Quyền hạn cho các Vai trò (Role-Permission Mapping)...");
 
         jdbcTemplate.update(
@@ -328,6 +340,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM users", Integer.class);
+        if (count != null && count > 0) {
+            return;
+        }
         log.info("[DataSeeder] Nạp tài khoản Admin và tài khoản mẫu...");
         String defaultRawPassword = properties.getSeeder().getDefaultPassword();
         if (defaultRawPassword == null || defaultRawPassword.isBlank()) {
@@ -384,7 +400,7 @@ public class DataSeeder implements CommandLineRunner {
             jdbcTemplate.update(
                 "INSERT INTO users (username, email, password_hash, full_name, phone_number, is_active) " +
                 "VALUES (?, ?, ?, ?, ?, true) " +
-                "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true",
+                "ON CONFLICT (username) DO NOTHING",
                 username, email, defaultHashedPassword, fullName, phone
             );
 
@@ -397,15 +413,17 @@ public class DataSeeder implements CommandLineRunner {
             );
         }
 
-        int updatedCount = jdbcTemplate.update(
-            "UPDATE users SET password_hash = ? WHERE username IN ('admin', 'instructor', 'moderator', 'finance', 'student')",
-            defaultHashedPassword
-        );
+
         log.info("[DataSeeder] Đã đồng bộ mật khẩu mặc định '{}' cho các tài khoản mẫu trong hệ thống.", defaultRawPassword);
     }
 
     private void seedCategories() {
         if (!isTablePresent("categories")) {
+            return;
+        }
+
+        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM categories", Integer.class);
+        if (count != null && count > 0) {
             return;
         }
 

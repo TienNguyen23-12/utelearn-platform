@@ -42,7 +42,12 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/**",
                                 "/ws/**",
-                                "/oauth2/**"
+                                "/oauth2/**",
+                                "/admin/api/**",
+                                "/admin/orders/api/**",
+                                "/certificates/api/**",
+                                "/checkout/payment/**",
+                                "/cart/**"
                         ))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

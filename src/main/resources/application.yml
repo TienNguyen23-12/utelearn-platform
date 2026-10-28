@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:${SERVER_PORT:8080}}
+  forward-headers-strategy: framework
   servlet:
     context-path: /
     encoding:
@@ -37,7 +38,7 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:utelearn_db}?reWriteBatchedInserts=true&stringtype=unspecified&sslmode=${DB_SSL_MODE:disable}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:utelearn_db}?reWriteBatchedInserts=true&stringtype=unspecified&sslmode=${DB_SSL_MODE:prefer}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
