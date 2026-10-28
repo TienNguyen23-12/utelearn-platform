@@ -153,4 +153,30 @@ public class InstructorQuizApiController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
+    @GetMapping("/{quizId}/submissions")
+    public ResponseEntity<?> getSubmissions(
+            @PathVariable Long quizId,
+            @RequestParam(required = false) Long cohortId) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            List<QuizResultDTO> list = quizService.getSubmissionsForInstructor(quizId, cohortId, currentUser.getId());
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            log.error("[InstructorQuizApiController] Lỗi lấy danh sách bài làm Quiz {}: {}", quizId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/submissions/{submissionId}")
+    public ResponseEntity<?> getSubmissionDetail(@PathVariable Long submissionId) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            QuizResultDTO detail = quizService.getSubmissionDetail(submissionId, currentUser.getId());
+            return ResponseEntity.ok(detail);
+        } catch (Exception e) {
+            log.error("[InstructorQuizApiController] Lỗi lấy chi tiết bài làm Quiz {}: {}", submissionId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

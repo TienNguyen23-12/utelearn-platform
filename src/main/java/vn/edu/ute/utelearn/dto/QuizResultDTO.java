@@ -30,6 +30,14 @@ public class QuizResultDTO {
     private Boolean canRetake;
     private Boolean allowReview;
     private Boolean isLate;
+    private Long userId;
+    private String studentName;
+    private String studentEmail;
+    private String studentAvatar;
+    private Long cohortId;
+    private String cohortName;
+    private String cohortCode;
+    private Long durationSeconds;
     @Builder.Default
     private List<QuestionReviewDTO> reviewQuestions = new ArrayList<>();
 }

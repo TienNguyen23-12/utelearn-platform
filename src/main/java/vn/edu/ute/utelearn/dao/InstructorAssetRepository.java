@@ -11,12 +11,22 @@ import java.util.Optional;
 
 @Repository
 public interface InstructorAssetRepository extends JpaRepository<InstructorAsset, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findByInstructorOrderByCreatedAtDesc(User instructor, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findByInstructorAndAssetTypeOrderByCreatedAtDesc(User instructor, String assetType, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findByInstructorAndNameContainingIgnoreCaseOrderByCreatedAtDesc(User instructor, String name, Pageable pageable);
     
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findByAssetTypeOrderByCreatedAtDesc(String assetType, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"instructor"})
     Page<InstructorAsset> findByNameContainingIgnoreCaseOrderByCreatedAtDesc(String name, Pageable pageable);
     
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT a.folderPath FROM InstructorAsset a")

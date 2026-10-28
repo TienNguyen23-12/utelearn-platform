@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giỏ Hàng Của Bạn - UTELearn</title>
+    <title>Giỏ hàng của tôi - UTELearn LMS Platform</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,79 +13,93 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" th:href="@{/css/site.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         .cart-item-card {
             transition: all 0.2s ease;
             border: 1px solid #e2e8f0;
+            border-radius: 1rem;
         }
         .cart-item-card:hover {
             border-color: #cbd5e1;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+            transform: translateY(-1px);
         }
         .cart-thumb {
-            width: 100px;
-            height: 68px;
+            width: 110px;
+            height: 72px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 10px;
         }
-        .summary-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-        .payment-radio-label {
-            border: 1.5px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 16px;
+        .payment-choice-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            transition: all 0.25s ease;
             cursor: pointer;
-            transition: all 0.2s ease;
+            background-color: #ffffff;
         }
-        .form-check-input:checked ~ .payment-radio-label {
-            border-color: #0d6efd;
-            background-color: #eff6ff;
+        .payment-choice-card:hover {
+            border-color: #6366f1;
+            background-color: #f8faff;
+            transform: translateY(-2px);
+        }
+        .payment-choice-card.active {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<nav th:replace="~{fragments/site-navbar :: siteNavbar('cart')}"></nav>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<main class="py-5">
-    <div class="container">
-        <div class="d-flex align-items-center justify-content-between mb-4">
+<aside th:replace="~{fragments/sidebar :: sidebar('cart')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Giỏ hàng của tôi')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
             <div>
-                <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-                    <i class="bi bi-cart3 text-primary"></i>
-                    <span>Giỏ Hàng Của Bạn</span>
-                </h2>
-                <p class="text-muted small mb-0">Chọn các khóa học hoặc module bạn muốn thanh toán cùng lúc và áp dụng mã giảm giá ưu đãi</p>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-cart3 text-primary me-2"></i>Giỏ hàng của tôi
+                </h4>
+                <p class="text-muted small mb-0">Quản lý các khóa học &amp; module đã chọn, áp dụng mã ưu đãi và hoàn tất đăng ký học</p>
             </div>
-            <div th:if="${cart != null and !#lists.isEmpty(cart.items)}">
+            <div class="d-flex gap-2 align-items-center flex-wrap" th:if="${cart != null and !#lists.isEmpty(cart.items)}">
+                <a th:href="@{/courses}" class="btn btn-outline-primary rounded-pill px-3 shadow-sm btn-sm">
+                    <i class="bi bi-compass me-1"></i>Khám phá thêm khóa học
+                </a>
                 <form th:action="@{/cart/clear}" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm trong giỏ hàng?');">
-                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 shadow-sm">
                         <i class="bi bi-trash3 me-1"></i>Xóa giỏ hàng
                     </button>
                 </form>
             </div>
         </div>
 
-        <div th:if="${success}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i><span th:text="${success}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+            <span th:text="${success}"></span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
-        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
 
-        <div th:if="${cart == null or #lists.isEmpty(cart.items)}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+        <div th:if="${cart == null or #lists.isEmpty(cart.items)}" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-3">
             <div class="py-5">
-                <div class="mb-3 text-secondary" style="font-size: 64px;">
-                    <i class="bi bi-cart-x"></i>
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 88px; height: 88px; background-color: #f1f5f9; color: #94a3b8;">
+                    <i class="bi bi-cart-x fs-1"></i>
                 </div>
                 <h4 class="fw-bold text-dark mb-2">Giỏ hàng của bạn đang trống</h4>
-                <p class="text-muted small mb-4">Hãy khám phá các khóa học chất lượng cao trên UTELearn và thêm vào giỏ hàng nhé!</p>
-                <div class="d-flex gap-3 justify-content-center">
+                <p class="text-muted small mb-4">Hãy khám phá các khóa học chuẩn hóa trên UTELearn và thêm vào giỏ hàng nhé!</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
                     <a th:href="@{/courses}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
                         <i class="bi bi-search me-1"></i>Khám phá Khóa học
                     </a>
@@ -97,36 +113,40 @@
         <div th:if="${cart != null and !#lists.isEmpty(cart.items)}" class="row g-4">
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-3">
-                    <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                         <div class="form-check d-flex align-items-center gap-2 mb-0">
                             <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" checked>
                             <label class="form-check-label fw-bold text-dark small" for="selectAllCheckbox">
                                 Chọn tất cả (<span th:text="${#lists.size(cart.items)}">0</span> sản phẩm)
                             </label>
                         </div>
-                        <span class="text-muted small">Tích chọn để tạo đơn hàng gộp</span>
+                        <span class="text-muted small">Tích chọn để tạo đơn hàng gộp thanh toán</span>
                     </div>
                 </div>
 
                 <form id="checkoutForm" th:action="@{/cart/checkout}" method="post">
                     <div class="d-flex flex-column gap-3 mb-4">
-                        <div th:each="item : ${cart.items}" class="cart-item-card card rounded-4 bg-white p-3">
+                        <div th:each="item : ${cart.items}" class="cart-item-card bg-white p-3">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="form-check mb-0">
                                     <input class="form-check-input item-checkbox" type="checkbox" name="selectedItemIds" th:value="${item.id}" th:checked="${item.selected}" onchange="recalculateCart()">
                                 </div>
-                                <img th:src="${item.imageUrl}" th:alt="${item.title}" class="cart-thumb d-none d-sm-block flex-shrink-0" onerror="this.src='/assets/img/default-course.png'">
+                                <img th:src="${item.imageUrl != null and !item.imageUrl.isBlank() ? item.imageUrl : '/images/courses/default-cover.png'}" th:alt="${item.title}" class="cart-thumb d-none d-sm-block flex-shrink-0" onerror="this.src='/images/courses/default-cover.png'">
                                 <div class="flex-grow-1 overflow-hidden">
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <span th:if="${'COURSE'.equalsIgnoreCase(item.itemType)}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 10px;">Khóa học trọn gói</span>
-                                        <span th:unless="${'COURSE'.equalsIgnoreCase(item.itemType)}" class="badge bg-purple-subtle text-purple border rounded-pill" style="font-size: 10px; color: #7c3aed; background-color: #f5f3ff; border-color: #ddd6fe;">Module chuyên đề</span>
-                                        <span class="text-muted font-monospace small" style="font-size: 11px;" th:text="${item.codeOrSlug}">CODE</span>
+                                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                        <span th:if="${'COURSE'.equalsIgnoreCase(item.itemType)}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
+                                            <i class="bi bi-journal-album me-1"></i>Khóa học trọn gói
+                                        </span>
+                                        <span th:unless="${'COURSE'.equalsIgnoreCase(item.itemType)}" class="badge border rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px; background-color: #f5f3ff; color: #7c3aed; border-color: #ddd6fe;">
+                                            <i class="bi bi-collection me-1"></i>Module chuyên đề
+                                        </span>
+                                        <span class="badge bg-light text-secondary border font-monospace small px-2 py-0.5" th:text="${item.codeOrSlug}">CODE</span>
                                     </div>
                                     <h6 class="fw-bold text-dark mb-1 text-truncate" th:text="${item.title}">Tiêu đề khóa học</h6>
-                                    <div class="fw-bold text-success fs-6" th:text="${item.formattedPrice}">0 VNĐ</div>
+                                    <div class="fw-bold text-primary fs-6" th:text="${item.formattedPrice}">0 VNĐ</div>
                                 </div>
                                 <div class="ms-auto flex-shrink-0">
-                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-2" th:onclick="'removeItem(' + ${item.id} + ')'" title="Xóa khỏi giỏ hàng">
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center p-2" style="width: 36px; height: 36px;" th:onclick="'removeItem(' + ${item.id} + ')'" title="Xóa khỏi giỏ hàng">
                                         <i class="bi bi-trash3"></i>
                                     </button>
                                 </div>
@@ -137,82 +157,114 @@
                     <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
                         <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
                             <i class="bi bi-wallet2 text-primary"></i>
-                            <span>Chọn hình thức thanh toán</span>
+                            <span>Chọn phương thức thanh toán</span>
                         </h6>
                         <div class="d-flex flex-column gap-3">
-                            <div>
+                            <div class="payment-choice-card p-3 active" onclick="selectPaymentMethod('VIETQR_SEPAY', this)">
                                 <input class="form-check-input d-none" type="radio" name="paymentMethod" id="payVietQr" value="VIETQR_SEPAY" checked>
-                                <label class="payment-radio-label d-flex align-items-center justify-content-between w-100" for="payVietQr">
+                                <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-3 bg-primary-subtle text-primary p-2 fs-5">
-                                            <i class="bi bi-qr-code-scan"></i>
+                                        <div class="bg-primary-subtle text-primary rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="bi bi-qr-code-scan fs-4"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark small">Chuyển khoản VietQR Tự Động (Khuyên dùng)</div>
-                                            <div class="text-muted" style="font-size: 11.5px;">Quét mã QR qua mọi ứng dụng ngân hàng, kích hoạt khóa học tự động 24/7</div>
+                                            <div class="fw-bold text-dark">Chuyển khoản VietQR Tự Động (Khuyên dùng)</div>
+                                            <div class="text-muted small">Quét mã QR qua mọi App Ngân hàng hoặc MoMo, tự động kích hoạt 24/7</div>
                                         </div>
                                     </div>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">Tức thì</span>
-                                </label>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 small fw-semibold">
+                                        Tức thì
+                                    </span>
+                                </div>
                             </div>
 
-                            <div>
+                            <div class="payment-choice-card p-3" onclick="selectPaymentMethod('WALLET', this)">
                                 <input class="form-check-input d-none" type="radio" name="paymentMethod" id="payWallet" value="WALLET">
-                                <label class="payment-radio-label d-flex align-items-center justify-content-between w-100" for="payWallet">
+                                <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-3 bg-success-subtle text-success p-2 fs-5">
-                                            <i class="bi bi-wallet2"></i>
+                                        <div class="bg-success-subtle text-success rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="bi bi-wallet2 fs-4"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark small">Ví UTELearn</div>
-                                            <div class="text-muted" style="font-size: 11.5px;">
+                                            <div class="fw-bold text-dark">Ví UTELearn</div>
+                                            <div class="text-muted small">
                                                 Số dư ví hiện tại: <strong class="text-success" th:text="${currentUser.formattedBalance}">0 VNĐ</strong>
                                             </div>
                                         </div>
                                     </div>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">Trừ ví</span>
-                                </label>
+                                    <div>
+                                        <span th:if="${userBalance != null and cart != null and userBalance.compareTo(cart.finalTotal) >= 0}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 small fw-semibold">
+                                            <i class="bi bi-check-circle me-1"></i>Đủ số dư
+                                        </span>
+                                        <span th:if="${userBalance == null or cart == null or userBalance.compareTo(cart.finalTotal) < 0}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1 small fw-semibold">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Chưa đủ tiền
+                                        </span>
+                                    </div>
+                                </div>
+                                <div th:if="${userBalance == null or cart == null or userBalance.compareTo(cart.finalTotal) < 0}" class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                                    <span class="text-danger">Số dư ví hiện tại chưa đủ để thanh toán đơn hàng này.</span>
+                                    <a href="/orders" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 fw-semibold" onclick="event.stopPropagation();">
+                                        <i class="bi bi-plus-circle me-1"></i>Nạp tiền ví
+                                    </a>
+                                </div>
                             </div>
 
-                            <div>
+                            <div class="payment-choice-card p-3" onclick="selectPaymentMethod('OFFLINE_COUNTER', this)">
                                 <input class="form-check-input d-none" type="radio" name="paymentMethod" id="payOffline" value="OFFLINE_COUNTER">
-                                <label class="payment-radio-label d-flex align-items-center justify-content-between w-100" for="payOffline">
+                                <div class="d-flex align-items-center justify-content-between">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-3 bg-secondary-subtle text-secondary p-2 fs-5">
-                                            <i class="bi bi-building"></i>
+                                        <div class="bg-warning-subtle text-warning-emphasis rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="bi bi-shop-window fs-4"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark small">Nộp tiền mặt tại quầy POS (Offline)</div>
-                                            <div class="text-muted" style="font-size: 11.5px;">Phòng A1-01 KHTC, Trường ĐH Sư phạm Kỹ thuật TP.HCM (Hạn 48h)</div>
+                                            <div class="fw-bold text-dark">Nộp tiền mặt tại quầy POS (Offline)</div>
+                                            <div class="text-muted small">Phòng A1-01 KHTC, Trường ĐH Sư phạm Kỹ thuật TP.HCM (Hạn 48h)</div>
                                         </div>
                                     </div>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1">Tại quầy</span>
-                                </label>
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1 small fw-semibold">
+                                        Tại quầy
+                                    </span>
+                                </div>
+                                <div id="offlineNotice" class="mt-2 pt-2 border-top small text-muted d-none">
+                                    <div class="alert alert-warning mb-0 p-3 rounded-3 border-0">
+                                        <div class="fw-bold text-dark mb-1"><i class="bi bi-shield-check text-warning me-1"></i>Chính sách thanh toán Offline:</div>
+                                        <ul class="mb-0 ps-3">
+                                            <li>Hệ thống gửi email kèm Mã đơn hàng đến hòm thư của bạn ngay sau khi đặt.</li>
+                                            <li>Thời hạn giữ chỗ thanh toán: <strong>48 giờ</strong> tại Quầy thu ngân (Phòng KHTC A1-01).</li>
+                                            <li>Thu ngân xác nhận thanh toán -&gt; Khóa học được kích hoạt tức thì.</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="mt-3">
-                            <label class="form-label small fw-semibold text-dark">Ghi chú đơn hàng (Tùy chọn):</label>
-                            <input type="text" name="note" class="form-control rounded-3 form-control-sm" placeholder="VD: Gộp đơn đăng ký học kỳ 1">
+                            <label class="form-label small fw-semibold text-dark mb-1">
+                                <i class="bi bi-pencil-square me-1 text-primary"></i>Ghi chú đơn hàng (Tùy chọn):
+                            </label>
+                            <input type="text" name="note" class="form-control rounded-3" placeholder="Ví dụ: Gộp đơn đăng ký học kỳ mới...">
                         </div>
                     </div>
                 </form>
             </div>
 
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4 position-sticky" style="top: 20px;">
-                    <h5 class="fw-bold text-dark mb-3">Tóm tắt đơn hàng</h5>
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4 position-sticky" style="top: 20px;">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-receipt text-primary"></i>
+                        <span>Tóm tắt đơn hàng</span>
+                    </h5>
 
-                    <div class="card border-0 rounded-4 p-3 mb-3 bg-light">
-                        <label class="form-label fw-bold text-dark small mb-2 d-flex align-items-center gap-1">
+                    <div class="card border rounded-3 p-3 bg-light mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2 d-flex align-items-center gap-1">
                             <i class="bi bi-tag-fill text-danger"></i>
                             <span>Mã giảm giá / Voucher</span>
                         </label>
-                        <div class="input-group mb-2">
-                            <input type="text" id="discountInput" class="form-control rounded-start-pill text-uppercase font-monospace fw-bold" th:value="${cart.discountCode}" placeholder="Nhập mã ưu đãi...">
-                            <button class="btn btn-primary rounded-end-pill px-3" type="button" onclick="applyCoupon()">Áp dụng</button>
+                        <div class="input-group">
+                            <input type="text" id="discountInput" class="form-control rounded-start-3 text-uppercase font-monospace fw-bold" th:value="${cart.discountCode}" placeholder="Nhập mã ưu đãi...">
+                            <button class="btn btn-primary rounded-end-3 px-3 fw-semibold" type="button" onclick="applyCoupon()">Áp dụng</button>
                         </div>
-                        <div th:if="${cart.discountMessage != null}" class="small mt-1" th:classappend="${cart.discountValid ? 'text-success' : 'text-danger'}">
+                        <div th:if="${cart.discountMessage != null}" class="small mt-2" th:classappend="${cart.discountValid ? 'text-success fw-semibold' : 'text-danger'}">
                             <i th:class="${cart.discountValid ? 'bi bi-check-circle-fill me-1' : 'bi bi-exclamation-circle-fill me-1'}"></i>
                             <span th:text="${cart.discountMessage}"></span>
                             <button th:if="${cart.discountValid}" type="button" class="btn btn-link btn-sm p-0 ms-1 text-danger text-decoration-none" onclick="removeCoupon()">(Gỡ mã)</button>
@@ -225,39 +277,87 @@
                             <span class="fw-semibold text-dark" id="originalTotalDisplay" th:text="${cart.formattedOriginalTotal}">0 VNĐ</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center text-muted small" th:if="${cart.discountAmount != null and cart.discountAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
-                            <span class="text-danger"><i class="bi bi-ticket-perforated me-1"></i>Giảm giá:</span>
-                            <span class="fw-bold text-danger" id="discountAmountDisplay" th:text="'-' + ${cart.formattedDiscountAmount}">-0 VNĐ</span>
+                            <span class="text-danger fw-semibold"><i class="bi bi-ticket-perforated me-1"></i>Giảm giá ưu đãi:</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold" id="discountAmountDisplay" th:text="'-' + ${cart.formattedDiscountAmount}">-0 VNĐ</span>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <span class="fw-bold text-dark">Tổng thanh toán:</span>
+                        <div>
+                            <span class="fw-bold text-dark fs-6 d-block">Tổng thanh toán:</span>
+                            <small class="text-muted" style="font-size: 11px;">(Đã bao gồm thuế &amp; học liệu)</small>
+                        </div>
                         <div class="text-end">
-                            <span class="h4 fw-bold text-success mb-0 d-block" id="finalTotalDisplay" th:text="${cart.formattedFinalTotal}">0 VNĐ</span>
-                            <small class="text-muted" style="font-size: 11px;">(Đã bao gồm thuế & học liệu)</small>
+                            <span class="h4 fw-bold text-primary mb-0 d-block" id="finalTotalDisplay" th:text="${cart.formattedFinalTotal}">0 VNĐ</span>
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-primary w-100 rounded-pill py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="submitCheckout()">
+                    <button type="button" class="btn btn-primary btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="submitCheckout()">
                         <span>TIẾN HÀNH ĐẶT HÀNG</span>
                         <i class="bi bi-arrow-right"></i>
                     </button>
 
-                    <div class="text-center mt-3 small text-muted">
-                        <i class="bi bi-shield-lock-fill text-success me-1"></i>Bảo mật thanh toán chuẩn SSL 256-bit
+                    <div class="mt-3 p-2 bg-light rounded-3 text-center small text-muted">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                            <i class="bi bi-shield-check text-success"></i>
+                            <span class="fw-semibold text-dark">Bảo mật chuẩn SSL 256-bit</span>
+                        </div>
+                        <div style="font-size: 11px;">Kích hoạt quyền truy cập ngay sau khi thanh toán</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
+</div>
 
 <form id="removeItemForm" th:action="@{/cart/remove/__ID__}" method="post" style="display: none;"></form>
 
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script>
+function showToast(message, type = 'info') {
+    if (typeof Toastify === 'function') {
+        let bg = '#2563eb';
+        if (type === 'success') bg = '#10b981';
+        if (type === 'danger' || type === 'error') bg = '#ef4444';
+        if (type === 'warning') bg = '#f59e0b';
+        Toastify({
+            text: message,
+            duration: 3500,
+            close: true,
+            gravity: 'top',
+            position: 'right',
+            style: {
+                background: bg,
+                borderRadius: '10px',
+                fontSize: '13.5px',
+                fontWeight: '600',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+            }
+        }).showToast();
+    } else {
+        alert(message);
+    }
+}
+
+function selectPaymentMethod(method, element) {
+    document.querySelectorAll('.payment-choice-card').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
+    const radio = element.querySelector('input[type="radio"]');
+    if (radio) {
+        radio.checked = true;
+    }
+    const offlineNotice = document.getElementById('offlineNotice');
+    if (offlineNotice) {
+        if (method === 'OFFLINE_COUNTER') {
+            offlineNotice.classList.remove('d-none');
+        } else {
+            offlineNotice.classList.add('d-none');
+        }
+    }
+}
+
 function toggleSelectAll(master) {
     const checkboxes = document.querySelectorAll('.item-checkbox');
     checkboxes.forEach(cb => cb.checked = master.checked);
@@ -314,7 +414,7 @@ function recalculateCart() {
 function submitCheckout() {
     const selected = getSelectedIds();
     if (selected.length === 0) {
-        alert('Vui lòng chọn ít nhất một sản phẩm trong giỏ hàng để tiếp tục thanh toán.');
+        showToast('Vui lòng chọn ít nhất một sản phẩm trong giỏ hàng để tiếp tục thanh toán.', 'warning');
         return;
     }
     const form = document.getElementById('checkoutForm');
@@ -331,6 +431,24 @@ function submitCheckout() {
     }
     form.submit();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const allItems = document.querySelectorAll('.item-checkbox');
+    const checkedItems = document.querySelectorAll('.item-checkbox:checked');
+    const master = document.getElementById('selectAllCheckbox');
+    if (master && allItems.length > 0) {
+        master.checked = (allItems.length === checkedItems.length);
+    }
+    const discountInput = document.getElementById('discountInput');
+    if (discountInput) {
+        discountInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyCoupon();
+            }
+        });
+    }
+});
 </script>
 </body>
 </html>

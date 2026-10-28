@@ -24,6 +24,7 @@ public class HomeController {
     private final AuthService authService;
     private final JdbcTemplate jdbcTemplate;
     private final vn.edu.ute.utelearn.service.CohortService cohortService;
+    private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
 
     @GetMapping("/home")
     public String showHomePage(
@@ -36,6 +37,15 @@ public class HomeController {
         if ("admin_only".equals(error)) {
             model.addAttribute("adminOnlyMessage", 
                 "Khu vực Quản trị hệ thống (/dashboard, /admin) chỉ dành riêng cho Quản trị viên (ADMIN). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("instructor_only".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Khu vực này chỉ dành riêng cho Giảng viên (INSTRUCTOR). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("moderator_only".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Khu vực này chỉ dành riêng cho Kiểm duyệt viên (MODERATOR). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("access_denied".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Bạn không có quyền truy cập vào khu vực này. Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
         }
 
         List<Map<String, Object>> categories = new ArrayList<>();
@@ -119,5 +129,30 @@ public class HomeController {
             log.warn("Không tìm thấy cohort id: {}", id);
         }
         return "redirect:/cohorts";
+    }
+
+    @GetMapping("/learn")
+    public String showGeneralLearnRedirect() {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        User user = currentUserOpt.get();
+        List<vn.edu.ute.utelearn.entity.CohortMember> memberships = cohortMemberRepository.findByUserOrderByEnrolledAtDesc(user);
+        if (!memberships.isEmpty()) {
+            vn.edu.ute.utelearn.entity.CohortMember latest = memberships.get(0);
+            vn.edu.ute.utelearn.entity.Cohort cohort = latest.getCohort();
+            if (cohort != null) {
+                String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
+                        ? cohort.getCourse().getSlug()
+                        : "standalone";
+                Long lastLessonId = latest.getLastLesson() != null ? latest.getLastLesson().getId() : null;
+                if (lastLessonId != null) {
+                    return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn?lesson=" + lastLessonId;
+                }
+                return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
+            }
+        }
+        return "redirect:/courses/my-courses";
     }
 }

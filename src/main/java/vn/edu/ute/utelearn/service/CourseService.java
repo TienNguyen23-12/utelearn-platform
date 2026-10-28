@@ -8,6 +8,7 @@ public interface CourseService {
     Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Pageable pageable);
     Course getCourseBySlug(String slug);
     Page<Course> getCoursesByInstructor(Long instructorId, Pageable pageable);
+    Page<Course> getAllCourses(Pageable pageable);
     Course createCourse(vn.edu.ute.utelearn.dto.CourseRequestDTO request, Long instructorId);
     Course updateCourse(Long courseId, vn.edu.ute.utelearn.dto.CourseRequestDTO request, Long instructorId);
     void updateCourseStatus(Long courseId, String status);

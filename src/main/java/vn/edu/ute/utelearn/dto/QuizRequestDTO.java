@@ -25,6 +25,8 @@ public class QuizRequestDTO {
     @Builder.Default
     private Integer maxAttempts = 1;
 
+    private String examRules;
+
     @Builder.Default
     private Boolean shuffleQuestions = true;
 

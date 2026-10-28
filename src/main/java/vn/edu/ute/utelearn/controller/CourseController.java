@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CourseService;
@@ -26,6 +28,7 @@ import vn.edu.ute.utelearn.entity.User;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -43,6 +46,10 @@ public class CourseController {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.security.RbacHelper rbacHelper;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.service.GradebookService gradebookService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
@@ -154,6 +161,11 @@ public class CourseController {
         return "redirect:/instructor/courses";
     }
 
+    @GetMapping({"/{courseIdOrSlug}/modules/{moduleId}/gradebook", "/{courseIdOrSlug}/module/{moduleId}/gradebook"})
+    public String redirectToModuleGradebook(@PathVariable String courseIdOrSlug, @PathVariable Long moduleId) {
+        return "redirect:/instructor/cohorts/" + moduleId + "/gradebook";
+    }
+
     @GetMapping
     public String showCourseList(Model model) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -161,6 +173,7 @@ public class CourseController {
         return "courses/index";
     }
 
+    @Transactional
     @GetMapping("/my-courses")
     public String showMyCourses(Model model) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
@@ -190,10 +203,11 @@ public class CourseController {
         boolean hasAccessRole = false;
         boolean canEdit = false;
         java.util.Set<Long> enrolledCohortIds = new java.util.HashSet<>();
+        List<CohortMember> userMemberships = java.util.Collections.emptyList();
         if (currentUserOpt.isPresent()) {
             User user = currentUserOpt.get();
             model.addAttribute("currentUser", user);
-            List<CohortMember> userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
+            userMemberships = cohortMemberRepository.findByCohort_Course_IdAndUser_Id(course.getId(), user.getId());
             enrolledCohortIds = userMemberships.stream().map(cm -> cm.getCohort().getId()).collect(java.util.stream.Collectors.toSet());
             isEnrolled = !enrolledCohortIds.isEmpty();
             canEdit = checkCanEdit(user, course, null);
@@ -250,6 +264,52 @@ public class CourseController {
                 .stream()
                 .filter(c -> c != null && !c.isFullCourseCohort())
                 .toList();
+
+        boolean isCourseCompleted = false;
+        java.math.BigDecimal courseAvgGrade = null;
+        String courseCertificateUrl = null;
+        boolean courseHasReviewed = false;
+        int courseCompletedModulesCount = 0;
+        int courseTotalModulesCount = allCourseCohorts.size();
+        int courseProgressPercent = 0;
+
+        if (currentUserOpt.isPresent()) {
+            User user = currentUserOpt.get();
+            for (Cohort mod : allCourseCohorts) {
+                CohortMember cm = userMemberships.stream()
+                        .filter(m -> m.getCohort() != null && m.getCohort().getId().equals(mod.getId()))
+                        .findFirst().orElse(null);
+                if (cm != null && Boolean.TRUE.equals(cm.getIsPassed())) {
+                    courseCompletedModulesCount++;
+                }
+            }
+            courseProgressPercent = (courseTotalModulesCount > 0)
+                    ? (courseCompletedModulesCount * 100 / courseTotalModulesCount) : 0;
+
+            if (enrollmentRepository != null) {
+                java.util.Optional<vn.edu.ute.utelearn.entity.Enrollment> enrollOpt =
+                        enrollmentRepository.findByUser_IdAndCourse_Id(user.getId(), course.getId());
+                if (enrollOpt.isPresent()) {
+                    vn.edu.ute.utelearn.entity.Enrollment en = enrollOpt.get();
+                    isCourseCompleted = Boolean.TRUE.equals(en.getIsCompleted());
+                    courseAvgGrade = en.getAverageGrade();
+                    courseCertificateUrl = en.getCertificateUrl();
+                    courseHasReviewed = en.hasReviewed();
+                }
+            }
+            if (!isCourseCompleted && courseTotalModulesCount > 0 && courseCompletedModulesCount >= courseTotalModulesCount) {
+                isCourseCompleted = true;
+            }
+            if (gradebookService != null) {
+                try {
+                    vn.edu.ute.utelearn.dto.StudentCourseGradeDTO studentCourseGrade =
+                            gradebookService.getStudentCourseGrade(course.getId(), user.getId());
+                    model.addAttribute("studentCourseGrade", studentCourseGrade);
+                } catch (Exception e) {
+                    log.warn("[CourseController] Không thể lấy bảng điểm khóa học {} cho user {}: {}", course.getId(), user.getId(), e.getMessage());
+                }
+            }
+        }
         List<Lesson> allCourseLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(course.getId());
         if (!hasAccessRole) {
             allCourseLessons = allCourseLessons.stream().filter(Lesson::isPublished).toList();
@@ -334,6 +394,13 @@ public class CourseController {
         model.addAttribute("unassignedLessons", unassignedLessons);
         model.addAttribute("totalLessonsCount", allCourseLessons.size());
         model.addAttribute("totalModulesCount", allCourseCohorts.size());
+        model.addAttribute("isCourseCompleted", isCourseCompleted);
+        model.addAttribute("courseAvgGrade", courseAvgGrade);
+        model.addAttribute("courseCertificateUrl", courseCertificateUrl);
+        model.addAttribute("courseHasReviewed", courseHasReviewed);
+        model.addAttribute("courseCompletedModulesCount", courseCompletedModulesCount);
+        model.addAttribute("courseTotalModulesCount", courseTotalModulesCount);
+        model.addAttribute("courseProgressPercent", courseProgressPercent);
 
         return "courses/detail";
     }
@@ -493,10 +560,10 @@ public class CourseController {
         int progressPercent = (totalLessonCount > 0) ? (int) Math.min(100, Math.round(((double) completedCount / totalLessonCount) * 100)) : 0;
 
         List<CohortSchedule> upcomingSchedules = schedules.stream()
-                .filter(cs -> cs.getLesson() != null && (cs.getDeadlineAt() != null || cs.isLockedNow()))
+                .filter(cs -> cs.getLesson() != null && (cs.isLockedNow() || (cs.getDeadlineAt() != null && !cs.isDeadlinePassed())))
                 .sorted((a, b) -> {
-                    java.time.Instant tA = a.getDeadlineAt() != null ? a.getDeadlineAt() : a.getUnlockAt();
-                    java.time.Instant tB = b.getDeadlineAt() != null ? b.getDeadlineAt() : b.getUnlockAt();
+                    java.time.Instant tA = a.isLockedNow() ? a.getUnlockAt() : a.getDeadlineAt();
+                    java.time.Instant tB = b.isLockedNow() ? b.getUnlockAt() : b.getDeadlineAt();
                     if (tA == null && tB == null) return 0;
                     if (tA == null) return 1;
                     if (tB == null) return -1;
@@ -505,6 +572,23 @@ public class CourseController {
                 .limit(5)
                 .toList();
 
+        if (currentUserOpt.isPresent()) {
+            User user = currentUserOpt.get();
+            if (gradebookService != null) {
+                try {
+                    vn.edu.ute.utelearn.dto.StudentGradeItemDTO studentGrade = gradebookService.getStudentGrade(module.getId(), user.getId());
+                    model.addAttribute("studentGrade", studentGrade);
+                } catch (Exception e) {
+                    log.warn("[CourseController] Không thể lấy điểm học viên {} cho module {}: {}", user.getId(), module.getId(), e.getMessage());
+                }
+            }
+        }
+
+        boolean hasGradedLessons = moduleLessons.stream().anyMatch(l -> {
+            String t = (l != null && l.getLessonType() != null) ? l.getLessonType().toUpperCase() : "";
+            return "QUIZ".equals(t) || "ASSIGNMENT".equals(t) || "CODE_PRACTICE".equals(t) || "EXAM".equals(t) || "PROJECT".equals(t);
+        });
+
         model.addAttribute("course", course);
         model.addAttribute("module", module);
         model.addAttribute("moduleLessons", moduleLessons);
@@ -512,6 +596,7 @@ public class CourseController {
         model.addAttribute("isModEnrolled", isModEnrolled);
         model.addAttribute("hasAccessRole", hasAccessRole);
         model.addAttribute("canEdit", canEdit);
+        model.addAttribute("hasGradedLessons", hasGradedLessons);
         model.addAttribute("completedLessonIds", completedLessonIds);
         model.addAttribute("completedCount", completedCount);
         model.addAttribute("progressPercent", progressPercent);
@@ -521,8 +606,8 @@ public class CourseController {
     }
 
     @Transactional
-    @PostMapping("/{slug}/enroll/{cohortId}")
-    public String enrollCourse(@PathVariable String slug, @PathVariable Long cohortId,
+    @org.springframework.web.bind.annotation.RequestMapping(value = {"/{slug}/enroll/{cohortId}", "/enroll/{cohortId}"}, method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
+    public String enrollCourse(@PathVariable(required = false) String slug, @PathVariable Long cohortId,
             RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
@@ -553,16 +638,16 @@ public class CourseController {
                         .build();
             }
         }
+        String courseKey = (course != null && course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(activeCohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia đợt học này rồi.");
-            String courseKey = (course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
             return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
         }
 
         if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(activeCohort.getStatus())) {
             if (activeCohort.getCurrentEnrolled() >= activeCohort.getMaxCapacity()) {
                 redirectAttributes.addFlashAttribute("error", "Lớp học đã đủ số lượng học viên.");
-                return "redirect:/courses/" + slug;
+                return "redirect:/courses/" + courseKey;
             }
 
             if (activeCohort.getPrice() != null && activeCohort.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
@@ -581,14 +666,14 @@ public class CourseController {
             redirectAttributes.addFlashAttribute("success", "Tham gia đợt học thành công!");
         } else {
             redirectAttributes.addFlashAttribute("error", "Lớp học này hiện không mở đăng ký.");
-            return "redirect:/courses/" + slug;
+            return "redirect:/courses/" + courseKey;
         }
 
-        return "redirect:/courses/" + slug + "/modules/" + activeCohort.getId() + "/learn";
+        return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
     }
 
     @Transactional
-    @PostMapping("/{slug}/enroll-all")
+    @org.springframework.web.bind.annotation.RequestMapping(value = "/{slug}/enroll-all", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
     public String enrollAll(@PathVariable String slug, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
@@ -685,6 +770,7 @@ public class CourseController {
         return "redirect:/courses/" + slug + "/modules/" + targetId + "/learn";
     }
 
+    @Transactional(readOnly = true)
     @GetMapping({"/{slug}/modules/{moduleId}/learn", "/{slug}/module/{moduleId}/learn"})
     public String showModuleLearn(@PathVariable String slug,
                                   @PathVariable Long moduleId,
@@ -832,9 +918,11 @@ public class CourseController {
         model.addAttribute("canEdit", canEdit);
         model.addAttribute("otherEnrolledModules", otherEnrolledModules);
         model.addAttribute("initialLessonId", initialLessonId);
+        userMemberOpt.ifPresent(cm -> model.addAttribute("currentMember", cm));
         return "courses/module-learn";
     }
 
+    @Transactional(readOnly = true)
     @GetMapping({"/{slug}/learn", "/{slug}/learning"})
     public String showCourseContent(@PathVariable String slug,
             @RequestParam(required = false) Long lesson,
@@ -882,6 +970,15 @@ public class CourseController {
                         .filter(c -> c != null && !c.isFullCourseCohort())
                         .toList();
             }
+            if (cohorts.isEmpty()) {
+                cohorts = cohortRepository.findByCourseIdOrdered(course.getId());
+            }
+            if (cohorts.isEmpty() && lesson != null) {
+                List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lesson);
+                if (!schedules.isEmpty() && schedules.get(0).getCohort() != null) {
+                    return "redirect:/courses/" + slug + "/modules/" + schedules.get(0).getCohort().getId() + "/learn?lesson=" + lesson;
+                }
+            }
             if (!cohorts.isEmpty()) {
                 String lessonParam = lesson != null ? "?lesson=" + lesson : "";
                 return "redirect:/courses/" + slug + "/modules/" + cohorts.get(0).getId() + "/learn" + lessonParam;
@@ -892,6 +989,33 @@ public class CourseController {
         return "redirect:/courses/" + slug;
     }
 
+    @GetMapping(value = {"/{courseIdOrSlug}/grades/json", "/api/{courseIdOrSlug}/grades"}, produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<?> getStudentCourseGradesJson(@PathVariable("courseIdOrSlug") String courseIdOrSlug) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Vui lòng đăng nhập để xem bảng điểm."));
+        }
+        User user = currentUserOpt.get();
+        Course course = resolveCourse(courseIdOrSlug);
+        if (course == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "Không tìm thấy khóa học."));
+        }
+        if (gradebookService == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("success", false, "message", "Dịch vụ bảng điểm tạm thời không khả dụng."));
+        }
+        try {
+            vn.edu.ute.utelearn.dto.StudentCourseGradeDTO grades = gradebookService.getStudentCourseGrade(course.getId(), user.getId());
+            return ResponseEntity.ok(grades);
+        } catch (Exception e) {
+            log.error("[CourseController] Lỗi khi lấy bảng điểm cho user {}: {}", user.getId(), e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Đã xảy ra lỗi khi lấy bảng điểm: " + e.getMessage()));
+        }
+    }
 
     private boolean checkHasAccessRole(User user, Course course, Cohort module) {
         if (user == null) {
