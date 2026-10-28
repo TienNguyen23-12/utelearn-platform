@@ -65,8 +65,8 @@ public class DataSeeder implements CommandLineRunner {
                         jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS rating INT");
                         jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS review_comment TEXT");
                         jdbcTemplate.execute("ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ");
-                        jdbcTemplate.execute("INSERT INTO cohort_members (cohort_id, user_id, enrolled_at, status, progress_percent, role) " +
-                                "SELECT real_c.id, cm.user_id, cm.enrolled_at, cm.status, cm.progress_percent, cm.role " +
+                        jdbcTemplate.execute("INSERT INTO cohort_members (cohort_id, user_id, enrolled_at, role_in_cohort) " +
+                                "SELECT real_c.id, cm.user_id, cm.enrolled_at, cm.role_in_cohort " +
                                 "FROM cohort_members cm " +
                                 "JOIN cohorts dummy_c ON cm.cohort_id = dummy_c.id " +
                                 "JOIN cohorts real_c ON real_c.course_id = dummy_c.course_id AND real_c.id <> dummy_c.id AND real_c.code NOT LIKE '%-ALL' " +
@@ -330,6 +330,9 @@ public class DataSeeder implements CommandLineRunner {
     private void seedUsers() {
         log.info("[DataSeeder] Nạp tài khoản Admin và tài khoản mẫu...");
         String defaultRawPassword = properties.getSeeder().getDefaultPassword();
+        if (defaultRawPassword == null || defaultRawPassword.isBlank()) {
+            defaultRawPassword = "Abc@1234";
+        }
         String defaultHashedPassword = passwordEncoder.encode(defaultRawPassword);
 
         List<Map<String, String>> sampleUsers = List.of(
@@ -394,8 +397,11 @@ public class DataSeeder implements CommandLineRunner {
             );
         }
 
-        int updatedCount = jdbcTemplate.update("UPDATE users SET password_hash = ?", defaultHashedPassword);
-        log.info("[DataSeeder] Đã đồng bộ mật khẩu mặc định '{}' cho toàn bộ {} tài khoản trong hệ thống.", defaultRawPassword, updatedCount);
+        int updatedCount = jdbcTemplate.update(
+            "UPDATE users SET password_hash = ? WHERE username IN ('admin', 'instructor', 'moderator', 'finance', 'student')",
+            defaultHashedPassword
+        );
+        log.info("[DataSeeder] Đã đồng bộ mật khẩu mặc định '{}' cho các tài khoản mẫu trong hệ thống.", defaultRawPassword);
     }
 
     private void seedCategories() {

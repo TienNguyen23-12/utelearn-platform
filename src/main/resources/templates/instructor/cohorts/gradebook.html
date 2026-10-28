@@ -271,7 +271,14 @@
                                 </td>
                                 <td th:each="col : ${gradebook.processColumns}" class="text-center">
                                     <div th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
-                                        <span th:if="${cGrade != null and cGrade.score != null}" 
+                                        <span th:if="${cGrade != null and cGrade.score != null and col.lessonType == 'QUIZ' and cGrade.submissionId != null}" 
+                                              class="badge rounded-pill px-2.5 py-1.5 fw-bold"
+                                              th:classappend="${cGrade.score.doubleValue() >= 5.0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}"
+                                              th:onclick="'openQuizSubmissionReview(' + ${cGrade.submissionId} + ')'"
+                                              style="cursor: pointer;"
+                                              title="Xem chi tiết bài làm quiz của học viên"
+                                              th:text="${#numbers.formatDecimal(cGrade.score, 1, 1)}">8.5</span>
+                                        <span th:if="${cGrade != null and cGrade.score != null and (col.lessonType != 'QUIZ' or cGrade.submissionId == null)}" 
                                               class="badge rounded-pill px-2.5 py-1.5 fw-bold"
                                               th:classappend="${cGrade.score.doubleValue() >= 5.0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}"
                                               th:text="${#numbers.formatDecimal(cGrade.score, 1, 1)}">8.5</span>
@@ -288,7 +295,15 @@
                                     <span th:unless="${st.processGrade != null}" class="text-muted small">--</span>
                                 </td>
                                 <td class="text-center" style="background-color: #f8fafc;">
-                                    <span th:if="${st.finalExamGrade != null}" class="fw-bold text-dark fs-6" th:text="${#numbers.formatDecimal(st.finalExamGrade, 1, 1)}">0.0</span>
+                                    <span th:if="${st.finalExamGrade != null and gradebook.finalExamColumn != null and gradebook.finalExamColumn.lessonType == 'QUIZ' and st.finalExamColumnGrade != null and st.finalExamColumnGrade.submissionId != null}"
+                                          class="fw-bold text-dark fs-6"
+                                          th:onclick="'openQuizSubmissionReview(' + ${st.finalExamColumnGrade.submissionId} + ')'"
+                                          style="cursor: pointer;"
+                                          title="Xem chi tiết bài làm quiz cuối kỳ"
+                                          th:text="${#numbers.formatDecimal(st.finalExamGrade, 1, 1)}">0.0</span>
+                                    <span th:if="${st.finalExamGrade != null and (gradebook.finalExamColumn == null or gradebook.finalExamColumn.lessonType != 'QUIZ' or st.finalExamColumnGrade == null or st.finalExamColumnGrade.submissionId == null)}"
+                                          class="fw-bold text-dark fs-6"
+                                          th:text="${#numbers.formatDecimal(st.finalExamGrade, 1, 1)}">0.0</span>
                                     <span th:if="${st.finalExamGrade == null and st.finalExamColumnGrade != null and st.finalExamColumnGrade.status == 'SUBMITTED'}" class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-1 small">Chờ chấm</span>
                                     <span th:if="${st.finalExamGrade == null and (st.finalExamColumnGrade == null or st.finalExamColumnGrade.status != 'SUBMITTED')}" class="text-muted small">--</span>
                                 </td>
@@ -423,8 +438,20 @@
                                                 <span th:if="${cGrade == null or cGrade.status == 'NOT_SUBMITTED'}" class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 10px;">Chưa nộp</span>
                                             </td>
                                             <td th:with="cGrade = ${st.columnGrades != null ? st.columnGrades.get(col.lessonId) : null}">
-                                                <span th:if="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="small text-secondary" th:text="${cGrade.feedback}">Nhận xét</span>
-                                                <span th:unless="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="text-muted small">--</span>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <div>
+                                                        <span th:if="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="small text-secondary" th:text="${cGrade.feedback}">Nhận xét</span>
+                                                        <span th:unless="${cGrade != null and cGrade.feedback != null and !cGrade.feedback.isBlank()}" class="text-muted small">--</span>
+                                                    </div>
+                                                    <button th:if="${col.lessonType == 'QUIZ' and cGrade != null and cGrade.submissionId != null}"
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1 flex-shrink-0"
+                                                            style="font-size: 11px;"
+                                                            th:onclick="'openQuizSubmissionReview(' + ${cGrade.submissionId} + ')'">
+                                                        <i class="bi bi-eye"></i>
+                                                        <span>Xem bài làm</span>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -482,7 +509,255 @@
         </main>
     </div>
 
+    <div class="modal fade" id="quizSubmissionReviewModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-bottom p-3 bg-light">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle overflow-hidden flex-shrink-0" style="width: 44px; height: 44px; background-color: #e2e8f0;">
+                            <img id="quizReviewStudentAvatar" src="" alt="Avatar" class="w-100 h-100 object-fit-cover" style="display: none;">
+                            <div id="quizReviewStudentAvatarFallback" class="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-primary fs-5">U</div>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="modal-title fw-bold text-dark mb-0" id="quizReviewStudentName">Tên học viên</h5>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5" id="quizReviewCohortBadge" style="font-size: 11px;">Đợt học</span>
+                            </div>
+                            <div class="small text-muted" id="quizReviewSubtitle">Bài kiểm tra</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="quizReviewLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="text-muted small mt-2">Đang tải kết quả bài làm...</div>
+                    </div>
+                    <div id="quizReviewContent" style="display: none;">
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card border rounded-4 p-3 bg-light text-center h-100 shadow-xs">
+                                    <span class="text-muted small fw-semibold">Điểm số</span>
+                                    <h3 class="fw-bold mt-1 mb-0" id="quizReviewScore">0.0 / 10</h3>
+                                    <small class="text-muted" id="quizReviewPassing">Điểm sàn: 5.0</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card border rounded-4 p-3 bg-light text-center h-100 shadow-xs">
+                                    <span class="text-muted small fw-semibold">Kết quả</span>
+                                    <div class="mt-2 mb-1" id="quizReviewPassedBadge">
+                                        <span class="badge bg-success rounded-pill px-3 py-1.5 fs-6">ĐẠT</span>
+                                    </div>
+                                    <small class="text-muted" id="quizReviewAttempt">Lần làm thứ 1</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card border rounded-4 p-3 bg-light text-center h-100 shadow-xs">
+                                    <span class="text-muted small fw-semibold">Số câu đúng</span>
+                                    <h3 class="fw-bold text-dark mt-1 mb-0" id="quizReviewCorrectCount">0 / 0</h3>
+                                    <small class="text-muted" id="quizReviewAccuracy">Độ chính xác: 0%</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <div class="card border rounded-4 p-3 bg-light text-center h-100 shadow-xs">
+                                    <span class="text-muted small fw-semibold">Thời gian làm bài</span>
+                                    <h4 class="fw-bold text-dark mt-1 mb-0" id="quizReviewDuration">--</h4>
+                                    <small class="text-muted" id="quizReviewSubmittedAt">--</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-card-checklist text-primary fs-5"></i>
+                            <span>Chi tiết bài làm từng câu hỏi</span>
+                        </h6>
+
+                        <div id="quizReviewQuestionsList" class="d-flex flex-column gap-3"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top p-3 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/admin-layout.js}"></script>
+    <script>
+        let quizReviewModalInstance = null;
+
+        function openQuizSubmissionReview(submissionId) {
+            if (!quizReviewModalInstance) {
+                const el = document.getElementById('quizSubmissionReviewModal');
+                if (el) {
+                    quizReviewModalInstance = new bootstrap.Modal(el);
+                }
+            }
+            if (!quizReviewModalInstance) return;
+
+            document.getElementById('quizReviewLoading').style.display = 'block';
+            document.getElementById('quizReviewContent').style.display = 'none';
+            quizReviewModalInstance.show();
+
+            fetch('/api/instructor/quizzes/submissions/' + submissionId)
+                .then(res => {
+                    if (!res.ok) throw new Error('Không thể tải chi tiết bài làm');
+                    return res.json();
+                })
+                .then(detail => {
+                    document.getElementById('quizReviewLoading').style.display = 'none';
+                    document.getElementById('quizReviewContent').style.display = 'block';
+
+                    document.getElementById('quizReviewStudentName').textContent = detail.studentName || 'Học viên';
+                    document.getElementById('quizReviewSubtitle').textContent = detail.studentEmail ? (detail.studentEmail + ' • ' + (detail.quizTitle || 'Bài kiểm tra')) : (detail.quizTitle || 'Bài kiểm tra');
+
+                    const cohortBadge = document.getElementById('quizReviewCohortBadge');
+                    if (cohortBadge) {
+                        cohortBadge.textContent = detail.cohortName || detail.cohortCode || 'Lớp học';
+                    }
+
+                    const avatarImg = document.getElementById('quizReviewStudentAvatar');
+                    const avatarFallback = document.getElementById('quizReviewStudentAvatarFallback');
+                    if (detail.studentAvatar) {
+                        avatarImg.src = detail.studentAvatar;
+                        avatarImg.style.display = 'block';
+                        avatarFallback.style.display = 'none';
+                    } else {
+                        avatarImg.style.display = 'none';
+                        avatarFallback.style.display = 'flex';
+                        avatarFallback.textContent = detail.studentName ? detail.studentName.charAt(0).toUpperCase() : 'U';
+                    }
+
+                    const scoreEl = document.getElementById('quizReviewScore');
+                    const scoreVal = detail.score != null ? parseFloat(detail.score).toFixed(1) : '0.0';
+                    scoreEl.textContent = scoreVal + ' / 10';
+                    scoreEl.className = 'fw-bold mt-1 mb-0 ' + (detail.isPassed ? 'text-success' : 'text-danger');
+
+                    document.getElementById('quizReviewPassing').textContent = 'Điểm sàn đạt: ' + (detail.passingScore != null ? parseFloat(detail.passingScore).toFixed(1) : '5.0');
+
+                    const passedBadgeContainer = document.getElementById('quizReviewPassedBadge');
+                    let passedBadgeHtml = `<span class="badge ${detail.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill px-3 py-1.5 fs-6">${detail.isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}</span>`;
+                    if (detail.isLate) {
+                        passedBadgeHtml += ` <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1 small ms-1"><i class="bi bi-clock-history me-1"></i>Làm trễ</span>`;
+                    }
+                    passedBadgeContainer.innerHTML = passedBadgeHtml;
+
+                    document.getElementById('quizReviewAttempt').textContent = 'Lần làm thứ: ' + (detail.attemptNumber || 1) + (detail.maxAttempts ? ' / ' + detail.maxAttempts : '');
+
+                    const totalQ = detail.totalQuestions || (detail.reviewQuestions ? detail.reviewQuestions.length : 0);
+                    const correctQ = detail.correctCount || 0;
+                    document.getElementById('quizReviewCorrectCount').textContent = correctQ + ' / ' + totalQ + ' câu';
+                    const pct = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
+                    document.getElementById('quizReviewAccuracy').textContent = 'Tỷ lệ đúng: ' + pct + '%';
+
+                    let durationStr = '--';
+                    if (detail.durationSeconds != null && detail.durationSeconds > 0) {
+                        const mins = Math.floor(detail.durationSeconds / 60);
+                        const secs = detail.durationSeconds % 60;
+                        durationStr = mins > 0 ? (mins + ' phút ' + secs + ' giây') : (secs + ' giây');
+                    }
+                    document.getElementById('quizReviewDuration').textContent = durationStr;
+
+                    const timeStr = detail.submittedAt ? new Date(detail.submittedAt).toLocaleString('vi-VN') : '--';
+                    document.getElementById('quizReviewSubmittedAt').textContent = 'Nộp lúc: ' + timeStr;
+
+                    const questionsContainer = document.getElementById('quizReviewQuestionsList');
+                    if (!detail.reviewQuestions || detail.reviewQuestions.length === 0) {
+                        questionsContainer.innerHTML = '<div class="alert alert-secondary text-center py-4 rounded-4">Không có dữ liệu chi tiết từng câu hỏi.</div>';
+                        return;
+                    }
+
+                    questionsContainer.innerHTML = detail.reviewQuestions.map((q, idx) => renderInstructorQuestionItem(q, idx)).join('');
+                })
+                .catch(err => {
+                    document.getElementById('quizReviewLoading').style.display = 'none';
+                    document.getElementById('quizReviewContent').style.display = 'block';
+                    document.getElementById('quizReviewQuestionsList').innerHTML = `<div class="alert alert-danger rounded-4 py-4 text-center">${escapeHtml(err.message || 'Lỗi tải bài làm')}</div>`;
+                });
+        }
+
+        function renderInstructorQuestionItem(q, idx) {
+            const isRight = q.isCorrect;
+            let optionsHtml = '';
+
+            if (q.questionType === 'FILL_BLANK') {
+                const correctTexts = (q.options || []).filter(o => o.isCorrect !== false).map(o => o.text).join(' HOẶC ');
+                optionsHtml = `
+                    <div class="p-3 rounded-3 mb-2 ${isRight ? 'bg-success-subtle border border-success-subtle text-success-emphasis' : 'bg-danger-subtle border border-danger-subtle text-danger-emphasis'}">
+                        <strong>Câu trả lời của học viên:</strong> ${escapeHtml(q.studentTextAnswer || '(Để trống)')}
+                    </div>
+                    <div class="p-3 rounded-3 bg-light border text-secondary small">
+                        <strong>Các đáp án được chấp nhận:</strong> ${escapeHtml(correctTexts)}
+                    </div>
+                `;
+            } else {
+                optionsHtml = (q.options || []).map(opt => {
+                    const isStudentPick = (q.studentSelectedOptionIds || []).includes(opt.id);
+                    const isCorrectOpt = opt.isCorrect;
+                    let cls = 'p-3 rounded-3 border mb-2 d-flex align-items-center gap-2 ';
+                    let badge = '';
+
+                    if (isCorrectOpt && isStudentPick) {
+                        cls += 'bg-success-subtle border-success text-success-emphasis fw-semibold';
+                        badge = '<span class="badge bg-success ms-auto"><i class="bi bi-check-circle-fill me-1"></i>Học viên chọn đúng</span>';
+                    } else if (isCorrectOpt && !isStudentPick) {
+                        cls += 'bg-success-subtle border-success-subtle text-success-emphasis';
+                        badge = '<span class="badge bg-success-subtle text-success border border-success-subtle ms-auto"><i class="bi bi-check-lg me-1"></i>Đáp án đúng</span>';
+                    } else if (isStudentPick && !isCorrectOpt) {
+                        cls += 'bg-danger-subtle border-danger text-danger-emphasis fw-semibold';
+                        badge = '<span class="badge bg-danger ms-auto"><i class="bi bi-x-circle-fill me-1"></i>Học viên chọn sai</span>';
+                    } else {
+                        cls += 'bg-white text-secondary';
+                    }
+
+                    return `
+                        <div class="${cls}">
+                            <span class="fw-bold small">${isStudentPick ? '<i class="bi bi-arrow-right-circle-fill text-primary fs-6"></i>' : '<i class="bi bi-circle text-muted"></i>'}</span>
+                            <span class="flex-grow-1">${escapeHtml(opt.text)}</span>
+                            ${badge}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            return `
+                <div class="card border rounded-4 p-4 shadow-xs ${isRight ? 'border-success-subtle' : 'border-danger-subtle'}">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${isRight ? 'bg-success' : 'bg-danger'} rounded-pill px-3 py-1">Câu ${idx + 1}</span>
+                            <span class="badge ${isRight ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} border px-2.5 py-1">
+                                ${isRight ? 'Đúng (+' + q.earnedPoints + 'đ)' : 'Sai (0đ)'}
+                            </span>
+                            <span class="badge bg-light text-muted border px-2 py-0.5" style="font-size: 11px;">${getQuestionTypeLabel(q.questionType)}</span>
+                        </div>
+                        <span class="text-muted small fw-semibold">${q.points} điểm</span>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-3 mt-1">${escapeHtml(q.content)}</h6>
+                    <div>${optionsHtml}</div>
+                    ${q.explanation ? `
+                        <div class="mt-3 p-3 bg-light rounded-3 text-secondary small border">
+                            <strong class="text-dark"><i class="bi bi-lightbulb-fill text-warning me-1"></i>Lời giải thích / Hướng dẫn:</strong> ${escapeHtml(q.explanation)}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function getQuestionTypeLabel(type) {
+            switch (type) {
+                case 'SINGLE_CHOICE': return 'Trắc nghiệm 1 đáp án';
+                case 'MULTI_SELECT': return 'Nhiều đáp án đúng';
+                case 'TRUE_FALSE': return 'Đúng / Sai';
+                case 'FILL_BLANK': return 'Điền từ vào ô trống';
+                default: return 'Trắc nghiệm';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
 </body>
 </html>

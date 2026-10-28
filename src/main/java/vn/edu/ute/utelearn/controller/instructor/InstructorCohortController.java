@@ -62,8 +62,11 @@ public class InstructorCohortController {
         String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword);
         String safeStatus = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(status);
 
+        boolean isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(currentUser);
         Page<Cohort> cohorts;
-        if ((safeKeyword != null && !safeKeyword.isBlank()) || (safeStatus != null && !safeStatus.isBlank())) {
+        if (isAdmin) {
+            cohorts = cohortService.searchAllCohorts(safeKeyword, safeStatus, PageRequest.of(page, size));
+        } else if ((safeKeyword != null && !safeKeyword.isBlank()) || (safeStatus != null && !safeStatus.isBlank())) {
             cohorts = cohortService.searchCohortsByInstructor(currentUser.getId(), safeKeyword, safeStatus,
                     PageRequest.of(page, size));
         } else {

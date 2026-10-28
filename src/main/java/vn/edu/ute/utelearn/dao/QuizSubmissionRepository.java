@@ -15,4 +15,5 @@ public interface QuizSubmissionRepository extends JpaRepository<QuizSubmission, 
     Optional<QuizSubmission> findTopByQuizIdAndUserIdAndCohortIdOrderByScoreDesc(Long quizId, Long userId, Long cohortId);
     Optional<QuizSubmission> findTopByQuizIdAndUserIdOrderByScoreDesc(Long quizId, Long userId);
     List<QuizSubmission> findByQuizIdOrderBySubmittedAtDesc(Long quizId);
+    List<QuizSubmission> findByQuizIdAndCohortIdOrderBySubmittedAtDesc(Long quizId, Long cohortId);
 }

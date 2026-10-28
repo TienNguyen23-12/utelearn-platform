@@ -24,8 +24,14 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
             response.setContentType("application/json;charset=UTF-8");
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.getWriter().write("{\"success\":false,\"message\":\"Bạn không có quyền truy cập vào chức năng này!\"}");
-        } else {
+        } else if (uri.startsWith("/admin") || uri.startsWith("/dashboard")) {
             response.sendRedirect("/home?error=admin_only");
+        } else if (uri.startsWith("/instructor")) {
+            response.sendRedirect("/home?error=instructor_only");
+        } else if (uri.startsWith("/moderator")) {
+            response.sendRedirect("/home?error=moderator_only");
+        } else {
+            response.sendRedirect("/home?error=access_denied");
         }
     }
 }

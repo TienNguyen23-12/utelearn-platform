@@ -574,4 +574,33 @@ public class ModuleDetailFeatureTest {
         mvcWithThymeleaf.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void testUpcomingSchedulesExcludesPassedDeadlines() throws Exception {
+        vn.edu.ute.utelearn.entity.Lesson l1 = vn.edu.ute.utelearn.entity.Lesson.builder().id(101L).title("Bài tập quá hạn").build();
+        vn.edu.ute.utelearn.entity.Lesson l2 = vn.edu.ute.utelearn.entity.Lesson.builder().id(102L).title("Bài tập sắp tới").build();
+
+        vn.edu.ute.utelearn.entity.CohortSchedule pastSchedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                .id(1L).cohort(sampleCohort).lesson(l1)
+                .unlockAt(java.time.Instant.now().minus(2, java.time.temporal.ChronoUnit.DAYS))
+                .deadlineAt(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS))
+                .build();
+
+        vn.edu.ute.utelearn.entity.CohortSchedule futureSchedule = vn.edu.ute.utelearn.entity.CohortSchedule.builder()
+                .id(2L).cohort(sampleCohort).lesson(l2)
+                .unlockAt(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS))
+                .deadlineAt(java.time.Instant.now().plus(2, java.time.temporal.ChronoUnit.DAYS))
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
+        when(courseService.getCourseBySlug("lap-trinh-web-co-ban")).thenReturn(sampleCourse);
+        when(cohortRepository.findById(1L)).thenReturn(Optional.of(sampleCohort));
+        when(cohortScheduleRepository.findByCohortIdWithDetails(1L)).thenReturn(List.of(pastSchedule, futureSchedule));
+        when(sectionRepository.findSectionsForCohort(1L)).thenReturn(Collections.emptyList());
+
+        courseMvc.perform(get("/courses/lap-trinh-web-co-ban/modules/1"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("upcomingSchedules", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(model().attribute("upcomingSchedules", org.hamcrest.Matchers.contains(futureSchedule)));
+    }
 }

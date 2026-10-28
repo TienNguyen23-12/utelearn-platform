@@ -433,6 +433,10 @@
                 <i class="bi bi-easel-fill"></i>
                 <span>Không gian học tập (Focus View)</span>
             </a>
+            <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?tab=chat'}" class="secondary-nav-link">
+                <i class="bi bi-chat-dots-fill text-primary"></i>
+                <span>Thảo luận Lớp học</span>
+            </a>
         </div>
         
         <div class="py-2 d-flex align-items-center gap-2">
@@ -897,9 +901,22 @@
                         <i class="bi bi-info-circle-fill text-info"></i>
                         <span>Kênh hỗ trợ học tập</span>
                     </h6>
-                    <p class="text-muted small mb-0">
+                    <p class="text-muted small mb-3">
                         Nếu gặp khó khăn trong quá trình học tập hoặc làm bài tập, sinh viên có thể đặt câu hỏi trong phòng học hoặc liên hệ trực tiếp bộ môn.
                     </p>
+                    <a th:if="${isModEnrolled || hasAccessRole}"
+                       th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn?tab=chat'}"
+                       class="btn btn-outline-primary w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-xs">
+                        <i class="bi bi-chat-dots-fill"></i>
+                        <span>Vào phòng thảo luận Realtime</span>
+                        <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 ms-1" style="font-size: 10px;">Trực tuyến</span>
+                    </a>
+                    <a th:unless="${isModEnrolled || hasAccessRole}"
+                       th:href="${currentUser == null ? '/login' : ('/courses/' + course.slug + '/enroll/' + module.id)}"
+                       class="btn btn-outline-secondary w-100 rounded-pill py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-lock-fill"></i>
+                        <span th:text="${currentUser == null ? 'Đăng nhập để vào thảo luận' : 'Ghi danh để vào thảo luận'}">Vào phòng thảo luận</span>
+                    </a>
                 </div>
             </div>
         </div>

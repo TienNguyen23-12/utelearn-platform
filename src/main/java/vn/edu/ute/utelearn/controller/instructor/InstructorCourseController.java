@@ -76,7 +76,10 @@ public class InstructorCourseController {
                               Model model) {
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow(() -> new RuntimeException("Unauthorized"));
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Course> coursePage = courseService.getCoursesByInstructor(currentUser.getId(), pageable);
+        boolean isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(currentUser);
+        Page<Course> coursePage = isAdmin
+                ? courseService.getAllCourses(pageable)
+                : courseService.getCoursesByInstructor(currentUser.getId(), pageable);
         
         model.addAttribute("courses", coursePage.getContent());
         model.addAttribute("currentPage", coursePage.getNumber());

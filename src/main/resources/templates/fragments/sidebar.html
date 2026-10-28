@@ -83,6 +83,13 @@
                         <span>Đơn hàng của tôi</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'notifications'} ? ' active' : ''"
+                        href="/notifications">
+                        <i class="bi bi-bell-fill text-warning"></i>
+                        <span>Thông báo</span>
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">QUẢN TRỊ & TÀI CHÍNH</div>

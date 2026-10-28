@@ -33,6 +33,8 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCourses(
@@ -60,6 +62,12 @@ public class CourseApiController {
                     course.getCreatedBy() != null ? course.getCreatedBy().getFullName() : "Giảng viên");
             map.put("modulesCount", cohortRepository.countByCourseId(course.getId()));
             map.put("enrolledCount", cohortMemberRepository.countDistinctUsersByCourseId(course.getId()));
+
+            Double avgEnrollment = (enrollmentRepository != null) ? enrollmentRepository.getAverageRatingByCourseId(course.getId()) : null;
+            long countEnrollment = (enrollmentRepository != null) ? enrollmentRepository.countRatingsByCourseId(course.getId()) : 0L;
+            Double rating = (avgEnrollment != null && countEnrollment > 0) ? Math.round(avgEnrollment * 10.0) / 10.0 : null;
+            map.put("rating", rating);
+            map.put("ratingCount", countEnrollment);
 
             List<vn.edu.ute.utelearn.entity.Cohort> cohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
             java.math.BigDecimal sumOfCohorts = cohorts.stream()

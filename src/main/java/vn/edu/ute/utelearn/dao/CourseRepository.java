@@ -13,8 +13,12 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
     Optional<Course> findBySlug(String slug);
 
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category"})
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
     org.springframework.data.domain.Page<Course> findByCreatedById(Long createdById, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
+    @org.springframework.data.jpa.repository.Query("SELECT c FROM Course c ORDER BY c.createdAt DESC")
+    org.springframework.data.domain.Page<Course> findAllCourses(org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "createdBy"})
     Optional<Course> findById(Long id);

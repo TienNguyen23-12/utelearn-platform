@@ -21,5 +21,6 @@ public interface QuizService {
     byte[] exportQuizQuestions(Long quizId, Long instructorId);
     QuestionImportResultDTO importQuestionsFromExcel(Long quizId, MultipartFile file, Long instructorId);
     void reorderQuestions(Long quizId, List<Long> questionIds, Long instructorId);
+    List<QuizResultDTO> getSubmissionsForInstructor(Long quizId, Long cohortId, Long instructorId);
 }
 

@@ -15,6 +15,7 @@ import vn.edu.ute.utelearn.entity.*;
 import vn.edu.ute.utelearn.service.QuizService;
 import vn.edu.ute.utelearn.service.GradebookService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 
 import java.io.ByteArrayOutputStream;
@@ -41,6 +42,7 @@ public class QuizServiceImpl implements QuizService {
     private final UserRepository userRepository;
     private final LessonCompletionRepository lessonCompletionRepository;
     private final CourseRepository courseRepository;
+    private final ApplicationEventPublisher eventPublisher;
     @Lazy
     private final GradebookService gradebookService;
 
@@ -808,6 +810,21 @@ public class QuizServiceImpl implements QuizService {
             log.warn("[QuizService] Không thể đồng bộ bảng điểm cho Cohort {}: {}", cohort.getId(), e.getMessage());
         }
 
+        NotificationEvent quizEvent = NotificationEvent.builder()
+                .recipientId(user.getId())
+                .senderId(cohort.getCreatedBy() != null ? cohort.getCreatedBy().getId() : null)
+                .title("Kết quả bài kiểm tra Quiz")
+                .content("Bạn đã hoàn thành bài kiểm tra '" + quiz.getTitle() + "' với số điểm: " + scaledScore + "/10 (" + (isPassed ? "Đạt" : "Chưa đạt") + ")")
+                .type(NotificationType.QUIZ_RESULT)
+                .category(NotificationCategory.ACADEMIC)
+                .actionUrl("/modules/" + cohort.getId() + "/learn?lessonId=" + quiz.getLesson().getId())
+                .referenceId(savedSub.getId())
+                .referenceType("QUIZ_SUBMISSION")
+                .build();
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(quizEvent);
+        }
+
         int attemptNumber = (int) existingAttempts + 1;
         boolean canRetake = quiz.getMaxAttempts() == null || quiz.getMaxAttempts() <= 0
                 || attemptNumber < quiz.getMaxAttempts();
@@ -843,7 +860,7 @@ public class QuizServiceImpl implements QuizService {
         if (!submission.getUser().getId().equals(userId)) {
             User user = userRepository.findById(userId).orElse(null);
             boolean isStaff = user != null && user.getRoles() != null
-                    && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR");
+                    && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR", "MODERATOR", "ROLE_MODERATOR");
             if (!isStaff) {
                 throw new RuntimeException("Bạn không có quyền xem bài làm này");
             }
@@ -867,14 +884,27 @@ public class QuizServiceImpl implements QuizService {
 
         User user = userRepository.findById(userId).orElse(null);
         boolean isStaff = user != null && user.getRoles() != null
-                && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR");
+                && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR", "MODERATOR", "ROLE_MODERATOR");
         boolean allowReview = isStaff || isReviewAllowed(quiz, submission.getCohort().getId());
         List<QuestionReviewDTO> returnedReviewList = allowReview ? reviewList : Collections.emptyList();
+
+        Long durationSeconds = null;
+        if (submission.getStartedAt() != null && submission.getSubmittedAt() != null) {
+            durationSeconds = java.time.Duration.between(submission.getStartedAt(), submission.getSubmittedAt()).getSeconds();
+        }
 
         return QuizResultDTO.builder()
                 .submissionId(submission.getId())
                 .quizId(quiz.getId())
                 .quizTitle(quiz.getTitle())
+                .userId(submission.getUser().getId())
+                .studentName(submission.getUser().getFullName())
+                .studentEmail(submission.getUser().getEmail())
+                .studentAvatar(submission.getUser().getAvatarUrl())
+                .cohortId(submission.getCohort() != null ? submission.getCohort().getId() : null)
+                .cohortName(submission.getCohort() != null ? submission.getCohort().getName() : null)
+                .cohortCode(submission.getCohort() != null ? submission.getCohort().getCode() : null)
+                .durationSeconds(durationSeconds)
                 .score(submission.getScore())
                 .passingScore(quiz.getPassingScore())
                 .isPassed(submission.getIsPassed())
@@ -909,6 +939,56 @@ public class QuizServiceImpl implements QuizService {
                     .submittedAt(s.getSubmittedAt())
                     .allowReview(allowReview)
                     .isLate(s.getIsLate())
+                    .build());
+        }
+        return list;
+    }
+
+    @Override
+    public List<QuizResultDTO> getSubmissionsForInstructor(Long quizId, Long cohortId, Long instructorId) {
+        log.info("[QuizService] Giảng viên {} xem danh sách bài nộp của Quiz ID: {}, cohortId: {}", instructorId, quizId, cohortId);
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài kiểm tra ID: " + quizId));
+
+        User instructor = userRepository.findById(instructorId).orElse(null);
+        if (!isInstructorAuthorized(quiz.getLesson(), instructorId)) {
+            if (instructor == null || (!SecurityUtils.isModerator(instructor) && !SecurityUtils.isAdmin(instructor))) {
+                throw new RuntimeException("Bạn không có quyền xem danh sách bài làm");
+            }
+        }
+
+        List<QuizSubmission> subs = (cohortId != null)
+                ? quizSubmissionRepository.findByQuizIdAndCohortIdOrderBySubmittedAtDesc(quizId, cohortId)
+                : quizSubmissionRepository.findByQuizIdOrderBySubmittedAtDesc(quizId);
+
+        List<QuizResultDTO> list = new ArrayList<>();
+        for (QuizSubmission s : subs) {
+            long totalAttempts = quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(quiz.getId(), s.getUser().getId(), s.getCohort().getId());
+            Long durationSeconds = null;
+            if (s.getStartedAt() != null && s.getSubmittedAt() != null) {
+                durationSeconds = java.time.Duration.between(s.getStartedAt(), s.getSubmittedAt()).getSeconds();
+            }
+
+            list.add(QuizResultDTO.builder()
+                    .submissionId(s.getId())
+                    .quizId(quizId)
+                    .quizTitle(quiz.getTitle())
+                    .userId(s.getUser().getId())
+                    .studentName(s.getUser().getFullName())
+                    .studentEmail(s.getUser().getEmail())
+                    .studentAvatar(s.getUser().getAvatarUrl())
+                    .cohortId(s.getCohort() != null ? s.getCohort().getId() : null)
+                    .cohortName(s.getCohort() != null ? s.getCohort().getName() : null)
+                    .cohortCode(s.getCohort() != null ? s.getCohort().getCode() : null)
+                    .score(s.getScore())
+                    .passingScore(quiz.getPassingScore())
+                    .isPassed(s.getIsPassed())
+                    .isLate(s.getIsLate())
+                    .startedAt(s.getStartedAt())
+                    .submittedAt(s.getSubmittedAt())
+                    .durationSeconds(durationSeconds)
+                    .attemptNumber((int) totalAttempts)
+                    .allowReview(true)
                     .build());
         }
         return list;

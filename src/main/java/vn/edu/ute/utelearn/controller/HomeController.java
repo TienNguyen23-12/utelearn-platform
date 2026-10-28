@@ -37,6 +37,15 @@ public class HomeController {
         if ("admin_only".equals(error)) {
             model.addAttribute("adminOnlyMessage", 
                 "Khu vực Quản trị hệ thống (/dashboard, /admin) chỉ dành riêng cho Quản trị viên (ADMIN). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("instructor_only".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Khu vực này chỉ dành riêng cho Giảng viên (INSTRUCTOR). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("moderator_only".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Khu vực này chỉ dành riêng cho Kiểm duyệt viên (MODERATOR). Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
+        } else if ("access_denied".equals(error)) {
+            model.addAttribute("adminOnlyMessage",
+                "Bạn không có quyền truy cập vào khu vực này. Bạn đã được chuyển hướng an toàn về Trang Học tập & Khóa học!");
         }
 
         List<Map<String, Object>> categories = new ArrayList<>();

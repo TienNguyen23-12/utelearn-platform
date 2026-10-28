@@ -15,7 +15,11 @@ import vn.edu.ute.utelearn.service.AssignmentService;
 import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.GradebookService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
+import vn.edu.ute.utelearn.dto.NotificationEvent;
+import vn.edu.ute.utelearn.entity.NotificationCategory;
+import vn.edu.ute.utelearn.entity.NotificationType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -35,6 +39,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final LessonCompletionRepository lessonCompletionRepository;
     private final CohortMemberRepository cohortMemberRepository;
     private final CloudinaryService cloudinaryService;
+    private final ApplicationEventPublisher eventPublisher;
     @Lazy
     private final GradebookService gradebookService;
 
@@ -452,6 +457,28 @@ public class AssignmentServiceImpl implements AssignmentService {
             recordLessonCompletion(cohort, assignment.getLesson(), user);
         }
         log.info("[AssignmentService] Đã lưu bài nộp ID {} của user {}, requiresGrading: {}, isLate: {}", saved.getId(), userId, requiresGrading, isLate);
+
+        User targetInstructor = null;
+        if (cohort != null && cohort.getCreatedBy() != null) {
+            targetInstructor = cohort.getCreatedBy();
+        } else if (assignment.getLesson() != null && assignment.getLesson().getSection() != null && assignment.getLesson().getSection().getCourse() != null) {
+            targetInstructor = assignment.getLesson().getSection().getCourse().getCreatedBy();
+        }
+        if (targetInstructor != null && !targetInstructor.getId().equals(userId)) {
+            NotificationEvent submissionEvent = NotificationEvent.builder()
+                    .recipientId(targetInstructor.getId())
+                    .senderId(userId)
+                    .title("Bài tập mới được nộp")
+                    .content("Học viên " + user.getFullName() + " vừa nộp bài tập '" + assignment.getTitle() + "'" + (cohort != null ? " trong lớp " + cohort.getName() : ""))
+                    .type(NotificationType.SUBMISSION_RECEIVED)
+                    .category(NotificationCategory.ACADEMIC)
+                    .actionUrl(cohort != null ? "/instructor/cohorts/" + cohort.getId() + "/assignments/" + assignment.getId() : "/instructor/courses")
+                    .referenceId(saved.getId())
+                    .referenceType("ASSIGNMENT_SUBMISSION")
+                    .build();
+            eventPublisher.publishEvent(submissionEvent);
+        }
+
         return mapToSubmissionDTO(saved, assignment.getMaxScore(), assignment.getPassingScore());
     }
 
@@ -537,6 +564,19 @@ public class AssignmentServiceImpl implements AssignmentService {
                 log.warn("[AssignmentService] Không thể đồng bộ bảng điểm cho Cohort {}: {}", cohort.getId(), e.getMessage());
             }
         }
+
+        NotificationEvent gradeEvent = NotificationEvent.builder()
+                .recipientId(submission.getUser().getId())
+                .senderId(instructor != null ? instructor.getId() : null)
+                .title("Công bố kết quả chấm bài tập")
+                .content("Bài tập '" + assignment.getTitle() + "' đã được chấm điểm: " + request.getScore() + "/" + assignment.getMaxScore() + (request.getFeedback() != null && !request.getFeedback().isBlank() ? " - Nhận xét: " + request.getFeedback() : ""))
+                .type(NotificationType.ASSIGNMENT_GRADED)
+                .category(NotificationCategory.ACADEMIC)
+                .actionUrl(cohort != null ? "/modules/" + cohort.getId() + "/learn?lessonId=" + assignment.getLesson().getId() : "/courses")
+                .referenceId(saved.getId())
+                .referenceType("ASSIGNMENT_SUBMISSION")
+                .build();
+        eventPublisher.publishEvent(gradeEvent);
 
         return mapToSubmissionDTO(saved, assignment.getMaxScore(), assignment.getPassingScore());
     }

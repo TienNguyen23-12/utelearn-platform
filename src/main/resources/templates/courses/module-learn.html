@@ -4568,7 +4568,13 @@
         loadChatHistory();
     }
 
-    setTimeout(initCohortChat, 300);
+    setTimeout(() => {
+        initCohortChat();
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'chat' || window.location.hash === '#tab-chat') {
+            setTimeout(openCohortChatTab, 200);
+        }
+    }, 300);
 </script>
 
 </body>

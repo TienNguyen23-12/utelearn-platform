@@ -34,4 +34,10 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.user u WHERE e.course.id = :courseId ORDER BY u.fullName ASC")
     List<Enrollment> findByCourse_IdWithUser(@Param("courseId") Long courseId);
+
+    @Query("SELECT AVG(e.rating) FROM Enrollment e WHERE e.course.id = :courseId AND e.rating IS NOT NULL")
+    Double getAverageRatingByCourseId(@Param("courseId") Long courseId);
+
+    @Query("SELECT COUNT(e.id) FROM Enrollment e WHERE e.course.id = :courseId AND e.rating IS NOT NULL")
+    long countRatingsByCourseId(@Param("courseId") Long courseId);
 }

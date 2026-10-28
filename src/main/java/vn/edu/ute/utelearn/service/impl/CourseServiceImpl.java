@@ -69,6 +69,11 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
+    public Page<Course> getAllCourses(Pageable pageable) {
+        return courseRepository.findAllCourses(pageable);
+    }
+
+    @Override
     public Course getCourseById(Long id) {
         return courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học ID: " + id));

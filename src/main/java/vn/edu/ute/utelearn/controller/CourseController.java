@@ -560,10 +560,10 @@ public class CourseController {
         int progressPercent = (totalLessonCount > 0) ? (int) Math.min(100, Math.round(((double) completedCount / totalLessonCount) * 100)) : 0;
 
         List<CohortSchedule> upcomingSchedules = schedules.stream()
-                .filter(cs -> cs.getLesson() != null && (cs.getDeadlineAt() != null || cs.isLockedNow()))
+                .filter(cs -> cs.getLesson() != null && (cs.isLockedNow() || (cs.getDeadlineAt() != null && !cs.isDeadlinePassed())))
                 .sorted((a, b) -> {
-                    java.time.Instant tA = a.getDeadlineAt() != null ? a.getDeadlineAt() : a.getUnlockAt();
-                    java.time.Instant tB = b.getDeadlineAt() != null ? b.getDeadlineAt() : b.getUnlockAt();
+                    java.time.Instant tA = a.isLockedNow() ? a.getUnlockAt() : a.getDeadlineAt();
+                    java.time.Instant tB = b.isLockedNow() ? b.getUnlockAt() : b.getDeadlineAt();
                     if (tA == null && tB == null) return 0;
                     if (tA == null) return 1;
                     if (tB == null) return -1;
@@ -606,8 +606,8 @@ public class CourseController {
     }
 
     @Transactional
-    @PostMapping("/{slug}/enroll/{cohortId}")
-    public String enrollCourse(@PathVariable String slug, @PathVariable Long cohortId,
+    @org.springframework.web.bind.annotation.RequestMapping(value = {"/{slug}/enroll/{cohortId}", "/enroll/{cohortId}"}, method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
+    public String enrollCourse(@PathVariable(required = false) String slug, @PathVariable Long cohortId,
             RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
@@ -638,16 +638,16 @@ public class CourseController {
                         .build();
             }
         }
+        String courseKey = (course != null && course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(activeCohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã tham gia đợt học này rồi.");
-            String courseKey = (course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
             return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
         }
 
         if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(activeCohort.getStatus())) {
             if (activeCohort.getCurrentEnrolled() >= activeCohort.getMaxCapacity()) {
                 redirectAttributes.addFlashAttribute("error", "Lớp học đã đủ số lượng học viên.");
-                return "redirect:/courses/" + slug;
+                return "redirect:/courses/" + courseKey;
             }
 
             if (activeCohort.getPrice() != null && activeCohort.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
@@ -666,14 +666,14 @@ public class CourseController {
             redirectAttributes.addFlashAttribute("success", "Tham gia đợt học thành công!");
         } else {
             redirectAttributes.addFlashAttribute("error", "Lớp học này hiện không mở đăng ký.");
-            return "redirect:/courses/" + slug;
+            return "redirect:/courses/" + courseKey;
         }
 
-        return "redirect:/courses/" + slug + "/modules/" + activeCohort.getId() + "/learn";
+        return "redirect:/courses/" + courseKey + "/modules/" + activeCohort.getId() + "/learn";
     }
 
     @Transactional
-    @PostMapping("/{slug}/enroll-all")
+    @org.springframework.web.bind.annotation.RequestMapping(value = "/{slug}/enroll-all", method = {org.springframework.web.bind.annotation.RequestMethod.GET, org.springframework.web.bind.annotation.RequestMethod.POST})
     public String enrollAll(@PathVariable String slug, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {

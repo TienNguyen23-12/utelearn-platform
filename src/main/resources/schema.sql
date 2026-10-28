@@ -492,3 +492,23 @@ ALTER TABLE cohorts ADD COLUMN IF NOT EXISTS is_grades_published BOOLEAN DEFAULT
 ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS process_grade NUMERIC(5, 2);
 ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS final_exam_grade NUMERIC(5, 2);
 ALTER TABLE cohort_members ADD COLUMN IF NOT EXISTS graded_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGSERIAL PRIMARY KEY,
+    recipient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sender_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    category VARCHAR(30) NOT NULL DEFAULT 'ACADEMIC',
+    action_url VARCHAR(500),
+    reference_id BIGINT,
+    reference_type VARCHAR(50),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read ON notifications(recipient_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_type_ref ON notifications(type, reference_type, reference_id);

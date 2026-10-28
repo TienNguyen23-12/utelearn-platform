@@ -64,6 +64,14 @@ public class CohortServiceImpl implements CohortService {
     }
 
     @Override
+    public Page<Cohort> searchAllCohorts(String keyword, String status, Pageable pageable) {
+        syncCohortStatuses();
+        String safeKeyword = (keyword == null) ? "" : keyword.trim();
+        String safeStatus = (status == null) ? "" : status.trim();
+        return cohortRepository.searchAllCohorts(safeKeyword, safeStatus, pageable);
+    }
+
+    @Override
     public Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable) {
         syncCohortStatuses();
         String safeKeyword = (keyword == null) ? "" : keyword.trim();

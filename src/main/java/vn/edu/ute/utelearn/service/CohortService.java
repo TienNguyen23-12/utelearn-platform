@@ -16,6 +16,8 @@ public interface CohortService {
     
     Page<Cohort> searchCohortsByInstructor(Long instructorId, String keyword, String status, Pageable pageable);
     
+    Page<Cohort> searchAllCohorts(String keyword, String status, Pageable pageable);
+    
     Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable);
     
     Cohort getCohortById(Long id);
