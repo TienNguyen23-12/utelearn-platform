@@ -382,6 +382,7 @@ public class CourseController {
         model.addAttribute("courseSlug", slug);
         model.addAttribute("isEnrolled", isEnrolled);
         model.addAttribute("isAllEnrolled", isAllEnrolled);
+        model.addAttribute("hasEnrolledSome", isEnrolled && !isAllEnrolled);
         model.addAttribute("fullCoursePrice", fullCoursePrice);
         model.addAttribute("sumOfCohorts", sumOfCohorts);
         model.addAttribute("discountAmount", discountAmount);

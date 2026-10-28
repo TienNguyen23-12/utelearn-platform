@@ -788,7 +788,7 @@
                             </form>
                             <form th:if="${!isEnrolled && !hasAccessRole}" th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post">
                                 <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm mb-2">
-                                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${hasEnrolledSome ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
+                                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${(hasEnrolledSome != null and hasEnrolledSome) ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
                                 </button>
                             </form>
                             <a th:if="${isEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseCohorts != null and !courseCohorts.isEmpty() ? courseCohorts[0].id : 1} + '/learn'}" class="btn btn-success w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm mb-2">

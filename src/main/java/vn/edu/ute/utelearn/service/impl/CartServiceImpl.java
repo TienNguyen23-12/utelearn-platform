@@ -186,9 +186,6 @@ public class CartServiceImpl implements CartService {
                         .allMatch(c -> cohortMemberRepository.existsByCohort_IdAndUser_Id(c.getId(), user.getId()));
             } else if ("COHORT".equalsIgnoreCase(item.getItemType()) && item.getCohort() != null) {
                 alreadyEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(item.getCohort().getId(), user.getId());
-                if (!alreadyEnrolled && item.getCohort().getCourse() != null && courseIdsInCart.contains(item.getCohort().getCourse().getId())) {
-                    alreadyEnrolled = true;
-                }
             }
             if (alreadyEnrolled) {
                 cartItemRepository.delete(item);
@@ -442,9 +439,7 @@ public class CartServiceImpl implements CartService {
 
         Order order = orderService.createMultiItemOrder(user, orderItems, validDiscountCode, discountAmount, paymentMethod, note);
 
-        for (CartItem item : selectedItems) {
-            cartItemRepository.delete(item);
-        }
+        cartItemRepository.deleteAll(selectedItems);
 
         return order;
     }
