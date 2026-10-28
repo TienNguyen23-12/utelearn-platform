@@ -24,6 +24,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final JwtTokenProvider tokenProvider;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -120,9 +121,14 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .successHandler(oAuth2AuthenticationSuccessHandler))
                 .logout(logout -> logout
-                        .logoutUrl("/logout")
+                        .logoutRequestMatcher(request -> "/logout".equals(request.getRequestURI()))
                         .logoutSuccessUrl("/login?logout=true")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
                         .deleteCookies("UTELearn_Token", "JSESSIONID")
+                        .addLogoutHandler((request, response, authentication) -> {
+                            tokenProvider.clearTokenCookie(response);
+                        })
                         .permitAll());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

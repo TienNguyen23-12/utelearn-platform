@@ -111,10 +111,15 @@ public class AuthApiController {
         }
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response) {
+        @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         Map<String, Object> res = new HashMap<>();
         authService.logout(response);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         res.put("success", true);
         res.put("message", "Đăng xuất thành công");
         res.put("redirectUrl", "/login?logout=true");

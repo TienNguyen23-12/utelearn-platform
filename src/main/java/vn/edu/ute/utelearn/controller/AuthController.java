@@ -146,9 +146,14 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/logout")
-    public String processLogout(HttpServletResponse response) {
+        @GetMapping("/logout")
+    public String processLogout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         authService.logout(response);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
         return "redirect:/login?logout=true";
     }
 

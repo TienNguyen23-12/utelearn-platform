@@ -109,6 +109,7 @@ public class DataSeeder implements CommandLineRunner {
                 initAssignmentTables();
             }
 
+            initCartAndWishlistTables();
             seedSampleQuizzes();
 
             log.info("[DataSeeder] Quá trình nạp dữ liệu mẫu hoàn tất thành công!");
@@ -482,6 +483,31 @@ public class DataSeeder implements CommandLineRunner {
             log.info("[DataSeeder] Đã kiểm tra và khởi tạo bảng assignments và assignment_submissions thành công.");
         } catch (Exception e) {
             log.warn("[DataSeeder] Không thể khởi tạo bảng assignment: {}", e.getMessage());
+        }
+    }
+
+    private void initCartAndWishlistTables() {
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS cart_items (" +
+                    "id BIGSERIAL PRIMARY KEY, " +
+                    "user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE, " +
+                    "item_type VARCHAR(20) NOT NULL, " +
+                    "course_id BIGINT REFERENCES courses(id) ON DELETE CASCADE, " +
+                    "cohort_id BIGINT REFERENCES cohorts(id) ON DELETE CASCADE, " +
+                    "created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)");
+            jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_cart_user_course ON cart_items(user_id, course_id) WHERE course_id IS NOT NULL");
+            jdbcTemplate.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_cart_user_cohort ON cart_items(user_id, cohort_id) WHERE cohort_id IS NOT NULL");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_cart_items_user ON cart_items(user_id)");
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS wishlists (" +
+                    "id BIGSERIAL PRIMARY KEY, " +
+                    "user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE, " +
+                    "course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE, " +
+                    "created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, " +
+                    "CONSTRAINT uq_wishlist_user_course UNIQUE (user_id, course_id))");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_wishlists_user ON wishlists(user_id)");
+            log.info("[DataSeeder] Đã kiểm tra và khởi tạo bảng cart_items và wishlists thành công.");
+        } catch (Exception e) {
+            log.warn("[DataSeeder] Không thể khởi tạo bảng cart_items hoặc wishlists: {}", e.getMessage());
         }
     }
 }

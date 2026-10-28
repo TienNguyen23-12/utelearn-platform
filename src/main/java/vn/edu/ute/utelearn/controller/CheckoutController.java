@@ -69,11 +69,29 @@ public class CheckoutController {
         User user = currentUserOpt.get();
         String courseKey = (cohort.getCourse() != null && cohort.getCourse().getSlug() != null && !cohort.getCourse().getSlug().isBlank())
                 ? cohort.getCourse().getSlug() : "standalone";
+        boolean isOwner = (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId()))
+                || (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(user.getId()));
+        if (isOwner) {
+            redirectAttributes.addFlashAttribute("info", "Bạn là giảng viên của module này nên có toàn quyền truy cập giảng dạy.");
+            return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
+        }
+
         if (cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId())) {
             redirectAttributes.addFlashAttribute("info", "Bạn đã ghi danh module này rồi.");
             return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
         }
-        if (cohort.getPrice() == null || cohort.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+
+        if (cohort.getCourse() != null) {
+            List<Cohort> courseCohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(cohort.getCourse().getId());
+            boolean isCourseEnrolled = !courseCohorts.isEmpty() && courseCohorts.stream()
+                    .allMatch(c -> cohortMemberRepository.existsByCohort_IdAndUser_Id(c.getId(), user.getId()));
+            if (isCourseEnrolled) {
+                redirectAttributes.addFlashAttribute("info", "Bạn đã sở hữu toàn bộ khóa học chứa module này rồi.");
+                return "redirect:/courses/" + courseKey + "/modules/" + cohort.getId() + "/learn";
+            }
+        }
+        boolean isParentCourseFree = cohort.getCourse() != null && cohort.getCourse().getPrice() != null && cohort.getCourse().getPrice().compareTo(BigDecimal.ZERO) == 0;
+        if (cohort.getPrice() == null || cohort.getPrice().compareTo(BigDecimal.ZERO) <= 0 || isParentCourseFree) {
             if (List.of("ENROLLING", "UPCOMING", "IN_PROGRESS").contains(cohort.getStatus())) {
                 if (cohort.getCurrentEnrolled() < cohort.getMaxCapacity()) {
                     CohortMember cohortMember = CohortMember.builder()

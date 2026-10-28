@@ -269,6 +269,7 @@ public class AuthServiceImpl implements AuthService {
             + "<p><a href=\"" + resetUrl + "\">Nhấn vào đây để đặt lại mật khẩu</a></p>"
             + "<br><p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>";
 
+        log.info("[AuthService] Link dat lai mat khau cho {}: {}", user.getEmail(), resetUrl);
         emailService.sendHtmlEmail(user.getEmail(), "Yêu cầu đặt lại mật khẩu UTELearn", emailContent);
     }
 

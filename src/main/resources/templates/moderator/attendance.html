@@ -38,38 +38,61 @@
                 <div class="card shadow-sm border-0 rounded-4">
                     <div class="card-body p-4 text-center">
                         <div class="mb-4">
-                            <div th:if="${currentAttendance != null and currentAttendance.checkInAt != null and currentAttendance.checkOutAt == null}">
+                            <div th:if="${currentAttendance != null and currentAttendance.otCheckInAt != null and currentAttendance.otCheckOutAt == null}">
+                                <div class="bg-warning-subtle text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                    <i class="bi bi-fire fs-1 text-danger"></i>
+                                </div>
+                                <h4>Trạng thái: Đang làm việc OT</h4>
+                                <p class="text-muted mb-1">Bắt đầu OT: <span class="fw-bold text-dark" th:text="${#dates.format(T(java.util.Date).from(currentAttendance.otCheckInAt), 'HH:mm dd/MM/yyyy')}"></span></p>
+                                <span class="badge bg-danger-subtle text-danger px-3 py-1.5 rounded-pill fw-semibold">Ca ngoài giờ (Overtime)</span>
+                            </div>
+                            <div th:if="${currentAttendance != null and currentAttendance.checkInAt != null and currentAttendance.checkOutAt == null and (currentAttendance.otCheckInAt == null or currentAttendance.otCheckOutAt != null)}">
                                 <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-person-check-fill fs-1"></i>
                                 </div>
                                 <h4>Trạng thái: Đang trong ca</h4>
-                                <p class="text-muted mb-0">Thời gian Check-in: <span class="fw-bold text-dark" th:text="${#dates.format(T(java.util.Date).from(currentAttendance.checkInAt), 'HH:mm dd/MM/yyyy')}"></span></p>
+                                <p class="text-muted mb-1">Thời gian Check-in: <span class="fw-bold text-dark" th:text="${#dates.format(T(java.util.Date).from(currentAttendance.checkInAt), 'HH:mm dd/MM/yyyy')}"></span></p>
+                                <div class="text-secondary small">Hệ thống tự động Check-out lúc 18:00 để tránh treo ca.</div>
                             </div>
-                            <div th:if="${currentAttendance == null or currentAttendance.checkInAt == null}">
+                            <div th:if="${currentAttendance == null or (currentAttendance.checkInAt == null and currentAttendance.otCheckInAt == null)}">
                                 <div class="bg-secondary-subtle text-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-person-dash-fill fs-1"></i>
                                 </div>
                                 <h4>Trạng thái: Chưa làm việc</h4>
-                                <p class="text-muted mb-0">Vui lòng Check-in để bắt đầu ca làm việc.</p>
+                                <p class="text-muted mb-1">Khung giờ ca trực tiêu chuẩn: 07:00 - 18:00</p>
+                                <div class="text-secondary small">Check-in mở từ 07:00 sáng. Sau 18:00 vui lòng chọn làm việc OT.</div>
                             </div>
-                            <div th:if="${currentAttendance != null and currentAttendance.checkOutAt != null}">
+                            <div th:if="${currentAttendance != null and currentAttendance.checkOutAt != null and (currentAttendance.otCheckInAt == null or currentAttendance.otCheckOutAt != null)}">
                                 <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-check-circle-fill fs-1"></i>
                                 </div>
                                 <h4>Trạng thái: Đã kết thúc ca</h4>
-                                <p class="text-muted mb-0">Thời gian làm việc: <span class="fw-bold text-dark" th:text="${currentAttendance.totalWorkloadMinutes} + ' phút'"></span></p>
+                                <p class="text-muted mb-1">Tổng thời gian: <span class="fw-bold text-dark" th:text="${currentAttendance.totalWorkloadMinutes} + ' phút'"></span></p>
+                                <div class="text-secondary small" th:if="${currentAttendance.otWorkloadMinutes != null and currentAttendance.otWorkloadMinutes > 0}">
+                                    (Đã bao gồm <strong th:text="${currentAttendance.otWorkloadMinutes} + ' phút'"></strong> làm thêm OT)
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="d-grid gap-3">
-                            <form th:action="@{/moderator/attendance/check-in}" method="post" th:if="${currentAttendance == null or currentAttendance.checkInAt == null}">
+                        <div class="d-grid gap-2">
+                            <form th:action="@{/moderator/attendance/check-in}" method="post" th:if="${currentAttendance == null or (currentAttendance.checkInAt == null and currentAttendance.checkOutAt == null)}">
                                 <button type="submit" class="btn btn-success btn-lg rounded-pill w-100 fw-bold">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i> Bắt đầu ca (Check-in)
+                                    <i class="bi bi-box-arrow-in-right me-2"></i> Bắt đầu ca tiêu chuẩn (07:00 - 18:00)
                                 </button>
                             </form>
                             <form th:action="@{/moderator/attendance/check-out}" method="post" th:if="${currentAttendance != null and currentAttendance.checkInAt != null and currentAttendance.checkOutAt == null}">
                                 <button type="submit" class="btn btn-danger btn-lg rounded-pill w-100 fw-bold">
-                                    <i class="bi bi-box-arrow-right me-2"></i> Kết thúc ca (Check-out)
+                                    <i class="bi bi-box-arrow-right me-2"></i> Kết thúc ca tiêu chuẩn (Check-out)
+                                </button>
+                            </form>
+                            <form th:action="@{/moderator/attendance/check-in-ot}" method="post" th:if="${currentAttendance == null or (currentAttendance.checkOutAt != null and (currentAttendance.otCheckInAt == null or currentAttendance.otCheckOutAt != null))}">
+                                <button type="submit" class="btn btn-warning text-dark btn-lg rounded-pill w-100 fw-bold shadow-xs">
+                                    <i class="bi bi-clock-history me-2"></i> Bắt đầu ca làm thêm (Check-in OT)
+                                </button>
+                            </form>
+                            <form th:action="@{/moderator/attendance/check-out-ot}" method="post" th:if="${currentAttendance != null and currentAttendance.otCheckInAt != null and currentAttendance.otCheckOutAt == null}">
+                                <button type="submit" class="btn btn-danger btn-lg rounded-pill w-100 fw-bold shadow-xs">
+                                    <i class="bi bi-stop-circle me-2"></i> Kết thúc ca làm thêm (Check-out OT)
                                 </button>
                             </form>
                         </div>
@@ -138,7 +161,10 @@
                                             <span th:if="${history.isActive}" class="badge bg-success-subtle text-success">Đang làm</span>
                                             <span th:unless="${history.isActive}" class="badge bg-secondary-subtle text-secondary">Đã xong</span>
                                         </td>
-                                        <td th:text="${history.totalWorkloadMinutes}"></td>
+                                        <td>
+                                            <span class="fw-bold text-dark" th:text="${history.totalWorkloadMinutes}"></span>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill ms-1" style="font-size: 11px;" th:if="${history.otWorkloadMinutes != null and history.otWorkloadMinutes > 0}" th:text="'+ ' + ${history.otWorkloadMinutes} + 'm OT'"></span>
+                                        </td>
                                         <td>
                                             <span class="text-success fw-bold" th:text="${history.completedTasksCount}"></span> / 
                                             <span class="text-muted" th:text="${history.assignedTasksCount}"></span>

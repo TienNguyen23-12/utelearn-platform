@@ -70,7 +70,10 @@
                                     <span th:if="${history.isActive}" class="badge bg-success-subtle text-success">Đang làm</span>
                                     <span th:unless="${history.isActive}" class="badge bg-secondary-subtle text-secondary">Đã xong</span>
                                 </td>
-                                <td th:text="${history.totalWorkloadMinutes}"></td>
+                                <td>
+                                    <span class="fw-bold text-dark" th:text="${history.totalWorkloadMinutes}"></span>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill ms-1" style="font-size: 11px;" th:if="${history.otWorkloadMinutes != null and history.otWorkloadMinutes > 0}" th:text="'+ ' + ${history.otWorkloadMinutes} + 'm OT'"></span>
+                                </td>
                                 <td>
                                     <span class="text-success fw-bold" th:text="${history.completedTasksCount}"></span> / 
                                     <span class="text-muted" th:text="${history.assignedTasksCount}"></span>

@@ -15,6 +15,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
         html {
@@ -218,6 +219,7 @@
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         let currentPage = 0;
         let totalPages = 1;
@@ -245,11 +247,73 @@
 
         function createCohortCardHtml(cohort) {
             const img = cohort.thumbnailUrl || '/images/courses/default-cover.png';
-            const priceFormatted = cohort.price > 0 ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí';
+            const isFree = (cohort.price == null || cohort.price <= 0);
+            const priceFormatted = !isFree ? new Intl.NumberFormat('vi-VN').format(cohort.price) + ' VNĐ' : 'Miễn phí';
             const courseTitle = cohort.courseTitle ? cohort.courseTitle : 'Module độc lập';
             const badgeIcon = cohort.courseTitle ? 'bi bi-journal-bookmark' : 'bi bi-box-seam';
             const detailUrl = cohort.courseSlug ? `/courses/${cohort.courseSlug}/modules/${cohort.id}` : `/cohorts/${cohort.id}`;
+            const learnUrl = cohort.courseSlug ? `/courses/${cohort.courseSlug}/modules/${cohort.id}/learn` : `/cohorts/${cohort.id}`;
             const enrollUrl = `/checkout/${cohort.id}`;
+            const isOwner = cohort.isOwner === true;
+            const isEnrolled = cohort.isEnrolled === true;
+            const isCourseEnrolled = cohort.isCourseEnrolled === true;
+            const isCourseInCart = cohort.isCourseInCart === true;
+
+            let statusBadge = '';
+            if (isOwner) {
+                statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis ms-2 border border-warning-subtle"><i class="bi bi-person-badge-fill me-1"></i>Module của bạn</span>';
+            } else if (isEnrolled || isCourseEnrolled) {
+                statusBadge = '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu' + (isCourseEnrolled && !isEnrolled ? ' (Trọn khóa)' : '') + '</span>';
+            } else if (isCourseInCart) {
+                statusBadge = '<span class="badge bg-info-subtle text-info ms-2 border border-info-subtle"><i class="bi bi-cart3 me-1"></i>Khóa đã trong giỏ</span>';
+            } else if (isFree) {
+                statusBadge = '<span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Miễn phí</span>';
+            } else {
+                statusBadge = '<span class="badge bg-primary-subtle text-primary ms-2 border border-primary-subtle">Học lẻ</span>';
+            }
+
+            let cartNoticeHtml = '';
+            if (isCourseInCart && !isOwner && !isEnrolled && !isCourseEnrolled) {
+                cartNoticeHtml = `
+                    <div class="alert alert-info py-1 px-2 rounded-3 border-0 text-center mb-0 mt-2" style="font-size: 11px;">
+                        <i class="bi bi-info-circle-fill me-1"></i>Khóa trọn gói đã có trong giỏ hàng
+                    </div>
+                `;
+            }
+
+            let actionButtons = '';
+            if (isOwner) {
+                actionButtons = `
+                    <div class="mt-3 w-100">
+                        <a href="${learnUrl}" class="btn btn-warning rounded-pill w-100 fw-semibold btn-sm py-2 text-center text-decoration-none">
+                            <i class="bi bi-mortarboard-fill me-1"></i>Vào giảng dạy
+                        </a>
+                    </div>
+                `;
+            } else if (isEnrolled || isCourseEnrolled) {
+                actionButtons = `
+                    <div class="mt-3 w-100">
+                        <a href="${learnUrl}" class="btn btn-success rounded-pill w-100 fw-semibold btn-sm py-2 text-center text-decoration-none">
+                            <i class="bi bi-play-circle-fill me-1"></i>Vào học ngay
+                        </a>
+                    </div>
+                `;
+            } else {
+                actionButtons = `
+                    <div class="d-flex gap-2 mt-3 w-100">
+                        <a href="${detailUrl}" class="btn btn-outline-primary rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
+                            <i class="bi bi-info-circle me-1"></i>Chi tiết
+                        </a>
+                        <button type="button" class="btn btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="${isCourseInCart ? 'Khóa học trọn gói chứa module này đã có trong giỏ hàng' : 'Thêm vào giỏ hàng'}" onclick="addToCartCohort(event, ${cohort.id})">
+                            <i class="bi bi-cart-plus"></i>
+                        </button>
+                    </div>
+                    <a href="${enrollUrl}" class="btn btn-primary rounded-pill w-100 mt-2 fw-semibold btn-sm py-2 text-center text-decoration-none">
+                        <i class="bi bi-lightning-charge me-1"></i>${isFree ? 'Ghi danh miễn phí' : 'Đăng ký ngay'}
+                    </a>
+                    ${cartNoticeHtml}
+                `;
+            }
 
             return `
                 <div class="col-lg-3 col-md-6">
@@ -263,7 +327,7 @@
                         <div class="p-4 d-flex flex-column flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${cohort.categoryName || 'Chuyên đề'}</span>
-                                <span class="badge bg-success-subtle text-success ms-2 border border-success-subtle">Học lẻ</span>
+                                ${statusBadge}
                             </div>
                             <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-puzzle me-1 text-primary"></i>Học phần / Chuyên đề:</div>
                             <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">${cohort.name}</h6>
@@ -281,14 +345,7 @@
                                 <small class="text-muted d-block" style="font-size: 11px;">Học phí mua lẻ module:</small>
                                 <span class="fw-bold text-success fs-6">${priceFormatted}</span>
                             </div>
-                            <div class="d-flex gap-2 mt-3 w-100">
-                                <a href="${detailUrl}" class="btn btn-outline-primary rounded-pill w-50 fw-semibold btn-sm py-2">
-                                    <i class="bi bi-info-circle me-1"></i>Chi tiết
-                                </a>
-                                <a href="${enrollUrl}" class="btn btn-primary rounded-pill w-50 fw-semibold btn-sm py-2 text-center text-decoration-none">
-                                    <i class="bi bi-cart-plus me-1"></i>Đăng ký
-                                </a>
-                            </div>
+                            ${actionButtons}
                             ${cohort.courseSlug ? `
                             <a href="/courses/${cohort.courseSlug}" class="btn btn-light border rounded-pill w-100 mt-2 fw-semibold btn-sm py-2 text-muted">
                                 <span>Xem trọn bộ khóa học</span>
@@ -298,6 +355,71 @@
                     </div>
                 </div>
             `;
+        }
+
+        function showToast(message, type = 'info') {
+            if (typeof Toastify === 'function') {
+                let bg = '#2563eb';
+                if (type === 'success') bg = '#10b981';
+                if (type === 'danger' || type === 'error') bg = '#ef4444';
+                if (type === 'warning') bg = '#f59e0b';
+                Toastify({
+                    text: message,
+                    duration: 3000,
+                    gravity: 'top',
+                    position: 'right',
+                    style: {
+                        background: bg,
+                        borderRadius: '10px',
+                        fontSize: '13.5px',
+                        fontWeight: '600',
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+                    }
+                }).showToast();
+            } else {
+                alert(message);
+            }
+        }
+
+        async function addToCartCohort(event, cohortId) {
+            if (event) {
+                event.stopPropagation();
+            }
+            try {
+                const params = new URLSearchParams();
+                params.append('itemType', 'COHORT');
+                params.append('itemId', cohortId);
+                const res = await fetch('/cart/add', {
+                    method: 'POST',
+                    body: params,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    const badges = document.querySelectorAll('.nav-cart-badge');
+                    badges.forEach(badge => {
+                        badge.textContent = data.cartItemCount;
+                        if (data.cartItemCount > 0) {
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+                    });
+                } else {
+                    showToast(data.message || 'Không thể thêm vào giỏ hàng.', 'warning');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
+            }
         }
 
         function renderRatingHtml(rating, ratingCount) {

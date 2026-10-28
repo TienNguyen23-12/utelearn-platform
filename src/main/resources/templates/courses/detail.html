@@ -243,6 +243,13 @@
                         <button class="btn btn-sm btn-success py-0 px-2" onclick="saveCourseField('level')"><i class="bi bi-check-lg"></i></button>
                         <button class="btn btn-sm btn-light py-0 px-2" onclick="toggleEditField('courseLevel')"><i class="bi bi-x-lg"></i></button>
                     </div>
+                    <div class="d-inline-flex align-items-center gap-1.5 ms-2">
+                        <span class="text-warning fw-bold">
+                            <i class="bi bi-star-fill"></i>
+                            <span th:text="${courseRating != null ? courseRating : '5.0'}">5.0</span>
+                        </span>
+                        <span class="text-white-50" th:text="${totalReviewsCount > 0 ? '(' + totalReviewsCount + ' đánh giá)' : '(Chưa có đánh giá)'}">(0 đánh giá)</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -501,7 +508,7 @@
                                         <span th:if="${!courseMod.isEnrolled && !hasAccessRole && courseMod.isFull}" class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill">
                                             Đã đủ sĩ số
                                         </span>
-                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && courseMod.price != null && courseMod.price > 0}" th:action="@{/cart/add-redirect}" method="post" class="d-inline me-1">
+                                        <form th:if="${!courseMod.isEnrolled && !hasAccessRole && !courseMod.isFull && courseMod.price != null && courseMod.price > 0}" th:action="@{/cart/add-redirect}" method="post" class="d-inline me-1" onsubmit="addToCartAjax(event, this)">
                                             <input type="hidden" name="itemType" value="COHORT">
                                             <input type="hidden" name="itemId" th:value="${courseMod.id}">
                                             <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold" title="Thêm module vào giỏ hàng">
@@ -578,6 +585,48 @@
                                     </li>
                                 </ul>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 rounded-4 shadow-sm mt-4 p-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <span>Đánh giá từ học viên</span>
+                            </h5>
+                            <div class="text-muted small">Phản hồi và nhận xét thực tế từ các học viên đã hoàn thành khóa học.</div>
+                        </div>
+                        <div class="text-end" th:if="${totalReviewsCount > 0}">
+                            <div class="fs-4 fw-bold text-dark d-flex align-items-center gap-1 justify-content-end">
+                                <span class="text-warning">★</span>
+                                <span th:text="${courseRating}">5.0</span>
+                                <span class="text-muted fs-6 fw-normal">/ 5.0</span>
+                            </div>
+                            <div class="text-muted small" th:text="${totalReviewsCount} + ' lượt đánh giá'">0 lượt đánh giá</div>
+                        </div>
+                    </div>
+                    <div th:if="${courseReviews == null || courseReviews.isEmpty()}" class="text-center py-4 text-muted">
+                        <i class="bi bi-chat-square-text text-secondary opacity-50 fs-1 d-block mb-2"></i>
+                        <span>Khóa học này hiện chưa có nhận xét nào từ học viên. Hãy là người đầu tiên hoàn thành khóa học và để lại đánh giá!</span>
+                    </div>
+                    <div th:unless="${courseReviews == null || courseReviews.isEmpty()}" class="d-flex flex-column gap-3">
+                        <div th:each="rev : ${courseReviews}" class="p-3 rounded-3 bg-light border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px; font-size: 14px;"
+                                         th:text="${rev.user != null && rev.user.fullName != null ? rev.user.fullName.substring(0, 1) : 'U'}">U</div>
+                                    <div>
+                                        <div class="fw-semibold text-dark" th:text="${rev.user != null ? rev.user.fullName : 'Học viên'}">Học viên</div>
+                                        <div class="text-muted" style="font-size: 11px;" th:text="${rev.reviewedAt != null ? #temporals.format(rev.reviewedAt, 'dd/MM/yyyy HH:mm') : ''}">01/01/2026</div>
+                                    </div>
+                                </div>
+                                <div class="text-warning small">
+                                    <i th:each="star : ${#numbers.sequence(1, 5)}" class="bi" th:classappend="${star <= rev.rating ? 'bi-star-fill' : 'bi-star'}"></i>
+                                </div>
+                            </div>
+                            <div class="text-secondary small lh-base" th:if="${rev.reviewComment != null && !rev.reviewComment.isBlank()}" th:text="${rev.reviewComment}">Nhận xét</div>
                         </div>
                     </div>
                 </div>
@@ -730,18 +779,25 @@
                                 <span class="badge bg-danger text-white rounded-pill" th:text="'Tiết kiệm ' + ${#numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' VNĐ'}">Tiết kiệm</span>
                             </div>
                             <div class="h5 fw-bold text-success mb-3" th:text="${fullCoursePrice > 0 ? #numbers.formatDecimal(fullCoursePrice, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</div>
-                            <form th:if="${fullCoursePrice != null && fullCoursePrice > 0}" th:action="@{/cart/add-redirect}" method="post" class="mb-2">
+                            <form th:if="${fullCoursePrice != null && fullCoursePrice > 0 && !isEnrolled && !hasAccessRole}" th:action="@{/cart/add-redirect}" method="post" class="mb-2" onsubmit="addToCartAjax(event, this)">
                                 <input type="hidden" name="itemType" value="COURSE">
                                 <input type="hidden" name="itemId" th:value="${course.id}">
                                 <button type="submit" class="btn btn-outline-primary w-100 rounded-pill fw-semibold btn-sm py-2">
                                     <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ hàng
                                 </button>
                             </form>
-                            <form th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post">
+                            <form th:if="${!isEnrolled && !hasAccessRole}" th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post">
                                 <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm mb-2">
-                                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${isEnrolled ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
+                                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${(hasEnrolledSome != null and hasEnrolledSome) ? 'Đăng ký các module còn lại' : 'Đăng ký toàn bộ khóa học'}">Đăng ký toàn bộ</span>
                                 </button>
                             </form>
+                            <a th:if="${isEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${courseCohorts != null and !courseCohorts.isEmpty() ? courseCohorts[0].id : 1} + '/learn'}" class="btn btn-success w-100 rounded-pill fw-bold btn-sm py-2 shadow-sm mb-2">
+                                <i class="bi bi-play-circle-fill me-1"></i><span>Vào học ngay</span>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger w-100 rounded-pill fw-semibold btn-sm py-2 mb-2" id="btnWishlistToggle" th:onclick="'toggleWishlist(' + ${course.id} + ')'">
+                                <i class="bi" th:classappend="${inWishlist ? 'bi-heart-fill text-danger' : 'bi-heart'}"></i>
+                                <span id="wishlistBtnText" th:text="${inWishlist ? 'Đã lưu vào Yêu thích' : 'Lưu vào Yêu thích'}">Lưu vào Yêu thích</span>
+                            </button>
                         </div>
 
                         <div class="text-center small text-muted mt-2" th:text="${(isEnrolled || hasAccessRole) ? 'Tiếp tục hành trình học tập' : 'Bắt đầu học ngay hôm nay!'}">
@@ -1280,5 +1336,85 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+async function addToCartAjax(event, form) {
+    if (event) {
+        event.preventDefault();
+    }
+    try {
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            params.append(key, value);
+        }
+        const res = await fetch('/cart/add', {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        if (data.success) {
+            if (typeof Toastify === 'function') {
+                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
+            } else {
+                alert(data.message);
+            }
+            const badges = document.querySelectorAll('.nav-cart-badge');
+            badges.forEach(badge => {
+                badge.textContent = data.cartItemCount;
+                if (data.cartItemCount > 0) {
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            });
+        } else {
+            if (typeof Toastify === 'function') {
+                Toastify({ text: data.message || 'Không thể thêm vào giỏ hàng.', duration: 3000, gravity: 'top', position: 'right', style: { background: '#f59e0b' } }).showToast();
+            } else {
+                alert(data.message || 'Không thể thêm vào giỏ hàng.');
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        form.submit();
+    }
+}
+
+async function toggleWishlist(courseId) {
+    try {
+        const res = await fetch('/api/wishlist/toggle/' + courseId, { method: 'POST' });
+        const data = await res.json();
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        if (data.success) {
+            const btn = document.getElementById('btnWishlistToggle');
+            const icon = btn.querySelector('i');
+            const text = document.getElementById('wishlistBtnText');
+            if (data.inWishlist) {
+                icon.className = 'bi bi-heart-fill text-danger';
+                text.textContent = 'Đã lưu vào Yêu thích';
+            } else {
+                icon.className = 'bi bi-heart';
+                text.textContent = 'Lưu vào Yêu thích';
+            }
+            if (typeof Toastify === 'function') {
+                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+</script>
 </body>
 </html>

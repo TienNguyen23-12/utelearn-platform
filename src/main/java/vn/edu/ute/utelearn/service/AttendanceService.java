@@ -8,7 +8,10 @@ import java.util.List;
 public interface AttendanceService {
     ModeratorAttendance checkIn(User moderator);
     ModeratorAttendance checkOut(User moderator);
+    ModeratorAttendance checkInOvertime(User moderator);
+    ModeratorAttendance checkOutOvertime(User moderator);
     ModeratorAttendance getCurrentAttendance(User moderator);
     List<ModeratorAttendance> getAttendanceHistory(User moderator);
     List<ModeratorAttendance> getAllAttendances();
+    void autoCheckOutExpiredAttendances();
 }

@@ -28,6 +28,12 @@
                     <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                 </a>
 
+                <a th:if="${currentUser != null}" href="/cart" class="btn btn-light position-relative border-0 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #f8fafc;" title="Giỏ hàng khóa học">
+                    <i class="bi bi-cart3 text-primary fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger nav-cart-badge" style="font-size: 10px;" th:classappend="${cartItemCount == null or cartItemCount <= 0} ? 'd-none' : ''" th:text="${cartItemCount != null ? cartItemCount : 0}">0</span>
+                </a>
+
+
                 <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
                     <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
                     <button class="btn btn-light position-relative border-0 rounded-circle d-flex align-items-center justify-content-center nav-notification-btn"
@@ -106,6 +112,8 @@
                                     class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/orders"><i
                                     class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3" href="/cart"><i
+                                    class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
                         <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}"><a class="dropdown-item py-2 small rounded-3"
                                 href="/admin/orders"><i
                                     class="bi bi-credit-card-2-front me-2 text-primary"></i>Quản lý Đơn hàng</a></li>
@@ -166,15 +174,6 @@
                         <a class="nav-link" th:classappend="${activePage == 'cohorts'} ? ' text-primary active' : ''"
                             href="/cohorts">Module & Chuyên đề</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-inline-flex align-items-center gap-1"
-                            th:classappend="${activePage == 'oj'} ? ' text-primary active' : ''"
-                            href="javascript:void(0)" onclick="notifyOjPhase2(event)" role="button">
-                            <i class="bi bi-code-square me-1"></i>Luyện thi OJ
-                            <span class="badge rounded-pill fw-semibold"
-                                style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                        </a>
-                    </li>
                 </ul>
 
                 <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
@@ -183,6 +182,12 @@
                         <span class="small text-muted d-none d-md-inline">Ví:</span>
                         <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                     </a>
+
+                    <a th:if="${currentUser != null}" href="/cart" class="btn btn-light position-relative border rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #f8fafc;" title="Giỏ hàng khóa học">
+                        <i class="bi bi-cart3 text-primary fs-5"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger nav-cart-badge" style="font-size: 10px;" th:classappend="${cartItemCount == null or cartItemCount <= 0} ? 'd-none' : ''" th:text="${cartItemCount != null ? cartItemCount : 0}">0</span>
+                    </a>
+
 
                     <div class="dropdown" th:if="${currentUser != null}" th:data-chat-user-id="${currentUser.id}">
                         <span th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}" class="d-none" data-is-instructor="true"></span>
@@ -262,6 +267,8 @@
                             </li>
                             <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i
                                         class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/cart"><i
+                                        class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
                             <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
                                 <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
                                     href="/admin/orders">
@@ -298,6 +305,9 @@
                     </div>
 
                     <div th:unless="${currentUser != null}" class="d-flex align-items-center gap-2">
+                        <a href="/cart" class="btn btn-light position-relative border rounded-circle d-flex align-items-center justify-content-center me-1" style="width: 40px; height: 40px; background-color: #f8fafc;" title="Giỏ hàng khóa học">
+                            <i class="bi bi-cart3 text-primary fs-5"></i>
+                        </a>
                         <a href="/login" class="btn btn-light rounded-pill px-3 py-2 fw-semibold text-dark border">
                             <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
                         </a>

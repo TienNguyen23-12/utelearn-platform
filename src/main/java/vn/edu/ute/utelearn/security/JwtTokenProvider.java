@@ -146,12 +146,16 @@ public class JwtTokenProvider {
         ));
     }
 
-    public void clearTokenCookie(HttpServletResponse response) {
-        Cookie cookie = new Cookie(properties.getJwt().getCookieName(), null);
+        public void clearTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(properties.getJwt().getCookieName(), "");
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
+        Cookie sessionCookie = new Cookie("JSESSIONID", "");
+        sessionCookie.setPath("/");
+        sessionCookie.setMaxAge(0);
+        response.addCookie(sessionCookie);
         response.addHeader("Set-Cookie", String.format(
             "%s=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax",
             properties.getJwt().getCookieName()
