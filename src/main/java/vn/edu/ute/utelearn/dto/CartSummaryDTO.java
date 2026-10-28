@@ -22,17 +22,28 @@ public class CartSummaryDTO {
     private BigDecimal originalTotal = BigDecimal.ZERO;
 
     @Builder.Default
+    private BigDecimal bundleSavings = BigDecimal.ZERO;
+
+    @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Builder.Default
     private BigDecimal finalTotal = BigDecimal.ZERO;
 
+    private String bundleMessage;
     private String discountCode;
     private String discountMessage;
     private boolean discountValid;
 
     public String getFormattedOriginalTotal() {
         return java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(originalTotal) + " VNĐ";
+    }
+
+    public String getFormattedBundleSavings() {
+        if (bundleSavings == null || bundleSavings.compareTo(BigDecimal.ZERO) <= 0) {
+            return "0 VNĐ";
+        }
+        return java.text.NumberFormat.getNumberInstance(java.util.Locale.US).format(bundleSavings) + " VNĐ";
     }
 
     public String getFormattedDiscountAmount() {
@@ -60,5 +71,7 @@ public class CartSummaryDTO {
         private String formattedPrice;
         private String imageUrl;
         private boolean selected;
+        private String bundleNote;
+        private String detailUrl;
     }
 }

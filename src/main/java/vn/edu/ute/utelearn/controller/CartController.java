@@ -51,9 +51,16 @@ public class CartController {
     @PostMapping("/add")
     @ResponseBody
     public ResponseEntity<?> addToCartAjax(
-            @RequestParam String itemType,
-            @RequestParam Long itemId,
-            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) Long itemId,
+            jakarta.servlet.http.HttpServletRequest request) {
+        if (itemType == null) { itemType = request.getParameter("itemType"); }
+        if (itemId == null && request.getParameter("itemId") != null) {
+            try { itemId = Long.valueOf(request.getParameter("itemId")); } catch (Exception ignored) {}
+        }
+        if (itemType == null || itemId == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Thông tin sản phẩm không hợp lệ."));
+        }
 
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
@@ -79,10 +86,19 @@ public class CartController {
 
     @PostMapping("/add-redirect")
     public String addToCartAndRedirect(
-            @RequestParam String itemType,
-            @RequestParam Long itemId,
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) Long itemId,
             @RequestParam(required = false, defaultValue = "false") boolean buyNow,
+            jakarta.servlet.http.HttpServletRequest request,
             RedirectAttributes redirectAttributes) {
+        if (itemType == null) { itemType = request.getParameter("itemType"); }
+        if (itemId == null && request.getParameter("itemId") != null) {
+            try { itemId = Long.valueOf(request.getParameter("itemId")); } catch (Exception ignored) {}
+        }
+        if (itemType == null || itemId == null) {
+            redirectAttributes.addFlashAttribute("error", "Thông tin sản phẩm không hợp lệ.");
+            return "redirect:/courses";
+        }
 
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {

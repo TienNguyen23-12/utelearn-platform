@@ -237,4 +237,49 @@ public class CartServiceTest {
         verify(orderService, times(1)).createMultiItemOrder(eq(sampleUser), anyList(), isNull(), eq(BigDecimal.ZERO), eq("VIETQR_SEPAY"), any());
         verify(cartItemRepository, times(1)).deleteAll(anyList());
     }
+    @Test
+    void testCheckoutCart_BundlesMultipleCohortsIntoCourse_Success() {
+        Cohort cohort2 = Cohort.builder()
+                .id(102L)
+                .name("Chuyen de Microservices")
+                .code("SPRING-02")
+                .price(new BigDecimal("350000"))
+                .course(sampleCourse)
+                .build();
+
+        CartItem cohortCartItem2 = CartItem.builder()
+                .id(503L)
+                .user(sampleUser)
+                .itemType("COHORT")
+                .cohort(cohort2)
+                .build();
+
+        when(cartItemRepository.findByUserIdOrderByCreatedAtDesc(1L))
+                .thenReturn(List.of(sampleCohortCartItem, cohortCartItem2));
+        when(courseRepository.findById(10L))
+                .thenReturn(Optional.of(sampleCourse));
+        when(cohortRepository.findByCourseIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of(sampleCohort, cohort2));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(anyLong(), eq(1L)))
+                .thenReturn(false);
+
+        Order bundledOrder = Order.builder()
+                .id(1001L)
+                .orderCode("UTE_BUNDLE_01")
+                .status("PENDING")
+                .paymentMethod("VIETQR_SEPAY")
+                .totalAmount(new BigDecimal("500000"))
+                .build();
+
+        when(orderService.createMultiItemOrder(eq(sampleUser), anyList(), isNull(), eq(BigDecimal.ZERO), eq("VIETQR_SEPAY"), any()))
+                .thenReturn(bundledOrder);
+
+        Order result = cartService.checkoutCart(sampleUser, List.of(502L, 503L), null, "VIETQR_SEPAY", "Don gop 2 module thanh tron khoa");
+
+        assertNotNull(result);
+        assertEquals("UTE_BUNDLE_01", result.getOrderCode());
+        assertEquals(new BigDecimal("500000"), result.getTotalAmount());
+        verify(orderService, times(1)).createMultiItemOrder(eq(sampleUser), argThat(items -> items.size() == 1 && "COURSE".equals(items.get(0).getType())), isNull(), eq(BigDecimal.ZERO), eq("VIETQR_SEPAY"), any());
+        verify(cartItemRepository, times(1)).deleteAll(anyList());
+    }
 }

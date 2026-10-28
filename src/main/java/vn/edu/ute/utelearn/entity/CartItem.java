@@ -54,6 +54,9 @@ public class CartItem {
             return course.getPrice() != null ? course.getPrice() : BigDecimal.ZERO;
         }
         if ("COHORT".equalsIgnoreCase(itemType) && cohort != null) {
+            if (cohort.getCourse() != null && cohort.getCourse().getPrice() != null && cohort.getCourse().getPrice().compareTo(BigDecimal.ZERO) == 0) {
+                return BigDecimal.ZERO;
+            }
             return cohort.getPrice() != null ? cohort.getPrice() : BigDecimal.ZERO;
         }
         return BigDecimal.ZERO;
@@ -74,7 +77,7 @@ public class CartItem {
         if ("COHORT".equalsIgnoreCase(itemType) && cohort != null && cohort.getCourse() != null) {
             return cohort.getCourse().getThumbnailUrl();
         }
-        return "/assets/img/default-course.png";
+        return "/images/courses/default-course.jpg";
     }
 
     public String getSlugOrCode() {

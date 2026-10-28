@@ -375,7 +375,7 @@
                 <div class="p-4 d-flex flex-column flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${course.categoryName || 'Khóa học'}</span>
-                        ${typeBadge}
+                        ${course.isOwner ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-person-badge-fill me-1"></i>Khóa của bạn</span>' : (course.isEnrolled ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu</span>' : (course.isCourseInCart ? '<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-cart3 me-1"></i>Đã trong giỏ</span>' : (course.isPartiallyEnrolled ? `<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 small fw-semibold">Đã học ${course.userEnrolledCohortsCount}/${course.modulesCount} phần</span>` : typeBadge)))}
                     </div>
                     <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-layers-fill me-1 text-primary"></i>Lộ trình: ${modulesLabel}</div>
                     <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">
@@ -399,15 +399,25 @@
                         </div>
                     </div>
                     <div class="mt-3 w-100 d-flex gap-2">
-                        <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
-                            <i class="bi bi-info-circle me-1"></i>Chi tiết
-                        </a>
+                        ${course.isOwner ? `
+                            <a href="/courses/${course.slug}" class="btn btn-warning rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
+                                <i class="bi bi-mortarboard-fill me-1"></i>Vào giảng dạy
+                            </a>
+                        ` : (course.isEnrolled ? `
+                            <a href="/courses/${course.slug}" class="btn btn-success rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
+                                <i class="bi bi-play-circle-fill me-1"></i>Vào học ngay
+                            </a>
+                        ` : `
+                            <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
+                                <i class="bi bi-info-circle me-1"></i>${course.isPartiallyEnrolled ? 'Chi tiết / Học tiếp' : 'Chi tiết'}
+                            </a>
+                            <button type="button" class="btn btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="${course.isCourseInCart ? 'Khóa học đã có trong giỏ hàng' : 'Thêm vào giỏ hàng'}" onclick="addToCartCatalog(event, 'COURSE', ${course.id})">
+                                <i class="bi bi-cart-plus"></i>
+                            </button>
+                        `)}
                         <button type="button" class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="Lưu vào yêu thích" onclick="toggleCatalogWishlist(event, ${course.id}, this)">
                             <i class="bi bi-heart"></i>
                         </button>
-                        <a href="/courses/${course.slug}/enroll-all" class="btn btn-primary rounded-pill w-100 fw-semibold btn-sm py-2 mt-2 text-decoration-none">
-                            <i class="bi bi-cart-plus me-1"></i>Đăng ký
-                        </a>
                     </div>
                 </div>
             </div>
@@ -611,6 +621,47 @@
         }
         showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
     }
+async function addToCartCatalog(event, itemType, itemId) {
+    if (event) {
+        event.stopPropagation();
+    }
+    try {
+        const params = new URLSearchParams();
+        params.append('itemType', itemType);
+        params.append('itemId', itemId);
+        const res = await fetch('/cart/add', {
+            method: 'POST',
+            body: params,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+        if (data.success) {
+            showToast(data.message, 'success');
+            const badges = document.querySelectorAll('.nav-cart-badge');
+            badges.forEach(badge => {
+                badge.textContent = data.cartItemCount;
+                if (data.cartItemCount > 0) {
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            });
+        } else {
+            showToast(data.message || 'Không thể thêm vào giỏ hàng.', 'warning');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
+    }
+}
+
 async function toggleCatalogWishlist(event, courseId, btn) {
     event.stopPropagation();
     try {

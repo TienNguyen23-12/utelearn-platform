@@ -179,4 +179,34 @@ public class ModeratorController {
         }
         return "redirect:/moderator/attendance";
     }
+
+    @PostMapping("/attendance/check-in-ot")
+    public String checkInOvertime(RedirectAttributes redirectAttributes) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        try {
+            attendanceService.checkInOvertime(currentUserOpt.get());
+            redirectAttributes.addFlashAttribute("success", "Bắt đầu ca làm việc ngoài giờ (Check-in OT) thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/moderator/attendance";
+    }
+
+    @PostMapping("/attendance/check-out-ot")
+    public String checkOutOvertime(RedirectAttributes redirectAttributes) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        try {
+            attendanceService.checkOutOvertime(currentUserOpt.get());
+            redirectAttributes.addFlashAttribute("success", "Kết thúc ca làm việc ngoài giờ (Check-out OT) thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/moderator/attendance";
+    }
 }

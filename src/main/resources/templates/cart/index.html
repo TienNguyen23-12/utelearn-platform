@@ -27,11 +27,25 @@
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
             transform: translateY(-1px);
         }
+        .cart-item-title-link {
+            transition: color 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        .cart-item-title-link:hover {
+            color: #4f46e5 !important;
+            text-decoration: underline !important;
+        }
         .cart-thumb {
             width: 110px;
             height: 72px;
             object-fit: cover;
             border-radius: 10px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            cursor: pointer;
+        }
+        a:hover .cart-thumb {
+            transform: scale(1.03);
+            opacity: 0.92;
         }
         .payment-choice-card {
             border: 2px solid #e2e8f0;
@@ -131,7 +145,9 @@
                                 <div class="form-check mb-0">
                                     <input class="form-check-input item-checkbox" type="checkbox" name="selectedItemIds" th:value="${item.id}" th:checked="${item.selected}" onchange="recalculateCart()">
                                 </div>
-                                <img th:src="${item.imageUrl != null and !item.imageUrl.isBlank() ? item.imageUrl : '/images/courses/default-cover.png'}" th:alt="${item.title}" class="cart-thumb d-none d-sm-block flex-shrink-0" onerror="this.src='/images/courses/default-cover.png'">
+                                <a th:href="@{${item.detailUrl != null ? item.detailUrl : '#'}}" class="d-none d-sm-block flex-shrink-0 text-decoration-none" title="Xem chi ti?t">
+                                    <img th:src="${item.imageUrl != null and !item.imageUrl.isBlank() ? item.imageUrl : '/images/courses/default-cover.png'}" th:alt="${item.title}" class="cart-thumb" onerror="this.src='/images/courses/default-cover.png'">
+                                </a>
                                 <div class="flex-grow-1 overflow-hidden">
                                     <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                         <span th:if="${'COURSE'.equalsIgnoreCase(item.itemType)}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
@@ -141,8 +157,13 @@
                                             <i class="bi bi-collection me-1"></i>Module chuyên đề
                                         </span>
                                         <span class="badge bg-light text-secondary border font-monospace small px-2 py-0.5" th:text="${item.codeOrSlug}">CODE</span>
+                                        <span th:if="${item.bundleNote != null}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
+                                            <i class="bi bi-stars me-1"></i><span th:text="${item.bundleNote}"></span>
+                                        </span>
                                     </div>
-                                    <h6 class="fw-bold text-dark mb-1 text-truncate" th:text="${item.title}">Tiêu đề khóa học</h6>
+                                    <h6 class="fw-bold mb-1 text-truncate">
+                                        <a th:href="@{${item.detailUrl != null ? item.detailUrl : '#'}}" class="text-dark text-decoration-none cart-item-title-link" th:text="${item.title}" title="Xem chi tiết">Tiêu đề</a>
+                                    </h6>
                                     <div class="fw-bold text-primary fs-6" th:text="${item.formattedPrice}">0 VNĐ</div>
                                 </div>
                                 <div class="ms-auto flex-shrink-0">

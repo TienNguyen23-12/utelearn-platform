@@ -58,4 +58,18 @@ public class ModeratorAttendance {
 
     @Column(name = "check_out_at")
     private Instant checkOutAt;
+
+    @Column(name = "is_overtime")
+    @Builder.Default
+    private Boolean isOvertime = false;
+
+    @Column(name = "ot_check_in_at")
+    private Instant otCheckInAt;
+
+    @Column(name = "ot_check_out_at")
+    private Instant otCheckOutAt;
+
+    @Column(name = "ot_workload_minutes")
+    @Builder.Default
+    private Integer otWorkloadMinutes = 0;
 }

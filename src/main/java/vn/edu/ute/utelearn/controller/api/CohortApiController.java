@@ -25,6 +25,8 @@ public class CohortApiController {
 
     private final CohortService cohortService;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
+    private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
+    private final vn.edu.ute.utelearn.dao.CartItemRepository cartItemRepository;
     private final vn.edu.ute.utelearn.service.AuthService authService;
 
     @PostMapping("/{moduleId}/last-lesson/{lessonId}")
@@ -82,6 +84,7 @@ public class CohortApiController {
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
             Page<Cohort> cohortPage = cohortService.searchPublicCohorts(safeQ, safeCategory, pageable);
+            java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
 
             List<Map<String, Object>> cohorts = cohortPage.getContent().stream().map(cohort -> {
                 Map<String, Object> map = new HashMap<>();
@@ -90,7 +93,32 @@ public class CohortApiController {
                 map.put("name", cohort.getName());
                 map.put("status", cohort.getStatus());
                 map.put("visibility", cohort.getVisibility() != null ? cohort.getVisibility() : "PUBLIC");
-                map.put("price", cohort.getPrice());
+                java.math.BigDecimal cohortPrice = cohort.getPrice();
+                if (cohort.getCourse() != null && cohort.getCourse().getPrice() != null && cohort.getCourse().getPrice().compareTo(java.math.BigDecimal.ZERO) == 0) {
+                    cohortPrice = java.math.BigDecimal.ZERO;
+                }
+                map.put("price", cohortPrice);
+
+                boolean isEnrolled = false;
+                boolean isOwner = false;
+                boolean isCourseEnrolled = false;
+                boolean isCourseInCart = false;
+                if (currentUserOpt.isPresent()) {
+                    vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
+                    isEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId());
+                    isOwner = (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId()))
+                            || (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(user.getId()));
+                    if (cohort.getCourse() != null) {
+                        List<Cohort> cCohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(cohort.getCourse().getId());
+                        isCourseEnrolled = !cCohorts.isEmpty() && cCohorts.stream()
+                                .allMatch(c -> cohortMemberRepository.existsByCohort_IdAndUser_Id(c.getId(), user.getId()));
+                        isCourseInCart = cartItemRepository.existsByUserIdAndCourseId(user.getId(), cohort.getCourse().getId());
+                    }
+                }
+                map.put("isEnrolled", isEnrolled);
+                map.put("isOwner", isOwner);
+                map.put("isCourseEnrolled", isCourseEnrolled);
+                map.put("isCourseInCart", isCourseInCart);
                 map.put("currentEnrolled", cohortMemberRepository.countByCohort_Id(cohort.getId()));
 
                 Double avgCohort = cohortMemberRepository.getAverageRatingByCohortId(cohort.getId());

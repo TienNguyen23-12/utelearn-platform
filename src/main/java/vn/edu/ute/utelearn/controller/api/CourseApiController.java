@@ -33,6 +33,7 @@ public class CourseApiController {
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
+    private final vn.edu.ute.utelearn.dao.CartItemRepository cartItemRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
@@ -45,6 +46,7 @@ public class CourseApiController {
             @RequestParam(defaultValue = "12") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Course> coursePage = courseService.getPublishedCourses(q, category, level, pageable);
+        Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
 
         List<Map<String, Object>> courses = coursePage.getContent().stream().map(course -> {
             Map<String, Object> map = new HashMap<>();
@@ -55,7 +57,15 @@ public class CourseApiController {
             map.put("headline", course.getHeadline());
             map.put("thumbnailUrl", (course.getThumbnailUrl() != null && !course.getThumbnailUrl().isBlank()) ? course.getThumbnailUrl() : "/images/courses/default-cover.png");
             map.put("level", course.getLevel());
-            map.put("price", course.getPrice());
+            List<vn.edu.ute.utelearn.entity.Cohort> cohortsForPrice = cohortRepository.findByCourseIdOrderByCreatedAtAsc(course.getId());
+            java.math.BigDecimal sumCohorts = cohortsForPrice.stream()
+                    .map(vn.edu.ute.utelearn.entity.Cohort::getPrice)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+            java.math.BigDecimal effectivePrice = (course.getPrice() != null && course.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0)
+                    ? course.getPrice()
+                    : sumCohorts;
+            map.put("price", effectivePrice);
             map.put("categoryName", course.getCategory() != null ? course.getCategory().getName() : null);
             map.put("categorySlug", course.getCategory() != null ? course.getCategory().getSlug() : null);
             map.put("instructorName",
@@ -87,6 +97,30 @@ public class CourseApiController {
             }
             map.put("originalPrice", originalPrice);
             map.put("sumOfCohorts", sumOfCohorts);
+
+            boolean isEnrolled = false;
+            boolean isPartiallyEnrolled = false;
+            boolean isOwner = false;
+            boolean isCourseInCart = false;
+            int userEnrolledCohortsCount = 0;
+            if (currentUserOpt.isPresent()) {
+                vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
+                isOwner = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
+                isCourseInCart = cartItemRepository.existsByUserIdAndCourseId(user.getId(), course.getId());
+                if (!cohorts.isEmpty()) {
+                    long enrolledCount = cohorts.stream()
+                            .filter(c -> cohortMemberRepository.existsByCohort_IdAndUser_Id(c.getId(), user.getId()))
+                            .count();
+                    userEnrolledCohortsCount = (int) enrolledCount;
+                    isEnrolled = (enrolledCount == cohorts.size());
+                    isPartiallyEnrolled = (enrolledCount > 0 && enrolledCount < cohorts.size());
+                }
+            }
+            map.put("isEnrolled", isEnrolled);
+            map.put("isPartiallyEnrolled", isPartiallyEnrolled);
+            map.put("isOwner", isOwner);
+            map.put("isCourseInCart", isCourseInCart);
+            map.put("userEnrolledCohortsCount", userEnrolledCohortsCount);
             return map;
         }).collect(Collectors.toList());
 
