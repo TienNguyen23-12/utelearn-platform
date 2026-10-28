@@ -14,6 +14,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
@@ -99,13 +100,13 @@
         }
         @media (min-width: 992px) {
             .enroll-col-desktop {
-                margin-top: -320px !important;
+                margin-top: -180px !important;
             }
             .sticky-drawer {
                 position: -webkit-sticky;
                 position: sticky;
-                top: 90px;
-                z-index: 100;
+                top: 88px;
+                z-index: 90;
             }
         }
         @media (max-width: 991.98px) {
@@ -1416,5 +1417,38 @@ async function toggleWishlist(courseId) {
     }
 }
 </script>
+<div class="mobile-sticky-enroll-bar d-lg-none" th:if="${!isEnrolled && !hasAccessRole}">
+    <div class="container d-flex align-items-center justify-content-between gap-3">
+        <div>
+            <small class="text-muted d-block lh-1" style="font-size: 11px;">Học phí trọn gói:</small>
+            <span class="fw-bold text-success fs-6 lh-1" th:text="${fullCoursePrice > 0 ? #numbers.formatDecimal(fullCoursePrice, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <form th:if="${fullCoursePrice != null && fullCoursePrice > 0}" th:action="@{/cart/add-redirect}" method="post" class="m-0" onsubmit="addToCartAjax(event, this)">
+                <input type="hidden" name="itemType" value="COURSE">
+                <input type="hidden" name="itemId" th:value="${course.id}">
+                <button type="submit" class="btn btn-outline-primary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" title="Thêm vào giỏ">
+                    <i class="bi bi-cart-plus fs-6"></i>
+                </button>
+            </form>
+            <form th:action="@{'/courses/' + ${course.slug} + '/enroll-all'}" method="post" class="m-0">
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-bold shadow-sm">
+                    <i class="bi bi-bag-check-fill me-1"></i><span th:text="${(hasEnrolledSome != null and hasEnrolledSome) ? 'Đăng ký tiếp' : 'Đăng ký ngay'}">Đăng ký ngay</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="mobile-sticky-enroll-bar d-lg-none" th:if="${isEnrolled || hasAccessRole}">
+    <div class="container d-flex align-items-center justify-content-between gap-3">
+        <div class="text-truncate">
+            <small class="text-success fw-bold d-block lh-1" style="font-size: 11px;"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu</small>
+            <span class="fw-bold text-dark small text-truncate d-block" th:text="${course.title}">Khóa học</span>
+        </div>
+        <a th:href="@{'/courses/' + ${course.slug} + '/learn'}" class="btn btn-success btn-sm rounded-pill px-4 py-2 fw-bold shadow-sm flex-shrink-0">
+            <i class="bi bi-play-circle-fill me-1"></i>Vào học
+        </a>
+    </div>
+</div>
 </body>
 </html>

@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
@@ -208,7 +209,7 @@
                                 <span class="badge rounded-pill px-3 py-1" th:classappend="${order.statusBadgeClass}" th:text="${order.statusDisplayName}">Thành công</span>
                             </td>
                             <td class="text-end pe-4">
-                                <div class="d-flex justify-content-end gap-1">
+                                <div class="d-flex justify-content-end gap-1 flex-nowrap">
                                     <a th:if="${order.status == 'PENDING'}" th:href="@{'/checkout/payment/' + ${order.orderCode}}" class="btn btn-sm btn-primary rounded-pill px-3">
                                         <i class="bi bi-qr-code me-1"></i>Thanh toán
                                     </a>

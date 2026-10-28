@@ -26,12 +26,6 @@
                 <li class="nav-item">
                     <a class="nav-link" th:classappend="${activePage == 'cohorts'} ? ' text-primary active' : ''" href="/cohorts">Module & Chuyên đề</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link d-inline-flex align-items-center gap-1" href="javascript:void(0)" onclick="notifyOjPhase2(event)" role="button">
-                        <i class="bi bi-code-square me-1"></i>Luyện thi OJ
-                        <span class="badge rounded-pill fw-semibold" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                    </a>
-                </li>
             </ul>
 
             <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
@@ -57,7 +51,7 @@
                         <i class="bi bi-bell-fill text-muted fs-5"></i>
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none nav-notification-badge" style="font-size: 10px;">0</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 390px; max-width: 95vw;">
+                    <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-0 mt-2" style="width: 360px; max-width: calc(100vw - 32px);">
                         <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
                             <span class="fw-bold small text-dark"><i class="bi bi-bell-fill text-primary me-2"></i>Thông báo</span>
                             <button class="btn btn-sm btn-link text-decoration-none text-muted p-0 mark-all-read-btn" style="font-size: 11px;" title="Đánh dấu tất cả đã đọc">
