@@ -102,10 +102,12 @@ public class CourseApiController {
             boolean isPartiallyEnrolled = false;
             boolean isOwner = false;
             boolean isCourseInCart = false;
+            boolean isAdmin = false;
             int userEnrolledCohortsCount = 0;
             if (currentUserOpt.isPresent()) {
                 vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
-                isOwner = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId());
+                isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(user);
+                isOwner = isAdmin || (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
                 isCourseInCart = cartItemRepository.existsByUserIdAndCourseId(user.getId(), course.getId());
                 if (!cohorts.isEmpty()) {
                     long enrolledCount = cohorts.stream()
@@ -116,6 +118,7 @@ public class CourseApiController {
                     isPartiallyEnrolled = (enrolledCount > 0 && enrolledCount < cohorts.size());
                 }
             }
+            map.put("isAdmin", isAdmin);
             map.put("isEnrolled", isEnrolled);
             map.put("isPartiallyEnrolled", isPartiallyEnrolled);
             map.put("isOwner", isOwner);

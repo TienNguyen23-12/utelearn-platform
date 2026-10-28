@@ -109,7 +109,7 @@
                                             <div class="d-flex align-items-center gap-1 mb-1" th:if="${item.course.category != null}">
                                                 <span class="badge bg-light text-primary border small" th:text="${item.course.category.name}">Danh mục</span>
                                             </div>
-                                            <h6 class="card-title fw-bold text-dark mb-2" th:text="${item.course.title}" style="line-height: 1.4;">Tiêu đề khóa học</h6>
+                                            <h6 class="card-title fw-bold text-dark mb-2 line-clamp-2" th:text="${item.course.title}" style="line-height: 1.4; min-height: 44px;">Tiêu đề khóa học</h6>
                                             <p class="text-muted small mb-2">
                                                 <i class="bi bi-person-circle me-1"></i><span th:text="${item.course.createdBy != null ? item.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
                                                 <br>
@@ -253,7 +253,7 @@
                                             <small class="text-primary fw-semibold text-truncate d-block mb-1">
                                                 <i class="bi bi-mortarboard me-1"></i><span th:text="${cm.cohort.course != null ? cm.cohort.course.title : 'Module độc lập'}">Khóa học</span>
                                             </small>
-                                            <h6 class="card-title fw-bold text-dark mb-2" th:text="${cm.cohort.name}" style="line-height: 1.4;">Tên Module</h6>
+                                            <h6 class="card-title fw-bold text-dark mb-2 line-clamp-2" th:text="${cm.cohort.name}" style="line-height: 1.4; min-height: 44px;">Tên Module</h6>
                                             <p class="text-muted small mb-3">
                                                 <i class="bi bi-person-circle me-1"></i><span th:text="${cm.cohort.course != null && cm.cohort.course.createdBy != null ? cm.cohort.course.createdBy.fullName : (cm.cohort.createdBy != null ? cm.cohort.createdBy.fullName : 'Giảng viên')}">Giảng viên</span>
                                                 <br>

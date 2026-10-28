@@ -365,59 +365,62 @@
             ? course.modulesCount + ' Module học phần'
             : 'Trọn bộ bài giảng';
 
+        const isAdmin = course.isAdmin === true;
+        let badgeHtml = '';
+        if (isAdmin) {
+            badgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5 small fw-semibold"><i class="bi bi-shield-lock-fill me-1"></i>Quản trị viên</span>';
+        } else if (course.isOwner) {
+            badgeHtml = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5 small fw-semibold"><i class="bi bi-person-badge-fill me-1"></i>Khóa của bạn</span>';
+        } else if (course.isEnrolled) {
+            badgeHtml = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu</span>';
+        } else if (course.isCourseInCart) {
+            badgeHtml = '<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5 small fw-semibold"><i class="bi bi-cart3 me-1"></i>Đã trong giỏ</span>';
+        } else if (course.isPartiallyEnrolled) {
+            badgeHtml = `<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5 small fw-semibold">Đã học ${course.userEnrolledCohortsCount}/${course.modulesCount} phần</span>`;
+        } else {
+            badgeHtml = typeBadge;
+        }
+
         return `
-        <div class="col-md-6 col-lg-4">
-            <div class="course-card">
-                <div class="course-image-wrapper">
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+            <div class="course-card h-100 d-flex flex-column">
+                <div class="course-image-wrapper position-relative">
                     <img src="${img}" alt="${course.title}" loading="lazy">
                     <span class="cohort-badge"><i class="bi bi-mortarboard-fill me-1"></i>${levelBadgeText}</span>
                 </div>
-                <div class="p-4 d-flex flex-column flex-grow-1">
+                <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-light text-primary border rounded-pill px-2 py-1 small">${course.categoryName || 'Khóa học'}</span>
-                        ${course.isOwner ? '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-person-badge-fill me-1"></i>Khóa của bạn</span>' : (course.isEnrolled ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Đã sở hữu</span>' : (course.isCourseInCart ? '<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 small fw-semibold"><i class="bi bi-cart3 me-1"></i>Đã trong giỏ</span>' : (course.isPartiallyEnrolled ? `<span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-1 small fw-semibold">Đã học ${course.userEnrolledCohortsCount}/${course.modulesCount} phần</span>` : typeBadge)))}
+                        <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small fw-semibold">${course.categoryName || 'Khóa học'}</span>
+                        ${badgeHtml}
                     </div>
-                    <div class="text-muted small mb-1" style="font-size: 11.5px;"><i class="bi bi-layers-fill me-1 text-primary"></i>Lộ trình: ${modulesLabel}</div>
-                    <h6 class="fw-bold text-dark mb-2 lh-base flex-grow-1">
-                        <a href="/courses/${course.slug}" class="text-dark text-decoration-none">${course.title}</a>
+                    <h6 class="fw-bold text-dark mb-2 lh-base line-clamp-2" title="${course.title}" style="min-height: 44px;">
+                        <a href="/courses/${course.slug}" class="text-dark text-decoration-none course-title-link">${course.title}</a>
                     </h6>
-                    <div class="text-muted small mb-2">
-                        <i class="bi bi-person-fill text-secondary me-1"></i><span>${course.instructorName}</span>
+                    <div class="text-muted small mb-2 d-flex align-items-center gap-1">
+                        <i class="bi bi-person-circle text-secondary"></i>
+                        <span class="text-truncate">${course.instructorName || 'Ban Giảng viên'}</span>
                     </div>
                     <div class="d-flex align-items-center gap-1 mb-3">
                         ${renderRatingHtml(course.rating, course.ratingCount)}
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top text-muted small">
-                        <span><i class="bi bi-people-fill me-1"></i>${course.enrolledCount || 0} học viên</span>
-                        <span><i class="bi bi-tag-fill me-1"></i>Mã: ${course.code || 'N/A'}</span>
-                    </div>
-                    <div class="mt-2 text-center">
-                        <small class="text-muted d-block" style="font-size: 11px;">Học phí trọn gói khóa học:</small>
-                        <div class="d-flex align-items-center justify-content-center gap-2">
-                            ${originalFormatted ? `<span class="text-muted text-decoration-line-through small" style="font-size: 13px;">${originalFormatted}</span>` : ''}
-                            <span class="fw-bold text-success fs-6">${priceFormatted}</span>
+                    <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
+                        <div class="d-flex flex-column">
+                            ${originalFormatted ? `<small class="text-muted text-decoration-line-through lh-1" style="font-size: 11px;">${originalFormatted}</small>` : ''}
+                            <span class="fw-bold text-success fs-6 lh-1 mt-0.5">${priceFormatted}</span>
                         </div>
-                    </div>
-                    <div class="mt-3 w-100 d-flex gap-2">
-                        ${course.isOwner ? `
-                            <a href="/courses/${course.slug}" class="btn btn-warning rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
-                                <i class="bi bi-mortarboard-fill me-1"></i>Vào giảng dạy
-                            </a>
-                        ` : (course.isEnrolled ? `
-                            <a href="/courses/${course.slug}" class="btn btn-success rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
-                                <i class="bi bi-play-circle-fill me-1"></i>Vào học ngay
-                            </a>
-                        ` : `
-                            <a href="/courses/${course.slug}" class="btn btn-outline-primary rounded-pill flex-grow-1 fw-semibold btn-sm py-2">
-                                <i class="bi bi-info-circle me-1"></i>${course.isPartiallyEnrolled ? 'Chi tiết / Học tiếp' : 'Chi tiết'}
-                            </a>
-                            <button type="button" class="btn btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="${course.isCourseInCart ? 'Khóa học đã có trong giỏ hàng' : 'Thêm vào giỏ hàng'}" onclick="addToCartCatalog(event, 'COURSE', ${course.id})">
-                                <i class="bi bi-cart-plus"></i>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; flex-shrink: 0;" title="Lưu vào yêu thích" onclick="toggleCatalogWishlist(event, ${course.id}, this)">
+                                <i class="bi bi-heart" style="font-size: 13px;"></i>
                             </button>
-                        `)}
-                        <button type="button" class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0;" title="Lưu vào yêu thích" onclick="toggleCatalogWishlist(event, ${course.id}, this)">
-                            <i class="bi bi-heart"></i>
-                        </button>
+                            ${(!course.isEnrolled && !course.isOwner) ? `
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; flex-shrink: 0;" title="${course.isCourseInCart ? 'Đã trong giỏ' : 'Thêm vào giỏ'}" onclick="addToCartCatalog(event, 'COURSE', ${course.id})">
+                                <i class="bi bi-cart-plus" style="font-size: 14px;"></i>
+                            </button>
+                            ` : ''}
+                            <a href="/courses/${course.slug}" class="btn btn-sm ${course.isEnrolled ? 'btn-success' : (isAdmin ? 'btn-outline-warning' : (course.isOwner ? 'btn-warning' : 'btn-outline-primary'))} rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                ${isAdmin ? '<i class="bi bi-gear-fill me-1"></i>Quản trị' : (course.isOwner ? 'Giảng dạy' : (course.isEnrolled ? '<i class="bi bi-play-circle-fill me-1"></i>Vào học' : 'Xem chi tiết'))}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -145,7 +145,7 @@
                                 <div class="form-check mb-0">
                                     <input class="form-check-input item-checkbox" type="checkbox" name="selectedItemIds" th:value="${item.id}" th:checked="${item.selected}" onchange="recalculateCart()">
                                 </div>
-                                <a th:href="@{${item.detailUrl != null ? item.detailUrl : '#'}}" class="d-none d-sm-block flex-shrink-0 text-decoration-none" title="Xem chi ti?t">
+                                <a th:href="@{${item.detailUrl != null ? item.detailUrl : '#'}}" class="d-none d-sm-block flex-shrink-0 text-decoration-none" title="Xem chi tiết">
                                     <img th:src="${item.imageUrl != null and !item.imageUrl.isBlank() ? item.imageUrl : '/images/courses/default-cover.png'}" th:alt="${item.title}" class="cart-thumb" onerror="this.src='/images/courses/default-cover.png'">
                                 </a>
                                 <div class="flex-grow-1 overflow-hidden">

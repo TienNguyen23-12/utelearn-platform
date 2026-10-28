@@ -103,10 +103,13 @@ public class CohortApiController {
                 boolean isOwner = false;
                 boolean isCourseEnrolled = false;
                 boolean isCourseInCart = false;
+                boolean isAdmin = false;
                 if (currentUserOpt.isPresent()) {
                     vn.edu.ute.utelearn.entity.User user = currentUserOpt.get();
+                    isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(user);
                     isEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(cohort.getId(), user.getId());
-                    isOwner = (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId()))
+                    isOwner = isAdmin
+                            || (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId()))
                             || (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null && cohort.getCourse().getCreatedBy().getId().equals(user.getId()));
                     if (cohort.getCourse() != null) {
                         List<Cohort> cCohorts = cohortRepository.findByCourseIdOrderByCreatedAtAsc(cohort.getCourse().getId());
@@ -115,6 +118,7 @@ public class CohortApiController {
                         isCourseInCart = cartItemRepository.existsByUserIdAndCourseId(user.getId(), cohort.getCourse().getId());
                     }
                 }
+                map.put("isAdmin", isAdmin);
                 map.put("isEnrolled", isEnrolled);
                 map.put("isOwner", isOwner);
                 map.put("isCourseEnrolled", isCourseEnrolled);
