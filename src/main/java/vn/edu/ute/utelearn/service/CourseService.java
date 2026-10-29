@@ -16,4 +16,6 @@ public interface CourseService {
     void deleteCourse(Long id);
     void deleteCourse(Long id, Long instructorId);
     Course getCourseById(Long id);
+    void revertToDraftIfPublished(Long courseId);
+    void revertToDraftIfPublished(Course course);
 }

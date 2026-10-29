@@ -38,6 +38,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final CohortScheduleRepository cohortScheduleRepository;
     private final LessonCompletionRepository lessonCompletionRepository;
     private final CohortMemberRepository cohortMemberRepository;
+    private final CourseRepository courseRepository;
     private final CloudinaryService cloudinaryService;
     private final ApplicationEventPublisher eventPublisher;
     @Lazy
@@ -299,6 +300,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         Assignment saved = assignmentRepository.save(assignment);
+        markLessonAndParentAsDraft(saved.getLesson());
 
         if (!requiresGrading) {
             List<AssignmentSubmission> existingList = assignmentSubmissionRepository.findByAssignmentIdOrderBySubmittedAtDesc(saved.getId());
@@ -660,4 +662,44 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
         log.info("[AssignmentService] Đã xóa thành công bài nộp ID {} của user {}", sub.getId(), userId);
     }
+
+    private void markLessonAndParentAsDraft(Lesson lesson) {
+        if (lesson == null) {
+            return;
+        }
+        if (!"DRAFT".equalsIgnoreCase(lesson.getStatus())) {
+            lesson.setStatus("DRAFT");
+            lessonRepository.save(lesson);
+        }
+        Section section = lesson.getSection();
+        if (section != null) {
+            Cohort cohort = section.getCohort();
+            if (cohort == null) {
+                List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lesson.getId());
+                if (!schedules.isEmpty() && schedules.get(0).getCohort() != null) {
+                    cohort = schedules.get(0).getCohort();
+                }
+            }
+            if (cohort != null) {
+                if ("APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+                    cohort.setModerationStatus("DRAFT");
+                    cohortRepository.save(cohort);
+                    log.info("[AssignmentService] Chuyển module id: {} về DRAFT do cập nhật bài tập", cohort.getId());
+                }
+                if (cohort.getCourse() != null && "PUBLISHED".equalsIgnoreCase(cohort.getCourse().getStatus())) {
+                    Course c = cohort.getCourse();
+                    c.setStatus("DRAFT");
+                    courseRepository.save(c);
+                    log.info("[AssignmentService] Chuyển khóa học id: {} về DRAFT do cập nhật bài tập trong module", c.getId());
+                }
+            }
+            Course course = section.getCourse();
+            if (course != null && "PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+                course.setStatus("DRAFT");
+                courseRepository.save(course);
+                log.info("[AssignmentService] Chuyển khóa học id: {} về DRAFT do cập nhật bài tập", course.getId());
+            }
+        }
+    }
+
 }

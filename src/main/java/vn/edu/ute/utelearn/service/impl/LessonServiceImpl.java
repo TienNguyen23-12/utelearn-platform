@@ -14,6 +14,7 @@ import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.LessonService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
+import vn.edu.ute.utelearn.util.ValidationUtils;
 import vn.edu.ute.utelearn.service.SectionService;
 
 import java.time.Instant;
@@ -69,6 +70,24 @@ public class LessonServiceImpl implements LessonService {
         return false;
     }
 
+    private void validateAndNormalizeVideoLesson(LessonRequestDTO request) {
+        if (request == null || !"VIDEO".equalsIgnoreCase(request.getLessonType())) {
+            return;
+        }
+        String rawVideoUrl = (request.getVideoUrl() != null && !request.getVideoUrl().isBlank())
+                ? request.getVideoUrl().trim()
+                : ((request.getAssetUrl() != null && !request.getAssetUrl().isBlank()) ? request.getAssetUrl().trim() : null);
+        if (rawVideoUrl == null || rawVideoUrl.isBlank()) {
+            log.warn("[LessonService] Từ chối lưu bài giảng video do thiếu URL video");
+            throw new IllegalArgumentException("Vui lòng nhập đường dẫn (URL) video cho bài giảng video");
+        }
+        if (!ValidationUtils.isValidVideoUrl(rawVideoUrl)) {
+            log.warn("[LessonService] Từ chối lưu bài giảng video do URL không hợp lệ: {}", rawVideoUrl);
+            throw new IllegalArgumentException("Đường dẫn video không hợp lệ hoặc không chứa nội dung video bài giảng");
+        }
+        request.setVideoUrl(rawVideoUrl);
+    }
+
     @Override
     public List<Lesson> getLessonsBySectionId(Long sectionId) {
         return lessonRepository.findBySectionIdOrderByOrderIndexAsc(sectionId);
@@ -84,7 +103,7 @@ public class LessonServiceImpl implements LessonService {
         if (request.getDurationSeconds() != null && request.getDurationSeconds() > 0) {
             return request.getDurationSeconds();
         }
-        if ("VIDEO".equalsIgnoreCase(request.getLessonType()) && request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
+        if (cloudinaryService != null && "VIDEO".equalsIgnoreCase(request.getLessonType()) && request.getVideoUrl() != null && !request.getVideoUrl().isBlank()) {
             Integer detected = cloudinaryService.getVideoDuration(request.getVideoUrl());
             if (detected != null && detected > 0) {
                 return detected;
@@ -101,6 +120,8 @@ public class LessonServiceImpl implements LessonService {
         if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền thêm bài học vào phần này");
         }
+
+        validateAndNormalizeVideoLesson(request);
 
         Integer durationSeconds = resolveDurationSeconds(request);
 
@@ -152,9 +173,11 @@ public class LessonServiceImpl implements LessonService {
                 cohortScheduleRepository.save(schedule);
                 revertCohortToDraftIfApproved(cohort);
             });
-        } else if (section != null && section.getCohort() != null) {
+        }
+        if (section != null && section.getCohort() != null) {
             revertCohortToDraftIfApproved(section.getCohort());
-        } else if (section != null && section.getCourse() != null) {
+        }
+        if (section != null && section.getCourse() != null) {
             revertCourseToDraftIfPublished(section.getCourse());
         }
 
@@ -171,6 +194,8 @@ public class LessonServiceImpl implements LessonService {
         if (!isAuthorized(section, instructorId)) {
             throw new RuntimeException("Bạn không có quyền sửa bài học này");
         }
+
+        validateAndNormalizeVideoLesson(request);
 
         lesson.setTitle(request.getTitle());
         lesson.setLessonType(request.getLessonType());
@@ -252,19 +277,18 @@ public class LessonServiceImpl implements LessonService {
                     revertCohortToDraftIfApproved(cohort);
                 });
             }
-        } else if (section != null && section.getCohort() != null) {
+        }
+        if (section != null && section.getCohort() != null) {
             revertCohortToDraftIfApproved(section.getCohort());
-        } else {
-            List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
-            if (!schedules.isEmpty()) {
-                for (CohortSchedule cs : schedules) {
-                    if (cs.getCohort() != null) {
-                        revertCohortToDraftIfApproved(cs.getCohort());
-                    }
-                }
-            } else if (section != null && section.getCourse() != null) {
-                revertCourseToDraftIfPublished(section.getCourse());
+        }
+        List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
+        for (CohortSchedule cs : schedules) {
+            if (cs.getCohort() != null) {
+                revertCohortToDraftIfApproved(cs.getCohort());
             }
+        }
+        if (section != null && section.getCourse() != null) {
+            revertCourseToDraftIfPublished(section.getCourse());
         }
 
         log.info("[LessonService] Đã cập nhật thành công bài học ID: {}", savedLesson.getId());
@@ -282,15 +306,15 @@ public class LessonServiceImpl implements LessonService {
         }
 
         List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
-        if (!schedules.isEmpty()) {
-            for (CohortSchedule cs : schedules) {
-                if (cs.getCohort() != null) {
-                    revertCohortToDraftIfApproved(cs.getCohort());
-                }
+        for (CohortSchedule cs : schedules) {
+            if (cs.getCohort() != null) {
+                revertCohortToDraftIfApproved(cs.getCohort());
             }
-        } else if (section != null && section.getCohort() != null) {
+        }
+        if (section != null && section.getCohort() != null) {
             revertCohortToDraftIfApproved(section.getCohort());
-        } else if (section != null && section.getCourse() != null) {
+        }
+        if (section != null && section.getCourse() != null) {
             revertCourseToDraftIfPublished(section.getCourse());
         }
 
@@ -304,6 +328,14 @@ public class LessonServiceImpl implements LessonService {
     public void reorderLessons(Long sectionId, List<Long> lessonIds, Long instructorId) {
         if (lessonIds == null || lessonIds.isEmpty()) return;
         Section targetSection = (sectionId != null && sectionId > 0) ? sectionRepository.findById(sectionId).orElse(null) : null;
+        if (targetSection != null) {
+            if (targetSection.getCohort() != null) {
+                revertCohortToDraftIfApproved(targetSection.getCohort());
+            }
+            if (targetSection.getCourse() != null) {
+                revertCourseToDraftIfPublished(targetSection.getCourse());
+            }
+        }
         for (int i = 0; i < lessonIds.size(); i++) {
             Long lId = lessonIds.get(i);
             Lesson l = lessonRepository.findById(lId).orElse(null);
@@ -318,10 +350,16 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private void revertCohortToDraftIfApproved(Cohort cohort) {
-        if (cohort != null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (cohort == null) {
+            return;
+        }
+        if ("APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
             cohortRepository.save(cohort);
             log.info("[LessonService] Chuyển module id: {} về DRAFT do cập nhật bài học", cohort.getId());
+        }
+        if (cohort.getCourse() != null) {
+            revertCourseToDraftIfPublished(cohort.getCourse());
         }
     }
 

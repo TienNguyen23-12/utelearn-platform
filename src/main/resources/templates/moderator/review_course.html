@@ -221,12 +221,24 @@
 
                 <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:unless="${task.itemType == 'ASSET'}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Giáo trình & Bài giảng Thẩm định</h5>
+                        <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Giáo trình &amp; Bài giảng Thẩm định</h5>
                         <div class="d-flex align-items-center gap-2">
+                            <span th:if="${totalDraftLessons != null && totalDraftLessons > 0}" class="badge bg-warning text-dark border border-warning rounded-pill px-3 py-1.5 fw-bold shadow-xs">
+                                <i class="bi bi-pencil-square me-1"></i><span th:text="${totalDraftLessons}">0</span> bản nháp mới
+                            </span>
                             <button type="button" th:if="${sections != null && !#lists.isEmpty(sections)}" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-primary small fw-semibold" onclick="toggleAllSections()">
                                 <i class="bi bi-arrows-expand me-1" id="toggleAllSectionsIcon"></i><span id="toggleAllSectionsText">Mở tất cả</span>
                             </button>
                             <span class="badge bg-primary-subtle text-primary border rounded-pill" th:text="${sections != null ? #lists.size(sections) : 0} + ' chương'">0 chương</span>
+                        </div>
+                    </div>
+                    <div th:if="${totalDraftLessons != null && totalDraftLessons > 0}" class="alert alert-warning border border-warning border-opacity-50 rounded-4 p-3 mb-3 d-flex align-items-center gap-3 shadow-xs">
+                        <div class="stat-icon-wrapper bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-0 text-dark">Có <span th:text="${totalDraftLessons}"></span> nội dung / tài liệu đang là Bản nháp</h6>
+                            <p class="mb-0 small text-secondary">Các bài học, tài liệu bản nháp mới thêm được tô vàng nổi bật bên dưới để kiểm duyệt viên dễ dàng đối soát.</p>
                         </div>
                     </div>
                     <div th:if="${sections == null || #lists.isEmpty(sections)}" class="text-center py-4 text-muted">
@@ -234,28 +246,39 @@
                         Chưa có chương hoặc bài học nào được tạo trong nội dung này.
                     </div>
                     <div th:if="${sections != null && !#lists.isEmpty(sections)}" class="accordion" id="curriculumAccordion">
-                        <div th:each="sec, sStat : ${sections}" class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs">
+                        <div th:each="sec, sStat : ${sections}" class="accordion-item border rounded-3 mb-2 overflow-hidden shadow-xs" th:classappend="${sectionDraftCountMap != null && sectionDraftCountMap[sec.id] != null && sectionDraftCountMap[sec.id] > 0 ? 'border-warning' : ''}">
                             <h2 class="accordion-header" th:id="'heading' + ${sec.id}">
-                                <button class="accordion-button collapsed fw-bold text-dark bg-light py-2.5 px-3" type="button" data-bs-toggle="collapse" th:data-bs-target="'#collapse' + ${sec.id}">
+                                <button class="accordion-button fw-bold text-dark bg-light py-2.5 px-3" th:classappend="${sectionDraftCountMap != null && sectionDraftCountMap[sec.id] != null && sectionDraftCountMap[sec.id] > 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" th:data-bs-target="'#collapse' + ${sec.id}">
                                     <i class="bi bi-folder2-open text-primary me-2"></i>
                                     <span th:text="'Chương ' + ${sStat.index + 1} + ': ' + ${sec.title}">Chương 1</span>
+                                    <span th:if="${sectionDraftCountMap != null && sectionDraftCountMap[sec.id] != null && sectionDraftCountMap[sec.id] > 0}" class="badge bg-warning text-dark border border-warning ms-2 font-monospace">
+                                        <i class="bi bi-pencil-fill me-1"></i><span th:text="${sectionDraftCountMap[sec.id]}"></span> bản nháp
+                                    </span>
                                     <span class="badge bg-secondary-subtle text-secondary ms-auto me-2 font-monospace" th:text="${lessonsMap != null && lessonsMap[sec.id] != null ? #lists.size(lessonsMap[sec.id]) : 0} + ' bài'">0 bài</span>
                                 </button>
                             </h2>
-                            <div th:id="'collapse' + ${sec.id}" class="accordion-collapse collapse">
+                            <div th:id="'collapse' + ${sec.id}" class="accordion-collapse collapse" th:classappend="${sectionDraftCountMap != null && sectionDraftCountMap[sec.id] != null && sectionDraftCountMap[sec.id] > 0 ? 'show' : ''}">
                                 <div class="accordion-body p-0">
                                     <div th:if="${lessonsMap == null || lessonsMap[sec.id] == null || #lists.isEmpty(lessonsMap[sec.id])}" class="p-3 text-muted small fst-italic">
                                         Chương này chưa có bài học nào.
                                     </div>
                                     <ul th:if="${lessonsMap != null && lessonsMap[sec.id] != null && !#lists.isEmpty(lessonsMap[sec.id])}" class="list-group list-group-flush">
-                                        <li th:each="l : ${lessonsMap[sec.id]}" class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                                             <div class="d-flex align-items-center gap-2">
+                                        <li th:each="l : ${lessonsMap[sec.id]}" class="list-group-item d-flex justify-content-between align-items-center py-2.5 px-3"
+                                            th:classappend="${!l.published ? 'list-group-item-warning border-start border-4 border-warning bg-warning bg-opacity-10' : ''}"
+                                            th:style="${!l.published ? 'background-color: #fffbeb !important; border-left: 4px solid #f59e0b !important;' : ''}">
+                                             <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span th:if="${!l.published}" class="badge bg-warning text-dark border border-warning fw-bold px-2 py-1 shadow-xs">
+                                                    <i class="bi bi-pencil-square me-1"></i>BẢN NHÁP
+                                                </span>
+                                                <span th:if="${l.published}" class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 10px;">
+                                                    <i class="bi bi-check-circle me-1"></i>Đã xuất bản
+                                                </span>
                                                 <span th:if="${l.lessonType == 'VIDEO'}" class="badge bg-danger-subtle text-danger"><i class="bi bi-play-circle me-1"></i>Video</span>
                                                 <span th:if="${l.lessonType == 'DOCUMENT'}" class="badge bg-info-subtle text-info"><i class="bi bi-file-earmark-text me-1"></i>Tài liệu</span>
                                                 <span th:if="${l.lessonType == 'QUIZ'}" class="badge bg-warning-subtle text-warning"><i class="bi bi-question-circle me-1"></i>Quiz</span>
                                                 <span th:if="${l.lessonType == 'CODING_PROBLEM' or l.lessonType == 'CODE_PRACTICE'}" class="badge bg-dark-subtle text-dark"><i class="bi bi-code-slash me-1"></i>Code</span>
                                                 <span th:if="${l.lessonType == 'ASSIGNMENT'}" class="badge bg-primary-subtle text-primary"><i class="bi bi-journal-check me-1"></i>Bài tập</span>
-                                                <span class="fw-medium text-dark small" th:text="${l.title}">Tên bài học</span>
+                                                <span class="fw-semibold small" th:classappend="${!l.published ? 'text-warning-emphasis fw-bold' : 'text-dark'}" th:text="${l.title}">Tên bài học</span>
                                                 <span th:if="${l.isFreePreview}" class="badge bg-success-subtle text-success border" style="font-size: 10px;">Xem trước</span>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
@@ -263,6 +286,9 @@
                                                     <span th:if="${l.lessonType == 'VIDEO' && l.durationSeconds != null && l.durationSeconds > 0}" th:text="${l.durationSeconds / 60} + ' phút'"></span>
                                                     <span th:if="${l.videoUrl != null && !l.videoUrl.isBlank()}" class="badge bg-light text-secondary border font-monospace ms-2" th:text="${l.videoUrl.length() > 30 ? l.videoUrl.substring(0, 30) + '...' : l.videoUrl}">URL</span>
                                                 </div>
+                                                <button type="button" th:if="${l.lessonType == 'DOCUMENT' and l.documentContent != null and !l.documentContent.isBlank()}" th:attr="data-lesson-id=${l.id},data-lesson-title=${l.title}" onclick="openDocumentModalFromBtn(this)" class="btn btn-sm btn-outline-info rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
+                                                    <i class="bi bi-file-earmark-text me-1"></i>Đọc tài liệu
+                                                </button>
                                                 <button type="button" th:if="${l.lessonType == 'QUIZ'}" th:attr="data-lesson-id=${l.id},data-lesson-title=${l.title}" onclick="openQuizModalFromBtn(this)" class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-0.5" style="font-size: 11px;">
                                                     <i class="bi bi-card-checklist me-1"></i>Xem đề thi
                                                 </button>
@@ -279,6 +305,7 @@
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             </div>
+                                            <div th:if="${l.lessonType == 'DOCUMENT' and l.documentContent != null and !l.documentContent.isBlank()}" th:id="'doc-content-' + ${l.id}" style="display: none;" th:utext="${l.documentContent}"></div>
                                         </li>
                                     </ul>
                                 </div>
@@ -403,6 +430,28 @@
                     <div class="spinner-border text-primary" role="status"></div>
                     <div class="small text-muted mt-2">Đang nạp bộ câu hỏi và đáp án chuẩn...</div>
                 </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="documentReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <span class="badge bg-info text-white rounded-pill px-2.5 py-1 small mb-1">
+                        <i class="bi bi-file-earmark-text me-1"></i>Thẩm định Nội dung Tài liệu
+                    </span>
+                    <h5 class="modal-title fw-bold" id="documentReviewModalTitle">Nội dung Tài liệu</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="documentReviewModalBody">
+                <div class="p-3 bg-light rounded-3 border" id="documentReviewModalContent" style="max-height: 500px; overflow-y: auto;"></div>
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
@@ -768,6 +817,25 @@
                     </div>
                 `;
             });
+    }
+
+    const documentReviewModalEl = document.getElementById('documentReviewModal');
+    const documentReviewModal = documentReviewModalEl ? new bootstrap.Modal(documentReviewModalEl) : null;
+
+    function openDocumentModalFromBtn(btn) {
+        const lessonId = btn.getAttribute('data-lesson-id');
+        const lessonTitle = btn.getAttribute('data-lesson-title') || 'Nội dung tài liệu';
+        if (!lessonId || !documentReviewModal) return;
+
+        document.getElementById('documentReviewModalTitle').textContent = lessonTitle;
+        const contentEl = document.getElementById('doc-content-' + lessonId);
+        const modalContent = document.getElementById('documentReviewModalContent');
+        if (contentEl) {
+            modalContent.innerHTML = contentEl.innerHTML;
+        } else {
+            modalContent.innerHTML = '<span class="text-muted">Chưa có nội dung tài liệu văn bản.</span>';
+        }
+        documentReviewModal.show();
     }
 
     function toggleAllSections() {

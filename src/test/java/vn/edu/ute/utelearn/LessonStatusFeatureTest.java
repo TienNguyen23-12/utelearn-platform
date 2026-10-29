@@ -55,6 +55,9 @@ public class LessonStatusFeatureTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private vn.edu.ute.utelearn.service.CloudinaryService cloudinaryService;
+
     @InjectMocks
     private LessonServiceImpl lessonServiceImpl;
 
@@ -134,6 +137,7 @@ public class LessonStatusFeatureTest {
         LessonRequestDTO dto = new LessonRequestDTO();
         dto.setTitle("Bài học mới");
         dto.setLessonType("VIDEO");
+        dto.setVideoUrl("https://example.com/video.mp4");
         dto.setCohortId(20L);
 
         Lesson created = lessonServiceImpl.createLesson(1L, dto, instructor.getId());
@@ -162,6 +166,7 @@ public class LessonStatusFeatureTest {
         LessonRequestDTO dto = new LessonRequestDTO();
         dto.setTitle("Bài học cập nhật nội dung");
         dto.setLessonType("VIDEO");
+        dto.setVideoUrl("https://example.com/video.mp4");
         dto.setStatus("PUBLISHED");
         dto.setCohortId(20L);
 

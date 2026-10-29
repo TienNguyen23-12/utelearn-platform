@@ -2,6 +2,7 @@ package vn.edu.ute.utelearn.service.impl;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -174,6 +176,11 @@ public class CourseServiceImpl implements CourseService {
         course.setObjectives(parseObjectives(request.getObjectives()));
         course.setPrice(request.getPrice());
 
+        if ("PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+            course.setStatus("DRAFT");
+            log.info("[CourseService] Chuyển khóa học id: {} về DRAFT do cập nhật thông tin khóa học", courseId);
+        }
+
         return courseRepository.save(course);
     }
 
@@ -222,6 +229,24 @@ public class CourseServiceImpl implements CourseService {
         }
 
         courseRepository.delete(course);
+    }
+
+    @Override
+    @Transactional
+    public void revertToDraftIfPublished(Course course) {
+        if (course != null && "PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+            course.setStatus("DRAFT");
+            courseRepository.save(course);
+            log.info("[CourseService] Chuyển khóa học id: {} về DRAFT do có thay đổi nội dung", course.getId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void revertToDraftIfPublished(Long courseId) {
+        if (courseId != null) {
+            courseRepository.findById(courseId).ifPresent(this::revertToDraftIfPublished);
+        }
     }
 
     private String generateSlug(String title) {

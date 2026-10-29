@@ -151,13 +151,15 @@
                     <p class="text-muted mb-0" th:text="${course != null && course.title != null ? course.title : ''}">Tên khóa học</p>
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <form th:if="${course.status == 'DRAFT' or course.status == 'REJECTED'}" th:action="@{/instructor/courses/{id}/submit-review(id=${course.id})}" method="post" class="m-0">
-                    <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
-                    <button type="submit" class="btn btn-warning text-dark border-0 rounded-pill text-nowrap px-3 fw-semibold" onclick="return showConfirmModal(event, this.form, 'Bạn có chắc chắn muốn gửi duyệt toàn bộ Khóa học và Quiz này không? Khóa học sẽ được chuyển đến hàng đợi của Moderator.');">
-                        <i class="bi bi-send-check me-1"></i> Gửi duyệt khóa học
-                    </button>
-                </form>
+            <div class="d-flex gap-2 align-items-center">
+                <div id="courseSubmitReviewContainer">
+                    <form th:if="${course.status == 'DRAFT' or course.status == 'REJECTED'}" th:action="@{/instructor/courses/{id}/submit-review(id=${course.id})}" method="post" class="m-0" id="formCourseSubmitReview">
+                        <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
+                        <button type="submit" class="btn btn-warning text-dark border-0 rounded-pill text-nowrap px-3 fw-semibold" onclick="return submitCourseForReviewAjax(event, this.form);">
+                            <i class="bi bi-send-check me-1"></i> Gửi duyệt khóa học
+                        </button>
+                    </form>
+                </div>
                 <a th:href="@{'/instructor/courses/' + ${course.id} + '/modules'}" class="btn btn-outline-primary rounded-pill text-nowrap px-3">
                     <i class="bi bi-collection me-1"></i> Quản lý Module
                 </a>
@@ -167,45 +169,47 @@
             </div>
         </div>
 
-        <div th:if="${course.status == 'DRAFT'}" class="alert alert-secondary border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-pencil-square fs-5 text-secondary"></i>
-                <div>
-                    <strong>Khóa học đang ở trạng thái Nháp (DRAFT).</strong> Các bài học hoặc bài kiểm tra (Quiz) mới thêm cần được gửi duyệt để Kiểm duyệt viên thẩm định trước khi xuất bản.
+        <div id="courseStatusAlertContainer">
+            <div th:if="${course.status == 'DRAFT'}" class="alert alert-secondary border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square fs-5 text-secondary"></i>
+                    <div>
+                        <strong>Khóa học đang ở trạng thái Nháp (DRAFT).</strong> Các bài học hoặc bài kiểm tra (Quiz) mới thêm cần được gửi duyệt để Kiểm duyệt viên thẩm định trước khi xuất bản.
+                    </div>
                 </div>
-            </div>
-            <form th:action="@{/instructor/courses/{id}/submit-review(id=${course.id})}" method="post" class="m-0">
-                <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
-                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3" onclick="return showConfirmModal(event, this.form, 'Bạn có chắc chắn muốn gửi duyệt toàn bộ Khóa học và Quiz này không? Khóa học sẽ được chuyển đến hàng đợi của Moderator.');">
-                    <i class="bi bi-send-check me-1"></i> Gửi duyệt ngay
-                </button>
-            </form>
-        </div>
-
-        <div th:if="${course.status == 'PENDING_MODERATOR' or course.status == 'PENDING_ADMIN'}" class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
-            <i class="bi bi-hourglass-split fs-4 text-warning"></i>
-            <div>
-                <strong>Khóa học đang trong quá trình kiểm duyệt.</strong> Mọi thay đổi giáo trình lúc này sẽ được cập nhật trực tiếp vào bản xem xét của Kiểm duyệt viên.
-            </div>
-        </div>
-
-        <div th:if="${course.status == 'REJECTED'}" class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
-                <div>
-                    <strong>Khóa học đã bị từ chối kiểm duyệt.</strong> Vui lòng cập nhật lại nội dung theo yêu cầu và bấm gửi duyệt lại.
-                </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" th:onclick="'showModerationFeedbackModal(\'COURSE\', ' + ${course.id} + ')'">
-                    <i class="bi bi-chat-square-quote me-1"></i> Xem nhận xét
-                </button>
                 <form th:action="@{/instructor/courses/{id}/submit-review(id=${course.id})}" method="post" class="m-0">
                     <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
-                    <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold" onclick="return showConfirmModal(event, this.form, 'Bạn có chắc chắn muốn gửi duyệt lại khóa học này không?');">
-                        <i class="bi bi-arrow-repeat me-1"></i> Gửi duyệt lại
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3" onclick="return submitCourseForReviewAjax(event, this.form);">
+                        <i class="bi bi-send-check me-1"></i> Gửi duyệt ngay
                     </button>
                 </form>
+            </div>
+
+            <div th:if="${course.status == 'PENDING_MODERATOR' or course.status == 'PENDING_ADMIN'}" class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+                <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                <div>
+                    <strong>Khóa học đang trong quá trình kiểm duyệt.</strong> Mọi thay đổi giáo trình lúc này sẽ được cập nhật trực tiếp vào bản xem xét của Kiểm duyệt viên.
+                </div>
+            </div>
+
+            <div th:if="${course.status == 'REJECTED'}" class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                    <div>
+                        <strong>Khóa học đã bị từ chối kiểm duyệt.</strong> Vui lòng cập nhật lại nội dung theo yêu cầu và bấm gửi duyệt lại.
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" th:onclick="'showModerationFeedbackModal(\'COURSE\', ' + ${course.id} + ')'">
+                        <i class="bi bi-chat-square-quote me-1"></i> Xem nhận xét
+                    </button>
+                    <form th:action="@{/instructor/courses/{id}/submit-review(id=${course.id})}" method="post" class="m-0">
+                        <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
+                        <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold" onclick="return submitCourseForReviewAjax(event, this.form);">
+                            <i class="bi bi-arrow-repeat me-1"></i> Gửi duyệt lại
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -219,8 +223,24 @@
                         </span>
                         <h5 class="fw-bold text-dark mb-0" th:text="${grp.module.name}">Tên Module</h5>
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-2" th:text="${#lists.size(grp.sections)} + ' chương'">0 chương</span>
+                        <span th:id="'module-badge-' + ${grp.module.id}"
+                              th:class="${grp.module.moderationStatus == 'APPROVED' ? 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1' : (grp.module.moderationStatus == 'PENDING_MODERATOR' or grp.module.moderationStatus == 'PENDING_ADMIN' ? 'badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1' : (grp.module.moderationStatus == 'REJECTED' ? 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1' : 'badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1'))}">
+                            <i th:class="${grp.module.moderationStatus == 'APPROVED' ? 'bi bi-check-circle me-1' : (grp.module.moderationStatus == 'PENDING_MODERATOR' or grp.module.moderationStatus == 'PENDING_ADMIN' ? 'bi bi-hourglass-split me-1' : (grp.module.moderationStatus == 'REJECTED' ? 'bi bi-x-circle me-1' : 'bi bi-clock-history me-1'))}"></i>
+                            <span th:text="${grp.module.moderationStatus == 'APPROVED' ? 'Đã duyệt' : (grp.module.moderationStatus == 'PENDING_MODERATOR' or grp.module.moderationStatus == 'PENDING_ADMIN' ? 'Đang chờ duyệt' : (grp.module.moderationStatus == 'REJECTED' ? 'Bị từ chối' : 'Bản nháp'))}"></span>
+                        </span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
+                        <div th:id="'module-submit-review-wrapper-' + ${grp.module.id}">
+                            <form th:if="${grp.module.moderationStatus == 'DRAFT' or grp.module.moderationStatus == 'REJECTED'}" th:action="@{/instructor/cohorts/{id}/submit-review(id=${grp.module.id})}" method="post" class="m-0">
+                                <input type="hidden" name="redirectUrl" th:value="@{'/instructor/courses/' + ${course.id} + '/curriculum'}">
+                                <button type="submit" class="btn btn-sm btn-warning text-dark border-0 rounded-pill text-nowrap px-3 fw-semibold"
+                                        th:data-module-id="${grp.module.id}"
+                                        th:data-module-name="${grp.module.name}"
+                                        onclick="return submitModuleForReviewAjax(this.getAttribute('data-module-id'), this.getAttribute('data-module-name'), event, this.form);">
+                                    <i class="bi bi-send-check me-1"></i> Gửi duyệt Module
+                                </button>
+                            </form>
+                        </div>
                         <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
                                 th:data-module-id="${grp.module.id}" 
                                 th:data-module-name="${grp.module.name}"
@@ -441,18 +461,6 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6 activity-item-col" data-title="lap trinh online judge code thực hành oj" data-type="CODE_PRACTICE">
-                <div class="activity-card" onclick="notifyOjPhase2(event)">
-                  <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
-                  <div>
-                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
-                      <span>Bài tập Lập trình (OJ)</span>
-                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                    </h6>
-                    <div class="text-muted small lh-base">Chấm code tự động qua Online Judge với nhiều ngôn ngữ (Java, C++, Python) và testcases.</div>
-                  </div>
-                </div>
-              </div>
               <div class="col-md-6 activity-item-col" data-title="bai tap tu luan nop file assignment do an" data-type="ASSIGNMENT">
                 <div class="activity-card" onclick="selectActivityType('ASSIGNMENT')">
                   <div class="activity-card-icon icon-assignment"><i class="bi bi-journal-check"></i></div>
@@ -507,18 +515,6 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="activity-card" onclick="notifyOjPhase2(event)">
-                  <div class="activity-card-icon icon-code"><i class="bi bi-code-square"></i></div>
-                  <div>
-                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
-                      <span>Bài tập Lập trình (OJ)</span>
-                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                    </h6>
-                    <div class="text-muted small lh-base">Chấm điểm thuật toán và code tự động trực tuyến.</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
                 <div class="activity-card" onclick="selectActivityType('ASSIGNMENT')">
                   <div class="activity-card-icon icon-assignment"><i class="bi bi-journal-check"></i></div>
                   <div>
@@ -561,7 +557,6 @@
                         <option value="VIDEO">Video</option>
                         <option value="DOCUMENT">Tài liệu (Document)</option>
                         <option value="QUIZ">Trắc nghiệm (Quiz)</option>
-                        <option value="CODE_PRACTICE">Lập trình (Code)</option>
                         <option value="ASSIGNMENT">Bài tập (Assignment)</option>
                         <option value="ANNOUNCEMENT">Thông báo (Announcement)</option>
                     </select>
@@ -569,12 +564,25 @@
 
                 <div class="col-md-12" id="fieldVideoUrl">
                     <label class="form-label fw-semibold">URL Video (Cloudinary, Youtube, ...)</label>
-                    <input type="url" class="form-control" id="videoUrl" placeholder="https://..." onchange="handleVideoUrlChange(this.value)">
+                    <div class="input-group">
+                        <input type="url" class="form-control" id="videoUrl" placeholder="https://... (Nhập link MP4, Cloudinary, YouTube, Vimeo, Google Drive)" oninput="debouncedHandleVideoUrlInput(this.value)" onchange="handleVideoUrlChange(this.value)">
+                        <button class="btn btn-outline-primary" type="button" title="Chọn video từ kho tài nguyên" onclick="openAssetPicker('video')"><i class="bi bi-film me-1"></i> Chọn video</button>
+                    </div>
+                    <div id="videoPreviewContainer" class="mt-3 rounded-3 overflow-hidden border bg-dark position-relative" style="display: none;">
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-dark border-bottom border-secondary border-opacity-25 text-white small">
+                            <span class="d-flex align-items-center gap-2 fw-semibold">
+                                <i class="bi bi-play-btn-fill text-primary"></i>
+                                <span>Xem trước video bài giảng</span>
+                            </span>
+                            <span id="videoPreviewSourceBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle"></span>
+                        </div>
+                        <div id="videoPreviewBody" class="w-100 bg-black d-flex align-items-center justify-content-center" style="min-height: 220px;"></div>
+                    </div>
                     <div id="durationDetectionBadge" class="small mt-1 text-muted"></div>
                     <input type="hidden" id="lessonDurationSeconds" value="0">
                 </div>
 
-                <div class="col-md-12">
+                <div class="col-md-12" id="fieldAssetUrl">
                     <label class="form-label fw-semibold">Tài liệu đính kèm (Từ kho tài nguyên số)</label>
                     <div class="input-group">
                         <input type="url" class="form-control" id="assetUrl" placeholder="https://...">
@@ -633,7 +641,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
-        <button type="button" class="btn btn-primary" onclick="saveLesson()">Lưu Bài học</button>
+        <button type="button" class="btn btn-primary" id="btnSaveLesson" onclick="saveLesson()">Lưu Bài học</button>
       </div>
     </div>
   </div>
@@ -1294,6 +1302,11 @@
     let localEditCallback = null;
     let pendingActivitySectionId = null;
     let pendingActivityModuleId = null;
+    let videoValidationState = 'EMPTY';
+    let videoValidationErrorMsg = '';
+    let videoCheckSeq = 0;
+    let videoUrlInputTimer = null;
+    let lastCheckedVideoUrl = '';
     
     document.addEventListener('DOMContentLoaded', () => {
         sectionModal = new bootstrap.Modal(document.getElementById('sectionModal'));
@@ -1303,6 +1316,13 @@
         assetPickerModal = new bootstrap.Modal(document.getElementById('assetPickerModal'));
         confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
         
+        const lessonModalEl = document.getElementById('lessonModal');
+        if (lessonModalEl) {
+            lessonModalEl.addEventListener('hidden.bs.modal', () => {
+                resetVideoPreviewState();
+            });
+        }
+
         const pickerModalEl = document.getElementById('assetPickerModal');
         if (pickerModalEl) {
             pickerModalEl.addEventListener('hidden.bs.modal', () => {
@@ -1392,11 +1412,16 @@
         const type = document.getElementById('lessonType').value;
         const videoField = document.getElementById('fieldVideoUrl');
         const docField = document.getElementById('fieldDocumentContent');
+        const assetField = document.getElementById('fieldAssetUrl');
         
         if (type === 'VIDEO') {
             videoField.style.display = 'block';
         } else {
             videoField.style.display = 'none';
+        }
+
+        if (assetField) {
+            assetField.style.display = (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') ? 'block' : 'none';
         }
 
         if (type === 'DOCUMENT' || type === 'ANNOUNCEMENT') {
@@ -1414,6 +1439,17 @@
         if (assignmentField) {
             assignmentField.style.display = (type === 'ASSIGNMENT') ? 'block' : 'none';
         }
+
+        if (type === 'VIDEO') {
+            const currentUrl = document.getElementById('videoUrl').value;
+            if (currentUrl && currentUrl.trim() && videoValidationState === 'EMPTY') {
+                handleVideoUrlChange(currentUrl, true);
+            }
+        } else {
+            const previewBody = document.getElementById('videoPreviewBody');
+            if (previewBody) previewBody.innerHTML = '';
+        }
+        updateSaveLessonBtnState();
     }
 
     function openSectionModal(id = null, title = '', moduleId = null, event = null) {
@@ -1506,10 +1542,6 @@
     }
 
     function selectActivityType(type, event = null) {
-        if (type === 'CODE_PRACTICE') {
-            notifyOjPhase2(event);
-            return;
-        }
         activityChooserModal.hide();
         openLessonModalWithModule(pendingActivitySectionId, pendingActivityModuleId, null, type);
     }
@@ -1555,21 +1587,12 @@
         }
     }
 
-    function notifyOjPhase2(event = null) {
-        if (event) {
-            event.preventDefault();
-            if (typeof event.stopPropagation === 'function') {
-                event.stopPropagation();
-            }
-        }
-        showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
-    }
-
     function openLessonModal(sectionId, event) {
         openLessonModalWithModule(sectionId, null, event);
     }
 
     function openLessonModalWithModule(sectionId, moduleId = null, event = null, preselectedType = 'VIDEO') {
+        resetVideoPreviewState();
         if(event) event.stopPropagation();
         document.getElementById('lessonId').value = '';
         document.getElementById('parentSectionId').value = sectionId;
@@ -1606,6 +1629,7 @@
     }
 
     function editLesson(lesson, sectionId) {
+        resetVideoPreviewState();
         document.getElementById('lessonId').value = lesson.id;
         document.getElementById('parentSectionId').value = sectionId;
         document.getElementById('lessonTitle').value = lesson.title;
@@ -1730,6 +1754,32 @@
             return; 
         }
 
+        const rawVideoUrl = (document.getElementById('videoUrl').value || '').trim();
+        if (type === 'VIDEO') {
+            if (!rawVideoUrl) {
+                showToast('Vui lòng nhập đường dẫn video bài giảng!', 'error');
+                const videoInput = document.getElementById('videoUrl');
+                if (videoInput) {
+                    videoInput.classList.add('is-invalid');
+                    videoInput.focus();
+                }
+                return;
+            }
+            if (videoValidationState === 'CHECKING') {
+                showToast('Đang kiểm tra đường dẫn video, vui lòng đợi giây lát...', 'warning');
+                return;
+            }
+            if (videoValidationState !== 'VALID') {
+                showToast(videoValidationErrorMsg || 'Đường dẫn không hợp lệ hoặc không chứa video bài giảng!', 'error');
+                const videoInput = document.getElementById('videoUrl');
+                if (videoInput) {
+                    videoInput.classList.add('is-invalid');
+                    videoInput.focus();
+                }
+                return;
+            }
+        }
+
         const cohortIdVal = document.getElementById('lessonCohortId').value;
         const payload = {
             title: title,
@@ -1764,6 +1814,7 @@
                 } else {
                     showToast('Lưu bài học thành công!', 'success');
                 }
+                refreshModerationStatus();
             } else {
                 const errText = await res.text();
                 showToast('Có lỗi xảy ra: ' + errText, 'error');
@@ -1785,6 +1836,7 @@
                     const modName = card ? card.getAttribute('data-module-name') : null;
                     loadLessons(sectionId, isModule, modId, modName);
                     showToast('Đã xóa bài học', 'success');
+                    refreshModerationStatus();
                 } else {
                     showToast('Lỗi khi xóa bài học', 'error');
                 }
@@ -1851,6 +1903,9 @@
     }
 
     function renderAssets(assets) {
+        if (currentAssetPickerTarget === 'video') {
+            assets = (assets || []).filter(a => a.assetType === 'VIDEO');
+        }
         const grid = document.getElementById('assetGrid');
         if (assets.length === 0) {
             grid.innerHTML = '<div class="text-center py-4 text-muted">Kho tài nguyên của bạn đang trống.<br>Vào mục Kho tài nguyên số để tải lên file mới.</div>';
@@ -1879,7 +1934,11 @@
 
     function selectAsset(url) {
         if (url) {
-            if (currentAssetPickerTarget === 'assignment') {
+            if (currentAssetPickerTarget === 'video') {
+                const videoInput = document.getElementById('videoUrl');
+                if (videoInput) videoInput.value = url;
+                handleVideoUrlChange(url, true);
+            } else if (currentAssetPickerTarget === 'assignment') {
                 const attachInput = document.getElementById('assignmentCfgAttachmentUrl');
                 if (attachInput) attachInput.value = url;
             } else {
@@ -1901,60 +1960,366 @@
         assetPickerModal.hide();
     }
 
-    async function handleVideoUrlChange(url) {
-        if (!url || !url.trim()) return;
-        const trimmedUrl = url.trim();
+    function debouncedHandleVideoUrlInput(url) {
+        if (videoUrlInputTimer) clearTimeout(videoUrlInputTimer);
+        const trimmed = (url || '').trim();
+        if (!trimmed) {
+            resetVideoPreviewState();
+            return;
+        }
+        if (trimmed !== lastCheckedVideoUrl) {
+            videoValidationState = 'CHECKING';
+            updateSaveLessonBtnState();
+        }
+        videoUrlInputTimer = setTimeout(() => {
+            handleVideoUrlChange(url, false);
+        }, 450);
+    }
+
+    function resetVideoPreviewState() {
+        videoCheckSeq++;
+        if (videoUrlInputTimer) clearTimeout(videoUrlInputTimer);
+        videoValidationState = 'EMPTY';
+        videoValidationErrorMsg = '';
+        lastCheckedVideoUrl = '';
+        const videoInput = document.getElementById('videoUrl');
+        if (videoInput) {
+            videoInput.classList.remove('is-invalid', 'is-valid');
+        }
         const badgeEl = document.getElementById('durationDetectionBadge');
         if (badgeEl) {
-            badgeEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang nhận diện thời lượng video...';
-            badgeEl.className = 'small text-primary mt-1';
+            badgeEl.textContent = '';
+            badgeEl.className = 'small mt-1 fw-medium';
+        }
+        const previewContainer = document.getElementById('videoPreviewContainer');
+        const previewBody = document.getElementById('videoPreviewBody');
+        const previewSourceBadge = document.getElementById('videoPreviewSourceBadge');
+        if (previewBody) previewBody.innerHTML = '';
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (previewSourceBadge) previewSourceBadge.textContent = '';
+        updateSaveLessonBtnState();
+    }
+
+    function updateSaveLessonBtnState() {
+        const btnSave = document.getElementById('btnSaveLesson');
+        const typeEl = document.getElementById('lessonType');
+        if (!btnSave || !typeEl) return;
+        const type = typeEl.value;
+        if (type === 'VIDEO') {
+            btnSave.disabled = (videoValidationState === 'CHECKING' || videoValidationState === 'INVALID');
+        } else {
+            btnSave.disabled = false;
+        }
+    }
+
+    function extractYoutubeVideoId(url) {
+        const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&\/#]|$)/;
+        const match = url.match(regExp);
+        return match ? match[1] : null;
+    }
+
+    function extractVimeoVideoId(url) {
+        const regExp = /vimeo\.com\/(?:video\/|channels\/[^\/]+\/|groups\/[^\/]+\/videos\/)?([0-9]{6,12})(?:[?&\/#]|$)/;
+        const match = url.match(regExp);
+        return match ? match[1] : null;
+    }
+
+    function extractGoogleDriveFileId(url) {
+        const regExp = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]{10,})/;
+        const match = url.match(regExp);
+        return match ? match[1] : null;
+    }
+
+    function markVideoUrlInvalid(message) {
+        videoValidationState = 'INVALID';
+        videoValidationErrorMsg = message;
+        document.getElementById('lessonDurationSeconds').value = '0';
+        const videoInput = document.getElementById('videoUrl');
+        if (videoInput) {
+            videoInput.classList.remove('is-valid');
+            videoInput.classList.add('is-invalid');
+        }
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>${message}`;
+            badgeEl.className = 'small text-danger mt-1 fw-medium';
+        }
+        const previewContainer = document.getElementById('videoPreviewContainer');
+        const previewBody = document.getElementById('videoPreviewBody');
+        const previewSourceBadge = document.getElementById('videoPreviewSourceBadge');
+        if (previewContainer) previewContainer.style.display = 'block';
+        if (previewSourceBadge) {
+            previewSourceBadge.textContent = 'Link không hợp lệ';
+            previewSourceBadge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle';
+        }
+        if (previewBody) {
+            previewBody.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center text-white text-center p-4" style="min-height: 220px; background: #1e293b;">
+                    <i class="bi bi-camera-video-off text-danger mb-2" style="font-size: 2.5rem;"></i>
+                    <div class="fw-bold mb-1">Không tìm thấy nội dung video</div>
+                    <div class="small text-white-50" style="max-width: 420px;">${message}</div>
+                </div>
+            `;
+        }
+        updateSaveLessonBtnState();
+    }
+
+    function markVideoUrlValid(sourceLabel, durationText = '') {
+        videoValidationState = 'VALID';
+        videoValidationErrorMsg = '';
+        const videoInput = document.getElementById('videoUrl');
+        if (videoInput) {
+            videoInput.classList.remove('is-invalid');
+            videoInput.classList.add('is-valid');
+        }
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${durationText || 'Đường dẫn video hợp lệ - Đã sẵn sàng lưu bài giảng'}`;
+            badgeEl.className = 'small text-success mt-1 fw-medium';
+        }
+        const previewSourceBadge = document.getElementById('videoPreviewSourceBadge');
+        if (previewSourceBadge) {
+            previewSourceBadge.textContent = sourceLabel;
+            previewSourceBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+        }
+        updateSaveLessonBtnState();
+    }
+
+    async function verifyYoutubeVideoExists(videoId) {
+        try {
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}&format=json`;
+            const res = await fetch(oembedUrl);
+            if (res.ok) return true;
+            if (res.status === 404 || res.status === 401 || res.status === 403 || res.status === 400) return false;
+        } catch (e) {}
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function() {
+                resolve(img.naturalWidth > 120);
+            };
+            img.onerror = function() {
+                resolve(false);
+            };
+            img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+        });
+    }
+
+    async function handleVideoUrlChange(url, forceCheck = false) {
+        const trimmedUrl = (url || '').trim();
+        if (!trimmedUrl) {
+            resetVideoPreviewState();
+            return;
+        }
+        if (!forceCheck && trimmedUrl === lastCheckedVideoUrl && (videoValidationState === 'VALID' || videoValidationState === 'INVALID')) {
+            return;
+        }
+        lastCheckedVideoUrl = trimmedUrl;
+        const currentSeq = ++videoCheckSeq;
+        videoValidationState = 'CHECKING';
+        videoValidationErrorMsg = '';
+        updateSaveLessonBtnState();
+
+        const videoInput = document.getElementById('videoUrl');
+        if (videoInput) {
+            videoInput.classList.remove('is-invalid', 'is-valid');
         }
 
-        const tempVideo = document.createElement('video');
-        tempVideo.preload = 'metadata';
-        let detected = false;
-
-        tempVideo.onloadedmetadata = function() {
-            if (!detected && tempVideo.duration && !isNaN(tempVideo.duration) && tempVideo.duration > 0) {
-                detected = true;
-                const sec = Math.round(tempVideo.duration);
-                document.getElementById('lessonDurationSeconds').value = sec;
-                const m = Math.floor(sec / 60);
-                const s = sec % 60;
-                if (badgeEl) {
-                    badgeEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Đã nhận diện thời lượng: ${m > 0 ? m + ' phút ' : ''}${s} giây`;
-                    badgeEl.className = 'small text-success mt-1 fw-medium';
-                }
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(trimmedUrl);
+            if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                markVideoUrlInvalid('Đường dẫn phải bắt đầu bằng http:// hoặc https://');
+                return;
             }
-        };
+        } catch (e) {
+            markVideoUrlInvalid('Định dạng URL không hợp lệ. Vui lòng nhập đường dẫn đầy đủ (bắt đầu bằng https://).');
+            return;
+        }
 
-        tempVideo.src = trimmedUrl;
+        const lowerHost = (parsedUrl.hostname || '').toLowerCase();
+        const lowerPath = (parsedUrl.pathname || '').toLowerCase();
 
-        setTimeout(async () => {
-            if (!detected) {
+        if (/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|7z|png|jpg|jpeg|gif|webp|svg|bmp|mp3|wav|txt|csv|json|xml|html|htm|exe)$/.test(lowerPath)) {
+            markVideoUrlInvalid('Đường dẫn này là tệp tài liệu, hình ảnh hoặc âm thanh, không phải video bài giảng!');
+            return;
+        }
+        if (lowerPath.includes('/image/upload/') || lowerPath.includes('/raw/upload/') || lowerHost.includes('docs.google.com')) {
+            markVideoUrlInvalid('Đường dẫn này là hình ảnh hoặc tài liệu, không phải video bài giảng!');
+            return;
+        }
+
+        const badgeEl = document.getElementById('durationDetectionBadge');
+        if (badgeEl) {
+            badgeEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang kiểm tra video và tải bản xem trước...';
+            badgeEl.className = 'small text-primary mt-1';
+        }
+        const previewContainer = document.getElementById('videoPreviewContainer');
+        const previewBody = document.getElementById('videoPreviewBody');
+        const previewSourceBadge = document.getElementById('videoPreviewSourceBadge');
+        if (previewContainer) previewContainer.style.display = 'block';
+        if (previewSourceBadge) {
+            previewSourceBadge.textContent = 'Đang kiểm tra...';
+            previewSourceBadge.className = 'badge bg-secondary-subtle text-secondary border';
+        }
+        if (previewBody) {
+            previewBody.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center text-white p-4" style="min-height: 220px; background: #0f172a;">
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <div class="small text-white-50">Đang xác thực nguồn video...</div>
+                </div>
+            `;
+        }
+
+        if (lowerHost.includes('youtube.com') || lowerHost.includes('youtu.be')) {
+            const ytId = extractYoutubeVideoId(trimmedUrl);
+            if (!ytId) {
+                markVideoUrlInvalid('Đường dẫn YouTube không chứa mã video hợp lệ (cần dạng youtube.com/watch?v=... hoặc youtu.be/...).');
+                return;
+            }
+            const exists = await verifyYoutubeVideoExists(ytId);
+            if (currentSeq !== videoCheckSeq) return;
+            if (!exists) {
+                markVideoUrlInvalid('Video YouTube này không tồn tại, đã bị xóa hoặc đang ở chế độ riêng tư!');
+                return;
+            }
+            if (previewBody) {
+                previewBody.innerHTML = `
+                    <div class="ratio ratio-16x9">
+                        <iframe src="https://www.youtube.com/embed/${ytId}" title="YouTube video preview" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                    </div>
+                `;
+            }
+            markVideoUrlValid('YouTube Video', 'Đã xác thực video YouTube hợp lệ.');
+            return;
+        }
+
+        if (lowerHost.includes('vimeo.com')) {
+            const vimeoId = extractVimeoVideoId(trimmedUrl);
+            if (!vimeoId) {
+                markVideoUrlInvalid('Đường dẫn Vimeo không chứa mã video hợp lệ (cần dạng vimeo.com/123456789).');
+                return;
+            }
+            try {
+                const oembedRes = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(trimmedUrl)}`);
+                if (currentSeq !== videoCheckSeq) return;
+                if (!oembedRes.ok) {
+                    markVideoUrlInvalid('Video Vimeo không tồn tại hoặc không cho phép nhúng!');
+                    return;
+                }
+                const oembedData = await oembedRes.json();
+                let durText = 'Đã xác thực video Vimeo hợp lệ.';
+                if (oembedData && oembedData.duration) {
+                    const sec = Math.round(oembedData.duration);
+                    document.getElementById('lessonDurationSeconds').value = sec;
+                    const m = Math.floor(sec / 60);
+                    const s = sec % 60;
+                    durText = `Đã xác thực video Vimeo (${m > 0 ? m + ' phút ' : ''}${s} giây)`;
+                }
+                if (previewBody) {
+                    previewBody.innerHTML = `
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://player.vimeo.com/video/${vimeoId}" title="Vimeo video preview" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+                markVideoUrlValid('Vimeo Video', durText);
+                return;
+            } catch (e) {
+                if (currentSeq !== videoCheckSeq) return;
+                if (previewBody) {
+                    previewBody.innerHTML = `
+                        <div class="ratio ratio-16x9">
+                            <iframe src="https://player.vimeo.com/video/${vimeoId}" title="Vimeo video preview" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+                markVideoUrlValid('Vimeo Video', 'Đã nhận diện đường dẫn Vimeo.');
+                return;
+            }
+        }
+
+        if (lowerHost.includes('drive.google.com')) {
+            const driveId = extractGoogleDriveFileId(trimmedUrl);
+            if (!driveId) {
+                markVideoUrlInvalid('Đường dẫn Google Drive không hợp lệ (cần dạng drive.google.com/file/d/.../view).');
+                return;
+            }
+            if (previewBody) {
+                previewBody.innerHTML = `
+                    <div class="ratio ratio-16x9">
+                        <iframe src="https://drive.google.com/file/d/${driveId}/preview" title="Google Drive video preview" allowfullscreen></iframe>
+                    </div>
+                `;
+            }
+            markVideoUrlValid('Google Drive Video', 'Đã nhận diện video từ Google Drive (Hãy đảm bảo quyền chia sẻ Công khai).');
+            return;
+        }
+
+        if (previewBody) {
+            previewBody.innerHTML = '';
+            const videoEl = document.createElement('video');
+            videoEl.controls = true;
+            videoEl.preload = 'metadata';
+            videoEl.playsInline = true;
+            videoEl.style.width = '100%';
+            videoEl.style.maxHeight = '300px';
+            videoEl.style.display = 'block';
+            videoEl.style.background = '#000';
+
+            let resolved = false;
+            const timeoutId = setTimeout(async () => {
+                if (resolved || currentSeq !== videoCheckSeq) return;
                 try {
                     const res = await fetch('/api/instructor/courses/videos/detect-duration?url=' + encodeURIComponent(trimmedUrl));
+                    if (currentSeq !== videoCheckSeq || resolved) return;
                     if (res.ok) {
                         const data = await res.json();
                         if (data.durationSeconds && data.durationSeconds > 0) {
-                            detected = true;
+                            resolved = true;
                             document.getElementById('lessonDurationSeconds').value = data.durationSeconds;
                             const m = Math.floor(data.durationSeconds / 60);
                             const s = data.durationSeconds % 60;
-                            if (badgeEl) {
-                                badgeEl.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Đã nhận diện thời lượng từ Cloudinary: ${m > 0 ? m + ' phút ' : ''}${s} giây`;
-                                badgeEl.className = 'small text-success mt-1 fw-medium';
-                            }
+                            markVideoUrlValid('Cloudinary / Direct Video', `Đã xác thực video (${m > 0 ? m + ' phút ' : ''}${s} giây)`);
                             return;
                         }
                     }
                 } catch (err) {}
-                if (!detected && badgeEl) {
-                    badgeEl.innerHTML = '<i class="bi bi-info-circle me-1"></i>Hệ thống sẽ tự động cập nhật thời lượng sau khi lưu.';
-                    badgeEl.className = 'small text-muted mt-1';
+                if (!resolved && currentSeq === videoCheckSeq) {
+                    resolved = true;
+                    markVideoUrlInvalid('Không thể tải được video từ đường dẫn này. Vui lòng kiểm tra lại link (phải là link trực tiếp .mp4, .webm, Cloudinary hoặc YouTube).');
                 }
-            }
-        }, 1200);
+            }, 8000);
+
+            videoEl.onloadedmetadata = function() {
+                if (currentSeq !== videoCheckSeq || resolved) return;
+                resolved = true;
+                clearTimeout(timeoutId);
+                if (videoEl.videoWidth === 0 && videoEl.videoHeight === 0) {
+                    markVideoUrlInvalid('Tệp này chỉ chứa âm thanh (audio), không có hình ảnh video!');
+                    return;
+                }
+                let durText = 'Đã tải bản xem trước video thành công.';
+                if (videoEl.duration && !isNaN(videoEl.duration) && isFinite(videoEl.duration) && videoEl.duration > 0) {
+                    const sec = Math.round(videoEl.duration);
+                    document.getElementById('lessonDurationSeconds').value = sec;
+                    const m = Math.floor(sec / 60);
+                    const s = sec % 60;
+                    durText = `Đã xác thực video (${m > 0 ? m + ' phút ' : ''}${s} giây)`;
+                }
+                const sourceName = lowerHost.includes('cloudinary.com') ? 'Cloudinary Video' : 'Direct Video';
+                markVideoUrlValid(sourceName, durText);
+            };
+
+            videoEl.onerror = function() {
+                if (currentSeq !== videoCheckSeq || resolved) return;
+                resolved = true;
+                clearTimeout(timeoutId);
+                markVideoUrlInvalid('Đường dẫn không chứa video hợp lệ hoặc video không thể phát được!');
+            };
+
+            videoEl.src = trimmedUrl;
+            previewBody.appendChild(videoEl);
+        }
     }
 
     let quizConfigModalInstance;
@@ -2064,6 +2429,7 @@
                 } else {
                     showToast('Đã lưu cấu hình bài kiểm tra thành công!', 'success');
                 }
+                refreshModerationStatus();
             }
         } catch (err) {
             if (!silent) {
@@ -2194,6 +2560,7 @@
             }
             showToast('Đã cập nhật thứ tự câu hỏi thành công', 'success');
             loadQuizQuestions(quizId);
+            refreshModerationStatus();
         } catch (err) {
             showToast(err.message || 'Lỗi khi đổi thứ tự câu hỏi', 'error');
             loadQuizQuestions(quizId);
@@ -2446,6 +2813,7 @@
             showToast('Đã lưu câu hỏi thành công!', 'success');
             closeQuestionForm();
             loadQuizQuestions(quizId);
+            refreshModerationStatus();
         } catch (err) {
             showToast(err.message || 'Lỗi khi lưu câu hỏi', 'error');
         }
@@ -2460,6 +2828,7 @@
             if (!res.ok) throw new Error('Không thể xóa câu hỏi');
             showToast('Đã xóa câu hỏi thành công!', 'success');
             loadQuizQuestions(quizId);
+            refreshModerationStatus();
         } catch (err) {
             showToast(err.message || 'Lỗi khi xóa câu hỏi', 'error');
         }
@@ -3009,6 +3378,7 @@
                 throw new Error(errData.message || 'Lỗi khi lưu cấu hình');
             }
             showToast('Đã lưu cấu hình bài tập thành công!', 'success');
+            refreshModerationStatus();
             const lessonId = document.getElementById('assignmentModalLessonId').value;
             const secId = pendingActivitySectionId;
             if (secId) loadLessons(secId);
@@ -3227,6 +3597,217 @@
             showToast('Lỗi: ' + e.message, 'error');
         }
     }
+
+    async function submitCourseForReviewAjax(event, form = null) {
+        if (event) event.preventDefault();
+        showConfirmDialog('Bạn có chắc chắn muốn gửi duyệt toàn bộ Khóa học và Quiz này không? Khóa học sẽ được chuyển đến hàng đợi của Moderator.', async function() {
+            try {
+                const res = await fetch(`/api/instructor/courses/${courseId}/submit-review`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(data.message || 'Khóa học đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.', 'success');
+                    updateCourseModerationUI('PENDING_MODERATOR');
+                } else {
+                    if (form) {
+                        form.submit();
+                    } else {
+                        const err = await res.text();
+                        showToast('Lỗi khi gửi duyệt: ' + err, 'error');
+                    }
+                }
+            } catch (e) {
+                if (form) {
+                    form.submit();
+                } else {
+                    showToast('Lỗi kết nối máy chủ', 'error');
+                }
+            }
+        });
+        return false;
+    }
+
+    async function submitModuleForReviewAjax(moduleId, moduleName, event, form = null) {
+        if (event) event.preventDefault();
+        const msg = moduleName ? `Bạn có chắc chắn muốn gửi duyệt Module "${moduleName}" này không? Module sẽ được đưa vào hàng đợi của Moderator.` : 'Bạn có chắc chắn muốn gửi duyệt Module này không?';
+        showConfirmDialog(msg, async function() {
+            try {
+                const res = await fetch(`/api/instructor/courses/modules/${moduleId}/submit-review`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showToast(data.message || 'Module đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.', 'success');
+                    updateModuleCardModerationUI(moduleId, moduleName, 'PENDING_MODERATOR');
+                } else {
+                    if (form) {
+                        form.submit();
+                    } else {
+                        const err = await res.text();
+                        showToast('Lỗi khi gửi duyệt: ' + err, 'error');
+                    }
+                }
+            } catch (e) {
+                if (form) {
+                    form.submit();
+                } else {
+                    showToast('Lỗi kết nối máy chủ', 'error');
+                }
+            }
+        });
+        return false;
+    }
+
+    async function refreshModerationStatus(overrideData = null) {
+        try {
+            let data = overrideData;
+            if (!data || !data.modules) {
+                const res = await fetch(`/api/instructor/courses/${courseId}/moderation-status`);
+                if (res.ok) {
+                    const fetched = await res.json();
+                    data = Object.assign({}, fetched, overrideData || {});
+                }
+            }
+            if (!data) return;
+
+            if (data.courseStatus) {
+                updateCourseModerationUI(data.courseStatus);
+            }
+
+            if (data.modules && Array.isArray(data.modules)) {
+                data.modules.forEach(m => {
+                    updateModuleCardModerationUI(m.id, m.name, m.moderationStatus);
+                });
+            }
+        } catch (e) {
+            console.error('Lỗi khi cập nhật trạng thái kiểm duyệt', e);
+        }
+    }
+
+    function updateCourseModerationUI(courseStatus) {
+        if (!courseStatus) return;
+        const container = document.getElementById('courseSubmitReviewContainer');
+        const alertContainer = document.getElementById('courseStatusAlertContainer');
+
+        if (courseStatus === 'DRAFT' || courseStatus === 'REJECTED') {
+            if (container) {
+                container.innerHTML = `
+                    <form action="/instructor/courses/${courseId}/submit-review" method="post" class="m-0" id="formCourseSubmitReview">
+                        <input type="hidden" name="redirectUrl" value="/instructor/courses/${courseId}/curriculum">
+                        <button type="submit" class="btn btn-warning text-dark border-0 rounded-pill text-nowrap px-3 fw-semibold" onclick="return submitCourseForReviewAjax(event, this.form);">
+                            <i class="bi bi-send-check me-1"></i> Gửi duyệt khóa học
+                        </button>
+                    </form>
+                `;
+            }
+            if (alertContainer) {
+                if (courseStatus === 'DRAFT') {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-secondary border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-pencil-square fs-5 text-secondary"></i>
+                                <div>
+                                    <strong>Khóa học đang ở trạng thái Nháp (DRAFT).</strong> Các bài học hoặc bài kiểm tra (Quiz) mới thêm cần được gửi duyệt để Kiểm duyệt viên thẩm định trước khi xuất bản.
+                                </div>
+                            </div>
+                            <form action="/instructor/courses/${courseId}/submit-review" method="post" class="m-0">
+                                <input type="hidden" name="redirectUrl" value="/instructor/courses/${courseId}/curriculum">
+                                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3" onclick="return submitCourseForReviewAjax(event, this.form);">
+                                    <i class="bi bi-send-check me-1"></i> Gửi duyệt ngay
+                                </button>
+                            </form>
+                        </div>
+                    `;
+                } else if (courseStatus === 'REJECTED') {
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                                <div>
+                                    <strong>Khóa học đã bị từ chối kiểm duyệt.</strong> Vui lòng cập nhật lại nội dung theo yêu cầu và bấm gửi duyệt lại.
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-danger rounded-pill px-3" onclick="showModerationFeedbackModal('COURSE', ${courseId})">
+                                    <i class="bi bi-chat-square-quote me-1"></i> Xem nhận xét
+                                </button>
+                                <form action="/instructor/courses/${courseId}/submit-review" method="post" class="m-0">
+                                    <input type="hidden" name="redirectUrl" value="/instructor/courses/${courseId}/curriculum">
+                                    <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold" onclick="return submitCourseForReviewAjax(event, this.form);">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Gửi duyệt lại
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } else if (courseStatus === 'PENDING_MODERATOR' || courseStatus === 'PENDING_ADMIN') {
+            if (container) {
+                container.innerHTML = '';
+            }
+            if (alertContainer) {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4 d-flex align-items-center gap-3">
+                        <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                        <div>
+                            <strong>Khóa học đang trong quá trình kiểm duyệt.</strong> Mọi thay đổi giáo trình lúc này sẽ được cập nhật trực tiếp vào bản xem xét của Kiểm duyệt viên.
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            if (container) {
+                container.innerHTML = '';
+            }
+            if (alertContainer) {
+                alertContainer.innerHTML = '';
+            }
+        }
+    }
+
+    function updateModuleCardModerationUI(moduleId, moduleName, status) {
+        const badgeEl = document.getElementById(`module-badge-${moduleId}`);
+        if (badgeEl) {
+            if (status === 'APPROVED') {
+                badgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1';
+                badgeEl.innerHTML = '<i class="bi bi-check-circle me-1"></i><span>Đã duyệt</span>';
+            } else if (status === 'PENDING_MODERATOR' || status === 'PENDING_ADMIN') {
+                badgeEl.className = 'badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1';
+                badgeEl.innerHTML = '<i class="bi bi-hourglass-split me-1"></i><span>Đang chờ duyệt</span>';
+            } else if (status === 'REJECTED') {
+                badgeEl.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1';
+                badgeEl.innerHTML = '<i class="bi bi-x-circle me-1"></i><span>Bị từ chối</span>';
+            } else {
+                badgeEl.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2.5 py-1';
+                badgeEl.innerHTML = '<i class="bi bi-clock-history me-1"></i><span>Bản nháp</span>';
+            }
+        }
+
+        const wrapper = document.getElementById(`module-submit-review-wrapper-${moduleId}`);
+        if (wrapper) {
+            if (status === 'DRAFT' || status === 'REJECTED') {
+                const safeName = (moduleName || '').replace(/'/g, "\\'");
+                wrapper.innerHTML = `
+                    <form action="/instructor/cohorts/${moduleId}/submit-review" method="post" class="m-0">
+                        <input type="hidden" name="redirectUrl" value="/instructor/courses/${courseId}/curriculum">
+                        <button type="submit" class="btn btn-sm btn-warning text-dark border-0 rounded-pill text-nowrap px-3 fw-semibold"
+                                data-module-id="${moduleId}"
+                                data-module-name="${safeName}"
+                                onclick="return submitModuleForReviewAjax('${moduleId}', '${safeName}', event, this.form);">
+                            <i class="bi bi-send-check me-1"></i> Gửi duyệt Module
+                        </button>
+                    </form>
+                `;
+            } else {
+                wrapper.innerHTML = '';
+            }
+        }
+    }
+
 </script>
 </body>
 </html>

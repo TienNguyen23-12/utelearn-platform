@@ -177,5 +177,64 @@ public class ModeratorReviewPageRenderTest {
                 .andExpect(model().attributeExists("sections"))
                 .andExpect(model().attributeExists("lessonsMap"));
     }
+
+    @Test
+    void testRenderCourseTaskWithDraftLessonsHighlighting() throws Exception {
+        User admin = User.builder()
+                .id(1L)
+                .username("admin")
+                .email("admin@ute.edu.vn")
+                .fullName("Administrator")
+                .build();
+
+        Course course = Course.builder()
+                .id(10L)
+                .title("Sample Course")
+                .slug("sample-course")
+                .code("CS101")
+                .build();
+
+        vn.edu.ute.utelearn.entity.Section sec1 = vn.edu.ute.utelearn.entity.Section.builder()
+                .id(101L)
+                .title("Chương 1")
+                .course(course)
+                .build();
+
+        vn.edu.ute.utelearn.entity.Lesson publishedLesson = vn.edu.ute.utelearn.entity.Lesson.builder()
+                .id(1001L)
+                .title("Bài 1")
+                .status("PUBLISHED")
+                .section(sec1)
+                .build();
+
+        vn.edu.ute.utelearn.entity.Lesson draftLesson = vn.edu.ute.utelearn.entity.Lesson.builder()
+                .id(1002L)
+                .title("Bài 2 Bản Nháp")
+                .status("DRAFT")
+                .section(sec1)
+                .build();
+
+        ModerationTask task = ModerationTask.builder()
+                .id(12L)
+                .itemType("COURSE")
+                .itemId(10L)
+                .status("PENDING")
+                .author(User.builder().id(2L).fullName("Instructor").build())
+                .build();
+
+        when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.of(admin));
+        when(rbacHelper.hasRole("ADMIN")).thenReturn(true);
+        when(taskRepository.findById(12L)).thenReturn(Optional.of(task));
+        when(userRepository.findActiveModerators()).thenReturn(Collections.emptyList());
+        when(courseService.getCourseById(10L)).thenReturn(course);
+        when(sectionService.getSectionsByCourseId(10L)).thenReturn(java.util.List.of(sec1));
+        when(lessonService.getLessonsBySectionId(101L)).thenReturn(java.util.List.of(publishedLesson, draftLesson));
+
+        mockMvc.perform(get("/moderator/review/12"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("moderator/review_course"))
+                .andExpect(model().attribute("totalDraftLessons", 1L))
+                .andExpect(model().attributeExists("sectionDraftCountMap"));
+    }
 }
 

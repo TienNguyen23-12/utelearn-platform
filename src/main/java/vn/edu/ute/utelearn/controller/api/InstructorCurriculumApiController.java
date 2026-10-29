@@ -48,6 +48,8 @@ public class InstructorCurriculumApiController {
     private final InstructorAssetService assetService;
     private final CloudinaryService cloudinaryService;
     private final CohortService cohortService;
+    private final vn.edu.ute.utelearn.service.CourseService courseService;
+    private final vn.edu.ute.utelearn.service.ModerationService moderationService;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CourseRepository courseRepository;
@@ -290,8 +292,12 @@ public class InstructorCurriculumApiController {
     @GetMapping("/videos/detect-duration")
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
     public ResponseEntity<?> detectVideoDuration(@RequestParam String url) {
-        Integer duration = cloudinaryService.getVideoDuration(url);
-        return ResponseEntity.ok(Map.of("durationSeconds", duration != null ? duration : 0));
+        boolean validFormat = vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl(url);
+        Integer duration = validFormat ? cloudinaryService.getVideoDuration(url) : null;
+        return ResponseEntity.ok(Map.of(
+                "durationSeconds", duration != null ? duration : 0,
+                "validFormat", validFormat
+        ));
     }
 
     @GetMapping("/assets")
@@ -384,6 +390,10 @@ public class InstructorCurriculumApiController {
             }
         }
 
+        if ("PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+            course.setStatus("DRAFT");
+            log.info("[InstructorCurriculumApiController] Chuyển khóa học id: {} về DRAFT do cập nhật inline", courseId);
+        }
         Course saved = courseRepository.save(course);
         log.info("[InstructorCurriculumApiController] Cập nhật inline khóa học id: {}, user: {}", courseId, currentUser.getEmail());
 
@@ -480,9 +490,8 @@ public class InstructorCurriculumApiController {
             cohort.setAnnouncementContent((String) payload.get("announcementContent"));
         }
 
-        if (coreChanged && cohort.getCourse() == null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
-            cohort.setModerationStatus("DRAFT");
-            log.info("[InstructorCurriculumApiController] Chuyển module độc lập id: {} về DRAFT do sửa thông tin cốt lõi", cohortId);
+        if (coreChanged) {
+            cohortService.revertToDraftIfApproved(cohort);
         }
 
         Cohort saved = cohortRepository.save(cohort);
@@ -546,6 +555,7 @@ public class InstructorCurriculumApiController {
                     cohortRepository.save(cohort);
                 }
             }
+            courseService.revertToDraftIfPublished(courseId);
         }
         return ResponseEntity.ok(Map.of("message", "Cập nhật thứ tự module thành công"));
     }
@@ -726,4 +736,85 @@ public class InstructorCurriculumApiController {
             }
         }
     }
+
+    @GetMapping("/{courseId}/moderation-status")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> getCourseModerationStatus(@PathVariable Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Khóa học không tồn tại"));
+        List<Cohort> modules = cohortRepository.findByCourseIdOrdered(courseId).stream()
+                .filter(c -> c != null && !c.isFullCourseCohort())
+                .toList();
+        List<Map<String, Object>> moduleList = modules.stream().map(m -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", m.getId());
+            map.put("code", m.getCode());
+            map.put("name", m.getName());
+            map.put("moderationStatus", m.getModerationStatus());
+            return map;
+        }).toList();
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("courseId", course.getId());
+        resp.put("courseStatus", course.getStatus());
+        resp.put("modules", moduleList);
+        return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/modules/{cohortId}/moderation-status")
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> getCohortModerationStatus(@PathVariable Long cohortId) {
+        Cohort cohort = cohortRepository.findById(cohortId)
+                .orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("cohortId", cohort.getId());
+        resp.put("cohortStatus", cohort.getModerationStatus());
+        if (cohort.getCourse() != null) {
+            resp.put("courseId", cohort.getCourse().getId());
+            resp.put("courseStatus", cohort.getCourse().getStatus());
+        }
+        return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/{courseId}/submit-review")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> submitCourseReviewAjax(@PathVariable Long courseId) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Khóa học không tồn tại"));
+        boolean isOwner = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(r ->
+                "ADMIN".equals(r.getCode()) || "ROLE_ADMIN".equals(r.getCode()));
+        if (!isOwner && !isAdmin) {
+            return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền gửi duyệt khóa học này"));
+        }
+        moderationService.createCourseModerationTask(courseId, currentUser.getId());
+        log.info("[InstructorCurriculumApiController] Gửi duyệt khóa học id: {}, user: {}", courseId, currentUser.getEmail());
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Khóa học đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.",
+                "courseStatus", "PENDING_MODERATOR"
+        ));
+    }
+
+    @PostMapping("/modules/{cohortId}/submit-review")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> submitCohortReviewAjax(@PathVariable Long cohortId) {
+        User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+        Cohort cohort = cohortRepository.findById(cohortId)
+                .orElseThrow(() -> new RuntimeException("Module không tồn tại"));
+        if (!canManageCohort(cohort, currentUser)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Bạn không có quyền gửi duyệt module này"));
+        }
+        moderationService.createCohortModerationTask(cohortId, currentUser.getId());
+        log.info("[InstructorCurriculumApiController] Gửi duyệt module id: {}, user: {}", cohortId, currentUser.getEmail());
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Module đã được gửi duyệt thành công. Vui lòng chờ Moderator kiểm duyệt.",
+                "cohortStatus", "PENDING_MODERATOR"
+        ));
+    }
+
 }
