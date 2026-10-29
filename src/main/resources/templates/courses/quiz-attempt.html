@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${quiz.title + ' - Làm bài kiểm tra | UTELearn'}">Làm bài kiểm tra | UTELearn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --ute-navy: #0a2540;
+            --ute-blue: #2563eb;
+            --ute-blue-soft: #eff6ff;
+            --ute-green: #10b981;
+            --ute-green-soft: #ecfdf5;
+            --ute-amber: #f59e0b;
+            --ute-amber-soft: #fffbeb;
+            --ute-red: #ef4444;
+            --ute-red-soft: #fef2f2;
+            --ute-bg: #f1f5f9;
+            --ute-border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--ute-bg);
+            color: #1e293b;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .exam-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            background: var(--ute-navy);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(10, 37, 64, 0.18);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .exam-topbar-inner {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .back-learn-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.2s ease;
+        }
+
+        .back-learn-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        .autosave-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.14);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            white-space: nowrap;
+        }
+
+        .autosave-pill.saving {
+            background: rgba(59, 130, 246, 0.18);
+            color: #93c5fd;
+            border-color: rgba(59, 130, 246, 0.35);
+        }
+
+        .autosave-pill.warning {
+            background: rgba(245, 158, 11, 0.18);
+            color: #fcd34d;
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+
+        .timer-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-pill.warning {
+            background: rgba(245, 158, 11, 0.22);
+            border-color: #f59e0b;
+            color: #fde68a;
+        }
+
+        .timer-pill.critical {
+            background: rgba(239, 68, 68, 0.28);
+            border-color: #ef4444;
+            color: #fecaca;
+            animation: pulseCritical 1s infinite;
+        }
+
+        @keyframes pulseCritical {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .exam-container {
+            max-width: 1440px;
+            margin: 1.5rem auto 3rem;
+            padding: 0 1.25rem;
+        }
+
+        .toolbar-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid var(--ute-border);
+            padding: 0.9rem 1.15rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .filter-chip {
+            border: 1px solid var(--ute-border);
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 0.42rem 0.85rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .filter-chip:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        .filter-chip.active {
+            background: var(--ute-navy);
+            color: #ffffff;
+            border-color: var(--ute-navy);
+        }
+
+        .filter-chip.flag-chip.active {
+            background: var(--ute-amber);
+            color: #ffffff;
+            border-color: var(--ute-amber);
+        }
+
+        .question-card {
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1.5px solid var(--ute-border);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            scroll-margin-top: 92px;
+        }
+
+        .question-card.active-focus {
+            border-color: #93c5fd;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
+        }
+
+        .question-card.is-answered {
+            border-left: 5px solid var(--ute-green);
+        }
+
+        .question-card.is-flagged {
+            border-color: #fcd34d;
+            border-left: 5px solid var(--ute-amber);
+            background: linear-gradient(180deg, #fffdf7 0%, #ffffff 48%);
+        }
+
+        .question-num-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 0.75rem;
+            border-radius: 10px;
+            background: var(--ute-navy);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .question-card.is-flagged .question-num-badge {
+            background: var(--ute-amber);
+            color: #ffffff;
+        }
+
+        .flag-toggle-btn {
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 0.38rem 0.8rem;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.18s ease;
+        }
+
+        .flag-toggle-btn:hover {
+            border-color: var(--ute-amber);
+            color: #b45309;
+            background: var(--ute-amber-soft);
+        }
+
+        .flag-toggle-btn.flagged {
+            border-color: var(--ute-amber);
+            background: var(--ute-amber);
+            color: #ffffff;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.28);
+        }
+
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 0.9rem 1.1rem;
+            border-radius: 12px;
+            border: 1.5px solid var(--ute-border);
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            margin-bottom: 0.65rem;
+            user-select: none;
+        }
+
+        .option-item:hover {
+            border-color: #93c5fd;
+            background: #f0f7ff;
+        }
+
+        .option-item.selected {
+            border-color: var(--ute-blue);
+            background: var(--ute-blue-soft);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        }
+
+        .option-letter {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: #e2e8f0;
+            color: #334155;
+            font-weight: 800;
+            font-size: 0.82rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .option-item.selected .option-letter {
+            background: var(--ute-blue);
+            color: #ffffff;
+        }
+
+        .tracking-sidebar {
+            position: sticky;
+            top: 86px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-card {
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1px solid var(--ute-border);
+            padding: 1.25rem;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+            max-height: 290px;
+            overflow-y: auto;
+            padding: 2px;
+        }
+
+        .palette-btn {
+            position: relative;
+            height: 42px;
+            border-radius: 10px;
+            border: 1.5px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .palette-btn:hover {
+            border-color: var(--ute-blue);
+            color: var(--ute-blue);
+            transform: translateY(-1px);
+        }
+
+        .palette-btn.answered {
+            background: var(--ute-green);
+            border-color: var(--ute-green);
+            color: #ffffff;
+        }
+
+        .palette-btn.flagged {
+            border-color: var(--ute-amber);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.28);
+        }
+
+        .palette-btn.flagged:not(.answered) {
+            background: var(--ute-amber-soft);
+            color: #b45309;
+        }
+
+        .palette-btn.current {
+            outline: 3px solid rgba(37, 99, 235, 0.35);
+             outline-offset: 1px;
+        }
+
+        .palette-flag-dot {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--ute-amber);
+            color: #ffffff;
+            font-size: 0.62rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .save-history-list {
+            max-height: 165px;
+            overflow-y: auto;
+            font-size: 0.78rem;
+        }
+
+        .save-history-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+            color: #475569;
+        }
+
+        .save-history-item:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 991.98px) {
+            .tracking-sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body th:attr="data-quiz-id=${quiz.id},data-module-id=${module.id},data-course-slug=${courseSlug},data-back-url=${backToLearnUrl},data-submission-id=${initialSubmissionId},data-mode=${initialMode},data-has-access=${hasAccessRole},data-user-id=${currentUser != null ? currentUser.id : 0}">
+
+    <header class="exam-topbar">
+        <div class="exam-topbar-inner">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+                <a th:href="${backToLearnUrl}" class="back-learn-btn">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Phòng học</span>
+                </a>
+                <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25 rounded-pill px-2 py-1" style="font-size: 0.7rem;">BÀI KIỂM TRA</span>
+                        <span class="text-white-50 small text-truncate" th:text="${module.name}">Tên lớp học</span>
+                    </div>
+                    <h1 class="h6 fw-bold text-white mb-0 text-truncate mt-1" id="topQuizTitle" th:text="${quiz.title}">Tiêu đề bài kiểm tra</h1>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div id="autoSaveBadge" class="autosave-pill d-none">
+                    <i class="bi bi-cloud-check-fill" id="autoSaveIcon"></i>
+                    <span id="autoSaveText">Tự động lưu đang bật</span>
+                </div>
+
+                <button type="button" id="manualSaveBtn" class="btn btn-sm btn-outline-light fw-semibold rounded-3 px-3 py-2 d-none" onclick="saveProgressNow(true)">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>Lưu bài
+                </button>
+
+                <button type="button" class="btn btn-sm btn-outline-light fw-semibold rounded-3 px-3 py-2" onclick="openAttemptHistoryModal()">
+                    <i class="bi bi-clock-history me-1"></i>Lịch sử làm bài
+                </button>
+
+                <div id="quizTimerBox" class="timer-pill d-none">
+                    <i class="bi bi-alarm"></i>
+                    <span id="quizTimerDisplay">--:--</span>
+                </div>
+
+                <button type="button" id="topSubmitQuizBtn" class="btn btn-primary fw-bold rounded-3 px-3 py-2 shadow-sm d-none" onclick="openSubmitConfirmModal()">
+                    <i class="bi bi-send-check-fill me-1"></i>Nộp bài
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="exam-container">
+        <div id="loadingAttemptState" class="card border-0 shadow-sm rounded-4 p-5 text-center my-4">
+            <div class="py-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <h5 class="fw-bold text-dark mb-1">Đang tải không gian làm bài kiểm tra...</h5>
+                <p class="text-muted small mb-0">Hệ thống đang đồng bộ câu hỏi và khôi phục lịch sử làm bài của bạn.</p>
+            </div>
+        </div>
+
+        <div id="errorAttemptState" class="card border-0 shadow-sm rounded-4 p-5 text-center my-4 d-none">
+            <div class="py-3">
+                <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2" id="errorAttemptTitle">Không thể bắt đầu bài kiểm tra</h5>
+                <p class="text-muted mb-4" id="errorAttemptMessage">Đã có lỗi xảy ra khi tải bài kiểm tra.</p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary fw-bold rounded-pill px-4" onclick="openAttemptHistoryModal()">
+                        <i class="bi bi-clock-history me-1"></i>Xem lịch sử làm bài
+                    </button>
+                    <a th:href="${backToLearnUrl}" class="btn btn-primary fw-bold rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-1"></i>Quay lại phòng học
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="attemptWorkspaceView" class="row g-4 d-none">
+            <div class="col-lg-8 col-xl-9">
+                <div id="resumedBanner" class="alert alert-info border-0 rounded-4 shadow-sm d-flex align-items-center justify-content-between gap-3 mb-3 d-none">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-repeat fs-5 text-primary"></i>
+                        <div class="small">
+                            <span class="fw-bold text-dark">Đã khôi phục phiên làm bài đang dở!</span>
+                            <span class="text-muted ms-1" id="resumedBannerDetail">Các đáp án và câu hỏi đánh cờ của bạn đã được giữ nguyên.</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close small" onclick="document.getElementById('resumedBanner').classList.add('d-none')"></button>
+                </div>
+
+                <div class="toolbar-card d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="filter-chip active" id="filterBtnAll" onclick="setQuestionFilter('all')">
+                            <i class="bi bi-grid-fill"></i>
+                            <span>Tất cả</span>
+                            <span class="badge bg-secondary bg-opacity-25 text-dark rounded-pill" id="filterCountAll">0</span>
+                        </button>
+                        <button type="button" class="filter-chip" id="filterBtnAnswered" onclick="setQuestionFilter('answered')">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <span>Đã làm</span>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill" id="filterCountAnswered">0</span>
+                        </button>
+                        <button type="button" class="filter-chip" id="filterBtnUnanswered" onclick="setQuestionFilter('unanswered')">
+                            <i class="bi bi-circle text-secondary"></i>
+                            <span>Chưa làm</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill" id="filterCountUnanswered">0</span>
+                        </button>
+                        <button type="button" class="filter-chip flag-chip" id="filterBtnFlagged" onclick="setQuestionFilter('flagged')">
+                            <i class="bi bi-flag-fill text-warning"></i>
+                            <span>Đã đánh cờ</span>
+                            <span class="badge bg-warning bg-opacity-25 text-dark rounded-pill" id="filterCountFlagged">0</span>
+                        </button>
+                    </div>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary fw-semibold active" id="modeAllBtn" onclick="setDisplayMode('all')">
+                            <i class="bi bi-view-stacked me-1"></i>Tất cả câu
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary fw-semibold" id="modeSingleBtn" onclick="setDisplayMode('single')">
+                            <i class="bi bi-card-heading me-1"></i>Từng câu một
+                        </button>
+                    </div>
+                </div>
+
+                <div id="questionsListContainer"></div>
+
+                <div id="emptyFilterNotice" class="card border-0 shadow-sm rounded-4 p-4 text-center my-3 d-none">
+                    <i class="bi bi-funnel text-muted fs-2 mb-2"></i>
+                    <h6 class="fw-bold text-dark mb-1">Không có câu hỏi nào khớp bộ lọc hiện tại</h6>
+                    <p class="text-muted small mb-3">Hãy chuyển bộ lọc về "Tất cả" để tiếp tục xem toàn bộ đề thi.</p>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="setQuestionFilter('all')">
+                            Hiển thị tất cả câu hỏi
+                        </button>
+                    </div>
+                </div>
+
+                <div id="singleModeNavBar" class="card border-0 shadow-sm rounded-4 p-3 mt-3 d-none">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary fw-bold rounded-pill px-4" id="prevQuestionBtn" onclick="navigateSingleQuestion(-1)">
+                            <i class="bi bi-chevron-left me-1"></i>Câu trước
+                        </button>
+                        <span class="fw-bold text-secondary small" id="singleQuestionPosLabel">Câu 1 / 1</span>
+                        <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" id="nextQuestionBtn" onclick="navigateSingleQuestion(1)">
+                            Câu tiếp theo<i class="bi bi-chevron-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-xl-3">
+                <aside class="tracking-sidebar">
+                    <div class="sidebar-card">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-ui-checks-grid text-primary"></i>
+                                <span>Bảng theo dõi câu hỏi</span>
+                            </h6>
+                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill fw-bold" id="sidebarPercentBadge">0%</span>
+                        </div>
+
+                        <div class="progress rounded-pill mb-3" style="height: 8px; background: #e2e8f0;">
+                            <div id="sidebarProgressBar" class="progress-bar bg-success rounded-pill" role="progressbar" style="width: 0%;"></div>
+                        </div>
+
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-4">
+                                <div class="p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                    <div class="fw-extrabold text-success fs-6" id="sidebarAnsweredCount">0</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Đã làm</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 rounded-3 bg-light border">
+                                    <div class="fw-extrabold text-secondary fs-6" id="sidebarUnansweredCount">0</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Chưa làm</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                    <div class="fw-extrabold text-warning fs-6" id="sidebarFlaggedCount">0</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Đánh cờ</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="sidebarQuestionGrid" class="palette-grid mb-3"></div>
+
+                        <div class="d-flex flex-wrap gap-2 pt-2 border-top mb-3" style="font-size: 0.72rem; color: #64748b;">
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="d-inline-block rounded-1" style="width: 11px; height: 11px; background: #10b981;"></span> Đã trả lời
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="d-inline-block rounded-1 border" style="width: 11px; height: 11px; background: #f8fafc;"></span> Chưa làm
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="d-inline-block rounded-circle" style="width: 11px; height: 11px; background: #f59e0b;"></span> Đánh cờ
+                            </span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold rounded-3 py-2" onclick="saveProgressNow(true)">
+                                <i class="bi bi-cloud-check me-1"></i>Lưu tiến độ ngay
+                            </button>
+                            <button type="button" class="btn btn-primary fw-bold rounded-3 py-2 shadow-sm" onclick="openSubmitConfirmModal()">
+                                <i class="bi bi-send-check-fill me-1"></i>Hoàn thành &amp; Nộp bài
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-card">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold text-dark mb-0 small d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-success"></i>
+                                <span>Trạng thái lưu bài</span>
+                            </h6>
+                            <span class="badge bg-light text-secondary border" style="font-size: 0.68rem;">Real-time</span>
+                        </div>
+                        <div id="liveSaveLogList" class="d-flex align-items-center gap-2 py-1 small text-secondary">
+                            <i class="bi bi-clock-history text-success"></i>
+                            <span>Lần lưu gần nhất: <strong class="text-dark">--:--:--</strong></span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <div id="resultReviewView" class="d-none"></div>
+    </main>
+
+    <div class="modal fade" id="quizSubmitConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                            <i class="bi bi-send-check-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0">Xác nhận nộp bài kiểm tra</h5>
+                            <small class="text-muted">Kiểm tra lại trạng thái các câu hỏi trước khi kết thúc</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="row g-2 text-center mb-3">
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 bg-light border">
+                                <div class="text-muted" style="font-size: 0.7rem;">Tổng số</div>
+                                <div class="fw-bold text-dark fs-6" id="modalTotalCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                <div class="text-success" style="font-size: 0.7rem;">Đã làm</div>
+                                <div class="fw-bold text-success fs-6" id="modalAnsweredCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                                <div class="text-danger" style="font-size: 0.7rem;">Chưa làm</div>
+                                <div class="fw-bold text-danger fs-6" id="modalUnansweredCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 rounded-3 bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                                <div class="text-warning" style="font-size: 0.7rem;">Đánh cờ</div>
+                                <div class="fw-bold text-warning fs-6" id="modalFlaggedCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modalUnansweredAlert" class="alert alert-warning border-0 rounded-3 py-2 px-3 mb-2 d-none">
+                        <div class="fw-bold small mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Bạn còn câu hỏi chưa trả lời:</div>
+                        <div id="modalUnansweredPills" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+
+                    <div id="modalFlaggedAlert" class="alert alert-info border-0 rounded-3 py-2 px-3 mb-2 d-none">
+                        <div class="fw-bold small mb-1"><i class="bi bi-flag-fill text-warning me-1"></i>Các câu hỏi bạn đang đánh cờ lưu ý:</div>
+                        <div id="modalFlaggedPills" class="d-flex flex-wrap gap-1"></div>
+                    </div>
+
+                    <div id="modalAllDoneAlert" class="alert alert-success border-0 rounded-3 py-2 px-3 mb-2 d-none">
+                        <i class="bi bi-check-circle-fill me-1"></i>Bạn đã hoàn thành tất cả các câu hỏi trong bài thi!
+                    </div>
+
+                    <p class="text-muted small mb-0 mt-2">Sau khi nộp bài, hệ thống sẽ chấm điểm ngay lập tức và đóng phiên làm bài hiện tại.</p>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Quay lại kiểm tra</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="confirmFinalSubmitBtn" onclick="executeFinalSubmit()">
+                        <i class="bi bi-check2-circle me-1"></i>Nộp bài ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="attemptHistoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom px-4 py-3">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0">
+                            <i class="bi bi-clock-history text-primary me-2"></i>Lịch sử làm bài kiểm tra
+                        </h5>
+                        <small class="text-muted" th:text="${quiz.title}">Bài kiểm tra</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-4" id="attemptHistoryModalBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                        <span class="text-muted">Đang tải lịch sử làm bài...</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;" id="toastZone"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const bodyDataset = document.body.dataset;
+        const QUIZ_ID = Number(bodyDataset.quizId || 0);
+        const MODULE_ID = Number(bodyDataset.moduleId || 0);
+        const COURSE_SLUG = bodyDataset.courseSlug || 'standalone';
+        const BACK_TO_LEARN_URL = bodyDataset.backUrl || '/courses';
+        const INITIAL_SUBMISSION_ID = bodyDataset.submissionId ? Number(bodyDataset.submissionId) : null;
+        const INITIAL_MODE = bodyDataset.mode || 'attempt';
+        const HAS_ACCESS_ROLE = bodyDataset.hasAccess === 'true';
+        const CURRENT_USER_ID = Number(bodyDataset.userId || 0);
+
+        let activeQuiz = null;
+        let activeSubmissionId = null;
+        let answersState = {};
+        let currentFilter = 'all';
+        let displayMode = 'all';
+        let activeQuestionIndex = 0;
+        let countdownInterval = null;
+        let remainingSeconds = null;
+        let autoSaveTimer = null;
+        let periodicSaveInterval = null;
+        let isSubmittingQuiz = false;
+        let isSavingProgress = false;
+        let saveLogs = [];
+
+        function getLocalStorageKey() {
+            return `utelearn_quiz_attempt_${QUIZ_ID}_cohort_${MODULE_ID}_user_${CURRENT_USER_ID}`;
+        }
+
+        function showToast(message, type = 'info') {
+            const zone = document.getElementById('toastZone');
+            if (!zone) return;
+            const bgClass = type === 'success' ? 'bg-success' : (type === 'error' ? 'bg-danger' : (type === 'warning' ? 'bg-warning text-dark' : 'bg-dark'));
+            const wrapper = document.createElement('div');
+            wrapper.className = `toast align-items-center text-white ${bgClass} border-0 show mb-2 rounded-3 shadow`;
+            wrapper.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body fw-semibold small">${escapeHtml(message)}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
+                </div>
+            `;
+            zone.appendChild(wrapper);
+            setTimeout(() => wrapper.remove(), 3500);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatTimeClock(dateObj) {
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const mm = String(dateObj.getMinutes()).padStart(2, '0');
+            const ss = String(dateObj.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+
+        function appendSaveLog(text, iconClass = 'bi-check2-circle text-success') {
+            const nowStr = formatTimeClock(new Date());
+            const container = document.getElementById('liveSaveLogList');
+            if (!container) return;
+            container.innerHTML = `
+                <i class="bi ${iconClass} flex-shrink-0"></i>
+                <span>Lần lưu gần nhất: <strong class="text-dark">${nowStr}</strong></span>
+            `;
+        }
+
+        function isQuestionAnswered(questionId) {
+            const entry = answersState[questionId];
+            if (!entry) return false;
+            if (entry.selectedOptionIds && entry.selectedOptionIds.length > 0) return true;
+            if (entry.textAnswer && entry.textAnswer.trim().length > 0) return true;
+            return false;
+        }
+
+        function isQuestionFlagged(questionId) {
+            const entry = answersState[questionId];
+            return Boolean(entry && entry.flagged);
+        }
+
+        function ensureAnswerEntry(questionId) {
+            if (!answersState[questionId]) {
+                answersState[questionId] = {
+                    questionId: Number(questionId),
+                    selectedOptionIds: [],
+                    textAnswer: '',
+                    flagged: false
+                };
+            }
+            return answersState[questionId];
+        }
+
+        function saveToLocalBackup() {
+            if (!activeQuiz) return;
+            try {
+                const payload = {
+                    quizId: QUIZ_ID,
+                    cohortId: MODULE_ID,
+                    submissionId: activeSubmissionId,
+                    updatedAt: Date.now(),
+                    answersState: answersState
+                };
+                localStorage.setItem(getLocalStorageKey(), JSON.stringify(payload));
+            } catch (e) {}
+        }
+
+        function clearLocalBackup() {
+            try {
+                localStorage.removeItem(getLocalStorageKey());
+            } catch (e) {}
+        }
+
+        function restoreAnswersFromServerAndLocal(quizData) {
+            answersState = {};
+            const questions = quizData.questions || [];
+            questions.forEach(q => {
+                answersState[q.id] = {
+                    questionId: q.id,
+                    selectedOptionIds: [],
+                    textAnswer: '',
+                    flagged: false
+                };
+            });
+
+            let restoredFromServer = false;
+            if (Array.isArray(quizData.savedAnswers) && quizData.savedAnswers.length > 0) {
+                quizData.savedAnswers.forEach(sa => {
+                    if (!sa || !sa.questionId) return;
+                    const entry = ensureAnswerEntry(sa.questionId);
+                    if (Array.isArray(sa.selectedOptionIds)) {
+                        entry.selectedOptionIds = [...sa.selectedOptionIds];
+                    }
+                    if (typeof sa.textAnswer === 'string') {
+                        entry.textAnswer = sa.textAnswer;
+                    }
+                    entry.flagged = Boolean(sa.flagged);
+                    if (entry.selectedOptionIds.length > 0 || (entry.textAnswer && entry.textAnswer.trim() !== '') || entry.flagged) {
+                        restoredFromServer = true;
+                    }
+                });
+            }
+
+            try {
+                const rawLocal = localStorage.getItem(getLocalStorageKey());
+                if (rawLocal) {
+                    const parsed = JSON.parse(rawLocal);
+                    if (parsed && parsed.answersState && (!parsed.submissionId || !activeSubmissionId || Number(parsed.submissionId) === Number(activeSubmissionId))) {
+                        Object.keys(parsed.answersState).forEach(qId => {
+                            const localEntry = parsed.answersState[qId];
+                            const target = answersState[qId];
+                            if (!target || !localEntry) return;
+                            const serverHasAnswer = (target.selectedOptionIds && target.selectedOptionIds.length > 0)
+                                || (target.textAnswer && target.textAnswer.trim().length > 0)
+                                || target.flagged;
+                            if (!serverHasAnswer) {
+                                target.selectedOptionIds = Array.isArray(localEntry.selectedOptionIds) ? localEntry.selectedOptionIds : [];
+                                target.textAnswer = typeof localEntry.textAnswer === 'string' ? localEntry.textAnswer : '';
+                                target.flagged = Boolean(localEntry.flagged);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {}
+
+            if (restoredFromServer || quizData.hasInProgressAttempt) {
+                const banner = document.getElementById('resumedBanner');
+                if (banner) banner.classList.remove('d-none');
+                appendSaveLog('Đã khôi phục lịch sử bài làm đang dở từ máy chủ', 'bi-cloud-arrow-down-fill text-primary');
+            } else {
+                appendSaveLog('Đã khởi tạo phiên làm bài và bật tự động lưu', 'bi-shield-check text-success');
+            }
+        }
+
+        function buildSubmissionPayload() {
+            const questions = (activeQuiz && activeQuiz.questions) ? activeQuiz.questions : [];
+            const answersList = questions.map(q => {
+                const entry = ensureAnswerEntry(q.id);
+                return {
+                    questionId: q.id,
+                    selectedOptionIds: entry.selectedOptionIds || [],
+                    textAnswer: entry.textAnswer || null,
+                    flagged: Boolean(entry.flagged)
+                };
+            });
+            return {
+                cohortId: MODULE_ID,
+                submissionId: activeSubmissionId,
+                answers: answersList
+            };
+        }
+
+        function updateAutoSaveStatusUI(state, text) {
+            const badge = document.getElementById('autoSaveBadge');
+            const icon = document.getElementById('autoSaveIcon');
+            const label = document.getElementById('autoSaveText');
+            if (!badge || !icon || !label) return;
+            badge.classList.remove('d-none', 'saving', 'warning');
+            if (state === 'saving') {
+                badge.classList.add('saving');
+                icon.className = 'bi bi-arrow-repeat';
+            } else if (state === 'warning') {
+                badge.classList.add('warning');
+                icon.className = 'bi bi-exclamation-circle-fill';
+            } else {
+                icon.className = 'bi bi-cloud-check-fill';
+            }
+            label.textContent = text;
+        }
+
+        function scheduleAutoSave(reasonText) {
+            saveToLocalBackup();
+            if (reasonText) {
+                appendSaveLog(reasonText, 'bi-pencil-square text-primary');
+            }
+            updateAutoSaveStatusUI('saving', 'Đang lưu tự động...');
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                saveProgressNow(false);
+            }, 650);
+        }
+
+        async function saveProgressNow(isManual = false) {
+            if (!activeQuiz || isSubmittingQuiz || isSavingProgress) return;
+            saveToLocalBackup();
+            isSavingProgress = true;
+            updateAutoSaveStatusUI('saving', 'Đang đồng bộ lên máy chủ...');
+            try {
+                const payload = buildSubmissionPayload();
+                const res = await fetch(`/api/quizzes/${QUIZ_ID}/save-progress`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Lỗi lưu tiến độ');
+                }
+                if (data.submissionId) {
+                    activeSubmissionId = data.submissionId;
+                }
+                const nowStr = formatTimeClock(new Date());
+                updateAutoSaveStatusUI('saved', `Đã lưu tự động lúc ${nowStr}`);
+                appendSaveLog('', 'bi-cloud-check-fill text-success');
+                if (isManual) {
+                    showToast('Đã lưu tiến độ bài làm thành công!', 'success');
+                }
+            } catch (err) {
+                updateAutoSaveStatusUI('warning', 'Đã lưu tạm trên trình duyệt');
+                if (isManual) {
+                    showToast('Đã lưu bản nháp vào trình duyệt (máy chủ bận)', 'warning');
+                }
+            } finally {
+                isSavingProgress = false;
+            }
+        }
+
+        function renderQuestionsWorkspace() {
+            const container = document.getElementById('questionsListContainer');
+            if (!container || !activeQuiz) return;
+            const questions = activeQuiz.questions || [];
+            const typeNames = {
+                'SINGLE_CHOICE': 'Một đáp án đúng',
+                'MULTI_SELECT': 'Nhiều đáp án đúng',
+                'TRUE_FALSE': 'Đúng / Sai',
+                'FILL_BLANK': 'Điền từ vào chỗ trống'
+            };
+
+            container.innerHTML = questions.map((q, idx) => {
+                const entry = ensureAnswerEntry(q.id);
+                const answered = isQuestionAnswered(q.id);
+                const flagged = isQuestionFlagged(q.id);
+                const options = q.options || [];
+                let optionsMarkup = '';
+
+                if (q.questionType === 'SINGLE_CHOICE' || q.questionType === 'TRUE_FALSE') {
+                    optionsMarkup = options.map((opt, oIdx) => {
+                        const letter = String.fromCharCode(65 + oIdx);
+                        const selected = entry.selectedOptionIds.includes(opt.id);
+                        return `
+                            <div class="option-item ${selected ? 'selected' : ''}"
+                                 id="opt_row_${q.id}_${opt.id}"
+                                 onclick="selectSingleOption(${q.id}, '${escapeHtml(opt.id)}', ${idx})">
+                                <span class="option-letter">${letter}</span>
+                                <input class="form-check-input mt-1 d-none" type="radio"
+                                       name="q_${q.id}" id="opt_${q.id}_${opt.id}"
+                                       value="${escapeHtml(opt.id)}" ${selected ? 'checked' : ''}>
+                                <div class="flex-grow-1 text-dark fw-medium">${escapeHtml(opt.text)}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else if (q.questionType === 'MULTI_SELECT') {
+                    optionsMarkup = `<div class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Có thể chọn nhiều đáp án đúng:</div>` +
+                        options.map((opt, oIdx) => {
+                            const letter = String.fromCharCode(65 + oIdx);
+                            const selected = entry.selectedOptionIds.includes(opt.id);
+                            return `
+                                <div class="option-item ${selected ? 'selected' : ''}"
+                                     id="opt_row_${q.id}_${opt.id}"
+                                     onclick="toggleMultiOption(${q.id}, '${escapeHtml(opt.id)}', ${idx})">
+                                    <span class="option-letter">${letter}</span>
+                                    <input class="form-check-input mt-1" type="checkbox"
+                                           name="q_${q.id}" id="opt_${q.id}_${opt.id}"
+                                           value="${escapeHtml(opt.id)}" ${selected ? 'checked' : ''}
+                                           onclick="event.stopPropagation(); toggleMultiOption(${q.id}, '${escapeHtml(opt.id)}', ${idx});">
+                                    <div class="flex-grow-1 text-dark fw-medium">${escapeHtml(opt.text)}</div>
+                                </div>
+                            `;
+                        }).join('');
+                } else if (q.questionType === 'FILL_BLANK') {
+                    optionsMarkup = `
+                        <div class="mt-2">
+                            <label class="form-label small fw-bold text-secondary mb-1">Nhập câu trả lời của bạn:</label>
+                            <input type="text" class="form-control form-control-lg rounded-3 border-2"
+                                   id="fill_input_${q.id}"
+                                   value="${escapeHtml(entry.textAnswer || '')}"
+                                   placeholder="Gõ câu trả lời tại đây (tự động lưu khi nhập)..."
+                                   onfocus="setActiveQuestion(${idx}, false)"
+                                   oninput="updateFillBlankAnswer(${q.id}, this.value, ${idx})">
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="question-card ${answered ? 'is-answered' : ''} ${flagged ? 'is-flagged' : ''} ${idx === activeQuestionIndex ? 'active-focus' : ''}"
+                         id="question_card_${q.id}"
+                         data-question-id="${q.id}"
+                         data-question-index="${idx}"
+                         onclick="setActiveQuestion(${idx}, false)">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="question-num-badge" id="q_badge_${q.id}">Câu ${idx + 1}</span>
+                                <span class="badge bg-light text-secondary border">${typeNames[q.questionType] || q.questionType}</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">${q.points || 1} điểm</span>
+                                <span class="badge rounded-pill ${answered ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary'}"
+                                      id="q_state_badge_${q.id}">
+                                    ${answered ? '<i class="bi bi-check-circle-fill me-1"></i>Đã trả lời' : '<i class="bi bi-circle me-1"></i>Chưa trả lời'}
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-secondary text-decoration-none p-1 ${answered ? '' : 'd-none'}"
+                                        id="clear_btn_${q.id}"
+                                        onclick="event.stopPropagation(); clearQuestionAnswer(${q.id}, ${idx})"
+                                        title="Xóa lựa chọn câu này">
+                                    <i class="bi bi-eraser me-1"></i>Xóa chọn
+                                </button>
+                                <button type="button"
+                                        class="flag-toggle-btn ${flagged ? 'flagged' : ''}"
+                                        id="flag_btn_${q.id}"
+                                        onclick="event.stopPropagation(); toggleQuestionFlag(${q.id}, ${idx})">
+                                    <i class="bi ${flagged ? 'bi-flag-fill' : 'bi-flag'}"></i>
+                                    <span id="flag_label_${q.id}">${flagged ? 'Đã đánh cờ' : 'Đánh cờ'}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="fw-bold text-dark mb-3" style="font-size: 1.04rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(q.content)}</div>
+
+                        <div class="options-zone" id="options_zone_${q.id}">
+                            ${optionsMarkup}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            refreshTrackingSidebarAndFilters();
+        }
+
+        function selectSingleOption(questionId, optionId, idx) {
+            setActiveQuestion(idx, false);
+            const entry = ensureAnswerEntry(questionId);
+            entry.selectedOptionIds = [optionId];
+            const zone = document.getElementById(`options_zone_${questionId}`);
+            if (zone) {
+                zone.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+                const row = document.getElementById(`opt_row_${questionId}_${optionId}`);
+                if (row) row.classList.add('selected');
+                const radio = document.getElementById(`opt_${questionId}_${optionId}`);
+                if (radio) radio.checked = true;
+            }
+            updateQuestionCardVisual(questionId);
+            refreshTrackingSidebarAndFilters();
+            scheduleAutoSave(`Đã chọn đáp án Câu ${idx + 1}`);
+        }
+
+        function toggleMultiOption(questionId, optionId, idx) {
+            setActiveQuestion(idx, false);
+            const entry = ensureAnswerEntry(questionId);
+            const pos = entry.selectedOptionIds.indexOf(optionId);
+            if (pos >= 0) {
+                entry.selectedOptionIds.splice(pos, 1);
+            } else {
+                entry.selectedOptionIds.push(optionId);
+            }
+            const row = document.getElementById(`opt_row_${questionId}_${optionId}`);
+            const checkbox = document.getElementById(`opt_${questionId}_${optionId}`);
+            const isSelected = entry.selectedOptionIds.includes(optionId);
+            if (row) row.classList.toggle('selected', isSelected);
+            if (checkbox) checkbox.checked = isSelected;
+            updateQuestionCardVisual(questionId);
+            refreshTrackingSidebarAndFilters();
+            scheduleAutoSave(`Đã cập nhật đáp án Câu ${idx + 1}`);
+        }
+
+        function updateFillBlankAnswer(questionId, val, idx) {
+            const entry = ensureAnswerEntry(questionId);
+            entry.textAnswer = val;
+            updateQuestionCardVisual(questionId);
+            refreshTrackingSidebarAndFilters();
+            scheduleAutoSave(`Đã nhập câu trả lời Câu ${idx + 1}`);
+        }
+
+        function clearQuestionAnswer(questionId, idx) {
+            const entry = ensureAnswerEntry(questionId);
+            entry.selectedOptionIds = [];
+            entry.textAnswer = '';
+            const zone = document.getElementById(`options_zone_${questionId}`);
+            if (zone) {
+                zone.querySelectorAll('.option-item').forEach(el => el.classList.remove('selected'));
+                zone.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(inp => { inp.checked = false; });
+                const fillInput = document.getElementById(`fill_input_${questionId}`);
+                if (fillInput) fillInput.value = '';
+            }
+            updateQuestionCardVisual(questionId);
+            refreshTrackingSidebarAndFilters();
+            scheduleAutoSave(`Đã xóa lựa chọn Câu ${idx + 1}`);
+        }
+
+        function toggleQuestionFlag(questionId, idx) {
+            setActiveQuestion(idx, false);
+            const entry = ensureAnswerEntry(questionId);
+            entry.flagged = !entry.flagged;
+            updateQuestionCardVisual(questionId);
+            refreshTrackingSidebarAndFilters();
+            scheduleAutoSave(entry.flagged ? `Đã đánh cờ lưu ý Câu ${idx + 1}` : `Đã bỏ đánh cờ Câu ${idx + 1}`);
+        }
+
+        function updateQuestionCardVisual(questionId) {
+            const card = document.getElementById(`question_card_${questionId}`);
+            const stateBadge = document.getElementById(`q_state_badge_${questionId}`);
+            const clearBtn = document.getElementById(`clear_btn_${questionId}`);
+            const flagBtn = document.getElementById(`flag_btn_${questionId}`);
+            const flagLabel = document.getElementById(`flag_label_${questionId}`);
+            const answered = isQuestionAnswered(questionId);
+            const flagged = isQuestionFlagged(questionId);
+
+            if (card) {
+                card.classList.toggle('is-answered', answered);
+                card.classList.toggle('is-flagged', flagged);
+            }
+            if (stateBadge) {
+                stateBadge.className = `badge rounded-pill ${answered ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary'}`;
+                stateBadge.innerHTML = answered
+                    ? '<i class="bi bi-check-circle-fill me-1"></i>Đã trả lời'
+                    : '<i class="bi bi-circle me-1"></i>Chưa trả lời';
+            }
+            if (clearBtn) {
+                clearBtn.classList.toggle('d-none', !answered);
+            }
+            if (flagBtn) {
+                flagBtn.classList.toggle('flagged', flagged);
+                const icon = flagBtn.querySelector('i');
+                if (icon) icon.className = `bi ${flagged ? 'bi-flag-fill' : 'bi-flag'}`;
+            }
+            if (flagLabel) {
+                flagLabel.textContent = flagged ? 'Đã đánh cờ' : 'Đánh cờ';
+            }
+        }
+
+        function refreshTrackingSidebarAndFilters() {
+            if (!activeQuiz || !activeQuiz.questions) return;
+            const questions = activeQuiz.questions;
+            const total = questions.length;
+            let answeredCount = 0;
+            let flaggedCount = 0;
+
+            questions.forEach(q => {
+                if (isQuestionAnswered(q.id)) answeredCount++;
+                if (isQuestionFlagged(q.id)) flaggedCount++;
+            });
+            const unansweredCount = Math.max(0, total - answeredCount);
+            const percent = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+
+            document.getElementById('sidebarAnsweredCount').textContent = answeredCount;
+            document.getElementById('sidebarUnansweredCount').textContent = unansweredCount;
+            document.getElementById('sidebarFlaggedCount').textContent = flaggedCount;
+            document.getElementById('sidebarPercentBadge').textContent = `${percent}%`;
+            document.getElementById('sidebarProgressBar').style.width = `${percent}%`;
+
+            document.getElementById('filterCountAll').textContent = total;
+            document.getElementById('filterCountAnswered').textContent = answeredCount;
+            document.getElementById('filterCountUnanswered').textContent = unansweredCount;
+            document.getElementById('filterCountFlagged').textContent = flaggedCount;
+
+            const grid = document.getElementById('sidebarQuestionGrid');
+            if (grid) {
+                grid.innerHTML = questions.map((q, idx) => {
+                    const answered = isQuestionAnswered(q.id);
+                    const flagged = isQuestionFlagged(q.id);
+                    const isCurrent = idx === activeQuestionIndex;
+                    return `
+                        <button type="button"
+                                class="palette-btn ${answered ? 'answered' : ''} ${flagged ? 'flagged' : ''} ${isCurrent ? 'current' : ''}"
+                                onclick="jumpToQuestion(${idx})"
+                                title="Câu ${idx + 1}${answered ? ' - Đã trả lời' : ' - Chưa trả lời'}${flagged ? ' (Đã đánh cờ)' : ''}">
+                            <span>${idx + 1}</span>
+                            ${flagged ? '<span class="palette-flag-dot"><i class="bi bi-flag-fill"></i></span>' : ''}
+                        </button>
+                    `;
+                }).join('');
+            }
+
+            applyFilterAndDisplayMode();
+        }
+
+        function setQuestionFilter(filter) {
+            currentFilter = filter;
+            ['All', 'Answered', 'Unanswered', 'Flagged'].forEach(key => {
+                const btn = document.getElementById(`filterBtn${key}`);
+                if (btn) btn.classList.toggle('active', key.toLowerCase() === filter);
+            });
+            applyFilterAndDisplayMode();
+        }
+
+        function setDisplayMode(mode) {
+            displayMode = mode;
+            document.getElementById('modeAllBtn').classList.toggle('active', mode === 'all');
+            document.getElementById('modeSingleBtn').classList.toggle('active', mode === 'single');
+            document.getElementById('singleModeNavBar').classList.toggle('d-none', mode !== 'single');
+            applyFilterAndDisplayMode();
+        }
+
+        function applyFilterAndDisplayMode() {
+            if (!activeQuiz || !activeQuiz.questions) return;
+            const questions = activeQuiz.questions;
+            let visibleCount = 0;
+
+            questions.forEach((q, idx) => {
+                const card = document.getElementById(`question_card_${q.id}`);
+                if (!card) return;
+                const answered = isQuestionAnswered(q.id);
+                const flagged = isQuestionFlagged(q.id);
+                let matchesFilter = true;
+                if (currentFilter === 'answered') matchesFilter = answered;
+                else if (currentFilter === 'unanswered') matchesFilter = !answered;
+                else if (currentFilter === 'flagged') matchesFilter = flagged;
+
+                let showCard = matchesFilter;
+                if (displayMode === 'single') {
+                    showCard = (idx === activeQuestionIndex);
+                }
+
+                card.classList.toggle('d-none', !showCard);
+                card.classList.toggle('active-focus', idx === activeQuestionIndex);
+                if (showCard) visibleCount++;
+            });
+
+            const emptyNotice = document.getElementById('emptyFilterNotice');
+            if (emptyNotice) {
+                emptyNotice.classList.toggle('d-none', visibleCount > 0 || displayMode === 'single');
+            }
+
+            if (displayMode === 'single') {
+                const total = questions.length;
+                document.getElementById('singleQuestionPosLabel').textContent = `Câu ${activeQuestionIndex + 1} / ${total}`;
+                document.getElementById('prevQuestionBtn').disabled = (activeQuestionIndex <= 0);
+                document.getElementById('nextQuestionBtn').disabled = (activeQuestionIndex >= total - 1);
+            }
+        }
+
+        function setActiveQuestion(idx, shouldScroll = false) {
+            if (!activeQuiz || !activeQuiz.questions) return;
+            const maxIdx = activeQuiz.questions.length - 1;
+            activeQuestionIndex = Math.max(0, Math.min(maxIdx, idx));
+            refreshTrackingSidebarAndFilters();
+            if (shouldScroll && displayMode === 'all') {
+                const q = activeQuiz.questions[activeQuestionIndex];
+                const card = q ? document.getElementById(`question_card_${q.id}`) : null;
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
+        function jumpToQuestion(idx) {
+            if (currentFilter !== 'all' && displayMode === 'all') {
+                const q = activeQuiz.questions[idx];
+                if (q) {
+                    const answered = isQuestionAnswered(q.id);
+                    const flagged = isQuestionFlagged(q.id);
+                    if ((currentFilter === 'answered' && !answered) ||
+                        (currentFilter === 'unanswered' && answered) ||
+                        (currentFilter === 'flagged' && !flagged)) {
+                        setQuestionFilter('all');
+                    }
+                }
+            }
+            setActiveQuestion(idx, true);
+        }
+
+        function navigateSingleQuestion(delta) {
+            setActiveQuestion(activeQuestionIndex + delta, true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function startExamCountdown(seconds) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            const timerBox = document.getElementById('quizTimerBox');
+            const timerDisplay = document.getElementById('quizTimerDisplay');
+            if (!seconds || seconds <= 0) {
+                if (timerBox && timerDisplay) {
+                    timerBox.classList.remove('d-none');
+                    timerDisplay.textContent = 'Không giới hạn';
+                }
+                return;
+            }
+
+            remainingSeconds = seconds;
+            timerBox.classList.remove('d-none');
+
+            const renderTick = () => {
+                const mins = Math.floor(remainingSeconds / 60);
+                const secs = remainingSeconds % 60;
+                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                timerBox.classList.toggle('warning', remainingSeconds <= 300 && remainingSeconds > 60);
+                timerBox.classList.toggle('critical', remainingSeconds <= 60);
+            };
+
+            renderTick();
+            countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                if (remainingSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.textContent = '00:00';
+                    showToast('Đã hết thời gian làm bài! Hệ thống đang tự động nộp bài của bạn.', 'warning');
+                    executeFinalSubmit();
+                    return;
+                }
+                renderTick();
+            }, 1000);
+        }
+
+        function openSubmitConfirmModal() {
+            if (!activeQuiz || !activeQuiz.questions) return;
+            saveProgressNow(false);
+            const questions = activeQuiz.questions;
+            const unansweredIndices = [];
+            const flaggedIndices = [];
+
+            questions.forEach((q, idx) => {
+                if (!isQuestionAnswered(q.id)) unansweredIndices.push(idx);
+                if (isQuestionFlagged(q.id)) flaggedIndices.push(idx);
+            });
+
+            const total = questions.length;
+            const answered = total - unansweredIndices.length;
+
+            document.getElementById('modalTotalCount').textContent = total;
+            document.getElementById('modalAnsweredCount').textContent = answered;
+            document.getElementById('modalUnansweredCount').textContent = unansweredIndices.length;
+            document.getElementById('modalFlaggedCount').textContent = flaggedIndices.length;
+
+            const unAlert = document.getElementById('modalUnansweredAlert');
+            const unPills = document.getElementById('modalUnansweredPills');
+            if (unansweredIndices.length > 0) {
+                unAlert.classList.remove('d-none');
+                unPills.innerHTML = unansweredIndices.map(i => `
+                    <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-0 fw-bold" style="font-size: 0.75rem;"
+                            onclick="bootstrap.Modal.getInstance(document.getElementById('quizSubmitConfirmModal')).hide(); jumpToQuestion(${i});">
+                        Câu ${i + 1}
+                    </button>
+                `).join('');
+            } else {
+                unAlert.classList.add('d-none');
+            }
+
+            const flagAlert = document.getElementById('modalFlaggedAlert');
+            const flagPills = document.getElementById('modalFlaggedPills');
+            if (flaggedIndices.length > 0) {
+                flagAlert.classList.remove('d-none');
+                flagPills.innerHTML = flaggedIndices.map(i => `
+                    <button type="button" class="btn btn-xs btn-warning text-dark rounded-pill px-2 py-0 fw-bold" style="font-size: 0.75rem;"
+                            onclick="bootstrap.Modal.getInstance(document.getElementById('quizSubmitConfirmModal')).hide(); jumpToQuestion(${i});">
+                        <i class="bi bi-flag-fill me-1"></i>Câu ${i + 1}
+                    </button>
+                `).join('');
+            } else {
+                flagAlert.classList.add('d-none');
+            }
+
+            document.getElementById('modalAllDoneAlert').classList.toggle('d-none', unansweredIndices.length > 0);
+            const modal = new bootstrap.Modal(document.getElementById('quizSubmitConfirmModal'));
+            modal.show();
+        }
+
+        async function executeFinalSubmit() {
+            if (isSubmittingQuiz) return;
+            isSubmittingQuiz = true;
+
+            const modalEl = document.getElementById('quizSubmitConfirmModal');
+            const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+            if (modalInstance) modalInstance.hide();
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            if (periodicSaveInterval) clearInterval(periodicSaveInterval);
+
+            const topBtn = document.getElementById('topSubmitQuizBtn');
+            if (topBtn) {
+                topBtn.disabled = true;
+                topBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Đang chấm điểm...';
+            }
+
+            try {
+                const payload = buildSubmissionPayload();
+                const res = await fetch(`/api/quizzes/${QUIZ_ID}/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                    throw new Error(result.message || 'Lỗi nộp bài kiểm tra');
+                }
+                clearLocalBackup();
+                showToast('Nộp bài kiểm tra thành công!', 'success');
+                renderSubmissionResultView(result);
+            } catch (err) {
+                isSubmittingQuiz = false;
+                if (topBtn) {
+                    topBtn.disabled = false;
+                    topBtn.innerHTML = '<i class="bi bi-send-check-fill me-1"></i>Nộp bài';
+                }
+                showToast(err.message || 'Không thể nộp bài, vui lòng thử lại', 'error');
+            }
+        }
+
+        function renderSubmissionResultView(result) {
+            document.getElementById('loadingAttemptState').classList.add('d-none');
+            document.getElementById('errorAttemptState').classList.add('d-none');
+            document.getElementById('attemptWorkspaceView').classList.add('d-none');
+            document.getElementById('autoSaveBadge').classList.add('d-none');
+            document.getElementById('manualSaveBtn').classList.add('d-none');
+            document.getElementById('quizTimerBox').classList.add('d-none');
+            document.getElementById('topSubmitQuizBtn').classList.add('d-none');
+
+            const view = document.getElementById('resultReviewView');
+            view.classList.remove('d-none');
+
+            const isPassed = Boolean(result.isPassed);
+            const canRetry = !result.maxAttempts || result.attemptsCount < result.maxAttempts;
+            const allowReview = result.allowReview !== false || HAS_ACCESS_ROLE;
+            const reviewQuestions = result.reviewQuestions || [];
+            const durationStr = result.durationSeconds
+                ? `${Math.floor(result.durationSeconds / 60)} phút ${result.durationSeconds % 60} giây`
+                : 'N/A';
+
+            let questionsReviewHtml = '';
+            if (!allowReview) {
+                questionsReviewHtml = `
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                        <i class="bi bi-shield-lock text-secondary fs-1 mb-2"></i>
+                        <h6 class="fw-bold text-dark">Giảng viên đã tắt chế độ xem lại đáp án chi tiết</h6>
+                        <p class="text-muted small mb-0">Điểm số và kết quả đạt/chưa đạt của bạn đã được ghi nhận vào bảng điểm lớp học.</p>
+                    </div>
+                `;
+            } else if (reviewQuestions.length > 0) {
+                questionsReviewHtml = `
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-journal-check text-primary me-2"></i>Chi tiết bài làm (${reviewQuestions.length} câu)</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="filter-chip active" onclick="filterReviewCards('all', this)">Tất cả (${reviewQuestions.length})</button>
+                            <button type="button" class="filter-chip" onclick="filterReviewCards('correct', this)">Đúng (${reviewQuestions.filter(q => q.isCorrect).length})</button>
+                            <button type="button" class="filter-chip" onclick="filterReviewCards('wrong', this)">Sai (${reviewQuestions.filter(q => !q.isCorrect).length})</button>
+                            <button type="button" class="filter-chip flag-chip" onclick="filterReviewCards('flagged', this)">Đã đánh cờ (${reviewQuestions.filter(q => q.flagged).length})</button>
+                        </div>
+                    </div>
+                ` + reviewQuestions.map((rq, idx) => {
+                    const correct = Boolean(rq.isCorrect);
+                    const flagged = Boolean(rq.flagged);
+                    const selectedSet = new Set(rq.selectedOptionIds || []);
+                    let optionsBody = '';
+
+                    if (rq.questionType === 'FILL_BLANK') {
+                        const correctTexts = (rq.options || []).filter(o => o.isCorrect).map(o => o.text).join(' | ');
+                        optionsBody = `
+                            <div class="p-3 rounded-3 mb-2 ${correct ? 'bg-success bg-opacity-10 border border-success border-opacity-25' : 'bg-danger bg-opacity-10 border border-danger border-opacity-25'}">
+                                <div class="small text-muted">Câu trả lời của bạn:</div>
+                                <div class="fw-bold ${correct ? 'text-success' : 'text-danger'}">${escapeHtml(rq.textAnswer || '(Bỏ trống)')}</div>
+                            </div>
+                            ${!correct ? `
+                                <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                                    <div class="small text-muted">Đáp án đúng:</div>
+                                    <div class="fw-bold text-success">${escapeHtml(correctTexts)}</div>
+                                </div>
+                            ` : ''}
+                        `;
+                    } else {
+                        optionsBody = (rq.options || []).map((opt, oIdx) => {
+                            const letter = String.fromCharCode(65 + oIdx);
+                            const isChosen = selectedSet.has(opt.id);
+                            const isOptCorrect = Boolean(opt.isCorrect);
+                            let boxClass = 'bg-light border';
+                            let badgeHtml = '';
+                            if (isOptCorrect) {
+                                boxClass = 'bg-success bg-opacity-10 border border-success';
+                                badgeHtml = '<span class="badge bg-success ms-auto">Đáp án đúng</span>';
+                            } else if (isChosen && !isOptCorrect) {
+                                boxClass = 'bg-danger bg-opacity-10 border border-danger';
+                                badgeHtml = '<span class="badge bg-danger ms-auto">Bạn đã chọn</span>';
+                            }
+                            if (isChosen && isOptCorrect) {
+                                badgeHtml = '<span class="badge bg-success ms-auto"><i class="bi bi-check2-all me-1"></i>Bạn chọn đúng</span>';
+                            }
+                            return `
+                                <div class="d-flex align-items-center gap-2 p-2 px-3 rounded-3 mb-2 ${boxClass}">
+                                    <span class="fw-bold text-secondary">${letter}.</span>
+                                    <span class="text-dark">${escapeHtml(opt.text)}</span>
+                                    ${badgeHtml}
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    return `
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-3 review-question-item"
+                             data-correct="${correct}"
+                             data-flagged="${flagged}"
+                             style="border-left: 5px solid ${correct ? '#10b981' : '#ef4444'} !important;">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge ${correct ? 'bg-success' : 'bg-danger'} rounded-pill px-3 py-1">Câu ${idx + 1}</span>
+                                    <span class="badge ${correct ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}">
+                                        ${correct ? 'Chính xác' : 'Chưa đúng'} (${rq.earnedPoints || 0}/${rq.points || 0} điểm)
+                                    </span>
+                                    ${flagged ? '<span class="badge bg-warning text-dark"><i class="bi bi-flag-fill me-1"></i>Đã đánh cờ lúc làm</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="fw-bold text-dark mb-3">${escapeHtml(rq.content)}</div>
+                            <div>${optionsBody}</div>
+                            ${rq.explanation ? `
+                                <div class="mt-3 p-3 rounded-3 bg-info bg-opacity-10 border border-info border-opacity-25 small">
+                                    <div class="fw-bold text-primary mb-1"><i class="bi bi-lightbulb-fill me-1"></i>Giải thích đáp án:</div>
+                                    <div class="text-dark">${escapeHtml(rq.explanation)}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            view.innerHTML = `
+                <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                    <div class="row align-items-center g-4">
+                        <div class="col-md-4 text-center border-end-md">
+                            <div class="d-inline-flex flex-column align-items-center justify-content-center rounded-circle mb-3"
+                                 style="width: 140px; height: 140px; border: 8px solid ${isPassed ? '#10b981' : '#ef4444'}; background: ${isPassed ? '#ecfdf5' : '#fef2f2'};">
+                                <span class="fs-2 fw-extrabold ${isPassed ? 'text-success' : 'text-danger'}">${result.score ?? 0}</span>
+                                <span class="small text-muted fw-semibold">/ 10 điểm</span>
+                            </div>
+                            <div>
+                                <span class="badge rounded-pill px-3 py-2 fs-6 ${isPassed ? 'bg-success' : 'bg-danger'}">
+                                    <i class="bi ${isPassed ? 'bi-patch-check-fill' : 'bi-x-octagon-fill'} me-1"></i>
+                                    ${isPassed ? 'ĐẠT YÊU CẦU' : 'CHƯA ĐẠT'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <h4 class="fw-bold text-dark mb-1">${escapeHtml(result.quizTitle || activeQuiz?.title || 'Kết quả bài kiểm tra')}</h4>
+                            <p class="text-muted small mb-3">Nộp lúc: ${result.submittedAt ? new Date(result.submittedAt).toLocaleString('vi-VN') : 'Vừa xong'} • Thời gian làm: ${durationStr}</p>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-6 col-sm-3">
+                                    <div class="p-3 rounded-3 bg-light border">
+                                        <div class="text-muted small">Số câu đúng</div>
+                                        <div class="fw-bold text-dark fs-5">${result.correctCount ?? 0} / ${result.totalQuestions ?? 0}</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <div class="p-3 rounded-3 bg-light border">
+                                        <div class="text-muted small">Điểm đạt chuẩn</div>
+                                        <div class="fw-bold text-primary fs-5">${result.passingScore ?? 5.0} / 10</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <div class="p-3 rounded-3 bg-light border">
+                                        <div class="text-muted small">Câu đánh cờ</div>
+                                        <div class="fw-bold text-warning fs-5">${result.flaggedCount ?? 0} câu</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-sm-3">
+                                    <div class="p-3 rounded-3 bg-light border">
+                                        <div class="text-muted small">Lượt làm bài</div>
+                                        <div class="fw-bold text-dark fs-5">${result.attemptsCount ?? 1} / ${result.maxAttempts ? result.maxAttempts : '∞'}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                ${canRetry ? `
+                                    <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" onclick="startOrResumeQuizAttempt()">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Làm lại bài kiểm tra
+                                    </button>
+                                ` : ''}
+                                <button type="button" class="btn btn-outline-primary fw-bold rounded-pill px-4" onclick="openAttemptHistoryModal()">
+                                    <i class="bi bi-clock-history me-1"></i>Xem lịch sử các lần làm
+                                </button>
+                                <a href="${BACK_TO_LEARN_URL}" class="btn btn-outline-secondary fw-bold rounded-pill px-4">
+                                    <i class="bi bi-arrow-left me-1"></i>Quay về phòng học
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ${questionsReviewHtml}
+            `;
+        }
+
+        function filterReviewCards(filterType, btnEl) {
+            if (btnEl && btnEl.parentElement) {
+                btnEl.parentElement.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+                btnEl.classList.add('active');
+            }
+            document.querySelectorAll('.review-question-item').forEach(item => {
+                const isCorrect = item.getAttribute('data-correct') === 'true';
+                const isFlagged = item.getAttribute('data-flagged') === 'true';
+                let show = true;
+                if (filterType === 'correct') show = isCorrect;
+                else if (filterType === 'wrong') show = !isCorrect;
+                else if (filterType === 'flagged') show = isFlagged;
+                item.classList.toggle('d-none', !show);
+            });
+        }
+
+        async function loadSubmissionReviewById(submissionId) {
+            try {
+                document.getElementById('loadingAttemptState').classList.remove('d-none');
+                document.getElementById('attemptWorkspaceView').classList.add('d-none');
+                document.getElementById('resultReviewView').classList.add('d-none');
+                const res = await fetch(`/api/quizzes/submissions/${submissionId}`);
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Không thể tải chi tiết bài làm');
+                }
+                renderSubmissionResultView(data);
+            } catch (err) {
+                showErrorState('Không thể mở chi tiết bài làm', err.message);
+            }
+        }
+
+        async function openAttemptHistoryModal() {
+            const modalEl = document.getElementById('attemptHistoryModal');
+            const body = document.getElementById('attemptHistoryModalBody');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            body.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    <span class="text-muted">Đang tải lịch sử làm bài...</span>
+                </div>
+            `;
+            modal.show();
+
+            try {
+                const res = await fetch(`/api/quizzes/${QUIZ_ID}/submissions?cohortId=${MODULE_ID}`);
+                const list = await res.json();
+                if (!res.ok) {
+                    throw new Error(list.message || 'Lỗi tải lịch sử');
+                }
+                if (!Array.isArray(list) || list.length === 0) {
+                    body.innerHTML = `
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Bạn chưa có lịch sử làm bài nào cho bài kiểm tra này.
+                        </div>
+                    `;
+                    return;
+                }
+
+                body.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Lần</th>
+                                    <th>Thời gian</th>
+                                    <th>Tiến độ / Câu đúng</th>
+                                    <th>Đánh cờ</th>
+                                    <th>Điểm số</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${list.map((item, idx) => {
+                                    const inProgress = item.status === 'IN_PROGRESS';
+                                    const attemptNo = list.length - idx;
+                                    const timeLabel = item.submittedAt
+                                        ? new Date(item.submittedAt).toLocaleString('vi-VN')
+                                        : (item.startedAt ? new Date(item.startedAt).toLocaleString('vi-VN') : 'N/A');
+                                    return `
+                                        <tr>
+                                            <td class="fw-bold">#${attemptNo}</td>
+                                            <td class="small text-secondary">${timeLabel}</td>
+                                            <td class="small">
+                                                ${inProgress
+                                                    ? `<span class="text-primary fw-semibold">Đã lưu ${item.answeredCount ?? 0}/${item.totalQuestions ?? 0} câu</span>`
+                                                    : `<span>${item.correctCount ?? 0}/${item.totalQuestions ?? 0} câu đúng</span>`}
+                                            </td>
+                                            <td class="small">
+                                                <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25">
+                                                    <i class="bi bi-flag-fill text-warning me-1"></i>${item.flaggedCount ?? 0}
+                                                </span>
+                                            </td>
+                                            <td class="fw-bold ${inProgress ? 'text-muted' : (item.isPassed ? 'text-success' : 'text-danger')}">
+                                                ${inProgress ? '--' : `${item.score ?? 0} / 10`}
+                                            </td>
+                                            <td>
+                                                ${inProgress
+                                                    ? '<span class="badge bg-warning text-dark">ĐANG LÀM DỞ</span>'
+                                                    : (item.isPassed
+                                                        ? '<span class="badge bg-success">ĐẠT</span>'
+                                                        : '<span class="badge bg-danger">CHƯA ĐẠT</span>')}
+                                            </td>
+                                            <td class="text-end">
+                                                ${inProgress ? `
+                                                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold"
+                                                            onclick="bootstrap.Modal.getInstance(document.getElementById('attemptHistoryModal')).hide(); startOrResumeQuizAttempt();">
+                                                        Tiếp tục làm
+                                                    </button>
+                                                ` : `
+                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold"
+                                                            onclick="bootstrap.Modal.getInstance(document.getElementById('attemptHistoryModal')).hide(); loadSubmissionReviewById(${item.submissionId});">
+                                                        Xem chi tiết
+                                                    </button>
+                                                `}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (err) {
+                body.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function showErrorState(title, message) {
+            document.getElementById('loadingAttemptState').classList.add('d-none');
+            document.getElementById('attemptWorkspaceView').classList.add('d-none');
+            document.getElementById('resultReviewView').classList.add('d-none');
+            const errBox = document.getElementById('errorAttemptState');
+            errBox.classList.remove('d-none');
+            document.getElementById('errorAttemptTitle').textContent = title || 'Không thể bắt đầu bài kiểm tra';
+            document.getElementById('errorAttemptMessage').textContent = message || 'Vui lòng kiểm tra lại quyền truy cập hoặc số lượt làm bài.';
+        }
+
+        async function startOrResumeQuizAttempt() {
+            isSubmittingQuiz = false;
+            document.getElementById('loadingAttemptState').classList.remove('d-none');
+            document.getElementById('errorAttemptState').classList.add('d-none');
+            document.getElementById('attemptWorkspaceView').classList.add('d-none');
+            document.getElementById('resultReviewView').classList.add('d-none');
+
+            try {
+                const res = await fetch(`/api/quizzes/${QUIZ_ID}/start?cohortId=${MODULE_ID}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Không thể bắt đầu bài kiểm tra');
+                }
+
+                activeQuiz = data;
+                activeSubmissionId = data.activeSubmissionId || null;
+                activeQuestionIndex = 0;
+                currentFilter = 'all';
+
+                restoreAnswersFromServerAndLocal(data);
+
+                document.getElementById('loadingAttemptState').classList.add('d-none');
+                document.getElementById('attemptWorkspaceView').classList.remove('d-none');
+                document.getElementById('manualSaveBtn').classList.remove('d-none');
+                document.getElementById('topSubmitQuizBtn').classList.remove('d-none');
+                const topBtn = document.getElementById('topSubmitQuizBtn');
+                topBtn.disabled = false;
+                topBtn.innerHTML = '<i class="bi bi-send-check-fill me-1"></i>Nộp bài';
+
+                updateAutoSaveStatusUI('saved', 'Tự động lưu đang bật');
+                renderQuestionsWorkspace();
+
+                const secondsToRun = (data.remainingSeconds !== null && data.remainingSeconds !== undefined)
+                    ? data.remainingSeconds
+                    : (data.durationMinutes ? data.durationMinutes * 60 : 0);
+                startExamCountdown(secondsToRun);
+
+                if (periodicSaveInterval) clearInterval(periodicSaveInterval);
+                periodicSaveInterval = setInterval(() => {
+                    saveProgressNow(false);
+                }, 20000);
+            } catch (err) {
+                showErrorState('Không thể vào làm bài kiểm tra', err.message);
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (!activeQuiz || isSubmittingQuiz) return;
+            saveToLocalBackup();
+            try {
+                const payload = JSON.stringify(buildSubmissionPayload());
+                const blob = new Blob([payload], { type: 'application/json' });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(`/api/quizzes/${QUIZ_ID}/save-progress`, blob);
+                }
+            } catch (e) {}
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && activeQuiz && !isSubmittingQuiz) {
+                saveProgressNow(false);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (INITIAL_SUBMISSION_ID && INITIAL_MODE === 'review') {
+                loadSubmissionReviewById(INITIAL_SUBMISSION_ID);
+            } else {
+                startOrResumeQuizAttempt();
+            }
+        });
+    </script>
+</body>
+</html>

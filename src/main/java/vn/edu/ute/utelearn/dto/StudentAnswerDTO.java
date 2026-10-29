@@ -17,4 +17,5 @@ public class StudentAnswerDTO {
     @Builder.Default
     private List<String> selectedOptionIds = new ArrayList<>();
     private String textAnswer;
+    private Boolean flagged;
 }

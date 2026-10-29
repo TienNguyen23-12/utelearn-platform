@@ -26,4 +26,5 @@ public class QuestionReviewDTO {
     @Builder.Default
     private List<String> studentSelectedOptionIds = new ArrayList<>();
     private String studentTextAnswer;
+    private Boolean flagged;
 }

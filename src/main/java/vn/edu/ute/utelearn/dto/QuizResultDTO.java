@@ -38,6 +38,9 @@ public class QuizResultDTO {
     private String cohortName;
     private String cohortCode;
     private Long durationSeconds;
+    private String status;
+    private Integer answeredCount;
+    private Integer flaggedCount;
     @Builder.Default
     private List<QuestionReviewDTO> reviewQuestions = new ArrayList<>();
 }
