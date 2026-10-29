@@ -73,9 +73,17 @@ public class CohortServiceImpl implements CohortService {
 
     @Override
     public Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable) {
+        return searchPublicCohorts(keyword, categorySlug, null, pageable);
+    }
+
+    @Override
+    public Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Long cursor, Pageable pageable) {
         syncCohortStatuses();
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
         String safeCategory = (categorySlug == null) ? "" : categorySlug.trim();
+        if (cursor != null) {
+            return cohortRepository.searchPublicCohortsWithCursor(safeKeyword, safeCategory, cursor, pageable);
+        }
         return cohortRepository.searchPublicCohorts(safeKeyword, safeCategory, pageable);
     }
 

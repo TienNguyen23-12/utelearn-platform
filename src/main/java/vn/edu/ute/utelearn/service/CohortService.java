@@ -19,6 +19,8 @@ public interface CohortService {
     Page<Cohort> searchAllCohorts(String keyword, String status, Pageable pageable);
     
     Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Pageable pageable);
+    
+    Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Long cursor, Pageable pageable);
 
     List<Cohort> getFeaturedCohorts(int limit);
     

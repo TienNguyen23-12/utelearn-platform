@@ -39,15 +39,30 @@ public class CourseApiController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.dao.WishlistRepository wishlistRepository;
 
+    public ResponseEntity<Map<String, Object>> getCourses(
+            String q,
+            String category,
+            String level,
+            int page,
+            int size) {
+        return getCourses(q, category, level, null, page, size);
+    }
+
     @GetMapping
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getCourses(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String level,
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Course> coursePage = courseService.getPublishedCourses(q, category, level, pageable);
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = (cursor != null)
+                ? PageRequest.of(0, size, Sort.by("id").descending())
+                : PageRequest.of(page, size, Sort.by("id").descending());
+        Page<Course> coursePage = (cursor != null)
+                ? courseService.getPublishedCourses(q, category, level, cursor, pageable)
+                : courseService.getPublishedCourses(q, category, level, pageable);
         Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
 
         List<Map<String, Object>> courses = coursePage.getContent().stream().map(course -> {
@@ -134,7 +149,11 @@ public class CourseApiController {
             return map;
         }).collect(Collectors.toList());
 
+        boolean hasNext = coursePage.hasNext();
+        Long nextCursor = (hasNext && !courses.isEmpty()) ? (Long) courses.get(courses.size() - 1).get("id") : null;
         Map<String, Object> response = new HashMap<>();
+        response.put("nextCursor", nextCursor);
+        response.put("hasNext", hasNext);
         response.put("content", courses);
         response.put("currentPage", coursePage.getNumber());
         response.put("totalItems", coursePage.getTotalElements());

@@ -277,7 +277,7 @@
 
         <div class="col-lg-9">
             <div class="row g-4" id="courseGrid">
-                <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 6)}">
+                <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 10)}">
                     <div class="course-card">
                         <div class="skeleton" style="height: 190px;"></div>
                         <div class="p-4 d-flex flex-column flex-grow-1">
@@ -324,8 +324,18 @@
         level: 'ALL_LEVELS'
     };
 
-    let currentCoursePage = 0;
-    let totalCoursePages = 1;
+    let nextCursor = null;
+    let hasNextCourse = false;
+    let courseObserver = null;
+
+    function debounce(fn, delay = 350) {
+        let timer = null;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
     let isCourseLoading = false;
     let isCourseLoadingMore = false;
 
@@ -339,6 +349,16 @@
             currentFilters.category = urlParams.get('category');
         }
         loadCategories();
+        setupCourseInfiniteScroll();
+
+        const debouncedCourseSearch = debounce((val) => {
+            currentFilters.q = val;
+            loadCourses();
+        }, 350);
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            debouncedCourseSearch(this.value);
+        });
         loadCourses();
 
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -496,13 +516,13 @@
         `;
     }
 
-    async function fetchCoursesPage(pageNumber) {
+    async function fetchCoursesPage(cursor = null) {
         const params = new URLSearchParams();
         if (currentFilters.q) params.append('q', currentFilters.q.trim());
         if (currentFilters.category) params.append('category', currentFilters.category);
         if (currentFilters.level && currentFilters.level !== 'ALL_LEVELS') params.append('level', currentFilters.level);
-        params.append('page', pageNumber);
-        params.append('size', '6');
+        if (cursor) params.append('cursor', cursor);
+        params.append('size', '10');
 
         const res = await fetch('/api/courses?' + params.toString());
         if (!res.ok) throw new Error("Failed to fetch");
@@ -512,7 +532,8 @@
     async function loadCourses() {
         if (isCourseLoading) return;
         isCourseLoading = true;
-        currentCoursePage = 0;
+        nextCursor = null;
+        hasNextCourse = false;
 
         const grid = document.getElementById('courseGrid');
         const loadMoreSection = document.getElementById('loadMoreCourseSection');
@@ -523,9 +544,11 @@
         grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách khóa học...</p></div>';
 
         try {
-            const data = await fetchCoursesPage(0);
-            totalCoursePages = data.totalPages || 1;
-            currentCoursePage = data.currentPage || 0;
+            const data = await fetchCoursesPage(null);
+            nextCursor = data.nextCursor != null ? data.nextCursor : null;
+            hasNextCourse = data.hasNext === true;
+
+
 
             if (!data.content || data.content.length === 0) {
                 grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Không tìm thấy khóa học nào phù hợp.</p></div>';
@@ -556,7 +579,7 @@
     }
 
     async function loadMoreCourses() {
-        if (isCourseLoadingMore || currentCoursePage + 1 >= totalCoursePages) return;
+        if (isCourseLoadingMore || !hasNextCourse || !nextCursor) return;
         isCourseLoadingMore = true;
 
         const loadMoreBtn = document.getElementById('loadMoreCourseBtn');
@@ -568,10 +591,11 @@
         loadMoreSpinner.style.display = "inline-block";
 
         try {
-            const nextPage = currentCoursePage + 1;
-            const data = await fetchCoursesPage(nextPage);
-            totalCoursePages = data.totalPages || 1;
-            currentCoursePage = data.currentPage || nextPage;
+            const data = await fetchCoursesPage(nextCursor);
+
+
+            nextCursor = data.nextCursor != null ? data.nextCursor : null;
+            hasNextCourse = data.hasNext === true;
 
             if (data.content && data.content.length > 0) {
                 const grid = document.getElementById('courseGrid');
@@ -606,13 +630,27 @@
         loadMoreSpinner.style.display = 'none';
         loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học';
 
-        if (currentCoursePage + 1 < totalCoursePages) {
+        if (hasNextCourse) {
             loadMoreBtn.style.display = 'inline-block';
             allLoadedMessage.style.display = 'none';
         } else {
             loadMoreBtn.style.display = 'none';
             allLoadedMessage.style.display = 'block';
         }
+    }
+
+    function setupCourseInfiniteScroll() {
+        if (courseObserver) {
+            courseObserver.disconnect();
+        }
+        const loadMoreSection = document.getElementById('loadMoreCourseSection');
+        if (!loadMoreSection) return;
+        courseObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasNextCourse && !isCourseLoading && !isCourseLoadingMore) {
+                loadMoreCourses();
+            }
+        }, { rootMargin: '200px' });
+        courseObserver.observe(loadMoreSection);
     }
 
     function showToast(message, type) {

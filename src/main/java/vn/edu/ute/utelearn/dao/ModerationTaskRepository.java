@@ -26,4 +26,8 @@ public interface ModerationTaskRepository extends JpaRepository<ModerationTask, 
     java.util.Optional<ModerationTask> findTopByItemTypeAndItemIdOrderByCreatedAtDesc(String itemType, Long itemId);
 
     java.util.List<ModerationTask> findByItemTypeAndItemIdAndStatusIn(String itemType, Long itemId, java.util.Collection<String> statuses);
+
+    @EntityGraph(attributePaths = {"assignedTo", "escalatedBy"})
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM ModerationTask t")
+    List<ModerationTask> findAllWithAssignees();
 }

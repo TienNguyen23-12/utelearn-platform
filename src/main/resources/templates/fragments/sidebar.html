@@ -108,6 +108,13 @@
                         <span>Quản lý Đơn hàng</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_payroll'} ? ' active' : ''"
+                        href="/admin/payroll">
+                        <i class="bi bi-cash-coin text-success"></i>
+                        <span>Bảng lương & Thù lao</span>
+                    </a>
+                </li>
                 <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'users'} ? ' active' : ''"
                         href="/admin/users">
@@ -180,6 +187,13 @@
                         <span>Thảo luận Lớp học</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_payroll'} ? ' active' : ''"
+                        href="/payroll/my-income">
+                        <i class="bi bi-wallet-fill text-warning"></i>
+                        <span>Thu nhập & Lương</span>
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">KIỂM DUYỆT NỘI DUNG</div>
@@ -204,6 +218,13 @@
                         href="/moderator/queue">
                         <i class="bi bi-check2-circle text-danger"></i>
                         <span>Hàng đợi kiểm duyệt</span>
+                    </a>
+                </li>
+                <li class="nav-item" th:unless="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                    <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_payroll'} ? ' active' : ''"
+                        href="/payroll/my-income">
+                        <i class="bi bi-wallet-fill text-warning"></i>
+                        <span>Thu nhập & Lương</span>
                     </a>
                 </li>
             </ul>

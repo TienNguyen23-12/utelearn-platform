@@ -447,14 +447,22 @@ function showToast(message, type = 'success') {
                         metadataFormData.append("cloudinaryUrl", uploadResult.secure_url);
                         metadataFormData.append("fileSizeBytes", uploadResult.bytes);
                         
+                        const getCookie = function(n) { const v = '; ' + document.cookie; const p = v.split('; ' + n + '='); if (p.length === 2) return p.pop().split(';').shift(); return null; };
+                        const xsrfToken = getCookie('XSRF-TOKEN');
+                        const fetchHeaders = {};
+                        if (xsrfToken) {
+                            fetchHeaders['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
+                            metadataFormData.append('_csrf', decodeURIComponent(xsrfToken));
+                        }
                         const saveResponse = await fetch('/instructor/assets/upload', {
                             method: 'POST',
+                            headers: fetchHeaders,
                             body: metadataFormData
                         });
                         
                         if (saveResponse.ok) {
                             showToast("Tải lên tài nguyên thành công!", "success");
-                            setTimeout(() => window.location.reload(), 1000);
+                            setTimeout(() => { window.location.href = '/instructor/assets'; }, 800);
                         } else {
                             const errText = await saveResponse.text();
                             console.error("Backend Error:", errText);

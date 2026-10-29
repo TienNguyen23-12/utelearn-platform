@@ -3,11 +3,11 @@ package vn.edu.ute.utelearn.controller.instructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.edu.ute.utelearn.entity.InstructorAsset;
 import vn.edu.ute.utelearn.entity.User;
@@ -58,18 +58,23 @@ public class InstructorAssetController {
             @RequestParam String assetType,
             @RequestParam String originalFilename
     ) {
-        try {
-            authService.getCurrentAuthenticatedUser()
-                    .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
+        Optional<User> currentUser = authService.getCurrentAuthenticatedUser();
+        if (currentUser.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
+        try {
             String resourceType = "auto";
-            if ("VIDEO".equalsIgnoreCase(assetType)) resourceType = "video";
-            else if ("DOCUMENT".equalsIgnoreCase(assetType) || "SLIDE".equalsIgnoreCase(assetType)) resourceType = "raw";
+            if ("VIDEO".equalsIgnoreCase(assetType)) {
+                resourceType = "video";
+            } else if ("DOCUMENT".equalsIgnoreCase(assetType) || "SLIDE".equalsIgnoreCase(assetType)) {
+                resourceType = "raw";
+            }
 
             Map<String, Object> signatureData = cloudinaryService.generateSignature(folderPath, resourceType, originalFilename);
             return ResponseEntity.ok(signatureData);
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -82,13 +87,18 @@ public class InstructorAssetController {
             @RequestParam(value = "visibility", defaultValue = "PRIVATE") String visibility,
             @RequestParam(value = "sharedEmails", required = false) String sharedEmails,
             @RequestParam("cloudinaryUrl") String cloudinaryUrl,
-            @RequestParam("fileSizeBytes") Long fileSizeBytes
+            @RequestParam(value = "fileSizeBytes", defaultValue = "0") Long fileSizeBytes
     ) {
-        try {
-            User currentUser = authService.getCurrentAuthenticatedUser()
-                    .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
+        Optional<User> currentUser = authService.getCurrentAuthenticatedUser();
+        if (currentUser.isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("message", "Chưa đăng nhập");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
 
-            InstructorAsset asset = assetService.saveAssetMetadata(currentUser, name, assetType, folderPath, visibility, sharedEmails, cloudinaryUrl, fileSizeBytes);
+        try {
+            InstructorAsset asset = assetService.saveAssetMetadata(currentUser.get(), name, assetType, folderPath, visibility, sharedEmails, cloudinaryUrl, fileSizeBytes);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

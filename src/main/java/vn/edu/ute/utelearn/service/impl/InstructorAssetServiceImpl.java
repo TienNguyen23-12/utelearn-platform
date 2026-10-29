@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import vn.edu.ute.utelearn.dao.InstructorAssetRepository;
 import vn.edu.ute.utelearn.entity.InstructorAsset;
 import vn.edu.ute.utelearn.entity.User;
@@ -15,7 +14,9 @@ import vn.edu.ute.utelearn.service.InstructorAssetService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.io.IOException;
-import java.util.Map;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,27 +30,39 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Transactional(readOnly = true)
     public Page<InstructorAsset> getAssetsByInstructor(User instructor, String keyword, String type, Pageable pageable) {
         boolean isAdmin = SecurityUtils.isAdmin(instructor);
-                
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasType = type != null && !type.trim().isEmpty() && !type.equalsIgnoreCase("ALL");
+        String cleanKeyword = hasKeyword ? keyword.trim() : null;
+        String cleanType = hasType ? type.trim() : null;
+
         if (isAdmin) {
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                return assetRepository.findByNameContainingIgnoreCaseOrderByCreatedAtDesc(keyword.trim(), pageable);
-            } else if (type != null && !type.trim().isEmpty() && !type.equals("ALL")) {
-                return assetRepository.findByAssetTypeOrderByCreatedAtDesc(type, pageable);
+            if (hasKeyword && hasType) {
+                return assetRepository.findByNameContainingIgnoreCaseAndAssetTypeOrderByCreatedAtDesc(cleanKeyword, cleanType, pageable);
+            }
+            if (hasKeyword) {
+                return assetRepository.findByNameContainingIgnoreCaseOrderByCreatedAtDesc(cleanKeyword, pageable);
+            }
+            if (hasType) {
+                return assetRepository.findByAssetTypeOrderByCreatedAtDesc(cleanType, pageable);
             }
             return assetRepository.findAllByOrderByCreatedAtDesc(pageable);
-        } else {
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                return assetRepository.findByInstructorAndNameContainingIgnoreCaseOrderByCreatedAtDesc(instructor, keyword.trim(), pageable);
-            } else if (type != null && !type.trim().isEmpty() && !type.equals("ALL")) {
-                return assetRepository.findByInstructorAndAssetTypeOrderByCreatedAtDesc(instructor, type, pageable);
-            }
-            return assetRepository.findByInstructorOrderByCreatedAtDesc(instructor, pageable);
         }
+
+        if (hasKeyword && hasType) {
+            return assetRepository.findByInstructorAndNameContainingIgnoreCaseAndAssetTypeOrderByCreatedAtDesc(instructor, cleanKeyword, cleanType, pageable);
+        }
+        if (hasKeyword) {
+            return assetRepository.findByInstructorAndNameContainingIgnoreCaseOrderByCreatedAtDesc(instructor, cleanKeyword, pageable);
+        }
+        if (hasType) {
+            return assetRepository.findByInstructorAndAssetTypeOrderByCreatedAtDesc(instructor, cleanType, pageable);
+        }
+        return assetRepository.findByInstructorOrderByCreatedAtDesc(instructor, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<String> getFoldersByInstructor(User instructor) {
+    public List<String> getFoldersByInstructor(User instructor) {
         boolean isAdmin = SecurityUtils.isAdmin(instructor);
         if (isAdmin) {
             return assetRepository.findAllDistinctFolderPaths();
@@ -58,15 +71,21 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     }
 
     @Override
+    @Transactional
     public InstructorAsset saveAssetMetadata(User instructor, String name, String assetType, String folderPath, String visibility, String sharedEmails, String cloudinaryUrl, Long fileSizeBytes) {
+        String safeName = (name != null && !name.trim().isEmpty()) ? name.trim() : "Tài nguyên số";
+        String safeVisibility = (visibility != null && !visibility.trim().isEmpty()) ? visibility.trim() : "PRIVATE";
+        String safeFolder = (folderPath != null && !folderPath.trim().isEmpty()) ? folderPath.trim() : "/";
+        Long safeSize = fileSizeBytes != null ? fileSizeBytes : 0L;
+
         InstructorAsset asset = InstructorAsset.builder()
                 .instructor(instructor)
-                .name(name)
+                .name(safeName)
                 .assetType(assetType)
                 .cloudinaryUrl(cloudinaryUrl)
-                .fileSizeBytes(fileSizeBytes)
-                .folderPath(folderPath)
-                .visibility(visibility != null ? visibility : "PRIVATE")
+                .fileSizeBytes(safeSize)
+                .folderPath(safeFolder)
+                .visibility(safeVisibility)
                 .sharedEmails(sharedEmails)
                 .build();
         return assetRepository.save(asset);
@@ -83,9 +102,6 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     public void deleteAsset(Long assetId, User instructor) throws IOException {
         InstructorAsset asset = getAssetByIdAndInstructor(assetId, instructor);
         
-        
-        
-        
         try {
             String url = asset.getCloudinaryUrl();
             int uploadIndex = url.indexOf("/upload/");
@@ -96,18 +112,21 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
                     path = path.replaceFirst("^v\\d+/", "");
                 }
                 String resourceType = "auto";
-                if ("VIDEO".equalsIgnoreCase(asset.getAssetType())) resourceType = "video";
-                else if ("DOCUMENT".equalsIgnoreCase(asset.getAssetType()) || "SLIDE".equalsIgnoreCase(asset.getAssetType())) resourceType = "raw";
+                if ("VIDEO".equalsIgnoreCase(asset.getAssetType())) {
+                    resourceType = "video";
+                } else if ("DOCUMENT".equalsIgnoreCase(asset.getAssetType()) || "SLIDE".equalsIgnoreCase(asset.getAssetType())) {
+                    resourceType = "raw";
+                }
                 
                 String publicId = path;
                 if (!"raw".equals(resourceType)) {
-                    
                     int dotIndex = path.lastIndexOf('.');
                     if (dotIndex != -1) {
                         publicId = path.substring(0, dotIndex);
                     }
                 }
                 
+                publicId = URLDecoder.decode(publicId, StandardCharsets.UTF_8);
                 cloudinaryService.deleteFile(publicId, resourceType);
             }
         } catch (Exception e) {

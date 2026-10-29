@@ -22,6 +22,7 @@ public class InstructorAsset {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id", nullable = false)
     @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User instructor;
 
     @Column(nullable = false, length = 255)
