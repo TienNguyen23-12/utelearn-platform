@@ -2,6 +2,7 @@ package vn.edu.ute.utelearn.controller.api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.edu.ute.utelearn.config.UtelearnProperties;
@@ -135,8 +136,27 @@ public class CheckoutApiController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", ex.getMessage()));
         }
     }
+    @PostMapping(value = "/wallet/deposit", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createDepositJson(@RequestBody Map<String, Object> body) {
+        BigDecimal amount = null;
+        if (body != null && body.get("amount") != null) {
+            try {
+                amount = new BigDecimal(body.get("amount").toString());
+            } catch (Exception ignored) {
+            }
+        }
+        return processDeposit(amount);
+    }
+
     @PostMapping("/wallet/deposit")
-    public ResponseEntity<?> createDeposit(@RequestParam BigDecimal amount) {
+    public ResponseEntity<?> createDeposit(@RequestParam(required = false) BigDecimal amount) {
+        return processDeposit(amount);
+    }
+
+    private ResponseEntity<?> processDeposit(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.valueOf(10000)) < 0) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Vui lòng nhập số tiền nạp tối thiểu là 10.000 VNĐ"));
+        }
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "message", "Vui lòng đăng nhập"));
@@ -152,6 +172,7 @@ public class CheckoutApiController {
                     "formattedAmount", order.getFormattedTotalAmount(),
                     "qrUrl", qrUrl,
                     "bankId", properties.getPayment().getBankId(),
+                    "bankName", properties.getPayment().getBankId(),
                     "accountNo", properties.getPayment().getAccountNo(),
                     "accountName", properties.getPayment().getAccountName()
             ));

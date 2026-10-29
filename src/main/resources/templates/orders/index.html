@@ -487,7 +487,7 @@
 
                     document.getElementById('depositQrImage').src = data.qrUrl;
                     document.getElementById('depositAmountDisplay').innerText = data.formattedAmount;
-                    document.getElementById('depositBankName').innerText = data.bankName;
+                    document.getElementById('depositBankName').innerText = data.bankName || data.bankId || 'Ngân hàng';
                     document.getElementById('depositAccountNo').innerText = data.accountNo;
                     document.getElementById('depositOrderCode').innerText = data.orderCode;
 
