@@ -9,17 +9,22 @@ import vn.edu.ute.utelearn.dao.CourseRepository;
 import vn.edu.ute.utelearn.dao.ModerationTaskRepository;
 import vn.edu.ute.utelearn.dao.ModeratorAttendanceRepository;
 import vn.edu.ute.utelearn.dao.UserRepository;
+import vn.edu.ute.utelearn.dto.NotificationEvent;
 import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.ModerationTask;
 import vn.edu.ute.utelearn.entity.ModeratorAttendance;
+import vn.edu.ute.utelearn.entity.NotificationCategory;
+import vn.edu.ute.utelearn.entity.NotificationType;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.ModerationService;
+import vn.edu.ute.utelearn.service.NotificationService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -35,6 +40,7 @@ public class ModerationServiceImpl implements ModerationService {
     private final vn.edu.ute.utelearn.dao.LessonRepository lessonRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
+    private final NotificationService notificationService;
 
     @Override
     public ModerationTask createCourseModerationTask(Long courseId, Long authorId) {
@@ -59,6 +65,7 @@ public class ModerationServiceImpl implements ModerationService {
                 .build();
 
         ModerationTask savedTask = moderationTaskRepository.save(task);
+        notifyModeratorsOnSubmission(savedTask, author, "khóa học", course.getTitle(), "COURSE_MODERATION");
         log.info("[ModerationService] Khoi tao nhiem vu kiem duyet id: {}, courseId: {}, authorId: {}, deadlineAt: {}",
                 savedTask.getId(), courseId, authorId, savedTask.getDeadlineAt());
         return savedTask;
@@ -88,6 +95,7 @@ public class ModerationServiceImpl implements ModerationService {
                 .build();
 
         ModerationTask savedTask = moderationTaskRepository.save(task);
+        notifyModeratorsOnSubmission(savedTask, author, "module", cohort.getName(), "COHORT_MODERATION");
         log.info("[ModerationService] Khoi tao nhiem vu kiem duyet module id: {}, cohortId: {}, authorId: {}, deadlineAt: {}",
                 savedTask.getId(), cohortId, authorId, savedTask.getDeadlineAt());
         return savedTask;
@@ -106,19 +114,32 @@ public class ModerationServiceImpl implements ModerationService {
         task.setAssignedTo(moderator);
         moderationTaskRepository.save(task);
 
+        String itemLabel = "khóa học";
+        String itemTitle = "";
+        User author = task.getAuthor();
         if ("COURSE".equals(task.getItemType())) {
             Course course = courseRepository.findById(task.getItemId()).orElseThrow();
             course.setStatus("PUBLISHED");
             courseRepository.save(course);
             publishLessonsForCourse(course.getId());
+            itemTitle = course.getTitle();
+            if (author == null) {
+                author = course.getCreatedBy();
+            }
         } else if ("COHORT".equals(task.getItemType())) {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             cohort.setModerationStatus("APPROVED");
             cohortRepository.save(cohort);
             publishLessonsForCohort(cohort.getId());
+            itemLabel = "module";
+            itemTitle = cohort.getName();
+            if (author == null) {
+                author = cohort.getCreatedBy();
+            }
         }
 
         recordModeratorProductivity(moderator);
+        notifyAuthorOnDecision(task, author, moderator, itemLabel, itemTitle, true, feedback);
         log.info("[ModerationService] Phe duyet thanh cong nhiem vu kiem duyet id: {}, moderatorId: {}", taskId, moderatorId);
     }
 
@@ -135,17 +156,30 @@ public class ModerationServiceImpl implements ModerationService {
         task.setAssignedTo(moderator);
         moderationTaskRepository.save(task);
 
+        String itemLabel = "khóa học";
+        String itemTitle = "";
+        User author = task.getAuthor();
         if ("COURSE".equals(task.getItemType())) {
             Course course = courseRepository.findById(task.getItemId()).orElseThrow();
             course.setStatus("REJECTED");
             courseRepository.save(course);
+            itemTitle = course.getTitle();
+            if (author == null) {
+                author = course.getCreatedBy();
+            }
         } else if ("COHORT".equals(task.getItemType())) {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             cohort.setModerationStatus("REJECTED");
             cohortRepository.save(cohort);
+            itemLabel = "module";
+            itemTitle = cohort.getName();
+            if (author == null) {
+                author = cohort.getCreatedBy();
+            }
         }
 
         recordModeratorProductivity(moderator);
+        notifyAuthorOnDecision(task, author, moderator, itemLabel, itemTitle, false, feedback);
         log.info("[ModerationService] Tu choi nhiem vu kiem duyet id: {}, moderatorId: {}", taskId, moderatorId);
     }
 
@@ -269,19 +303,112 @@ public class ModerationServiceImpl implements ModerationService {
         java.util.List<ModerationTask> pendingTasks = moderationTaskRepository.findByItemTypeAndItemIdAndStatusIn(
                 itemType, itemId, java.util.List.of("PENDING", "ESCALATED"));
         for (ModerationTask task : pendingTasks) {
+            Boolean approved = null;
             if ("PUBLISHED".equalsIgnoreCase(newStatus) || "APPROVED".equalsIgnoreCase(newStatus)) {
                 task.setStatus("APPROVED");
                 task.setAssignedTo(actor);
                 task.setFeedback("Được phê duyệt trực tiếp bởi " + (actor != null && actor.getFullName() != null ? actor.getFullName() : "Admin"));
+                approved = true;
             } else if ("REJECTED".equalsIgnoreCase(newStatus)) {
                 task.setStatus("REJECTED");
                 task.setAssignedTo(actor);
                 if (task.getFeedback() == null || task.getFeedback().isBlank()) {
                     task.setFeedback("Bị từ chối trực tiếp bởi " + (actor != null && actor.getFullName() != null ? actor.getFullName() : "Admin"));
                 }
+                approved = false;
             }
             moderationTaskRepository.save(task);
+            if (approved != null && task.getAuthor() != null && task.getAuthor().getId() != null) {
+                String itemLabel = "COHORT".equalsIgnoreCase(itemType) ? "module" : "khóa học";
+                String itemTitle = resolveItemTitle(itemType, itemId);
+                notifyAuthorOnDecision(task, task.getAuthor(), actor, itemLabel, itemTitle, approved, task.getFeedback());
+            }
             log.info("[ModerationService] Dong bo trang thai task {} thanh {} tu thao tac quan tri", task.getId(), task.getStatus());
+        }
+    }
+
+    private String resolveItemTitle(String itemType, Long itemId) {
+        if (itemId == null) {
+            return "";
+        }
+        if ("COHORT".equalsIgnoreCase(itemType)) {
+            return cohortRepository.findById(itemId).map(Cohort::getName).orElse("");
+        }
+        return courseRepository.findById(itemId).map(Course::getTitle).orElse("");
+    }
+
+    private void notifyModeratorsOnSubmission(ModerationTask task, User author, String itemLabel, String itemTitle, String referenceType) {
+        if (notificationService == null || task == null) {
+            return;
+        }
+        try {
+            Long authorId = author != null ? author.getId() : null;
+            String authorName = (author != null && author.getFullName() != null && !author.getFullName().isBlank())
+                    ? author.getFullName()
+                    : "Giảng viên";
+            List<Long> moderatorIds = userRepository.findActiveModerators().stream()
+                    .map(User::getId)
+                    .filter(id -> id != null && !id.equals(authorId))
+                    .toList();
+            if (moderatorIds.isEmpty()) {
+                return;
+            }
+            String safeTitle = (itemTitle != null && !itemTitle.isBlank()) ? itemTitle : ("#" + task.getItemId());
+            NotificationEvent event = NotificationEvent.builder()
+                    .senderId(authorId)
+                    .title("Yêu cầu kiểm duyệt " + itemLabel + " mới")
+                    .content("Giảng viên " + authorName + " vừa gửi yêu cầu kiểm duyệt " + itemLabel + " \"" + safeTitle + "\".")
+                    .type(NotificationType.MODERATION_SUBMITTED)
+                    .category(NotificationCategory.SYSTEM)
+                    .actionUrl("/moderator/review/" + task.getId())
+                    .referenceId(task.getId())
+                    .referenceType(referenceType)
+                    .build();
+            notificationService.sendNotificationToUsers(moderatorIds, event);
+        } catch (Exception e) {
+            log.warn("[ModerationService] Không thể gửi thông báo kiểm duyệt mới cho task {}: {}", task.getId(), e.getMessage());
+        }
+    }
+
+    private void notifyAuthorOnDecision(ModerationTask task, User author, User moderator, String itemLabel, String itemTitle, boolean approved, String feedback) {
+        if (notificationService == null || task == null || author == null || author.getId() == null) {
+            return;
+        }
+        try {
+            Long authorId = author.getId();
+            Long moderatorId = moderator != null ? moderator.getId() : null;
+            String safeTitle = (itemTitle != null && !itemTitle.isBlank()) ? itemTitle : ("#" + task.getItemId());
+            String title = approved
+                    ? ("Phê duyệt " + itemLabel + " thành công")
+                    : ("Từ chối kiểm duyệt " + itemLabel);
+            String baseContent = approved
+                    ? ("Nội dung " + itemLabel + " \"" + safeTitle + "\" của bạn đã được phê duyệt và xuất bản.")
+                    : ("Nội dung " + itemLabel + " \"" + safeTitle + "\" của bạn chưa đạt yêu cầu kiểm duyệt.");
+            String cleanFeedback = (feedback != null && !feedback.isBlank()) ? feedback.trim() : null;
+            String content = cleanFeedback != null
+                    ? (baseContent + (approved ? " Phản hồi: " : " Lý do: ") + cleanFeedback)
+                    : baseContent;
+            String actionUrl = "COHORT".equalsIgnoreCase(task.getItemType())
+                    ? ("/instructor/cohorts/" + task.getItemId() + "/curriculum")
+                    : ("/instructor/courses/" + task.getItemId() + "/curriculum");
+            String referenceType = "COHORT".equalsIgnoreCase(task.getItemType())
+                    ? "COHORT_MODERATION"
+                    : "COURSE_MODERATION";
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .recipientId(authorId)
+                    .senderId(moderatorId)
+                    .title(title)
+                    .content(content)
+                    .type(approved ? NotificationType.MODERATION_APPROVED : NotificationType.MODERATION_REJECTED)
+                    .category(NotificationCategory.SYSTEM)
+                    .actionUrl(actionUrl)
+                    .referenceId(task.getId())
+                    .referenceType(referenceType)
+                    .build();
+            notificationService.sendNotification(event);
+        } catch (Exception e) {
+            log.warn("[ModerationService] Không thể gửi thông báo kết quả kiểm duyệt cho task {}: {}", task.getId(), e.getMessage());
         }
     }
 

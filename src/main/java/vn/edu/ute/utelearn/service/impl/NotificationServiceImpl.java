@@ -284,6 +284,9 @@ public class NotificationServiceImpl implements NotificationService {
             case COHORT_CHAT -> "bi-chat-dots-fill text-primary";
             case SUBMISSION_RECEIVED -> "bi-inbox-fill text-info";
             case PAYMENT_SUCCESS -> "bi-wallet2 text-success";
+            case MODERATION_SUBMITTED -> "bi-shield-exclamation text-warning";
+            case MODERATION_APPROVED -> "bi-patch-check-fill text-success";
+            case MODERATION_REJECTED -> "bi-x-circle-fill text-danger";
             case SYSTEM_ALERT -> "bi-info-circle-fill text-secondary";
         };
     }

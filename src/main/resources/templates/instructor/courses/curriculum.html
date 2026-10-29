@@ -300,9 +300,9 @@
                     <div th:each="section, sStat : ${standaloneSections}" 
                          class="section-card mb-0 shadow-xs" 
                          th:id="'section-' + ${section.id}"
-                         th:data-is-module="false"
-                         th:data-module-id=""
-                         th:data-module-name=""
+                         data-is-module="false"
+                         data-module-id=""
+                         data-module-name=""
                          th:data-section-title="${section.title}">
                         <div class="section-header">
                             <div class="d-flex align-items-center flex-wrap flex-grow-1 gap-2 cursor-pointer" data-bs-toggle="collapse" th:data-bs-target="'#collapseSection' + ${section.id}">
