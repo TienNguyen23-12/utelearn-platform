@@ -147,14 +147,17 @@
         <header th:replace="~{fragments/navbar :: navbar('Khóa học của tôi')}"></header>
 
         <main class="app-main-content">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-journal-check text-primary me-2"></i>Các khóa học đã tham gia
+                    </h4>
+                    <p class="text-muted small mb-0">Tiếp tục hành trình học tập và hoàn thiện lộ trình kiến thức của bạn</p>
+                </div>
+            </div>
+
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div>
-                        <h5 class="fw-bold text-dark mb-1">
-                            <i class="bi bi-journal-check text-primary me-2"></i>Các khóa học đã tham gia
-                        </h5>
-                        <p class="text-muted small mb-0">Tiếp tục hành trình học tập và hoàn thiện lộ trình kiến thức của bạn</p>
-                    </div>
                     <ul class="nav nav-pills sub-pills bg-light p-1 rounded-pill border" id="myCoursesSubTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="subtab-courses-btn" data-bs-toggle="pill" data-bs-target="#subtab-courses-pane" type="button" role="tab">
@@ -722,9 +725,7 @@
                     throw new Error(result.message || 'Lỗi khi gửi đánh giá');
                 }
 
-                if (window.Toastify) {
-                    Toastify({ text: 'Cảm ơn bạn đã đánh giá! Giấy chứng nhận đã được kích hoạt.', style: { background: '#10b981' } }).showToast();
-                }
+                showToast('Cảm ơn bạn đã đánh giá! Giấy chứng nhận đã được kích hoạt.', 'success');
 
                 if (reviewModalInstance) {
                     reviewModalInstance.hide();
@@ -733,11 +734,7 @@
                 openCertificateModal(courseName, studentName, grade, result.data ? result.data.certCode : certCode);
                 setTimeout(() => location.reload(), 2500);
             } catch (e) {
-                if (window.Toastify) {
-                    Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
-                } else {
-                    alert('Lỗi: ' + e.message);
-                }
+                showToast('Lỗi: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-patch-check-fill me-1"></i> Gửi đánh giá & Nhận chứng chỉ';

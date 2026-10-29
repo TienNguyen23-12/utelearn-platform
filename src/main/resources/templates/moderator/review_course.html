@@ -411,7 +411,7 @@
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
-                Toastify({ text: data.message || "Đã chuyển việc duyệt về cho Moderator thành công!", style: { background: "#0ea5e9" } }).showToast();
+                showToast(data.message || "Đã chuyển việc duyệt về cho Moderator thành công!", "info");
                 setTimeout(() => window.location.href = '/admin/moderation', 1000);
             } else {
                 alert(data.message || "Có lỗi xảy ra khi chuyển giao.");
@@ -443,7 +443,7 @@
             });
             const data = await res.json().catch(() => ({}));
             if(res.ok) {
-                Toastify({ text: data.message || "Đã xử lý thành công!", style: { background: "#00b050" } }).showToast();
+                showToast(data.message || "Đã xử lý thành công!", "success");
                 setTimeout(() => window.location.href = isEscalated ? '/admin/moderation' : '/moderator/queue', 1000);
             } else {
                 alert(data.message || "Có lỗi xảy ra khi xử lý.");

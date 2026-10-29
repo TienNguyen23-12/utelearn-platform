@@ -220,10 +220,10 @@
         var errorMessage = /*[[${errorMessage}]]*/ null;
         document.addEventListener("DOMContentLoaded", function () {
             if (successMessage) {
-                Toastify({ text: successMessage, style: { background: "#00b050" } }).showToast();
+                showToast(successMessage, 'success');
             }
             if (errorMessage) {
-                Toastify({ text: errorMessage, style: { background: "#dc3545" } }).showToast();
+                showToast(errorMessage, 'error');
             }
         });
     </script>

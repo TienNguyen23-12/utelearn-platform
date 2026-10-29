@@ -121,6 +121,43 @@ public class Cohort {
     private Instant createdAt;
 
     @Transient
+    private Long enrolledCount;
+
+    @Transient
+    private Double averageRating;
+
+    @Transient
+    private Long ratingCount;
+
+    @Transient
+    private Double featuredScore;
+
+    @Transient
+    public String getInstructorDisplayName() {
+        try {
+            if (createdBy != null && org.hibernate.Hibernate.isInitialized(createdBy)) {
+                if (createdBy.getFullName() != null && !createdBy.getFullName().isBlank()) {
+                    return createdBy.getFullName();
+                }
+                if (createdBy.getUsername() != null && !createdBy.getUsername().isBlank()) {
+                    return createdBy.getUsername();
+                }
+            }
+            if (course != null && org.hibernate.Hibernate.isInitialized(course)
+                    && course.getCreatedBy() != null && org.hibernate.Hibernate.isInitialized(course.getCreatedBy())) {
+                if (course.getCreatedBy().getFullName() != null && !course.getCreatedBy().getFullName().isBlank()) {
+                    return course.getCreatedBy().getFullName();
+                }
+                if (course.getCreatedBy().getUsername() != null && !course.getCreatedBy().getUsername().isBlank()) {
+                    return course.getCreatedBy().getUsername();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return "Giảng viên";
+    }
+
+    @Transient
     public String getEffectiveThumbnailUrl() {
         if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
             return thumbnailUrl;

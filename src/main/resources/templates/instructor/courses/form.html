@@ -126,7 +126,7 @@
     const errorDataEl = document.getElementById('errorData');
     const errorMsg = errorDataEl ? errorDataEl.getAttribute('data-error') : null;
     if (errorMsg) {
-        Toastify({text: errorMsg, style: {background: "#dc3545"}}).showToast();
+        showToast(errorMsg, 'error');
     }
     const thumbnailInput = document.getElementById('thumbnailUrl');
     const coverPreview = document.getElementById('coverPreview');

@@ -187,7 +187,7 @@
         var el = document.getElementById(elementId);
         if (el) {
             navigator.clipboard.writeText(el.innerText.trim()).then(function() {
-                Toastify({text: message, style: {background: "#00b050"}}).showToast();
+                showToast(message, 'success');
             });
         }
     }
@@ -195,7 +195,7 @@
     function copyValue(val, message) {
         if (val) {
             navigator.clipboard.writeText(val).then(function() {
-                Toastify({text: message, style: {background: "#00b050"}}).showToast();
+                showToast(message, 'success');
             });
         }
     }
@@ -210,7 +210,7 @@
                     document.getElementById('statusAlert').classList.add('d-none');
                     var sc = document.getElementById('successCard');
                     sc.classList.remove('d-none');
-                    Toastify({text: "Thanh toán thành công! Đang chuyển hướng...", style: {background: "#00b050"}}).showToast();
+                    showToast("Thanh toán thành công! Đang chuyển hướng...", 'success');
                     setTimeout(function() {
                         window.location.href = data.redirectUrl || '/courses/my-courses';
                     }, 2000);
@@ -222,7 +222,7 @@
     }
 
     function checkStatusManually() {
-        Toastify({text: "Đang kiểm tra đối soát giao dịch...", style: {background: "#0d6efd"}}).showToast();
+        showToast("Đang kiểm tra đối soát giao dịch...", 'info');
         checkOrderStatus();
     }
 

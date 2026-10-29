@@ -1216,19 +1216,13 @@
             if (!res.ok || !data.success) {
                 throw new Error(data.message || 'Lỗi khi gửi đánh giá');
             }
-            if (window.Toastify) {
-                Toastify({ text: data.message || 'Đánh giá thành công!', style: { background: '#10b981' } }).showToast();
-            }
+            showToast(data.message || 'Đánh giá thành công!', 'success');
             setTimeout(() => {
                 window.location.hash = '#tab-reviews';
                 window.location.reload();
             }, 1000);
         } catch (e) {
-            if (window.Toastify) {
-                Toastify({ text: e.message, style: { background: '#dc3545' } }).showToast();
-            } else {
-                alert('Lỗi: ' + e.message);
-            }
+            showToast(e.message, 'error');
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi đánh giá';
@@ -1697,11 +1691,7 @@ async function addToCartAjax(event, form) {
             return;
         }
         if (data.success) {
-            if (typeof Toastify === 'function') {
-                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
-            } else {
-                alert(data.message);
-            }
+            showToast(data.message, 'success');
             const badges = document.querySelectorAll('.nav-cart-badge');
             badges.forEach(badge => {
                 badge.textContent = data.cartItemCount;
@@ -1712,11 +1702,7 @@ async function addToCartAjax(event, form) {
                 }
             });
         } else {
-            if (typeof Toastify === 'function') {
-                Toastify({ text: data.message || 'Không thể thêm vào giỏ hàng.', duration: 3000, gravity: 'top', position: 'right', style: { background: '#f59e0b' } }).showToast();
-            } else {
-                alert(data.message || 'Không thể thêm vào giỏ hàng.');
-            }
+            showToast(data.message || 'Không thể thêm vào giỏ hàng.', 'warning');
         }
     } catch (e) {
         console.error(e);
@@ -1743,9 +1729,7 @@ async function toggleWishlist(courseId) {
                 icon.className = 'bi bi-heart';
                 text.textContent = 'Lưu vào Yêu thích';
             }
-            if (typeof Toastify === 'function') {
-                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
-            }
+            showToast(data.message, 'success');
         }
     } catch (e) {
         console.error(e);

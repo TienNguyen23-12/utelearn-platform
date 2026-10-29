@@ -494,10 +494,10 @@
         var errorMessage = flashEl ? flashEl.getAttribute('data-error') : null;
         var successMessage = flashEl ? flashEl.getAttribute('data-success') : null;
         if (errorMessage && errorMessage.trim() !== '') {
-            Toastify({text: errorMessage, style: {background: "#dc3545"}}).showToast();
+            showToast(errorMessage, 'error');
         }
         if (successMessage && successMessage.trim() !== '') {
-            Toastify({text: successMessage, style: {background: "#00b050"}}).showToast();
+            showToast(successMessage, 'success');
         }
     });
     function openConfirmModal(btn) {

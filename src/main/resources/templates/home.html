@@ -523,9 +523,38 @@
                                class="text-dark text-decoration-none course-title-link" th:text="${cohort.name}">Tên Module</a>
                         </h6>
 
-                        <div class="text-muted small mb-3 d-flex align-items-center gap-1">
-                            <i class="bi bi-person-circle text-secondary"></i>
-                            <span class="text-truncate" th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
+
+
+                        <div class="text-muted small mb-2 d-flex align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center gap-1 text-truncate">
+                                <i class="bi bi-person-circle text-secondary"></i>
+                                <span class="text-truncate" th:text="${cohort.instructorDisplayName}">Giảng viên</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 text-nowrap flex-shrink-0" title="Số học viên đã đăng ký">
+                                <i class="bi bi-people-fill text-primary" style="font-size: 12px;"></i>
+                                <span class="fw-semibold text-secondary" style="font-size: 12px;" th:text="${(cohort.enrolledCount != null ? cohort.enrolledCount : (cohort.currentEnrolled != null ? cohort.currentEnrolled : 0)) + ' HV'}">0 HV</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1 mb-3">
+                            <th:block th:if="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
+                                <span class="fw-bold text-dark me-1" style="font-size: 13px;" th:text="${#numbers.formatDecimal(cohort.averageRating, 1, 1)}">5.0</span>
+                                <span class="d-inline-flex align-items-center text-warning" style="gap: 2px; font-size: 12px;">
+                                    <i th:each="star : ${#numbers.sequence(1, 5)}"
+                                       th:class="${cohort.averageRating >= star ? 'bi bi-star-fill text-warning' : (cohort.averageRating >= star - 0.5 ? 'bi bi-star-half text-warning' : 'bi bi-star text-muted')}"></i>
+                                </span>
+                                <span class="text-muted small ms-1" style="font-size: 11.5px;" th:text="'(' + ${cohort.ratingCount} + ' đánh giá)'">(0 đánh giá)</span>
+                            </th:block>
+                            <th:block th:unless="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
+                                <span class="d-inline-flex align-items-center text-muted" style="gap: 2px; font-size: 12px;">
+                                    <i class="bi bi-star"></i>
+                                    <i class="bi bi-star"></i>
+                                    <i class="bi bi-star"></i>
+                                    <i class="bi bi-star"></i>
+                                    <i class="bi bi-star"></i>
+                                    <span class="ms-1" style="font-size: 11.5px;">(Chưa có đánh giá)</span>
+                                </span>
+                            </th:block>
                         </div>
 
                         <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">

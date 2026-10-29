@@ -80,6 +80,108 @@ public class CohortServiceImpl implements CohortService {
     }
 
     @Override
+    public List<Cohort> getFeaturedCohorts(int limit) {
+        int safeLimit = Math.max(1, limit);
+        log.info("[CohortService] Bắt đầu tính điểm xếp hạng cho top {} module nổi bật", safeLimit);
+        syncCohortStatuses();
+        Page<Cohort> candidatesPage = cohortRepository.searchPublicCohorts(
+                "",
+                "",
+                org.springframework.data.domain.PageRequest.of(0, 100, org.springframework.data.domain.Sort.by("id").descending())
+        );
+        if (candidatesPage == null || candidatesPage.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<Cohort> candidates = new java.util.ArrayList<>(candidatesPage.getContent());
+        Instant now = Instant.now();
+        for (Cohort cohort : candidates) {
+            enrichCohortFeaturedMetrics(cohort, now);
+        }
+        candidates.sort((a, b) -> {
+            int scoreCompare = Double.compare(
+                    b.getFeaturedScore() != null ? b.getFeaturedScore() : 0.0,
+                    a.getFeaturedScore() != null ? a.getFeaturedScore() : 0.0
+            );
+            if (scoreCompare != 0) {
+                return scoreCompare;
+            }
+            int enrolledCompare = Long.compare(
+                    b.getEnrolledCount() != null ? b.getEnrolledCount() : 0L,
+                    a.getEnrolledCount() != null ? a.getEnrolledCount() : 0L
+            );
+            if (enrolledCompare != 0) {
+                return enrolledCompare;
+            }
+            int ratingCompare = Double.compare(
+                    b.getAverageRating() != null ? b.getAverageRating() : 0.0,
+                    a.getAverageRating() != null ? a.getAverageRating() : 0.0
+            );
+            if (ratingCompare != 0) {
+                return ratingCompare;
+            }
+            return Long.compare(
+                    b.getId() != null ? b.getId() : 0L,
+                    a.getId() != null ? a.getId() : 0L
+            );
+        });
+        List<Cohort> featured = candidates.stream().limit(safeLimit).toList();
+        log.info("[CohortService] Hoàn tất xếp hạng {} module nổi bật từ {} ứng viên", featured.size(), candidates.size());
+        return featured;
+    }
+
+    private void enrichCohortFeaturedMetrics(Cohort cohort, Instant now) {
+        long memberCount = (cohortMemberRepository != null && cohort.getId() != null)
+                ? cohortMemberRepository.countByCohort_Id(cohort.getId())
+                : 0L;
+        long currentEnrolled = cohort.getCurrentEnrolled() != null ? cohort.getCurrentEnrolled().longValue() : 0L;
+        long enrolledCount = Math.max(memberCount, currentEnrolled);
+
+        Double rawAvgRating = (cohortMemberRepository != null && cohort.getId() != null)
+                ? cohortMemberRepository.getAverageRatingByCohortId(cohort.getId())
+                : null;
+        long ratingCount = (cohortMemberRepository != null && cohort.getId() != null)
+                ? cohortMemberRepository.countRatingsByCohortId(cohort.getId())
+                : 0L;
+        Double roundedRating = (rawAvgRating != null && ratingCount > 0)
+                ? Math.round(rawAvgRating * 10.0) / 10.0
+                : null;
+
+        double score = calculateFeaturedScore(cohort, enrolledCount, roundedRating, ratingCount, now);
+        cohort.setEnrolledCount(enrolledCount);
+        cohort.setAverageRating(roundedRating);
+        cohort.setRatingCount(ratingCount);
+        cohort.setFeaturedScore(Math.round(score * 10.0) / 10.0);
+    }
+
+    private double calculateFeaturedScore(Cohort cohort, long enrolledCount, Double avgRating, long ratingCount, Instant now) {
+        int maxCapacity = (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0) ? cohort.getMaxCapacity() : 50;
+        double fillRatioBonus = Math.min(((double) enrolledCount / maxCapacity) * 20.0, 20.0);
+        double enrollmentScore = (enrolledCount * 10.0) + fillRatioBonus;
+
+        double ratingScore = (avgRating != null && ratingCount > 0)
+                ? (avgRating * 15.0) + (Math.min(ratingCount, 20L) * 5.0)
+                : 0.0;
+
+        String effectiveStatus = cohort.getStatus();
+        double statusScore = 0.0;
+        if ("ENROLLING".equalsIgnoreCase(effectiveStatus)) {
+            statusScore = 30.0;
+        } else if ("IN_PROGRESS".equalsIgnoreCase(effectiveStatus)) {
+            statusScore = 20.0;
+        } else if ("UPCOMING".equalsIgnoreCase(effectiveStatus)) {
+            statusScore = 10.0;
+        }
+
+        double recencyScore = 0.0;
+        if (cohort.getCreatedAt() != null && now != null) {
+            long daysOld = Math.max(0L, java.time.Duration.between(cohort.getCreatedAt(), now).toDays());
+            recencyScore = Math.max(0.0, 30.0 - daysOld) * 0.5;
+        }
+
+        return enrollmentScore + ratingScore + statusScore + recencyScore;
+    }
+
+    @Override
     public Cohort getCohortById(Long id) {
         return cohortRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cohort not found"));

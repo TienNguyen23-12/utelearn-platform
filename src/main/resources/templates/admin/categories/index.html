@@ -207,31 +207,11 @@
         var errorMsg = /*[[${errorMessage}]]*/ null;
         var successMsg = /*[[${successMessage}]]*/ null;
         
-        if (errorMsg && typeof Toastify === 'function') {
-            Toastify({
-                text: errorMsg,
-                duration: 4000,
-                gravity: 'top',
-                position: 'right',
-                style: {
-                    background: '#ef4444',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
-                }
-            }).showToast();
+        if (errorMsg) {
+            showToast(errorMsg, 'error');
         }
-        if (successMsg && typeof Toastify === 'function') {
-            Toastify({
-                text: successMsg,
-                duration: 3500,
-                gravity: 'top',
-                position: 'right',
-                style: {
-                    background: '#10b981',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
-                }
-            }).showToast();
+        if (successMsg) {
+            showToast(successMsg, 'success');
         }
     });
 </script>
