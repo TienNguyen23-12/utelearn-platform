@@ -530,7 +530,9 @@ public class CourseController {
         long enrolledCount = cohortMemberRepository.countByCohort_Id(module.getId());
         module.setCurrentEnrolled((int) enrolledCount);
 
-        List<Section> cohortSections = sectionService.getSectionsByCohortId(module.getId());
+        List<Section> cohortSections = sectionService != null
+                ? sectionService.getSectionsByCohortId(module.getId())
+                : sectionRepository.findSectionsForCohort(module.getId());
         if (cohortSections.isEmpty() && course != null) {
             cohortSections = sectionRepository.findByCourseIdOrderByOrderIndexAsc(course.getId());
         }
@@ -1010,7 +1012,9 @@ public class CourseController {
             return "redirect:/courses/" + slug + "/modules/" + moduleId;
         }
 
-        List<Section> cohortSections = sectionService.getSectionsByCohortId(module.getId());
+        List<Section> cohortSections = sectionService != null
+                ? sectionService.getSectionsByCohortId(module.getId())
+                : sectionRepository.findSectionsForCohort(module.getId());
         List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(module.getId());
         java.util.Set<Long> validSectionIds = cohortSections.stream().map(Section::getId).collect(java.util.stream.Collectors.toSet());
         if (!validSectionIds.isEmpty()) {
