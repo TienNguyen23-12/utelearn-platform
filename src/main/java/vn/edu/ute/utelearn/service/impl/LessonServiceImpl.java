@@ -305,17 +305,19 @@ public class LessonServiceImpl implements LessonService {
             throw new RuntimeException("Bạn không có quyền xóa bài học này");
         }
 
-        List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
-        for (CohortSchedule cs : schedules) {
-            if (cs.getCohort() != null) {
-                revertCohortToDraftIfApproved(cs.getCohort());
+        if (lesson.isPublished()) {
+            List<CohortSchedule> schedules = cohortScheduleRepository.findByLessonId(lessonId);
+            for (CohortSchedule cs : schedules) {
+                if (cs.getCohort() != null) {
+                    revertCohortToDraftIfApproved(cs.getCohort());
+                }
             }
-        }
-        if (section != null && section.getCohort() != null) {
-            revertCohortToDraftIfApproved(section.getCohort());
-        }
-        if (section != null && section.getCourse() != null) {
-            revertCourseToDraftIfPublished(section.getCourse());
+            if (section != null && section.getCohort() != null) {
+                revertCohortToDraftIfApproved(section.getCohort());
+            }
+            if (section != null && section.getCourse() != null) {
+                revertCourseToDraftIfPublished(section.getCourse());
+            }
         }
 
         cohortScheduleRepository.deleteByLessonId(lessonId);

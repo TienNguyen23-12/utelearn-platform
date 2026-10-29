@@ -433,6 +433,7 @@ public class CohortServiceImpl implements CohortService {
         jdbcTemplate.update("DELETE FROM quiz_submissions WHERE cohort_id = ?", id);
         jdbcTemplate.update("DELETE FROM coding_submissions WHERE cohort_id = ?", id);
         jdbcTemplate.update("UPDATE moderation_tasks SET cohort_id = NULL WHERE cohort_id = ?", id);
+        jdbcTemplate.update("DELETE FROM moderation_tasks WHERE item_type = 'COHORT' AND item_id = ?", id);
         jdbcTemplate.update("DELETE FROM cohort_members WHERE cohort_id = ?", id);
 
         cohortRepository.delete(cohort);
@@ -754,19 +755,10 @@ public class CohortServiceImpl implements CohortService {
     @Override
     @Transactional
     public void revertToDraftIfApproved(Cohort cohort) {
-        if (cohort == null) {
-            return;
-        }
-        if ("APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (cohort != null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
             cohortRepository.save(cohort);
             log.info("[CohortService] Tự động chuyển trạng thái Module id: {} về DRAFT do có thay đổi nội dung", cohort.getId());
-        }
-        if (cohort.getCourse() != null && "PUBLISHED".equalsIgnoreCase(cohort.getCourse().getStatus())) {
-            Course course = cohort.getCourse();
-            course.setStatus("DRAFT");
-            courseRepository.save(course);
-            log.info("[CohortService] Tự động chuyển trạng thái Khóa học id: {} về DRAFT do thay đổi nội dung module", course.getId());
         }
     }
 

@@ -29,6 +29,7 @@ public class SectionServiceImpl implements SectionService {
     private final CohortRepository cohortRepository;
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final UserRepository userRepository;
+    private final vn.edu.ute.utelearn.dao.LessonRepository lessonRepository;
 
     private boolean isAuthorized(Course course, Cohort cohort, Long instructorId) {
         if (instructorId == null) {
@@ -205,7 +206,13 @@ public class SectionServiceImpl implements SectionService {
             throw new RuntimeException("Bạn không có quyền xóa chương này");
         }
 
-        revertSectionParents(section);
+        List<vn.edu.ute.utelearn.entity.Lesson> lessons = (lessonRepository != null)
+                ? lessonRepository.findBySectionIdOrderByOrderIndexAsc(sectionId)
+                : java.util.Collections.emptyList();
+        boolean hasPublishedLessons = lessons.stream().anyMatch(vn.edu.ute.utelearn.entity.Lesson::isPublished);
+        if (hasPublishedLessons) {
+            revertSectionParents(section);
+        }
         sectionRepository.delete(section);
         log.info("[SectionService] Đã xóa thành công chương ID: {}", sectionId);
     }

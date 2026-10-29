@@ -26,6 +26,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     boolean existsByUser_IdAndCourse_Id(Long userId, Long courseId);
 
+    long countByCourse_Id(Long courseId);
+
     @Query("SELECT e FROM Enrollment e JOIN FETCH e.course c JOIN FETCH e.user u LEFT JOIN FETCH c.createdBy cb WHERE e.certificateUrl LIKE CONCAT('%', :code, '%')")
     List<Enrollment> findByCertificateCode(@Param("code") String code);
 
