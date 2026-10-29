@@ -323,6 +323,17 @@ body {
     color: #b91c1c;
 }
 
+.btn-soft-success {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.btn-soft-success:hover {
+    background: #d1fae5;
+    color: #047857;
+}
+
 .table {
     margin-bottom: 0;
 }

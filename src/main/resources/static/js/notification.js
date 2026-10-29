@@ -176,6 +176,10 @@
     async function fetchUnreadCount() {
         try {
             const resp = await fetch('/api/notifications/unread-count');
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (!resp.ok) return;
             const data = await resp.json();
             updateBadge(data.unreadCount || 0);

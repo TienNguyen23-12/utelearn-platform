@@ -165,6 +165,10 @@
     async function loadRecentNotifications() {
         try {
             const resp = await fetch('/api/cohorts/notifications/recent');
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (!resp.ok) return;
             const data = await resp.json();
             const lists = document.querySelectorAll('.nav-notification-list');
