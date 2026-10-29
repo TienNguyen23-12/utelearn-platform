@@ -77,65 +77,68 @@
             </div>
 
             <div class="table-responsive rounded-3">
-                <table class="table align-middle" id="userTable">
+                <table class="table align-middle w-100" id="userTable">
                     <thead>
                         <tr>
-                            <th style="width: 70px;">STT</th>
-                            <th style="width: 280px;">Người dùng</th>
-                            <th>Thông tin liên hệ</th>
-                            <th>Vai trò hiện tại (Roles)</th>
-                            <th style="width: 140px;" class="text-center">Trạng thái</th>
+                            <th style="width: 50px;" class="text-center">STT</th>
+                            <th style="min-width: 180px;">Người dùng</th>
+                            <th style="min-width: 180px;">Thông tin liên hệ</th>
+                            <th style="min-width: 200px;">Vai trò hiện tại (Roles)</th>
+                            <th style="width: 110px;" class="text-center">Trạng thái</th>
                             <th style="width: 160px;" class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="u, iter : ${users}">
-                            <td class="text-muted fw-semibold" th:text="${iter.count}">1</td>
+                            <td class="text-muted fw-semibold text-center" th:text="${iter.count}">1</td>
                             <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="user-avatar-placeholder" style="width: 42px; height: 42px; font-size: 15px;" th:text="${u.fullName != null and !u.fullName.isEmpty() ? #strings.substring(u.fullName, 0, 1) : 'U'}">U</div>
-                                    <div>
-                                        <div class="fw-bold text-dark" th:text="${u.fullName}">Nguyễn Văn A</div>
-                                        <div class="text-muted" style="font-size: 12px;">@<span th:text="${u.username}">admin</span></div>
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="user-avatar-placeholder flex-shrink-0" style="width: 38px; height: 38px; font-size: 14px;" th:text="${u.fullName != null and !u.fullName.isEmpty() ? #strings.substring(u.fullName, 0, 1) : 'U'}">U</div>
+                                    <div class="text-truncate" style="max-width: 200px;">
+                                        <div class="fw-bold text-dark text-truncate" th:text="${u.fullName}">Nguyễn Văn A</div>
+                                        <div class="text-muted text-truncate" style="font-size: 12px;">@<span th:text="${u.username}">admin</span></div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <div class="text-dark small"><i class="bi bi-envelope me-2 text-muted"></i><span th:text="${u.email}">email@utelearn.edu.vn</span></div>
-                                <div class="text-muted small mt-1" th:if="${u.phoneNumber}">
-                                    <i class="bi bi-telephone me-2 text-muted"></i><span th:text="${u.phoneNumber}">0901234567</span>
+                                <div class="text-dark small"><i class="bi bi-envelope me-1.5 text-muted"></i><span th:text="${u.email}">email@utelearn.edu.vn</span></div>
+                                <div class="text-muted small mt-0.5" th:if="${u.phoneNumber}">
+                                    <i class="bi bi-telephone me-1.5 text-muted"></i><span th:text="${u.phoneNumber}">0901234567</span>
                                 </div>
                             </td>
                             <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    <span th:each="r : ${u.roles}" class="badge-pill-soft badge-pill-primary">
-                                        <i class="bi bi-shield-fill me-1"></i><span th:text="${r.name + ' (' + r.code + ')'}">Học viên (STUDENT)</span>
+                                <div class="d-flex flex-wrap gap-1 align-items-center">
+                                    <span th:each="r : ${u.roles}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" style="font-size: 11.5px; font-weight: 600;">
+                                        <i class="bi bi-shield-fill text-primary" style="font-size: 10px;"></i>
+                                        <span th:text="${r.name}">Người kiểm duyệt nội dung</span>
+                                        <span class="opacity-75" style="font-size: 10.5px;" th:text="'(' + ${r.code} + ')'">(MODERATOR)</span>
                                     </span>
                                     <span th:if="${u.roles == null || #sets.isEmpty(u.roles)}" class="text-muted small fst-italic">Chưa có vai trò nào</span>
                                 </div>
                             </td>
-                            <td class="text-center">
-                                <span th:if="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-success">
+                            <td class="text-center text-nowrap">
+                                <span th:if="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-success text-nowrap">
                                     <i class="bi bi-check-circle-fill"></i> Hoạt động
                                 </span>
-                                <span th:unless="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-danger">
+                                <span th:unless="${u.isActive != null and u.isActive}" class="badge-pill-soft badge-pill-danger text-nowrap">
                                     <i class="bi bi-lock-fill"></i> Đã khóa
                                 </span>
                             </td>
-                            <td class="text-center">
-                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                    <a th:href="@{/admin/users/{id}/edit(id=${u.id})}" class="btn btn-soft-primary btn-sm rounded-pill px-3" title="Gán vai trò">
-                                        <i class="bi bi-shield-plus me-1"></i>Gán quyền
+                            <td class="text-center text-nowrap">
+                                <div class="d-flex align-items-center justify-content-center gap-1.5">
+                                    <a th:href="@{/admin/users/{id}/edit(id=${u.id})}" class="btn btn-soft-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1 fw-semibold" title="Gán vai trò">
+                                        <i class="bi bi-shield-plus"></i><span>Gán quyền</span>
                                     </a>
                                     <button th:if="${u.username != 'admin'}" 
                                             type="button" 
-                                            class="btn btn-sm rounded-circle p-2" 
-                                            th:classappend="${u.isActive != null and u.isActive} ? 'btn-soft-danger' : 'btn-soft-primary'" 
-                                            th:title="${u.isActive != null and u.isActive ? 'Khóa tài khoản' : 'Mở khóa'}"
+                                            class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1 fw-semibold status-toggle-btn" 
+                                            th:classappend="${u.isActive != null and u.isActive} ? 'btn-soft-danger' : 'btn-soft-success'" 
+                                            th:title="${u.isActive != null and u.isActive ? 'Khóa tài khoản này' : 'Mở khóa tài khoản này'}"
                                             th:data-id="${u.id}"
                                             th:data-is-active="${u.isActive != null and u.isActive}"
-                                            onclick="toggleUserStatus(this)">
+                                            onclick="openToggleModal(this)">
                                         <i th:class="${u.isActive != null and u.isActive ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'}"></i>
+                                        <span th:text="${u.isActive != null and u.isActive ? 'Khóa' : 'Mở'}">Khóa</span>
                                     </button>
                                 </div>
                             </td>
@@ -145,6 +148,30 @@
             </div>
         </div>
     </main>
+</div>
+
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-body p-4 text-center">
+                <div id="statusModalIconWrapper" class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 60px; height: 60px; font-size: 26px;">
+                    <i id="statusModalIcon" class="bi"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2" id="statusModalTitle">Xác nhận thay đổi</h5>
+                <p class="text-muted small mb-3">
+                    Bạn có chắc chắn muốn <span id="statusModalActionText" class="fw-bold text-dark"></span> tài khoản <span id="statusModalUserName" class="fw-bold text-dark"></span> không?
+                </p>
+                <div id="statusModalWarning" class="alert alert-warning border-0 rounded-3 py-2 px-3 small text-start mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 text-warning"></i>
+                    <span>Tài khoản sẽ bị đăng xuất ngay lập tức khỏi hệ thống.</span>
+                </div>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm" id="confirmToggleStatusBtn">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -159,6 +186,58 @@
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(query) ? '' : 'none';
         });
+    });
+
+    let targetStatusButton = null;
+    let statusModalInstance = null;
+
+    function openToggleModal(button) {
+        targetStatusButton = button;
+        const isActive = button.getAttribute('data-is-active') === 'true';
+        const tr = button.closest('tr');
+        const nameEl = tr.querySelector('.fw-bold.text-dark');
+        const userName = nameEl ? nameEl.textContent.trim() : 'này';
+        
+        const iconWrapper = document.getElementById('statusModalIconWrapper');
+        const icon = document.getElementById('statusModalIcon');
+        const title = document.getElementById('statusModalTitle');
+        const actionText = document.getElementById('statusModalActionText');
+        const userNameSpan = document.getElementById('statusModalUserName');
+        const warning = document.getElementById('statusModalWarning');
+        const confirmBtn = document.getElementById('confirmToggleStatusBtn');
+        
+        userNameSpan.textContent = userName;
+        
+        if (isActive) {
+            iconWrapper.className = 'd-inline-flex align-items-center justify-content-center rounded-circle mb-3 bg-danger-subtle text-danger';
+            icon.className = 'bi bi-lock-fill';
+            title.textContent = 'Khóa tài khoản';
+            actionText.textContent = 'khóa';
+            warning.classList.remove('d-none');
+            confirmBtn.className = 'btn btn-danger rounded-pill px-4 fw-bold shadow-sm';
+            confirmBtn.textContent = 'Khóa ngay';
+        } else {
+            iconWrapper.className = 'd-inline-flex align-items-center justify-content-center rounded-circle mb-3 bg-success-subtle text-success';
+            icon.className = 'bi bi-unlock-fill';
+            title.textContent = 'Mở khóa tài khoản';
+            actionText.textContent = 'mở khóa';
+            warning.classList.add('d-none');
+            confirmBtn.className = 'btn btn-success rounded-pill px-4 fw-bold shadow-sm text-white';
+            confirmBtn.textContent = 'Mở khóa';
+        }
+        
+        if (!statusModalInstance) {
+            statusModalInstance = new bootstrap.Modal(document.getElementById('toggleStatusModal'));
+        }
+        statusModalInstance.show();
+    }
+
+    document.getElementById('confirmToggleStatusBtn').addEventListener('click', function() {
+        if (!targetStatusButton) return;
+        if (statusModalInstance) {
+            statusModalInstance.hide();
+        }
+        executeToggleUserStatus(targetStatusButton);
     });
 
     function showToast(message, type) {
@@ -196,15 +275,10 @@
         toast.showToast();
     }
 
-    function toggleUserStatus(button) {
-        if (!confirm('Bạn có chắc muốn thay đổi trạng thái tài khoản này?')) {
-            return;
-        }
-        
+    function executeToggleUserStatus(button) {
         const userId = button.getAttribute('data-id');
-        const isActive = button.getAttribute('data-is-active') === 'true';
         
-        fetch(`/admin/api/users/${userId}/toggle-status`, {
+        fetch('/admin/api/users/' + userId + '/toggle-status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -217,24 +291,27 @@
                 button.setAttribute('data-is-active', newIsActive);
                 
                 const icon = button.querySelector('i');
+                const label = button.querySelector('span');
                 if (newIsActive) {
-                    button.classList.remove('btn-soft-primary');
+                    button.classList.remove('btn-soft-success');
                     button.classList.add('btn-soft-danger');
-                    button.title = 'Khóa tài khoản';
-                    icon.className = 'bi bi-lock-fill';
+                    button.title = 'Khóa tài khoản này';
+                    if (icon) icon.className = 'bi bi-lock-fill';
+                    if (label) label.textContent = 'Khóa';
                 } else {
                     button.classList.remove('btn-soft-danger');
-                    button.classList.add('btn-soft-primary');
-                    button.title = 'Mở khóa';
-                    icon.className = 'bi bi-unlock-fill';
+                    button.classList.add('btn-soft-success');
+                    button.title = 'Mở khóa tài khoản này';
+                    if (icon) icon.className = 'bi bi-unlock-fill';
+                    if (label) label.textContent = 'Mở';
                 }
                 
                 const tr = button.closest('tr');
                 const statusTd = tr.querySelector('td:nth-child(5)');
                 if (newIsActive) {
-                    statusTd.innerHTML = '<span class="badge-pill-soft badge-pill-success"><i class="bi bi-check-circle-fill"></i> Hoạt động</span>';
+                    statusTd.innerHTML = '<span class="badge-pill-soft badge-pill-success text-nowrap"><i class="bi bi-check-circle-fill"></i> Hoạt động</span>';
                 } else {
-                    statusTd.innerHTML = '<span class="badge-pill-soft badge-pill-danger"><i class="bi bi-lock-fill"></i> Đã khóa</span>';
+                    statusTd.innerHTML = '<span class="badge-pill-soft badge-pill-danger text-nowrap"><i class="bi bi-lock-fill"></i> Đã khóa</span>';
                 }
                 
                 showToast(data.message, 'success');

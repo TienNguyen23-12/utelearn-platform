@@ -4,6 +4,7 @@ import vn.edu.ute.utelearn.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.edu.ute.utelearn.dao.RoleRepository;
@@ -14,6 +15,7 @@ import vn.edu.ute.utelearn.entity.User;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -24,6 +26,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -62,6 +65,11 @@ public class UserServiceImpl implements UserService {
 
         User saved = userRepository.save(user);
         log.info("Cập nhật vai trò cho người dùng: username={}, số vai trò={}", saved.getUsername(), updatedRoles.size());
+
+        if (Boolean.FALSE.equals(saved.getIsActive())) {
+            broadcastForceLogout(saved);
+        }
+
         return saved;
     }
 
@@ -72,8 +80,31 @@ public class UserServiceImpl implements UserService {
         if ("admin".equalsIgnoreCase(user.getUsername())) {
             throw new IllegalArgumentException("Không thể khóa tài khoản quản trị viên tối cao!");
         }
-        user.setIsActive(!Boolean.TRUE.equals(user.getIsActive()));
+        boolean newStatus = !Boolean.TRUE.equals(user.getIsActive());
+        user.setIsActive(newStatus);
         userRepository.save(user);
         log.info("Chuyển trạng thái người dùng: username={}, isActive={}", user.getUsername(), user.getIsActive());
+
+        if (!newStatus) {
+            broadcastForceLogout(user);
+        }
+    }
+
+    private void broadcastForceLogout(User user) {
+        try {
+            Object lockMsg = Map.of(
+                "type", "ACCOUNT_LOCKED",
+                "action", "FORCE_LOGOUT",
+                "message", "FORCE_LOGOUT",
+                "userId", user.getId(),
+                "username", user.getUsername()
+            );
+            messagingTemplate.convertAndSend("/topic/notifications/" + user.getId(), lockMsg);
+            messagingTemplate.convertAndSend("/topic/users/" + user.getId() + "/notifications", lockMsg);
+            messagingTemplate.convertAndSend("/topic/account-status/" + user.getId(), lockMsg);
+            messagingTemplate.convertAndSend("/topic/account-status", lockMsg);
+        } catch (Exception ex) {
+            log.warn("Lỗi gửi thông điệp WebSocket khóa tài khoản: {}", ex.getMessage());
+        }
     }
 }
