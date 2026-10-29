@@ -713,9 +713,7 @@ async function toggleCatalogWishlist(event, courseId, btn) {
             } else {
                 icon.className = 'bi bi-heart text-danger';
             }
-            if (typeof Toastify === 'function') {
-                Toastify({ text: data.message, duration: 2500, gravity: 'top', position: 'right' }).showToast();
-            }
+            showToast(data.message, 'success');
         }
     } catch (e) {
         console.error(e);

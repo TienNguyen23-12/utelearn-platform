@@ -1125,6 +1125,46 @@
 <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
 <script th:inline="javascript">
+function showToast(message, type = 'success') {
+    if (typeof Toastify === 'undefined') {
+        alert(message);
+        return;
+    }
+    let iconHtml = '';
+    if (type === 'success') {
+        iconHtml = `<div style="background-color: #00b050; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+    } else if (type === 'warning') {
+        iconHtml = `<div style="background-color: #f5a623; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+    } else if (type === 'info') {
+        iconHtml = `<div style="background-color: #0ea5e9; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>`;
+    } else {
+        iconHtml = `<div style="background-color: #dc3545; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+    }
+
+    let toast = Toastify({
+        text: `<div style="display: flex; align-items: center; gap: 10px;">
+                ${iconHtml}
+                <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">${message}</span>
+               </div>`,
+        escapeMarkup: false,
+        duration: 3000,
+        close: false,
+        gravity: "top",
+        position: "right",
+        style: {
+            background: "white",
+            borderRadius: "30px",
+            boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+            padding: "10px 20px 10px 12px",
+            border: "1px solid #f0f0f0",
+            cursor: "pointer"
+        },
+        onClick: function() {
+            toast.hideToast();
+        }
+    });
+    toast.showToast();
+}
     const moduleId = /*[[${module.id}]]*/ 0;
     const courseSlug = /*[[${course.slug}]]*/ '';
     const moduleCode = /*[[${module.code}]]*/ '';
@@ -1198,7 +1238,7 @@
         const currentLesson = moduleLessons.find(l => l.id === id);
         if (currentLesson && currentLesson.isLocked) {
             if (typeof Toastify !== 'undefined') {
-                Toastify({text: 'Bài học này chưa đến thời gian mở.', style: {background: '#eab308'}}).showToast();
+                showToast('Bài học này chưa đến thời gian mở.', 'warning');
             }
             return;
         }
@@ -1216,12 +1256,12 @@
                 if (data.completed) {
                     if (!completed.includes(id)) completed.push(id);
                     if (typeof Toastify !== 'undefined') {
-                        Toastify({text: 'Chúc mừng! Bạn đã hoàn thành bài học này.', style: {background: '#15803d'}}).showToast();
+                        showToast('Chúc mừng! Bạn đã hoàn thành bài học này.', 'success');
                     }
                 } else {
                     completed = completed.filter(item => item !== id);
                     if (typeof Toastify !== 'undefined') {
-                        Toastify({text: 'Đã hủy đánh dấu hoàn thành bài học.', style: {background: '#64748b'}}).showToast();
+                        showToast('Đã hủy đánh dấu hoàn thành bài học.', 'info');
                     }
                 }
                 localStorage.setItem(storageKey, JSON.stringify(completed));
@@ -2423,7 +2463,7 @@
         const content = input.value.trim();
         if (!content) {
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: 'Vui lòng nhập nội dung ghi chú.', style: { background: '#ef4444' } }).showToast();
+                showToast('Vui lòng nhập nội dung ghi chú.', 'error');
             }
             input.focus();
             return;
@@ -2459,7 +2499,7 @@
 
             if (res.status === 401) {
                 if (typeof Toastify !== 'undefined') {
-                    Toastify({ text: 'Vui lòng đăng nhập để lưu ghi chú.', style: { background: '#f59e0b' } }).showToast();
+                    showToast('Vui lòng đăng nhập để lưu ghi chú.', 'warning');
                 }
                 return;
             }
@@ -2469,19 +2509,14 @@
                 throw new Error(errData.message || 'Lỗi khi lưu ghi chú');
             }
 
-            if (typeof Toastify !== 'undefined') {
-                Toastify({
-                    text: noteId ? 'Đã cập nhật ghi chú!' : 'Đã lưu ghi chú thành công!',
-                    style: { background: '#10b981' }
-                }).showToast();
-            }
+            showToast(noteId ? 'Đã cập nhật ghi chú!' : 'Đã lưu ghi chú thành công!', 'success');
 
             closeNoteForm();
             loadNotesForLesson(lessonId);
         } catch (err) {
             console.error('Lỗi lưu ghi chú:', err);
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: err.message || 'Không thể lưu ghi chú.', style: { background: '#ef4444' } }).showToast();
+                showToast(err.message || 'Không thể lưu ghi chú.', 'error');
             }
         } finally {
             if (btn) btn.disabled = false;
@@ -2608,13 +2643,13 @@
                 throw new Error(errData.message || 'Không thể xóa ghi chú');
             }
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: 'Đã xóa ghi chú!', style: { background: '#64748b' } }).showToast();
+                showToast('Đã xóa ghi chú!', 'info');
             }
             loadNotesForLesson(lessonId);
         } catch (err) {
             console.error('Lỗi xóa ghi chú:', err);
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: err.message || 'Lỗi khi xóa ghi chú.', style: { background: '#ef4444' } }).showToast();
+                showToast(err.message || 'Lỗi khi xóa ghi chú.', 'error');
             }
         }
     }
@@ -2633,15 +2668,7 @@
         if (playerWrapper) {
             playerWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        if (typeof Toastify !== 'undefined') {
-            Toastify({
-                text: 'Đang phát tại ' + formatSecondsToTime(seconds),
-                duration: 2500,
-                gravity: 'top',
-                position: 'right',
-                style: { background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }
-            }).showToast();
-        }
+        showToast('Đang phát tại ' + formatSecondsToTime(seconds), 'info');
     }
 
     function stepLesson(direction) {
@@ -2649,19 +2676,7 @@
         if (newIndex >= 0 && newIndex < moduleLessons.length) {
             loadLessonByIndex(newIndex);
         } else if (direction > 0 && currentLessonIndex === moduleLessons.length - 1) {
-            if (typeof Toastify === 'function') {
-                Toastify({
-                    text: 'Chúc mừng bạn đã hoàn thành bài học cuối cùng trong module!',
-                    duration: 3500,
-                    gravity: 'top',
-                    position: 'right',
-                    style: {
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)'
-                    }
-                }).showToast();
-            }
+            showToast('Chúc mừng bạn đã hoàn thành bài học cuối cùng trong module!', 'success');
         }
     }
 
@@ -4370,7 +4385,7 @@
 
         if (currentAssignmentData && currentAssignmentData.isPastDeadline && currentAssignmentData.allowLateSubmission === false) {
             const msg = 'Bài tập đã quá hạn nộp và không cho phép nộp trễ!';
-            if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+            if (typeof Toastify !== 'undefined') showToast(msg, 'error');
             else alert(msg);
             return;
         }
@@ -4384,21 +4399,21 @@
         if (allowFile && !allowText) {
             if (!file) {
                 const msg = 'Bài tập này yêu cầu bạn bắt buộc phải đính kèm tệp tin bài làm!';
-                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                if (typeof Toastify !== 'undefined') showToast(msg, 'error');
                 else alert(msg);
                 return;
             }
         } else if (!allowFile && allowText) {
             if (!text) {
                 const msg = 'Bài tập này yêu cầu bạn bắt buộc phải nhập văn bản hoặc liên kết bài làm!';
-                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                if (typeof Toastify !== 'undefined') showToast(msg, 'error');
                 else alert(msg);
                 return;
             }
         } else {
             if (!file && !text) {
                 const msg = 'Vui lòng đính kèm tệp hoặc nhập nội dung bài nộp!';
-                if (typeof Toastify !== 'undefined') Toastify({ text: msg, style: { background: '#dc3545' } }).showToast();
+                if (typeof Toastify !== 'undefined') showToast(msg, 'error');
                 else alert(msg);
                 return;
             }
@@ -4432,7 +4447,7 @@
             })
             .then(submission => {
                 if (typeof Toastify !== 'undefined') {
-                    Toastify({ text: 'Nộp bài tập thành công!', style: { background: '#15803d' } }).showToast();
+                    showToast('Nộp bài tập thành công!', 'success');
                 } else {
                     alert('Nộp bài tập thành công!');
                 }
@@ -4441,7 +4456,7 @@
             })
             .catch(err => {
                 if (typeof Toastify !== 'undefined') {
-                    Toastify({ text: err.message || 'Không thể nộp bài tập', style: { background: '#dc3545' } }).showToast();
+                    showToast(err.message || 'Không thể nộp bài tập', 'error');
                 } else {
                     alert(err.message || 'Không thể nộp bài tập');
                 }
@@ -4472,7 +4487,7 @@
             }
 
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: 'Đã xóa bài nộp thành công!', style: { background: '#10b981' } }).showToast();
+                showToast('Đã xóa bài nộp thành công!', 'success');
             } else {
                 alert('Đã xóa bài nộp thành công!');
             }
@@ -4487,7 +4502,7 @@
             }
         } catch (e) {
             if (typeof Toastify !== 'undefined') {
-                Toastify({ text: 'Lỗi: ' + e.message, style: { background: '#dc3545' } }).showToast();
+                showToast('Lỗi: ' + e.message, 'error');
             } else {
                 alert('Lỗi: ' + e.message);
             }

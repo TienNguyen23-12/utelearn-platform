@@ -842,6 +842,69 @@ public class ModuleDetailFeatureTest {
         org.junit.jupiter.api.Assertions.assertEquals("29/10/2026 03:00", dto.getFormattedReviewedAt());
 
         enrollment.setReviewedAt(null);
+
+
+        enrollment.setReviewedAt(null);
         org.junit.jupiter.api.Assertions.assertEquals("", enrollment.getFormattedReviewedAt());
+    }
+
+    @Test
+    void testGetFeaturedCohortsRankingFormula() {
+        vn.edu.ute.utelearn.service.impl.CohortServiceImpl cohortServiceImpl =
+                new vn.edu.ute.utelearn.service.impl.CohortServiceImpl(
+                        cohortRepository,
+                        cohortScheduleRepository,
+                        null,
+                        null,
+                        cohortMemberRepository,
+                        null,
+                        null,
+                        null
+                );
+
+        User standaloneCreator = User.builder().id(5L).fullName("TS. Nguyễn Văn A").build();
+        Cohort newEmptyCohort = Cohort.builder()
+                .id(100L)
+                .name("Triết học Marx - Lenin")
+                .status("UPCOMING")
+                .maxCapacity(50)
+                .createdBy(standaloneCreator)
+                .createdAt(java.time.Instant.now())
+                .build();
+
+        Cohort popularRatedCohort = Cohort.builder()
+                .id(50L)
+                .name("Nhập môn Cơ sở dữ liệu")
+                .status("ENROLLING")
+                .maxCapacity(40)
+                .course(sampleCourse)
+                .enrollmentStart(java.time.Instant.now().minusSeconds(3600))
+                .enrollmentEnd(java.time.Instant.now().plusSeconds(86400))
+                .studyStart(java.time.Instant.now().plusSeconds(172800))
+                .createdAt(java.time.Instant.now().minusSeconds(86400 * 10))
+                .build();
+
+        org.springframework.data.domain.Page<Cohort> mockPage =
+                new org.springframework.data.domain.PageImpl<>(List.of(newEmptyCohort, popularRatedCohort));
+        when(cohortRepository.searchPublicCohorts(org.mockito.ArgumentMatchers.eq(""), org.mockito.ArgumentMatchers.eq(""), any()))
+                .thenReturn(mockPage);
+
+        when(cohortMemberRepository.countByCohort_Id(100L)).thenReturn(0L);
+        when(cohortMemberRepository.getAverageRatingByCohortId(100L)).thenReturn(null);
+        when(cohortMemberRepository.countRatingsByCohortId(100L)).thenReturn(0L);
+
+        when(cohortMemberRepository.countByCohort_Id(50L)).thenReturn(12L);
+        when(cohortMemberRepository.getAverageRatingByCohortId(50L)).thenReturn(4.8);
+        when(cohortMemberRepository.countRatingsByCohortId(50L)).thenReturn(5L);
+
+        List<Cohort> featured = cohortServiceImpl.getFeaturedCohorts(4);
+
+        org.junit.jupiter.api.Assertions.assertEquals(2, featured.size());
+        org.junit.jupiter.api.Assertions.assertEquals(50L, featured.get(0).getId());
+        org.junit.jupiter.api.Assertions.assertEquals(12L, featured.get(0).getEnrolledCount());
+        org.junit.jupiter.api.Assertions.assertEquals(4.8, featured.get(0).getAverageRating());
+        org.junit.jupiter.api.Assertions.assertEquals(5L, featured.get(0).getRatingCount());
+        org.junit.jupiter.api.Assertions.assertTrue(featured.get(0).getFeaturedScore() > featured.get(1).getFeaturedScore());
+        org.junit.jupiter.api.Assertions.assertEquals("TS. Nguyễn Văn A", featured.get(1).getInstructorDisplayName());
     }
 }

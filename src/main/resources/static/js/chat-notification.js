@@ -112,24 +112,28 @@
 
         const roleText = getRoleLabel(n.senderRole);
         const targetUrl = resolveActionUrl(n);
+        const iconBg = (n.senderRole === 'INSTRUCTOR' || n.senderRole === 'TEACHER') ? '#00b050' : '#0ea5e9';
+        const iconHtml = `<div style="background-color: ${iconBg}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
         Toastify({
-            text: `💬 [${n.cohortName}] ${roleText} ${n.senderName}: ${n.message}`,
-            duration: 6000,
-            close: true,
+            text: `<div style="display: flex; align-items: center; gap: 10px;">
+                    ${iconHtml}
+                    <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">[${escapeHtml(n.cohortName)}] ${escapeHtml(roleText)} ${escapeHtml(n.senderName)}: ${escapeHtml(n.message)}</span>
+                   </div>`,
+            escapeMarkup: false,
+            duration: 5000,
+            close: false,
             gravity: 'top',
             position: 'right',
             destination: targetUrl,
             newWindow: false,
             style: {
-                background: (n.senderRole === 'INSTRUCTOR' || n.senderRole === 'TEACHER')
-                    ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                    : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
-                borderRadius: '14px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
-                fontSize: '13px',
-                fontWeight: '500',
-                padding: '12px 18px',
-                cursor: 'pointer'
+                background: 'white',
+                borderRadius: '30px',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                padding: '10px 20px 10px 12px',
+                border: '1px solid #f0f0f0',
+                cursor: 'pointer',
+                maxWidth: '420px'
             }
         }).showToast();
     }

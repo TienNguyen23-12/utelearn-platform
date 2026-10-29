@@ -210,9 +210,12 @@ public class OrderController {
         }
 
         try {
+            log.info("[OrderController] Người dùng {} yêu cầu hủy đơn hàng: {}", user.getUsername(), orderCode);
             orderService.cancelOrder(order.getId(), "Người dùng tự hủy trên giao diện");
+            log.info("[OrderController] Đã hủy thành công đơn hàng: {}", orderCode);
             redirectAttributes.addFlashAttribute("success", "Đã hủy đơn hàng " + orderCode + " thành công.");
         } catch (Exception e) {
+            log.error("[OrderController] Lỗi khi hủy đơn hàng {}: {}", orderCode, e.getMessage());
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
 

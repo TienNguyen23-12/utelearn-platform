@@ -57,8 +57,14 @@ public class HomeController {
 
         model.addAttribute("categories", categories);
 
-        org.springframework.data.domain.Page<vn.edu.ute.utelearn.entity.Cohort> latestCohortsPage = cohortService.searchPublicCohorts(null, null, org.springframework.data.domain.PageRequest.of(0, 4, org.springframework.data.domain.Sort.by("id").descending()));
-        model.addAttribute("latestCohorts", latestCohortsPage.getContent());
+        List<vn.edu.ute.utelearn.entity.Cohort> featuredCohorts = cohortService.getFeaturedCohorts(4);
+        if (featuredCohorts == null || featuredCohorts.isEmpty()) {
+            org.springframework.data.domain.Page<vn.edu.ute.utelearn.entity.Cohort> latestCohortsPage =
+                    cohortService.searchPublicCohorts(null, null, org.springframework.data.domain.PageRequest.of(0, 4, org.springframework.data.domain.Sort.by("id").descending()));
+            featuredCohorts = latestCohortsPage != null ? latestCohortsPage.getContent() : java.util.Collections.emptyList();
+        }
+        model.addAttribute("latestCohorts", featuredCohorts);
+
 
         return "home";
     }
