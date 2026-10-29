@@ -38,9 +38,14 @@
                     <p class="text-muted small mb-0">Quản trị viên có thể thêm mới vai trò, chỉnh sửa và tick chọn các quyền hạn tương ứng được lưu trong hệ thống</p>
                 </div>
             </div>
-            <a th:href="@{/admin/roles/create}" class="btn btn-gradient-primary">
-                <i class="bi bi-plus-circle-fill me-2"></i>Thêm vai trò mới
-            </a>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/roles/demo}" class="btn btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-play-circle-fill me-1"></i>Demo Phân Quyền Động
+                </a>
+                <a th:href="@{/admin/roles/create}" class="btn btn-gradient-primary">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Thêm vai trò mới
+                </a>
+            </div>
         </div>
 
         <script th:inline="javascript">
@@ -82,8 +87,8 @@
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
-                                    <span th:each="perm : ${role.permissions}" class="badge-pill-soft badge-pill-primary" style="font-size: 11.5px;" th:title="${perm.name}">
-                                        <i class="bi bi-key-fill me-1"></i><span th:text="${perm.code}">COURSE_CREATE</span>
+                                    <span th:each="perm : ${role.permissions}" class="badge-pill-soft badge-pill-primary" style="font-size: 11.5px;" th:title="${perm.code}">
+                                        <i class="bi bi-shield-check me-1"></i><span th:text="${perm.displayName}">Quản lý kho tài nguyên số</span>
                                     </span>
                                     <span th:if="${role.permissions == null || #sets.isEmpty(role.permissions)}" class="text-muted fst-italic small">Chưa gán quyền hạn nào</span>
                                 </div>

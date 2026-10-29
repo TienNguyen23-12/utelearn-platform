@@ -171,11 +171,68 @@ public class QuizServiceImpl implements QuizService {
         return true;
     }
 
+    private List<StudentAnswerDTO> parseDraftAnswers(String json) {
+        if (json == null || json.isBlank() || "[]".equals(json.trim())) {
+            return new ArrayList<>();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<StudentAnswerDTO>>() {});
+        } catch (Exception e) {
+            log.error("[QuizService] Lỗi parse draft answers JSON: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private String serializeDraftAnswers(List<StudentAnswerDTO> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return "[]";
+        }
+        try {
+            return objectMapper.writeValueAsString(answers);
+        } catch (Exception e) {
+            log.error("[QuizService] Lỗi serialize draft answers: {}", e.getMessage());
+            return "[]";
+        }
+    }
+
+    private int calculateRemainingSeconds(Quiz quiz, QuizSubmission sub) {
+        int durationMins = (quiz != null && quiz.getDurationMinutes() != null && quiz.getDurationMinutes() > 0)
+                ? quiz.getDurationMinutes() : 15;
+        int totalDurationSecs = durationMins * 60;
+        if (sub == null || sub.getStartedAt() == null) {
+            return totalDurationSecs;
+        }
+        long elapsed = java.time.Duration.between(sub.getStartedAt(), Instant.now()).getSeconds();
+        return (int) Math.max(0L, totalDurationSecs - elapsed);
+    }
+
+    private boolean isAnswerFilled(StudentAnswerDTO ans) {
+        if (ans == null) {
+            return false;
+        }
+        boolean hasOptions = ans.getSelectedOptionIds() != null && !ans.getSelectedOptionIds().isEmpty();
+        boolean hasText = ans.getTextAnswer() != null && !ans.getTextAnswer().trim().isEmpty();
+        return hasOptions || hasText;
+    }
+
     @Override
+    @Transactional
     public QuizDTO getQuizByLessonId(Long lessonId, Long cohortId, Long userId) {
         Quiz quiz = quizRepository.findByLessonId(lessonId)
                 .orElseThrow(() -> new RuntimeException("Bài kiểm tra chưa được thiết lập cho bài học này"));
+        return buildQuizOverviewDTO(quiz, cohortId, userId);
+    }
 
+    @Override
+    @Transactional
+    public QuizDTO getQuizByIdForAttempt(Long quizId, Long cohortId, Long userId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài kiểm tra ID: " + quizId));
+        return buildQuizOverviewDTO(quiz, cohortId, userId);
+    }
+
+    private QuizDTO buildQuizOverviewDTO(Quiz quiz, Long cohortId, Long userId) {
+        Long lessonId = quiz.getLesson() != null ? quiz.getLesson().getId() : null;
         List<Question> questions = questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quiz.getId());
         BigDecimal totalPoints = questions.stream()
                 .map(q -> q.getPoints() != null ? q.getPoints() : BigDecimal.ONE)
@@ -185,12 +242,37 @@ public class QuizServiceImpl implements QuizService {
         BigDecimal highestScore = null;
         boolean userPassed = false;
         boolean canAttempt = true;
+        boolean hasInProgressAttempt = false;
+        Long activeSubmissionId = null;
+        Integer remainingSeconds = null;
+        Instant activeStartedAt = null;
+        List<StudentAnswerDTO> savedAnswers = new ArrayList<>();
 
         if (userId != null && cohortId != null) {
             List<QuizSubmission> submissions = quizSubmissionRepository
                     .findByQuizIdAndUserIdAndCohortIdOrderBySubmittedAtDesc(quiz.getId(), userId, cohortId);
-            attemptsCount = submissions.size();
             for (QuizSubmission sub : submissions) {
+                if ("IN_PROGRESS".equalsIgnoreCase(sub.getStatus())) {
+                    int remSecs = calculateRemainingSeconds(quiz, sub);
+                    if (remSecs <= 0) {
+                        finalizeExpiredSubmission(quiz, sub);
+                        attemptsCount++;
+                        if (highestScore == null || (sub.getScore() != null && sub.getScore().compareTo(highestScore) > 0)) {
+                            highestScore = sub.getScore();
+                        }
+                        if (Boolean.TRUE.equals(sub.getIsPassed())) {
+                            userPassed = true;
+                        }
+                    } else if (!hasInProgressAttempt) {
+                        hasInProgressAttempt = true;
+                        activeSubmissionId = sub.getId();
+                        remainingSeconds = remSecs;
+                        activeStartedAt = sub.getStartedAt();
+                        savedAnswers = parseDraftAnswers(sub.getAnswers());
+                    }
+                    continue;
+                }
+                attemptsCount++;
                 if (highestScore == null || (sub.getScore() != null && sub.getScore().compareTo(highestScore) > 0)) {
                     highestScore = sub.getScore();
                 }
@@ -198,7 +280,7 @@ public class QuizServiceImpl implements QuizService {
                     userPassed = true;
                 }
             }
-            if (quiz.getMaxAttempts() != null && quiz.getMaxAttempts() > 0 && attemptsCount >= quiz.getMaxAttempts()) {
+            if (!hasInProgressAttempt && quiz.getMaxAttempts() != null && quiz.getMaxAttempts() > 0 && attemptsCount >= quiz.getMaxAttempts()) {
                 canAttempt = false;
             }
         }
@@ -223,8 +305,8 @@ public class QuizServiceImpl implements QuizService {
         String deadlineAtDisplay = null;
         boolean isPastDeadline = false;
 
-        if (cohortId != null) {
-            Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, quiz.getLesson().getId());
+        if (cohortId != null && lessonId != null) {
+            Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, lessonId);
             if (scheduleOpt.isPresent()) {
                 CohortSchedule schedule = scheduleOpt.get();
                 unlockAt = schedule.getFormattedUnlockAt();
@@ -235,7 +317,7 @@ public class QuizServiceImpl implements QuizService {
         }
 
         boolean allowLate = quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true;
-        if (isPastDeadline && !allowLate && !userPassed) {
+        if (!hasInProgressAttempt && isPastDeadline && !allowLate && !userPassed) {
             canAttempt = false;
         }
 
@@ -265,6 +347,11 @@ public class QuizServiceImpl implements QuizService {
                 .deadlineAt(deadlineAt)
                 .deadlineAtDisplay(deadlineAtDisplay)
                 .isPastDeadline(isPastDeadline)
+                .activeSubmissionId(activeSubmissionId)
+                .hasInProgressAttempt(hasInProgressAttempt)
+                .remainingSeconds(remainingSeconds)
+                .startedAt(activeStartedAt)
+                .savedAnswers(savedAnswers)
                 .build();
     }
 
@@ -574,30 +661,225 @@ public class QuizServiceImpl implements QuizService {
         log.info("[QuizService] Đã cập nhật lại thứ tự {} câu hỏi cho Quiz ID: {}", questionIds.size(), quizId);
     }
 
+    private List<Question> reorderQuestionsByDraft(List<Question> questions, List<StudentAnswerDTO> draftAnswers) {
+        if (draftAnswers == null || draftAnswers.isEmpty() || questions == null || questions.isEmpty()) {
+            return questions;
+        }
+        Map<Long, Question> qMap = new LinkedHashMap<>();
+        for (Question q : questions) {
+            qMap.put(q.getId(), q);
+        }
+        List<Question> ordered = new ArrayList<>();
+        for (StudentAnswerDTO ans : draftAnswers) {
+            if (ans.getQuestionId() != null && qMap.containsKey(ans.getQuestionId())) {
+                ordered.add(qMap.remove(ans.getQuestionId()));
+            }
+        }
+        ordered.addAll(qMap.values());
+        return ordered;
+    }
+
+    private void finalizeExpiredSubmission(Quiz quiz, QuizSubmission draftSub) {
+        if (draftSub == null || !"IN_PROGRESS".equalsIgnoreCase(draftSub.getStatus())) {
+            return;
+        }
+        List<StudentAnswerDTO> savedAnswers = parseDraftAnswers(draftSub.getAnswers());
+        List<Question> questions = reorderQuestionsByDraft(
+                new ArrayList<>(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quiz.getId())),
+                savedAnswers);
+        Map<Long, StudentAnswerDTO> studentAnswerMap = new HashMap<>();
+        for (StudentAnswerDTO a : savedAnswers) {
+            if (a.getQuestionId() != null) {
+                studentAnswerMap.put(a.getQuestionId(), a);
+            }
+        }
+
+        BigDecimal totalEarnedPoints = BigDecimal.ZERO;
+        BigDecimal totalPossiblePoints = BigDecimal.ZERO;
+        List<QuestionReviewDTO> reviewList = new ArrayList<>();
+
+        for (Question q : questions) {
+            BigDecimal qPoints = q.getPoints() != null ? q.getPoints() : BigDecimal.ONE;
+            totalPossiblePoints = totalPossiblePoints.add(qPoints);
+            List<QuestionOptionDTO> allOptions = parseOptions(q.getOptions());
+            StudentAnswerDTO ans = studentAnswerMap.get(q.getId());
+            List<String> studentSelectedOptionIds = (ans != null && ans.getSelectedOptionIds() != null)
+                    ? ans.getSelectedOptionIds() : Collections.emptyList();
+            String studentText = (ans != null && ans.getTextAnswer() != null) ? ans.getTextAnswer().trim() : "";
+            boolean isFlagged = ans != null && Boolean.TRUE.equals(ans.getFlagged());
+            boolean isQuestionCorrect = evaluateQuestionAnswer(q, allOptions, studentSelectedOptionIds, studentText);
+            BigDecimal earned = isQuestionCorrect ? qPoints : BigDecimal.ZERO;
+            if (isQuestionCorrect) {
+                totalEarnedPoints = totalEarnedPoints.add(qPoints);
+            }
+            reviewList.add(QuestionReviewDTO.builder()
+                    .questionId(q.getId())
+                    .content(q.getContent())
+                    .questionType(q.getQuestionType() != null ? q.getQuestionType().toUpperCase() : "SINGLE_CHOICE")
+                    .points(qPoints)
+                    .earnedPoints(earned)
+                    .isCorrect(isQuestionCorrect)
+                    .explanation(q.getExplanation())
+                    .options(allOptions)
+                    .studentSelectedOptionIds(studentSelectedOptionIds)
+                    .studentTextAnswer(studentText)
+                    .flagged(isFlagged)
+                    .build());
+        }
+
+        BigDecimal scaledScore = BigDecimal.ZERO;
+        if (totalPossiblePoints.compareTo(BigDecimal.ZERO) > 0) {
+            scaledScore = totalEarnedPoints.multiply(new BigDecimal("10.0"))
+                    .divide(totalPossiblePoints, 2, RoundingMode.HALF_UP);
+        }
+        BigDecimal passingScore = quiz.getPassingScore() != null ? quiz.getPassingScore() : new BigDecimal("5.0");
+        boolean isPassed = scaledScore.compareTo(passingScore) >= 0;
+
+        String answersJson;
+        try {
+            answersJson = objectMapper.writeValueAsString(reviewList);
+        } catch (Exception e) {
+            answersJson = "[]";
+        }
+
+        int durationMins = (quiz.getDurationMinutes() != null && quiz.getDurationMinutes() > 0) ? quiz.getDurationMinutes() : 15;
+        Instant expectedEnd = draftSub.getStartedAt() != null
+                ? draftSub.getStartedAt().plusSeconds(durationMins * 60L)
+                : Instant.now();
+
+        draftSub.setSubmittedAt(expectedEnd.isBefore(Instant.now()) ? expectedEnd : Instant.now());
+        draftSub.setScore(scaledScore);
+        draftSub.setIsPassed(isPassed);
+        draftSub.setStatus("SUBMITTED");
+        draftSub.setAnswers(answersJson);
+        quizSubmissionRepository.save(draftSub);
+        log.info("[QuizService] Tự động thu bài quá giờ cho Submission ID: {}, điểm: {}", draftSub.getId(), scaledScore);
+    }
+
+    private boolean evaluateQuestionAnswer(Question q, List<QuestionOptionDTO> allOptions, List<String> studentSelectedOptionIds, String studentText) {
+        String type = q.getQuestionType() != null ? q.getQuestionType().toUpperCase() : "SINGLE_CHOICE";
+        if ("SINGLE_CHOICE".equals(type) || "TRUE_FALSE".equals(type)) {
+            String correctOptId = allOptions.stream()
+                    .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
+                    .map(QuestionOptionDTO::getId)
+                    .findFirst()
+                    .orElse(null);
+            return correctOptId != null && studentSelectedOptionIds.size() == 1
+                    && correctOptId.equals(studentSelectedOptionIds.get(0));
+        }
+        if ("MULTI_SELECT".equals(type)) {
+            Set<String> correctIds = new HashSet<>(allOptions.stream()
+                    .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
+                    .map(QuestionOptionDTO::getId)
+                    .toList());
+            Set<String> studentIds = new HashSet<>(studentSelectedOptionIds);
+            return !correctIds.isEmpty() && correctIds.equals(studentIds);
+        }
+        if ("FILL_BLANK".equals(type)) {
+            String normalizedStudentText = studentText != null ? studentText.trim() : "";
+            if (normalizedStudentText.isEmpty()) {
+                return false;
+            }
+            for (QuestionOptionDTO opt : allOptions) {
+                if (opt.getText() == null || opt.getText().isBlank()) {
+                    continue;
+                }
+                String raw = opt.getText().trim();
+                if (raw.equalsIgnoreCase(normalizedStudentText)) {
+                    return true;
+                }
+                String[] parts = raw.split("[,;|/]");
+                for (String p : parts) {
+                    if (p.trim().equalsIgnoreCase(normalizedStudentText)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
+    @Transactional
     public QuizDTO startQuiz(Long quizId, Long cohortId, Long userId) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài kiểm tra ID: " + quizId));
 
+        User user = userId != null ? userRepository.findById(userId).orElse(null) : null;
         if (!cohortMemberRepository.existsByCohort_IdAndUser_Id(cohortId, userId)) {
-            User user = userRepository.findById(userId).orElse(null);
             boolean isAdminOrInstructor = user != null && user.getRoles() != null
-                    && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR");
+                    && SecurityUtils.hasRole(user, "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR", "MODERATOR", "ROLE_MODERATOR");
             if (!isAdminOrInstructor) {
                 throw new RuntimeException("Bạn chưa ghi danh vào lớp học này");
             }
         }
 
         Optional<CohortSchedule> scheduleOpt = cohortScheduleRepository.findByCohortIdAndLessonId(cohortId, quiz.getLesson().getId());
+        boolean isPastDeadline = false;
         if (scheduleOpt.isPresent()) {
             CohortSchedule schedule = scheduleOpt.get();
             if (schedule.isLockedNow()) {
                 throw new RuntimeException("Bài kiểm tra chưa đến thời điểm mở khóa");
             }
             if (schedule.getDeadlineAt() != null && Instant.now().isAfter(schedule.getDeadlineAt())) {
+                isPastDeadline = true;
                 if (Boolean.FALSE.equals(quiz.getAllowLateSubmission())) {
                     throw new RuntimeException("Bài kiểm tra đã quá hạn nộp bài và không cho phép làm trễ");
                 }
+            }
+        }
+
+        List<Question> allQuestions = new ArrayList<>(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quizId));
+        BigDecimal totalPoints = allQuestions.stream()
+                .map(q -> q.getPoints() != null ? q.getPoints() : BigDecimal.ONE)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<QuizSubmission> activeDrafts = quizSubmissionRepository
+                .findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(quizId, userId, cohortId, "IN_PROGRESS");
+        if (activeDrafts != null && !activeDrafts.isEmpty()) {
+            QuizSubmission activeDraft = activeDrafts.get(0);
+            int remSecs = calculateRemainingSeconds(quiz, activeDraft);
+            if (remSecs > 0) {
+                List<StudentAnswerDTO> savedAnswers = parseDraftAnswers(activeDraft.getAnswers());
+                List<Question> orderedQuestions = reorderQuestionsByDraft(allQuestions, savedAnswers);
+                if (savedAnswers.isEmpty()) {
+                    savedAnswers = orderedQuestions.stream()
+                            .map(q -> StudentAnswerDTO.builder()
+                                    .questionId(q.getId())
+                                    .selectedOptionIds(new ArrayList<>())
+                                    .textAnswer("")
+                                    .flagged(false)
+                                    .build())
+                            .toList();
+                }
+                List<QuestionDTO> questionDTOs = orderedQuestions.stream()
+                        .map(q -> mapToQuestionDTO(q, false))
+                        .toList();
+                log.info("[QuizService] Khôi phục phiên làm bài đang dở Submission ID: {} cho User ID: {}, còn {} giây",
+                        activeDraft.getId(), userId, remSecs);
+                return QuizDTO.builder()
+                        .id(quiz.getId())
+                        .lessonId(quiz.getLesson().getId())
+                        .title(quiz.getTitle())
+                        .durationMinutes(quiz.getDurationMinutes())
+                        .passingScore(quiz.getPassingScore())
+                        .maxAttempts(quiz.getMaxAttempts())
+                        .totalQuestions(orderedQuestions.size())
+                        .totalPoints(totalPoints)
+                        .questions(questionDTOs)
+                        .unlockAt(scheduleOpt.map(CohortSchedule::getFormattedUnlockAt).orElse(null))
+                        .deadlineAt(scheduleOpt.map(CohortSchedule::getFormattedDeadlineAt).orElse(null))
+                        .deadlineAtDisplay(scheduleOpt.map(CohortSchedule::getDisplayDeadlineAt).orElse(null))
+                        .isPastDeadline(scheduleOpt.map(CohortSchedule::isDeadlinePassed).orElse(false))
+                        .allowLateSubmission(quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true)
+                        .activeSubmissionId(activeDraft.getId())
+                        .hasInProgressAttempt(true)
+                        .remainingSeconds(remSecs)
+                        .startedAt(activeDraft.getStartedAt())
+                        .savedAnswers(savedAnswers)
+                        .build();
+            } else {
+                finalizeExpiredSubmission(quiz, activeDraft);
             }
         }
 
@@ -608,18 +890,45 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
-        List<Question> questions = new ArrayList<>(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quizId));
         if (Boolean.TRUE.equals(quiz.getShuffleQuestions())) {
-            Collections.shuffle(questions);
+            Collections.shuffle(allQuestions);
         }
 
-        BigDecimal totalPoints = questions.stream()
-                .map(q -> q.getPoints() != null ? q.getPoints() : BigDecimal.ONE)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<StudentAnswerDTO> initialAnswers = allQuestions.stream()
+                .map(q -> StudentAnswerDTO.builder()
+                        .questionId(q.getId())
+                        .selectedOptionIds(new ArrayList<>())
+                        .textAnswer("")
+                        .flagged(false)
+                        .build())
+                .toList();
 
-        List<QuestionDTO> questionDTOs = questions.stream()
+        Cohort cohort = cohortId != null ? cohortRepository.findById(cohortId).orElse(Cohort.builder().id(cohortId).build()) : null;
+        User targetUser = user != null ? user : (userId != null ? User.builder().id(userId).build() : null);
+        Instant now = Instant.now();
+
+        QuizSubmission draftSubmission = QuizSubmission.builder()
+                .quiz(quiz)
+                .cohort(cohort)
+                .user(targetUser)
+                .startedAt(now)
+                .submittedAt(now)
+                .isPassed(false)
+                .isLate(isPastDeadline)
+                .status("IN_PROGRESS")
+                .answers(serializeDraftAnswers(initialAnswers))
+                .build();
+
+        QuizSubmission savedDraft = quizSubmissionRepository.save(draftSubmission);
+        Long activeSubId = savedDraft != null ? savedDraft.getId() : draftSubmission.getId();
+        int totalDurationSecs = ((quiz.getDurationMinutes() != null && quiz.getDurationMinutes() > 0) ? quiz.getDurationMinutes() : 15) * 60;
+
+        List<QuestionDTO> questionDTOs = allQuestions.stream()
                 .map(q -> mapToQuestionDTO(q, false))
                 .toList();
+
+        log.info("[QuizService] Bắt đầu phiên làm bài Quiz ID: {} cho User ID: {}, Submission ID: {}",
+                quizId, userId, activeSubId);
 
         return QuizDTO.builder()
                 .id(quiz.getId())
@@ -628,7 +937,7 @@ public class QuizServiceImpl implements QuizService {
                 .durationMinutes(quiz.getDurationMinutes())
                 .passingScore(quiz.getPassingScore())
                 .maxAttempts(quiz.getMaxAttempts())
-                .totalQuestions(questions.size())
+                .totalQuestions(allQuestions.size())
                 .totalPoints(totalPoints)
                 .questions(questionDTOs)
                 .unlockAt(scheduleOpt.map(CohortSchedule::getFormattedUnlockAt).orElse(null))
@@ -636,7 +945,97 @@ public class QuizServiceImpl implements QuizService {
                 .deadlineAtDisplay(scheduleOpt.map(CohortSchedule::getDisplayDeadlineAt).orElse(null))
                 .isPastDeadline(scheduleOpt.map(CohortSchedule::isDeadlinePassed).orElse(false))
                 .allowLateSubmission(quiz.getAllowLateSubmission() != null ? quiz.getAllowLateSubmission() : true)
+                .activeSubmissionId(activeSubId)
+                .hasInProgressAttempt(true)
+                .remainingSeconds(totalDurationSecs)
+                .startedAt(now)
+                .savedAnswers(initialAnswers)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> saveQuizProgress(Long quizId, QuizSubmissionRequestDTO request, Long userId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài kiểm tra ID: " + quizId));
+        Long cohortId = request.getCohortId();
+
+        List<QuizSubmission> activeDrafts = quizSubmissionRepository
+                .findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(quizId, userId, cohortId, "IN_PROGRESS");
+
+        QuizSubmission activeDraft;
+        if (activeDrafts != null && !activeDrafts.isEmpty()) {
+            activeDraft = activeDrafts.get(0);
+        } else {
+            Cohort cohort = cohortRepository.findById(cohortId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin lớp học ID: " + cohortId));
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản học viên ID: " + userId));
+            Instant now = Instant.now();
+            activeDraft = QuizSubmission.builder()
+                    .quiz(quiz)
+                    .cohort(cohort)
+                    .user(user)
+                    .startedAt(now)
+                    .submittedAt(now)
+                    .isPassed(false)
+                    .isLate(false)
+                    .status("IN_PROGRESS")
+                    .answers("[]")
+                    .build();
+        }
+
+        List<StudentAnswerDTO> existingDraftAnswers = parseDraftAnswers(activeDraft.getAnswers());
+        Map<Long, StudentAnswerDTO> incomingMap = new LinkedHashMap<>();
+        if (request.getAnswers() != null) {
+            for (StudentAnswerDTO ans : request.getAnswers()) {
+                if (ans != null && ans.getQuestionId() != null) {
+                    incomingMap.put(ans.getQuestionId(), StudentAnswerDTO.builder()
+                            .questionId(ans.getQuestionId())
+                            .selectedOptionIds(ans.getSelectedOptionIds() != null ? ans.getSelectedOptionIds() : new ArrayList<>())
+                            .textAnswer(ans.getTextAnswer() != null ? ans.getTextAnswer() : "")
+                            .flagged(Boolean.TRUE.equals(ans.getFlagged()))
+                            .build());
+                }
+            }
+        }
+
+        List<StudentAnswerDTO> mergedAnswers = new ArrayList<>();
+        if (!existingDraftAnswers.isEmpty()) {
+            for (StudentAnswerDTO oldAns : existingDraftAnswers) {
+                Long qId = oldAns.getQuestionId();
+                if (qId != null && incomingMap.containsKey(qId)) {
+                    mergedAnswers.add(incomingMap.remove(qId));
+                } else {
+                    mergedAnswers.add(oldAns);
+                }
+            }
+        }
+        mergedAnswers.addAll(incomingMap.values());
+
+        Instant savedAt = Instant.now();
+        activeDraft.setSubmittedAt(savedAt);
+        activeDraft.setStatus("IN_PROGRESS");
+        activeDraft.setAnswers(serializeDraftAnswers(mergedAnswers));
+
+        QuizSubmission saved = quizSubmissionRepository.save(activeDraft);
+        Long subId = saved != null ? saved.getId() : activeDraft.getId();
+
+        int answeredCount = (int) mergedAnswers.stream().filter(this::isAnswerFilled).count();
+        int flaggedCount = (int) mergedAnswers.stream().filter(a -> Boolean.TRUE.equals(a.getFlagged())).count();
+        int remainingSecs = calculateRemainingSeconds(quiz, activeDraft);
+
+        log.info("[QuizService] Đã lưu tiến độ Quiz ID: {} cho User ID: {}, đã làm: {}, đánh cờ: {}",
+                quizId, userId, answeredCount, flaggedCount);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("submissionId", subId);
+        result.put("savedAt", savedAt);
+        result.put("remainingSeconds", remainingSecs);
+        result.put("answeredCount", answeredCount);
+        result.put("flaggedCount", flaggedCount);
+        result.put("status", "IN_PROGRESS");
+        return result;
     }
 
     @Override
@@ -662,13 +1061,29 @@ public class QuizServiceImpl implements QuizService {
             }
         }
 
+        List<QuizSubmission> activeDrafts = quizSubmissionRepository
+                .findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(quizId, userId, cohort.getId(), "IN_PROGRESS");
+        QuizSubmission activeDraft = (activeDrafts != null && !activeDrafts.isEmpty()) ? activeDrafts.get(0) : null;
+
         long existingAttempts = quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(quizId, userId, cohort.getId());
+        if (activeDraft != null && existingAttempts > 0) {
+            existingAttempts = existingAttempts - activeDrafts.size();
+        }
         if (quiz.getMaxAttempts() != null && quiz.getMaxAttempts() > 0 && existingAttempts >= quiz.getMaxAttempts()) {
             throw new RuntimeException("Bạn đã dùng hết số lần làm bài kiểm tra này");
         }
 
-        List<Question> questions = questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quizId);
+        List<StudentAnswerDTO> draftAnswers = activeDraft != null ? parseDraftAnswers(activeDraft.getAnswers()) : Collections.emptyList();
+        List<Question> questions = reorderQuestionsByDraft(
+                new ArrayList<>(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(quizId)),
+                draftAnswers);
+
         Map<Long, StudentAnswerDTO> studentAnswerMap = new HashMap<>();
+        for (StudentAnswerDTO dAns : draftAnswers) {
+            if (dAns.getQuestionId() != null) {
+                studentAnswerMap.put(dAns.getQuestionId(), dAns);
+            }
+        }
         if (request.getAnswers() != null) {
             for (StudentAnswerDTO a : request.getAnswers()) {
                 if (a.getQuestionId() != null) {
@@ -680,6 +1095,8 @@ public class QuizServiceImpl implements QuizService {
         BigDecimal totalEarnedPoints = BigDecimal.ZERO;
         BigDecimal totalPossiblePoints = BigDecimal.ZERO;
         int correctCount = 0;
+        int answeredCount = 0;
+        int flaggedCount = 0;
 
         List<QuestionReviewDTO> reviewList = new ArrayList<>();
 
@@ -693,48 +1110,17 @@ public class QuizServiceImpl implements QuizService {
             List<String> studentSelectedOptionIds = (ans != null && ans.getSelectedOptionIds() != null)
                     ? ans.getSelectedOptionIds() : Collections.emptyList();
             String studentText = (ans != null && ans.getTextAnswer() != null) ? ans.getTextAnswer().trim() : "";
+            boolean isFlagged = ans != null && Boolean.TRUE.equals(ans.getFlagged());
 
-            boolean isQuestionCorrect = false;
-            String type = q.getQuestionType() != null ? q.getQuestionType().toUpperCase() : "SINGLE_CHOICE";
-
-            if ("SINGLE_CHOICE".equals(type) || "TRUE_FALSE".equals(type)) {
-                String correctOptId = allOptions.stream()
-                        .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
-                        .map(QuestionOptionDTO::getId)
-                        .findFirst()
-                        .orElse(null);
-                if (correctOptId != null && studentSelectedOptionIds.size() == 1
-                        && correctOptId.equals(studentSelectedOptionIds.get(0))) {
-                    isQuestionCorrect = true;
-                }
-            } else if ("MULTI_SELECT".equals(type)) {
-                Set<String> correctIds = new HashSet<>(allOptions.stream()
-                        .filter(o -> Boolean.TRUE.equals(o.getIsCorrect()))
-                        .map(QuestionOptionDTO::getId)
-                        .toList());
-                Set<String> studentIds = new HashSet<>(studentSelectedOptionIds);
-                if (!correctIds.isEmpty() && correctIds.equals(studentIds)) {
-                    isQuestionCorrect = true;
-                }
-            } else if ("FILL_BLANK".equals(type)) {
-                String normalizedStudentText = studentText != null ? studentText.trim() : "";
-                for (QuestionOptionDTO opt : allOptions) {
-                    if (opt.getText() == null || opt.getText().isBlank()) continue;
-                    String raw = opt.getText().trim();
-                    if (raw.equalsIgnoreCase(normalizedStudentText)) {
-                        isQuestionCorrect = true;
-                        break;
-                    }
-                    String[] parts = raw.split("[,;|/]");
-                    for (String p : parts) {
-                        if (p.trim().equalsIgnoreCase(normalizedStudentText)) {
-                            isQuestionCorrect = true;
-                            break;
-                        }
-                    }
-                    if (isQuestionCorrect) break;
-                }
+            if (isAnswerFilled(ans)) {
+                answeredCount++;
             }
+            if (isFlagged) {
+                flaggedCount++;
+            }
+
+            boolean isQuestionCorrect = evaluateQuestionAnswer(q, allOptions, studentSelectedOptionIds, studentText);
+            String type = q.getQuestionType() != null ? q.getQuestionType().toUpperCase() : "SINGLE_CHOICE";
 
             BigDecimal earned = isQuestionCorrect ? qPoints : BigDecimal.ZERO;
             if (isQuestionCorrect) {
@@ -753,6 +1139,7 @@ public class QuizServiceImpl implements QuizService {
                     .options(allOptions)
                     .studentSelectedOptionIds(studentSelectedOptionIds)
                     .studentTextAnswer(studentText)
+                    .flagged(isFlagged)
                     .build());
         }
 
@@ -772,20 +1159,39 @@ public class QuizServiceImpl implements QuizService {
             answersJson = "[]";
         }
 
-        QuizSubmission submission = QuizSubmission.builder()
-                .quiz(quiz)
-                .cohort(cohort)
-                .user(user)
-                .startedAt(Instant.now())
-                .submittedAt(Instant.now())
-                .score(scaledScore)
-                .isPassed(isPassed)
-                .isLate(isPastDeadline)
-                .status("SUBMITTED")
-                .answers(answersJson)
-                .build();
+        QuizSubmission submission;
+        if (activeDraft != null) {
+            activeDraft.setSubmittedAt(Instant.now());
+            activeDraft.setScore(scaledScore);
+            activeDraft.setIsPassed(isPassed);
+            activeDraft.setIsLate(isPastDeadline);
+            activeDraft.setStatus("SUBMITTED");
+            activeDraft.setAnswers(answersJson);
+            submission = activeDraft;
+            if (activeDrafts.size() > 1) {
+                for (int i = 1; i < activeDrafts.size(); i++) {
+                    quizSubmissionRepository.delete(activeDrafts.get(i));
+                }
+            }
+        } else {
+            submission = QuizSubmission.builder()
+                    .quiz(quiz)
+                    .cohort(cohort)
+                    .user(user)
+                    .startedAt(Instant.now())
+                    .submittedAt(Instant.now())
+                    .score(scaledScore)
+                    .isPassed(isPassed)
+                    .isLate(isPastDeadline)
+                    .status("SUBMITTED")
+                    .answers(answersJson)
+                    .build();
+        }
 
         QuizSubmission savedSub = quizSubmissionRepository.save(submission);
+        if (savedSub == null) {
+            savedSub = submission;
+        }
         log.info("[QuizService] Học viên ID: {} đã nộp Quiz ID: {}, điểm: {}, đạt: {}",
                 userId, quizId, scaledScore, isPassed);
 
@@ -832,6 +1238,11 @@ public class QuizServiceImpl implements QuizService {
         boolean allowReview = isReviewAllowed(quiz, cohort.getId());
         List<QuestionReviewDTO> returnedReviewList = allowReview ? reviewList : Collections.emptyList();
 
+        Long durationSeconds = null;
+        if (savedSub.getStartedAt() != null && savedSub.getSubmittedAt() != null) {
+            durationSeconds = java.time.Duration.between(savedSub.getStartedAt(), savedSub.getSubmittedAt()).getSeconds();
+        }
+
         return QuizResultDTO.builder()
                 .submissionId(savedSub.getId())
                 .quizId(quiz.getId())
@@ -841,6 +1252,10 @@ public class QuizServiceImpl implements QuizService {
                 .isPassed(isPassed)
                 .totalQuestions(questions.size())
                 .correctCount(correctCount)
+                .answeredCount(answeredCount)
+                .flaggedCount(flaggedCount)
+                .durationSeconds(durationSeconds)
+                .status("SUBMITTED")
                 .startedAt(savedSub.getStartedAt())
                 .submittedAt(savedSub.getSubmittedAt())
                 .attemptNumber(attemptNumber)
@@ -877,6 +1292,11 @@ public class QuizServiceImpl implements QuizService {
 
         Quiz quiz = submission.getQuiz();
         int correctCount = (int) reviewList.stream().filter(r -> Boolean.TRUE.equals(r.getIsCorrect())).count();
+        int flaggedCount = (int) reviewList.stream().filter(r -> Boolean.TRUE.equals(r.getFlagged())).count();
+        int answeredCount = (int) reviewList.stream().filter(r ->
+                (r.getStudentSelectedOptionIds() != null && !r.getStudentSelectedOptionIds().isEmpty())
+                        || (r.getStudentTextAnswer() != null && !r.getStudentTextAnswer().trim().isEmpty())
+        ).count();
         long totalAttempts = quizSubmissionRepository.countByQuizIdAndUserIdAndCohortId(quiz.getId(), submission.getUser().getId(), submission.getCohort().getId());
 
         boolean canRetake = quiz.getMaxAttempts() == null || quiz.getMaxAttempts() <= 0
@@ -905,6 +1325,9 @@ public class QuizServiceImpl implements QuizService {
                 .cohortName(submission.getCohort() != null ? submission.getCohort().getName() : null)
                 .cohortCode(submission.getCohort() != null ? submission.getCohort().getCode() : null)
                 .durationSeconds(durationSeconds)
+                .status(submission.getStatus() != null ? submission.getStatus() : "SUBMITTED")
+                .answeredCount(answeredCount)
+                .flaggedCount(flaggedCount)
                 .score(submission.getScore())
                 .passingScore(quiz.getPassingScore())
                 .isPassed(submission.getIsPassed())
@@ -922,12 +1345,28 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional
     public List<QuizResultDTO> getSubmissionsForQuiz(Long quizId, Long cohortId, Long userId) {
         List<QuizSubmission> subs = quizSubmissionRepository
                 .findByQuizIdAndUserIdAndCohortIdOrderBySubmittedAtDesc(quizId, userId, cohortId);
         List<QuizResultDTO> list = new ArrayList<>();
         for (QuizSubmission s : subs) {
-            boolean allowReview = isReviewAllowed(s.getQuiz(), cohortId);
+            if ("IN_PROGRESS".equalsIgnoreCase(s.getStatus()) && calculateRemainingSeconds(s.getQuiz(), s) <= 0) {
+                finalizeExpiredSubmission(s.getQuiz(), s);
+            }
+            boolean isInProgress = "IN_PROGRESS".equalsIgnoreCase(s.getStatus());
+            int answeredCount = 0;
+            int flaggedCount = 0;
+            if (isInProgress) {
+                List<StudentAnswerDTO> drafts = parseDraftAnswers(s.getAnswers());
+                answeredCount = (int) drafts.stream().filter(this::isAnswerFilled).count();
+                flaggedCount = (int) drafts.stream().filter(a -> Boolean.TRUE.equals(a.getFlagged())).count();
+            }
+            Long durationSeconds = null;
+            if (s.getStartedAt() != null && s.getSubmittedAt() != null) {
+                durationSeconds = java.time.Duration.between(s.getStartedAt(), s.getSubmittedAt()).getSeconds();
+            }
+            boolean allowReview = !isInProgress && isReviewAllowed(s.getQuiz(), cohortId);
             list.add(QuizResultDTO.builder()
                     .submissionId(s.getId())
                     .quizId(quizId)
@@ -937,6 +1376,10 @@ public class QuizServiceImpl implements QuizService {
                     .isPassed(s.getIsPassed())
                     .startedAt(s.getStartedAt())
                     .submittedAt(s.getSubmittedAt())
+                    .durationSeconds(durationSeconds)
+                    .status(s.getStatus() != null ? s.getStatus() : "SUBMITTED")
+                    .answeredCount(answeredCount)
+                    .flaggedCount(flaggedCount)
                     .allowReview(allowReview)
                     .isLate(s.getIsLate())
                     .build());
@@ -984,6 +1427,7 @@ public class QuizServiceImpl implements QuizService {
                     .passingScore(quiz.getPassingScore())
                     .isPassed(s.getIsPassed())
                     .isLate(s.getIsLate())
+                    .status(s.getStatus() != null ? s.getStatus() : "SUBMITTED")
                     .startedAt(s.getStartedAt())
                     .submittedAt(s.getSubmittedAt())
                     .durationSeconds(durationSeconds)

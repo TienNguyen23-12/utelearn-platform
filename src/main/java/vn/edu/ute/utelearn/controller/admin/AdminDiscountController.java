@@ -19,7 +19,7 @@ import java.util.Optional;
 @Slf4j
 @Controller
 @RequestMapping("/admin/discounts")
-@PreAuthorize("hasAnyRole('ADMIN', 'FINANCE')")
+@PreAuthorize("hasAnyAuthority('ORDER_MANAGE', 'ADMIN', 'ROLE_ADMIN', 'FINANCE', 'ROLE_FINANCE') or @rbac.hasPermission('ORDER_MANAGE')")
 @RequiredArgsConstructor
 public class AdminDiscountController {
 

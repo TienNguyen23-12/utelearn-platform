@@ -1229,4 +1229,161 @@ public class QuizFeatureTest {
         assertEquals(102L, list.get(0).getSubmissionId());
         assertEquals(2, list.get(0).getAttemptNumber());
     }
+
+    @Test
+    void testStartQuiz_ResumesInProgressAttemptWithSavedAnswersAndFlags() {
+        Question q1 = Question.builder()
+                .id(101L)
+                .quiz(quiz)
+                .content("Câu 1")
+                .questionType("SINGLE_CHOICE")
+                .points(new BigDecimal("5.0"))
+                .options("[{\"id\":\"opt_1\",\"text\":\"A\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"B\",\"isCorrect\":false}]")
+                .build();
+        Question q2 = Question.builder()
+                .id(102L)
+                .quiz(quiz)
+                .content("Câu 2")
+                .questionType("FILL_BLANK")
+                .points(new BigDecimal("5.0"))
+                .options("[{\"id\":\"opt_1\",\"text\":\"Spring\",\"isCorrect\":true}]")
+                .build();
+
+        QuizSubmission activeDraft = QuizSubmission.builder()
+                .id(777L)
+                .quiz(quiz)
+                .user(student)
+                .cohort(cohort)
+                .startedAt(Instant.now().minusSeconds(120))
+                .status("IN_PROGRESS")
+                .answers("[{\"questionId\":102,\"textAnswer\":\"Spring\",\"flagged\":true},{\"questionId\":101,\"selectedOptionIds\":[\"opt_1\"],\"flagged\":false}]")
+                .build();
+
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(cohortMemberRepository.existsByCohort_IdAndUser_Id(20L, 1L)).thenReturn(true);
+        when(cohortScheduleRepository.findByCohortIdAndLessonId(20L, 40L)).thenReturn(Optional.empty());
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(50L)).thenReturn(List.of(q1, q2));
+        when(quizSubmissionRepository.findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(50L, 1L, 20L, "IN_PROGRESS"))
+                .thenReturn(List.of(activeDraft));
+
+        QuizDTO resumed = quizService.startQuiz(50L, 20L, 1L);
+
+        assertNotNull(resumed);
+        assertTrue(resumed.getHasInProgressAttempt());
+        assertEquals(777L, resumed.getActiveSubmissionId());
+        assertNotNull(resumed.getRemainingSeconds());
+        assertTrue(resumed.getRemainingSeconds() > 0 && resumed.getRemainingSeconds() <= 15 * 60);
+        assertEquals(2, resumed.getQuestions().size());
+        assertEquals(102L, resumed.getQuestions().get(0).getId());
+        assertEquals(101L, resumed.getQuestions().get(1).getId());
+        assertNotNull(resumed.getSavedAnswers());
+        assertEquals(2, resumed.getSavedAnswers().size());
+        assertTrue(resumed.getSavedAnswers().stream().anyMatch(a -> a.getQuestionId().equals(102L) && Boolean.TRUE.equals(a.getFlagged())));
+    }
+
+    @Test
+    void testSaveQuizProgress_PersistsAnswersAndFlaggedCountInRealTime() {
+        Question q1 = Question.builder()
+                .id(101L)
+                .quiz(quiz)
+                .content("Câu 1")
+                .questionType("SINGLE_CHOICE")
+                .points(new BigDecimal("5.0"))
+                .options("[{\"id\":\"opt_1\",\"text\":\"A\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"B\",\"isCorrect\":false}]")
+                .build();
+        Question q2 = Question.builder()
+                .id(102L)
+                .quiz(quiz)
+                .content("Câu 2")
+                .questionType("SINGLE_CHOICE")
+                .points(new BigDecimal("5.0"))
+                .options("[{\"id\":\"opt_1\",\"text\":\"X\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"Y\",\"isCorrect\":false}]")
+                .build();
+
+        QuizSubmission activeDraft = QuizSubmission.builder()
+                .id(778L)
+                .quiz(quiz)
+                .user(student)
+                .cohort(cohort)
+                .startedAt(Instant.now().minusSeconds(30))
+                .status("IN_PROGRESS")
+                .answers("[]")
+                .build();
+
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(quizSubmissionRepository.findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(50L, 1L, 20L, "IN_PROGRESS"))
+                .thenReturn(List.of(activeDraft));
+        when(quizSubmissionRepository.save(any(QuizSubmission.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        QuizSubmissionRequestDTO progressReq = QuizSubmissionRequestDTO.builder()
+                .cohortId(20L)
+                .submissionId(778L)
+                .answers(List.of(
+                        StudentAnswerDTO.builder().questionId(101L).selectedOptionIds(List.of("opt_1")).flagged(true).build(),
+                        StudentAnswerDTO.builder().questionId(102L).selectedOptionIds(Collections.emptyList()).flagged(true).build()
+                ))
+                .build();
+
+        Map<String, Object> savedProgress = quizService.saveQuizProgress(50L, progressReq, 1L);
+
+        assertNotNull(savedProgress);
+        assertEquals(778L, savedProgress.get("submissionId"));
+        assertEquals("IN_PROGRESS", savedProgress.get("status"));
+        assertEquals(1, savedProgress.get("answeredCount"));
+        assertEquals(2, savedProgress.get("flaggedCount"));
+        assertTrue(activeDraft.getAnswers().contains("\"flagged\":true"));
+    }
+
+    @Test
+    void testSubmitQuiz_TransitionsInProgressToSubmittedAndPreservesFlags() {
+        Question q1 = Question.builder()
+                .id(101L)
+                .quiz(quiz)
+                .content("Câu 1")
+                .questionType("SINGLE_CHOICE")
+                .points(new BigDecimal("10.0"))
+                .options("[{\"id\":\"opt_1\",\"text\":\"A\",\"isCorrect\":true},{\"id\":\"opt_2\",\"text\":\"B\",\"isCorrect\":false}]")
+                .build();
+
+        QuizSubmission activeDraft = QuizSubmission.builder()
+                .id(779L)
+                .quiz(quiz)
+                .user(student)
+                .cohort(cohort)
+                .startedAt(Instant.now().minusSeconds(95))
+                .status("IN_PROGRESS")
+                .answers("[{\"questionId\":101,\"selectedOptionIds\":[\"opt_1\"],\"flagged\":true}]")
+                .build();
+
+        when(quizRepository.findById(50L)).thenReturn(Optional.of(quiz));
+        when(cohortRepository.findById(20L)).thenReturn(Optional.of(cohort));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(cohortScheduleRepository.findByCohortIdAndLessonId(20L, 40L)).thenReturn(Optional.empty());
+        when(questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(50L)).thenReturn(List.of(q1));
+        when(quizSubmissionRepository.findByQuizIdAndUserIdAndCohortIdAndStatusOrderByStartedAtDesc(50L, 1L, 20L, "IN_PROGRESS"))
+                .thenReturn(List.of(activeDraft));
+        when(quizSubmissionRepository.save(any(QuizSubmission.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(lessonCompletionRepository.existsByCohort_IdAndLesson_IdAndUser_Id(20L, 40L, 1L)).thenReturn(false);
+
+        QuizSubmissionRequestDTO submitReq = QuizSubmissionRequestDTO.builder()
+                .cohortId(20L)
+                .submissionId(779L)
+                .answers(List.of(
+                        StudentAnswerDTO.builder().questionId(101L).selectedOptionIds(List.of("opt_1")).flagged(true).build()
+                ))
+                .build();
+
+        QuizResultDTO finalResult = quizService.submitQuiz(50L, submitReq, 1L);
+
+        assertNotNull(finalResult);
+        assertEquals("SUBMITTED", finalResult.getStatus());
+        assertEquals(0, new BigDecimal("10.00").compareTo(finalResult.getScore()));
+        assertTrue(finalResult.getIsPassed());
+        assertEquals(1, finalResult.getFlaggedCount());
+        assertEquals(1, finalResult.getAnsweredCount());
+        assertNotNull(finalResult.getDurationSeconds());
+        assertTrue(finalResult.getDurationSeconds() >= 90);
+        assertFalse(finalResult.getReviewQuestions().isEmpty());
+        assertTrue(finalResult.getReviewQuestions().get(0).getFlagged());
+    }
 }

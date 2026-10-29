@@ -44,7 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequestMapping("/admin/orders")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'FINANCE', 'ROLE_FINANCE')")
+@PreAuthorize("hasAnyAuthority('ORDER_MANAGE', 'ADMIN', 'ROLE_ADMIN', 'FINANCE', 'ROLE_FINANCE') or @rbac.hasPermission('ORDER_MANAGE')")
 public class AdminOrderController {
 
     private final OrderService orderService;

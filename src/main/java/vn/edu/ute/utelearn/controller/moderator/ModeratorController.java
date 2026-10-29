@@ -39,7 +39,7 @@ public class ModeratorController {
     private final vn.edu.ute.utelearn.security.RbacHelper rbacHelper;
 
     @GetMapping("/queue")
-    @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
+    @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
     public String viewQueue(Model model, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
@@ -72,7 +72,7 @@ public class ModeratorController {
 
     @GetMapping("/review/{taskId}")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
+    @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
     public String reviewTask(@PathVariable Long taskId, Model model, RedirectAttributes redirectAttributes) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {

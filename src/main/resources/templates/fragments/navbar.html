@@ -103,37 +103,18 @@
                                 <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                             </div>
                         </li>
-                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i
+                                                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i
                                     class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
-                        <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều
-                                khiển</a></li>
+                        <li th:if="${@rbac.hasAnyPermission('USER_MANAGE', 'ROLE_MANAGE', 'CONTENT_APPROVE', 'COURSE_CREATE', 'ORDER_MANAGE', 'ASSET_MANAGE') or @rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i
                                     class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                        <li th:if="${@rbac.hasRole('STUDENT') or @rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/orders"><i
                                     class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
                         <li><a class="dropdown-item py-2 small rounded-3" href="/cart"><i
                                     class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
-                        <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/admin/orders"><i
-                                    class="bi bi-credit-card-2-front me-2 text-primary"></i>Quản lý Đơn hàng</a></li>
-                        <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/courses/my-courses"><i
-                                    class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
-                        <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}"><a
-                                class="dropdown-item py-2 small rounded-3" href="/instructor/courses"><i
-                                    class="bi bi-easel-fill me-2 text-success"></i>Quản lý Đào tạo</a></li>
-                        <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/moderator/queue"><i class="bi bi-check2-circle me-2 text-danger"></i>Hàng đợi
-                                Kiểm duyệt</a></li>
-                        <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/admin/users"><i class="bi bi-people-fill me-2 text-info"></i>Quản lý Tài
-                                khoản</a></li>
-                        <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/admin/roles"><i class="bi bi-shield-lock-fill me-2 text-warning"></i>Phân quyền
-                                Hệ thống</a></li>
-                        <li th:if="${@rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
-                                href="/admin/categories"><i class="bi bi-tags-fill me-2 text-success"></i>Danh mục Khóa học</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
@@ -259,40 +240,24 @@
                                     <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                                 </div>
                             </li>
-                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i
+                                                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i
+                                        class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
+                            <li th:if="${@rbac.hasAnyPermission('USER_MANAGE', 'ROLE_MANAGE', 'CONTENT_APPROVE', 'COURSE_CREATE', 'ORDER_MANAGE', 'ASSET_MANAGE') or @rbac.hasRole('ADMIN')}">
+                                <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
+                                    href="/dashboard">
+                                    <i class="bi bi-grid-1x2-fill me-2"></i>Bảng điều khiển
+                                </a>
+                            </li>
+                            <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i
                                         class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                            <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1"
+                            <li th:if="${@rbac.hasRole('STUDENT') or @rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
                                     href="/courses/my-courses"><i
                                         class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a>
                             </li>
-                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i
+                            <li><a class="dropdown-item py-2 small rounded-3" href="/orders"><i
                                         class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
-                            <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/cart"><i
+                            <li><a class="dropdown-item py-2 small rounded-3" href="/cart"><i
                                         class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
-                            <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
-                                <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
-                                    href="/admin/orders">
-                                    <i class="bi bi-credit-card-2-front me-2"></i>Quản lý Đơn hàng
-                                </a>
-                            </li>
-                            <li th:if="${@rbac.hasRole('ADMIN')}">
-                                <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold"
-                                    href="/dashboard">
-                                    <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
-                                </a>
-                            </li>
-                            <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
-                                <a class="dropdown-item py-2 small rounded-3 text-success fw-semibold"
-                                    href="/instructor/courses">
-                                    <i class="bi bi-easel-fill me-2"></i>Quản lý Đào tạo
-                                </a>
-                            </li>
-                            <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
-                                <a class="dropdown-item py-2 small rounded-3 text-danger fw-semibold"
-                                    href="/moderator/queue">
-                                    <i class="bi bi-check2-circle me-2"></i>Hàng đợi Kiểm duyệt
-                                </a>
-                            </li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>

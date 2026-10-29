@@ -54,6 +54,8 @@ public class CourseController {
     private vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.dao.WishlistRepository wishlistRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.QuizRepository quizRepository;
 
     private Course resolveCourse(String slugOrId) {
         if (slugOrId == null || slugOrId.isBlank() || "standalone".equalsIgnoreCase(slugOrId)) {
@@ -1128,6 +1130,88 @@ public class CourseController {
         model.addAttribute("initialLessonId", initialLessonId);
         userMemberOpt.ifPresent(cm -> model.addAttribute("currentMember", cm));
         return "courses/module-learn";
+    }
+
+    @Transactional(readOnly = true)
+    @GetMapping({
+            "/{slug}/modules/{moduleId}/quizzes/{quizId}/attempt",
+            "/{slug}/module/{moduleId}/quizzes/{quizId}/attempt",
+            "/modules/{moduleId}/quizzes/{quizId}/attempt",
+            "/module/{moduleId}/quizzes/{quizId}/attempt"
+    })
+    public String showQuizAttemptPage(@PathVariable(required = false) String slug,
+                                      @PathVariable Long moduleId,
+                                      @PathVariable Long quizId,
+                                      @RequestParam(name = "submissionId", required = false) Long submissionId,
+                                      @RequestParam(name = "mode", required = false) String mode,
+                                      Model model,
+                                      RedirectAttributes redirectAttributes) {
+        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
+        if (currentUserOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+
+        Cohort module = cohortRepository.findById(moduleId).orElse(null);
+        if (module == null) {
+            return "redirect:/cohorts";
+        }
+
+        Course course = resolveCourse(slug);
+        if (course == null || "standalone".equalsIgnoreCase(slug) || (module.getCourse() != null && !module.getCourse().getId().equals(course.getId()))) {
+            if (module.getCourse() != null) {
+                course = module.getCourse();
+            } else {
+                course = Course.builder()
+                        .id(0L)
+                        .title(module.getName())
+                        .slug("standalone")
+                        .code(module.getCode())
+                        .price(module.getPrice())
+                        .createdBy(module.getCreatedBy())
+                        .build();
+            }
+        }
+
+        String courseSlug = (course.getSlug() != null && !course.getSlug().isBlank()) ? course.getSlug() : "standalone";
+        User user = currentUserOpt.get();
+        boolean isEnrolled = cohortMemberRepository.existsByCohort_IdAndUser_Id(module.getId(), user.getId());
+        boolean hasAccessRole = checkHasAccessRole(user, course, module);
+        if (!isEnrolled && !hasAccessRole) {
+            redirectAttributes.addFlashAttribute("error", "Bạn cần đăng ký module này để làm bài kiểm tra.");
+            return "redirect:/courses/" + courseSlug + "/modules/" + moduleId;
+        }
+
+        vn.edu.ute.utelearn.entity.Quiz quiz = quizRepository != null ? quizRepository.findById(quizId).orElse(null) : null;
+        if (quiz == null) {
+            redirectAttributes.addFlashAttribute("error", "Không tìm thấy bài kiểm tra.");
+            return "redirect:/courses/" + courseSlug + "/modules/" + moduleId + "/learn";
+        }
+
+        Lesson lesson = quiz.getLesson();
+        Long lessonId = lesson != null ? lesson.getId() : null;
+        String backToLearnUrl = "/courses/" + courseSlug + "/modules/" + moduleId + "/learn"
+                + (lessonId != null ? "?lesson=" + lessonId : "");
+
+        boolean isAdmin = vn.edu.ute.utelearn.util.SecurityUtils.isAdmin(user) || (rbacHelper != null && rbacHelper.hasAnyRole("ADMIN", "ROLE_ADMIN"));
+        boolean isInstructor = vn.edu.ute.utelearn.util.SecurityUtils.isInstructor(user) || (rbacHelper != null && rbacHelper.hasAnyRole("INSTRUCTOR", "ROLE_INSTRUCTOR", "TEACHER"));
+        boolean isModerator = vn.edu.ute.utelearn.util.SecurityUtils.isModerator(user) || (rbacHelper != null && rbacHelper.hasAnyRole("MODERATOR", "ROLE_MODERATOR"));
+
+        log.info("[CourseController] Học viên {} mở trang làm bài Quiz {} (Module {})", user.getId(), quizId, moduleId);
+
+        model.addAttribute("currentUser", user);
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isInstructor", isInstructor);
+        model.addAttribute("isModerator", isModerator);
+        model.addAttribute("hasAccessRole", hasAccessRole);
+        model.addAttribute("course", course);
+        model.addAttribute("courseSlug", courseSlug);
+        model.addAttribute("module", module);
+        model.addAttribute("quiz", quiz);
+        model.addAttribute("lesson", lesson);
+        model.addAttribute("backToLearnUrl", backToLearnUrl);
+        model.addAttribute("initialSubmissionId", submissionId);
+        model.addAttribute("initialMode", mode != null ? mode : "attempt");
+        return "courses/quiz-attempt";
     }
 
     @Transactional(readOnly = true)

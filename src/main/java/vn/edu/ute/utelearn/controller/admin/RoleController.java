@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/admin/roles")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+@PreAuthorize("hasAnyAuthority('ROLE_MANAGE', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('ROLE_MANAGE')")
 public class RoleController {
 
     private final RoleService roleService;
@@ -31,6 +31,13 @@ public class RoleController {
         log.info("[RoleController] Truy cap danh sach vai tro");
         model.addAttribute("roles", roleService.getAllRoles());
         return "admin/roles/index";
+    }
+
+    @GetMapping("/demo")
+    public String showDynamicPermissionDemo(Model model) {
+        model.addAttribute("roles", roleService.getAllRoles());
+        model.addAttribute("modulesMap", roleService.getPermissionsGroupedByModule());
+        return "admin/roles/demo";
     }
 
     @GetMapping("/create")

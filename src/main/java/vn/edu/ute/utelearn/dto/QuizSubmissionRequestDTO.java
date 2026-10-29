@@ -17,6 +17,8 @@ public class QuizSubmissionRequestDTO {
     @NotNull(message = "Cohort ID không được để trống")
     private Long cohortId;
 
+    private Long submissionId;
+
     @Builder.Default
     private List<StudentAnswerDTO> answers = new ArrayList<>();
 }
