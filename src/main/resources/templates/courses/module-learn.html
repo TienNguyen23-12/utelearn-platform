@@ -2935,6 +2935,27 @@ function showToast(message, type = 'success') {
                 isChatConnected = true;
                 isConnectingChat = false;
                 updateChatStatus('connected');
+                const curUid = document.body.getAttribute('data-current-user-id');
+                function onLockMsg(msgOutput) {
+                    try {
+                        const p = JSON.parse(msgOutput.body);
+                        if (p && (p.type === 'ACCOUNT_LOCKED' || p.action === 'FORCE_LOGOUT') && (!p.userId || String(p.userId) === String(curUid))) {
+                            window.location.href = '/login?error=account_locked';
+                        }
+                    } catch (e) {}
+                }
+                if (curUid) {
+                    stompClient.subscribe('/topic/notifications/' + curUid, onLockMsg);
+                    stompClient.subscribe('/topic/account-status/' + curUid, onLockMsg);
+                    stompClient.subscribe('/topic/account-status', onLockMsg);
+                }
+                if (!window.__lockCheckInterval) {
+                    window.__lockCheckInterval = setInterval(() => {
+                        fetch('/api/notifications/unread-count').then(r => {
+                            if (r.status === 401) window.location.href = '/login?error=account_locked';
+                        }).catch(() => {});
+                    }, 3000);
+                }
 
                 stompClient.subscribe('/topic/cohort/' + moduleId, function (messageOutput) {
                     try {

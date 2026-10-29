@@ -101,7 +101,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (isApi) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"success\":false,\"message\":\"Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên!\",\"code\":\"ACCOUNT_LOCKED\"}");
+            response.getWriter().write("{\"success\":false,\"message\":\"Tài khoản của bạn đã bị khóa hoặc tạm ngưng hoạt động!\",\"code\":\"ACCOUNT_LOCKED\"}");
         } else {
             response.sendRedirect("/login?error=account_locked");
         }

@@ -49,7 +49,7 @@ public class AuthController {
 
         if (error != null) {
             if ("account_locked".equals(error)) {
-                model.addAttribute("errorMessage", "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên!");
+                model.addAttribute("errorMessage", "Tài khoản của bạn đã bị khóa hoặc tạm ngưng hoạt động!");
             } else if ("unauthorized".equals(error)) {
                 model.addAttribute("errorMessage", "Vui lòng đăng nhập để tiếp tục!");
             } else if ("oauth2_email_missing".equals(error)) {
