@@ -46,4 +46,54 @@ public interface InstructorAssetRepository extends JpaRepository<InstructorAsset
     List<String> findDistinctFolderPathsByInstructor(@Param("instructor") User instructor);
 
     Optional<InstructorAsset> findByIdAndInstructor(Long id, User instructor);
+
+    @Query(value = "SELECT a FROM InstructorAsset a LEFT JOIN FETCH a.instructor WHERE " +
+           "(:isAdmin = true OR a.instructor = :user OR (a.status = 'APPROVED' AND (a.visibility = 'PUBLIC' OR a.visibility = 'COHORT_PUBLIC' OR (:isInstructor = true AND a.visibility = 'DEPARTMENT_SHARED') OR (:userEmailPattern <> '' AND a.sharedEmails LIKE :userEmailPattern)))) " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type) " +
+           "ORDER BY a.createdAt DESC",
+           countQuery = "SELECT count(a) FROM InstructorAsset a WHERE " +
+           "(:isAdmin = true OR a.instructor = :user OR (a.status = 'APPROVED' AND (a.visibility = 'PUBLIC' OR a.visibility = 'COHORT_PUBLIC' OR (:isInstructor = true AND a.visibility = 'DEPARTMENT_SHARED') OR (:userEmailPattern <> '' AND a.sharedEmails LIKE :userEmailPattern)))) " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type)")
+    Page<InstructorAsset> findAccessibleAssets(
+            @Param("user") User user,
+            @Param("isAdmin") boolean isAdmin,
+            @Param("isInstructor") boolean isInstructor,
+            @Param("userEmailPattern") String userEmailPattern,
+            @Param("keyword") String keyword,
+            @Param("type") String type,
+            Pageable pageable);
+
+    @Query(value = "SELECT a FROM InstructorAsset a LEFT JOIN FETCH a.instructor WHERE " +
+           "a.instructor = :user " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type) " +
+           "ORDER BY a.createdAt DESC",
+           countQuery = "SELECT count(a) FROM InstructorAsset a WHERE " +
+           "a.instructor = :user " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type)")
+    Page<InstructorAsset> findMyAssets(
+            @Param("user") User user,
+            @Param("keyword") String keyword,
+            @Param("type") String type,
+            Pageable pageable);
+
+    @Query(value = "SELECT a FROM InstructorAsset a LEFT JOIN FETCH a.instructor WHERE " +
+           "a.instructor <> :user AND a.status = 'APPROVED' AND (a.visibility = 'PUBLIC' OR a.visibility = 'COHORT_PUBLIC' OR (:isInstructor = true AND a.visibility = 'DEPARTMENT_SHARED') OR (:userEmailPattern <> '' AND a.sharedEmails LIKE :userEmailPattern)) " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type) " +
+           "ORDER BY a.createdAt DESC",
+           countQuery = "SELECT count(a) FROM InstructorAsset a WHERE " +
+           "a.instructor <> :user AND a.status = 'APPROVED' AND (a.visibility = 'PUBLIC' OR a.visibility = 'COHORT_PUBLIC' OR (:isInstructor = true AND a.visibility = 'DEPARTMENT_SHARED') OR (:userEmailPattern <> '' AND a.sharedEmails LIKE :userEmailPattern)) " +
+           "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:type = '' OR a.assetType = :type)")
+    Page<InstructorAsset> findSharedAssets(
+            @Param("user") User user,
+            @Param("isInstructor") boolean isInstructor,
+            @Param("userEmailPattern") String userEmailPattern,
+            @Param("keyword") String keyword,
+            @Param("type") String type,
+            Pageable pageable);
 }

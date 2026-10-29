@@ -311,6 +311,8 @@ public class InstructorCurriculumApiController {
             map.put("assetType", a.getAssetType());
             map.put("cloudinaryUrl", a.getCloudinaryUrl());
             map.put("createdAt", a.getCreatedAt());
+            map.put("authorName", a.getInstructor() != null ? a.getInstructor().getFullName() : "");
+            map.put("isOwner", a.getInstructor() != null && a.getInstructor().getId().equals(currentUser.getId()));
             return map;
         }).toList();
 

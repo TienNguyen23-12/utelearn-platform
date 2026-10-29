@@ -29,35 +29,31 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Override
     @Transactional(readOnly = true)
     public Page<InstructorAsset> getAssetsByInstructor(User instructor, String keyword, String type, Pageable pageable) {
+        return getAssets(instructor, keyword, type, "ALL", pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<InstructorAsset> getAssets(User instructor, String keyword, String type, String scope, Pageable pageable) {
         boolean isAdmin = SecurityUtils.isAdmin(instructor);
-        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-        boolean hasType = type != null && !type.trim().isEmpty() && !type.equalsIgnoreCase("ALL");
-        String cleanKeyword = hasKeyword ? keyword.trim() : null;
-        String cleanType = hasType ? type.trim() : null;
+        boolean isInstructor = SecurityUtils.isInstructor(instructor) || (instructor.getRoles() != null && instructor.getRoles().stream().anyMatch(r ->
+                "INSTRUCTOR".equalsIgnoreCase(r.getCode()) || "ROLE_INSTRUCTOR".equalsIgnoreCase(r.getCode()) || "Giảng viên".equalsIgnoreCase(r.getName())));
 
-        if (isAdmin) {
-            if (hasKeyword && hasType) {
-                return assetRepository.findByNameContainingIgnoreCaseAndAssetTypeOrderByCreatedAtDesc(cleanKeyword, cleanType, pageable);
-            }
-            if (hasKeyword) {
-                return assetRepository.findByNameContainingIgnoreCaseOrderByCreatedAtDesc(cleanKeyword, pageable);
-            }
-            if (hasType) {
-                return assetRepository.findByAssetTypeOrderByCreatedAtDesc(cleanType, pageable);
-            }
-            return assetRepository.findAllByOrderByCreatedAtDesc(pageable);
+        String cleanKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : "";
+        String cleanType = (type != null && !type.trim().isEmpty() && !type.equalsIgnoreCase("ALL")) ? type.trim() : "";
+        String emailPattern = (instructor != null && instructor.getEmail() != null && !instructor.getEmail().trim().isEmpty())
+                ? "%" + instructor.getEmail().trim() + "%"
+                : "";
+
+        if ("MINE".equalsIgnoreCase(scope)) {
+            return assetRepository.findMyAssets(instructor, cleanKeyword, cleanType, pageable);
         }
 
-        if (hasKeyword && hasType) {
-            return assetRepository.findByInstructorAndNameContainingIgnoreCaseAndAssetTypeOrderByCreatedAtDesc(instructor, cleanKeyword, cleanType, pageable);
+        if ("SHARED".equalsIgnoreCase(scope)) {
+            return assetRepository.findSharedAssets(instructor, isInstructor, emailPattern, cleanKeyword, cleanType, pageable);
         }
-        if (hasKeyword) {
-            return assetRepository.findByInstructorAndNameContainingIgnoreCaseOrderByCreatedAtDesc(instructor, cleanKeyword, pageable);
-        }
-        if (hasType) {
-            return assetRepository.findByInstructorAndAssetTypeOrderByCreatedAtDesc(instructor, cleanType, pageable);
-        }
-        return assetRepository.findByInstructorOrderByCreatedAtDesc(instructor, pageable);
+
+        return assetRepository.findAccessibleAssets(instructor, isAdmin, isInstructor, emailPattern, cleanKeyword, cleanType, pageable);
     }
 
     @Override
@@ -73,10 +69,12 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     @Override
     @Transactional
     public InstructorAsset saveAssetMetadata(User instructor, String name, String assetType, String folderPath, String visibility, String sharedEmails, String cloudinaryUrl, Long fileSizeBytes) {
+        boolean isAdmin = SecurityUtils.isAdmin(instructor);
         String safeName = (name != null && !name.trim().isEmpty()) ? name.trim() : "Tài nguyên số";
         String safeVisibility = (visibility != null && !visibility.trim().isEmpty()) ? visibility.trim() : "PRIVATE";
         String safeFolder = (folderPath != null && !folderPath.trim().isEmpty()) ? folderPath.trim() : "/";
         Long safeSize = fileSizeBytes != null ? fileSizeBytes : 0L;
+        String initialStatus = isAdmin ? "APPROVED" : "PENDING_MODERATOR";
 
         InstructorAsset asset = InstructorAsset.builder()
                 .instructor(instructor)
@@ -87,7 +85,32 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
                 .folderPath(safeFolder)
                 .visibility(safeVisibility)
                 .sharedEmails(sharedEmails)
+                .status(initialStatus)
                 .build();
+        return assetRepository.save(asset);
+    }
+
+    @Override
+    @Transactional
+    public InstructorAsset updateAssetMetadata(Long assetId, User user, String name, String folderPath, String visibility, String sharedEmails) {
+        InstructorAsset asset = getAssetById(assetId);
+        boolean isOwner = asset.getInstructor() != null && asset.getInstructor().getId().equals(user.getId());
+        boolean isAdmin = SecurityUtils.isAdmin(user);
+        if (!isOwner && !isAdmin) {
+            throw new RuntimeException("Bạn không có quyền chỉnh sửa tài nguyên này");
+        }
+
+        if (name != null && !name.trim().isEmpty()) {
+            asset.setName(name.trim());
+        }
+        if (folderPath != null && !folderPath.trim().isEmpty()) {
+            asset.setFolderPath(folderPath.trim());
+        }
+        if (visibility != null && !visibility.trim().isEmpty()) {
+            asset.setVisibility(visibility.trim());
+        }
+        asset.setSharedEmails(sharedEmails);
+
         return assetRepository.save(asset);
     }
 

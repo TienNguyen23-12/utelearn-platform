@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
@@ -30,7 +30,7 @@
                     <i class="bi bi-arrow-left"></i>
                 </a>
                 <div>
-                    <h3 class="fw-bold mb-1" th:text="${task.itemType == 'COHORT' ? (course != null ? 'Kiểm duyệt Module Khóa học' : 'Kiểm duyệt Module Độc Lập') : 'Kiểm duyệt Khóa học'}">Kiểm duyệt Khóa học</h3>
+                    <h3 class="fw-bold mb-1" th:text="${task.itemType == 'COHORT' ? (course != null ? 'Kiểm duyệt Module Khóa học' : 'Kiểm duyệt Module Độc Lập') : (task.itemType == 'ASSET' ? 'Kiểm duyệt Tài nguyên số' : 'Kiểm duyệt Khóa học')}">Kiểm duyệt Khóa học</h3>
                     <div class="d-flex align-items-center gap-2">
                         <p class="text-muted mb-0">Task #<span th:text="${task.id}"></span> - Tác giả: <span th:text="${task.author?.fullName}"></span></p>
                         <span th:if="${task.deadlineAt != null}" class="badge bg-info-subtle text-info border">
@@ -42,14 +42,30 @@
                     </div>
                 </div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2" th:if="${task.status == 'PENDING' || task.status == 'ESCALATED'}">
                 <button class="btn btn-outline-danger" onclick="openRejectModal()" th:disabled="${isSelfAuthored}"><i class="bi bi-x-circle me-1"></i> Từ chối</button>
                 <button class="btn btn-outline-warning" onclick="openEscalateModal()" th:if="${task.status != 'ESCALATED'}" th:disabled="${isSelfAuthored}"><i class="bi bi-arrow-up-circle me-1"></i> Chuyển Admin</button>
                 <button class="btn btn-outline-info" onclick="openReassignModal()" th:if="${@rbac.hasRole('ADMIN')}" th:disabled="${isSelfAuthored}"><i class="bi bi-arrow-return-left me-1"></i> Chuyển lại Moderator</button>
                 <button class="btn btn-success" onclick="openApproveModal()" th:disabled="${isSelfAuthored}"><i class="bi bi-check-circle me-1"></i> Phê duyệt</button>
             </div>
+            <div class="d-flex align-items-center gap-2" th:unless="${task.status == 'PENDING' || task.status == 'ESCALATED'}">
+                <span th:if="${task.status == 'APPROVED'}" class="badge bg-success-subtle text-success border px-3 py-2 rounded-pill fs-6"><i class="bi bi-check-circle-fill me-1"></i> Đã phê duyệt</span>
+                <span th:if="${task.status == 'REJECTED'}" class="badge bg-danger-subtle text-danger border px-3 py-2 rounded-pill fs-6"><i class="bi bi-x-circle-fill me-1"></i> Đã từ chối</span>
+            </div>
         </div>
 
+        <div th:if="${task.status == 'APPROVED' or task.status == 'REJECTED'}" class="alert border-0 shadow-sm rounded-4 mb-4" th:classappend="${task.status == 'APPROVED'} ? 'alert-success' : 'alert-danger'">
+            <div class="d-flex align-items-center">
+                <i class="bi fs-3 me-3" th:classappend="${task.status == 'APPROVED'} ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'"></i>
+                <div>
+                    <h6 class="fw-bold mb-1" th:text="${task.status == 'APPROVED' ? 'Nội dung đã được phê duyệt' : 'Nội dung đã bị từ chối'}">Kết quả kiểm duyệt</h6>
+                    <p class="mb-0 small text-dark">
+                        Kiểm duyệt viên: <strong><span th:text="${task.assignedTo != null ? task.assignedTo.fullName : 'Kiểm duyệt viên'}"></span></strong>
+                        <span th:if="${task.feedback != null && !task.feedback.isBlank()}"> • Phản hồi: <strong th:text="${task.feedback}"></strong></span>
+                    </p>
+                </div>
+            </div>
+        </div>
         <div th:if="${task.status == 'ESCALATED'}" class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center">
             <i class="bi bi-shield-exclamation fs-3 text-danger me-3"></i>
             <div>
@@ -108,6 +124,34 @@
                     </a>
                 </div>
 
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${task.itemType == 'ASSET' and asset != null}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Tài nguyên số</h5>
+                        <span class="badge border font-monospace" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;" th:text="${asset.assetType}">TYPE</span>
+                    </div>
+                    <div class="alert alert-light border small py-2 px-3 rounded-3 mb-3">
+                        <i class="bi bi-folder2-open me-1 text-primary"></i> Thư mục: <strong th:text="${asset.folderPath}"></strong>
+                    </div>
+                    <h6 class="fw-bold text-break" th:text="${asset.name}">Tên tài nguyên</h6>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Dung lượng</span>
+                        <span class="fw-bold text-primary" th:text="${(asset.fileSizeBytes != null ? asset.fileSizeBytes : 0) / 1024 + ' KB'}">0 KB</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Quyền xem</span>
+                        <span class="badge bg-secondary" th:text="${asset.visibility == 'PRIVATE' ? 'Chỉ mình tôi' : (asset.visibility == 'DEPARTMENT_SHARED' ? 'Chia sẻ Bộ môn' : 'Công khai')}">Quyền xem</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" th:if="${asset.sharedEmails != null and !asset.sharedEmails.blank}">
+                        <span class="text-muted small">Email chia sẻ</span>
+                        <span class="small text-truncate" style="max-width: 150px;" th:text="${asset.sharedEmails}"></span>
+                    </div>
+                    <hr>
+                    <a th:href="@{|/assets/${asset.id}/download|}" target="_blank" class="btn btn-primary w-100 rounded-3 shadow-sm mt-2">
+                        <i class="bi bi-box-arrow-up-right me-2"></i> Mở / Tải tài nguyên
+                    </a>
+                </div>
+
                 <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:if="${task.itemType == 'COHORT' and cohort != null}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0" th:text="${course != null ? 'Module khóa học' : 'Module bán lẻ độc lập'}">Module bán lẻ độc lập</h5>
@@ -139,7 +183,25 @@
             </div>
             
             <div class="col-lg-8">
-                <div class="card card-custom border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4 mb-4" th:if="${task.itemType == 'ASSET' and asset != null}">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-play text-primary me-2"></i>Xem trước tài nguyên thẩm định</h5>
+                    <div class="mb-3 text-center" th:if="${asset.assetType == 'VIDEO'}">
+                        <video controls style="max-width: 100%; max-height: 420px; border-radius: 12px;" th:src="${asset.cloudinaryUrl}"></video>
+                    </div>
+                    <div class="mb-3 text-center" th:if="${asset.assetType == 'IMAGE'}">
+                        <img style="max-width: 100%; max-height: 420px; border-radius: 12px;" th:src="${asset.cloudinaryUrl}" alt="Preview">
+                    </div>
+                    <div class="p-4 bg-light rounded-3 text-center" th:if="${asset.assetType != 'VIDEO' and asset.assetType != 'IMAGE'}">
+                        <i class="bi bi-file-earmark-text text-primary display-4 mb-2 d-block"></i>
+                        <h6 class="fw-bold" th:text="${asset.name}">Tài liệu</h6>
+                        <p class="text-muted small mb-3">Tài liệu số được lưu trữ tối ưu trên hệ thống Cloudinary CDN.</p>
+                        <a th:href="@{|/assets/${asset.id}/download|}" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="bi bi-download me-1"></i> Tải xuống và xem tài liệu
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4 mb-4" th:unless="${task.itemType == 'ASSET'}">
                     <h5 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Giới thiệu & Mục tiêu đào tạo</h5>
                     <div class="mb-3">
                         <label class="form-label text-muted small fw-semibold">Mô tả nội dung</label>
@@ -157,7 +219,7 @@
                     </div>
                 </div>
 
-                <div class="card card-custom border-0 shadow-sm rounded-4 p-4">
+                <div class="card card-custom border-0 shadow-sm rounded-4 p-4" th:unless="${task.itemType == 'ASSET'}">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Giáo trình & Bài giảng Thẩm định</h5>
                         <div class="d-flex align-items-center gap-2">

@@ -57,6 +57,9 @@ public class ModerationFeatureTest {
     @Mock
     private vn.edu.ute.utelearn.service.NotificationService notificationService;
 
+    @Mock
+    private vn.edu.ute.utelearn.dao.InstructorAssetRepository assetRepository;
+
     @InjectMocks
     private ModerationServiceImpl moderationService;
 

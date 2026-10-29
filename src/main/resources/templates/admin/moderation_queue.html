@@ -61,7 +61,8 @@
                         <td>
                             <span th:if="${task.itemType == 'COURSE'}" class="badge bg-primary-subtle text-primary border"><i class="bi bi-book me-1"></i>Khóa học</span>
                             <span th:if="${task.itemType == 'COHORT'}" class="badge bg-success-subtle text-success border"><i class="bi bi-collection me-1"></i>Module lẻ</span>
-                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
+                            <span th:if="${task.itemType == 'ASSET'}" class="badge border" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;"><i class="bi bi-file-earmark-arrow-up me-1"></i>Tài nguyên số</span>
+                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT' or task.itemType == 'ASSET'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
                         </td>
                         <td th:text="${task.author?.fullName}">Giảng viên</td>
                         <td>
