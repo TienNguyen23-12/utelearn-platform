@@ -384,6 +384,14 @@ public class ModerationServiceImpl implements ModerationService {
     }
 
     @Override
+    public void cleanupTasksForItem(String itemType, Long itemId) {
+        if (itemType != null && itemId != null) {
+            moderationTaskRepository.deleteByItemTypeAndItemId(itemType, itemId);
+            log.info("[ModerationService] Đã dọn dẹp các nhiệm vụ kiểm duyệt cho {} ID: {}", itemType, itemId);
+        }
+    }
+
+    @Override
     public String resolveItemTitle(String itemType, Long itemId) {
         if (itemId == null) {
             return "";

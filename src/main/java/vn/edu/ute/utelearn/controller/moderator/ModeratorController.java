@@ -143,7 +143,16 @@ public class ModeratorController {
         model.addAttribute("moderators", activeModerators);
 
         if ("COURSE".equals(task.getItemType())) {
-            Course course = courseService.getCourseById(task.getItemId());
+            Course course = null;
+            try {
+                course = courseService.getCourseById(task.getItemId());
+            } catch (Exception e) {
+                log.warn("[ModeratorController] Không tìm thấy khóa học id {} của task {}", task.getItemId(), taskId);
+            }
+            if (course == null) {
+                redirectAttributes.addFlashAttribute("error", "Khóa học này đã bị xóa hoặc không còn tồn tại trên hệ thống.");
+                return "redirect:/moderator/queue";
+            }
             model.addAttribute("course", course);
             List<Section> sections = sectionService.getSectionsByCourseId(course.getId());
             model.addAttribute("sections", sections);
@@ -162,7 +171,11 @@ public class ModeratorController {
             model.addAttribute("totalDraftLessons", totalDraftLessons);
             return "moderator/review_course";
         } else if ("COHORT".equals(task.getItemType())) {
-            Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
+            Cohort cohort = cohortRepository.findById(task.getItemId()).orElse(null);
+            if (cohort == null) {
+                redirectAttributes.addFlashAttribute("error", "Module này đã bị xóa hoặc không còn tồn tại trên hệ thống.");
+                return "redirect:/moderator/queue";
+            }
             model.addAttribute("cohort", cohort);
             if (cohort.getCourse() != null) {
                 Course course = courseService.getCourseById(cohort.getCourse().getId());

@@ -33,6 +33,8 @@ public interface ModerationTaskRepository extends JpaRepository<ModerationTask, 
 
     List<ModerationTask> findByItemTypeAndItemIdAndStatusIn(String itemType, Long itemId, Collection<String> statuses);
 
+    void deleteByItemTypeAndItemId(String itemType, Long itemId);
+
     @EntityGraph(attributePaths = {"assignedTo", "escalatedBy"})
     @org.springframework.data.jpa.repository.Query("SELECT t FROM ModerationTask t")
     List<ModerationTask> findAllWithAssignees();

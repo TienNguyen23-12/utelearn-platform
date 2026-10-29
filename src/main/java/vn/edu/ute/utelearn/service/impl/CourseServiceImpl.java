@@ -31,6 +31,7 @@ public class CourseServiceImpl implements CourseService {
     private final vn.edu.ute.utelearn.dao.UserRepository userRepository;
     private final vn.edu.ute.utelearn.service.ModerationService moderationService;
     private final vn.edu.ute.utelearn.service.AuthService authService;
+    private final vn.edu.ute.utelearn.dao.EnrollmentRepository enrollmentRepository;
 
     @Override
     public Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Pageable pageable) {
@@ -216,7 +217,14 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public void deleteCourse(Long id) {
         Course course = getCourseById(id);
+        if (enrollmentRepository != null && enrollmentRepository.countByCourse_Id(id) > 0) {
+            throw new RuntimeException("Không thể xóa khóa học đã có học viên đăng ký!");
+        }
+        if (moderationService != null) {
+            moderationService.cleanupTasksForItem("COURSE", id);
+        }
         courseRepository.delete(course);
+        log.info("[CourseService] Đã xóa khóa học ID: {}", id);
     }
 
     @Override
@@ -228,7 +236,16 @@ public class CourseServiceImpl implements CourseService {
             throw new RuntimeException("Bạn không có quyền xóa khóa học này");
         }
 
+        if (enrollmentRepository != null && enrollmentRepository.countByCourse_Id(id) > 0) {
+            throw new RuntimeException("Không thể xóa khóa học đã có học viên đăng ký!");
+        }
+
+        if (moderationService != null) {
+            moderationService.cleanupTasksForItem("COURSE", id);
+        }
+
         courseRepository.delete(course);
+        log.info("[CourseService] Giảng viên ID: {} đã xóa khóa học ID: {}", instructorId, id);
     }
 
     @Override

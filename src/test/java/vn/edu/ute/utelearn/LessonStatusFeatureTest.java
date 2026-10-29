@@ -244,4 +244,62 @@ public class LessonStatusFeatureTest {
         assertEquals("DRAFT", publishedCourse.getStatus());
         verify(courseRepository, atLeastOnce()).save(publishedCourse);
     }
+
+    @Test
+    void testDeleteDraftLessonDoesNotRevertCourseOrCohort() {
+        when(userRepository.findById(99L)).thenReturn(Optional.of(instructor));
+        Course publishedCourse = Course.builder()
+                .id(10L)
+                .title("Khóa học Java")
+                .status("PUBLISHED")
+                .createdBy(instructor)
+                .build();
+        Section courseSection = Section.builder()
+                .id(2L)
+                .course(publishedCourse)
+                .build();
+        Lesson draftLesson = Lesson.builder()
+                .id(101L)
+                .title("Bài học bản nháp")
+                .status("DRAFT")
+                .section(courseSection)
+                .build();
+
+        when(lessonRepository.findById(101L)).thenReturn(Optional.of(draftLesson));
+
+        lessonServiceImpl.deleteLesson(101L, instructor.getId());
+
+        assertEquals("PUBLISHED", publishedCourse.getStatus());
+        verify(courseRepository, never()).save(publishedCourse);
+        verify(lessonRepository).delete(draftLesson);
+    }
+
+    @Test
+    void testDeletePublishedLessonRevertsCourseToDraft() {
+        when(userRepository.findById(99L)).thenReturn(Optional.of(instructor));
+        Course publishedCourse = Course.builder()
+                .id(10L)
+                .title("Khóa học Java")
+                .status("PUBLISHED")
+                .createdBy(instructor)
+                .build();
+        Section courseSection = Section.builder()
+                .id(2L)
+                .course(publishedCourse)
+                .build();
+        Lesson publishedLesson = Lesson.builder()
+                .id(102L)
+                .title("Bài học chính thức đã xuất bản")
+                .status("PUBLISHED")
+                .section(courseSection)
+                .build();
+
+        when(lessonRepository.findById(102L)).thenReturn(Optional.of(publishedLesson));
+
+        lessonServiceImpl.deleteLesson(102L, instructor.getId());
+
+        assertEquals("DRAFT", publishedCourse.getStatus());
+        verify(courseRepository, atLeastOnce()).save(publishedCourse);
+        verify(lessonRepository).delete(publishedLesson);
+    }
 }
