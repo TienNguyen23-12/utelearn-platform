@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng lương & Cấu hình Thù lao - UTELearn Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar('admin_payroll')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Quản lý Bảng lương & Thù lao')}"></header>
+
+    <main class="app-main-content">
+        <div id="payrollFlashData"
+             th:attr="data-success=${success},data-error=${error}"
+             class="d-none"></div>
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-cash-coin text-success me-2"></i>Quản trị Bảng lương & Công thức Thù lao
+                </h4>
+                <p class="text-muted small mb-0">Thiết lập công thức, tỷ lệ mặc định toàn hệ thống và điều chỉnh chế độ đãi ngộ riêng cho từng Instructor & Moderator</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-primary rounded-pill px-3 shadow-sm fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#globalConfigPanel" aria-expanded="false">
+                    <i class="bi bi-sliders me-1"></i>Cài đặt Công thức Mặc định
+                </button>
+                <a th:href="@{/dashboard}" class="btn btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-grid-1x2 me-1"></i>Bảng điều khiển
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Doanh thu đợt học (Gross)</span>
+                            <h4 class="fw-bold mb-0 text-primary mt-1" th:text="${#numbers.formatDecimal(totalGrossRevenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h4>
+                            <small class="text-muted">Cơ sở chia sẻ thù lao GV</small>
+                        </div>
+                        <div class="bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-graph-up-arrow fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Quỹ lương Giảng viên</span>
+                            <h4 class="fw-bold mb-0 text-success mt-1" th:text="${#numbers.formatDecimal(totalInstructorPayout, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h4>
+                            <small class="text-muted" th:text="'Mặc định: ' + ${globalConfig.instructorSharePercent} + '% doanh thu'"></small>
+                        </div>
+                        <div class="bg-success-subtle text-success rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-mortarboard-fill fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Quỹ lương Kiểm duyệt viên</span>
+                            <h4 class="fw-bold mb-0 text-info mt-1" th:text="${#numbers.formatDecimal(totalModeratorPayout, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h4>
+                            <small class="text-muted" th:text="'Mặc định: ' + ${#numbers.formatDecimal(globalConfig.moderatorMinuteRate, 0, 'COMMA', 0, 'POINT')} + ' đ/phút'"></small>
+                        </div>
+                        <div class="bg-info-subtle text-info rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-shield-check fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Tổng Thực Lĩnh Toàn Hệ Thống</span>
+                            <h4 class="fw-bold mb-0 text-dark mt-1" th:text="${#numbers.formatDecimal(totalPayrollBudget, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</h4>
+                            <small class="text-warning-emphasis fw-semibold" th:text="${customConfigCount} + ' nhân sự có mức riêng'"></small>
+                        </div>
+                        <div class="bg-warning-subtle text-warning-emphasis rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="bi bi-wallet2 fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapse show mb-4" id="globalConfigPanel">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-bold">
+                            <i class="bi bi-gear-fill me-1"></i>MẶC ĐỊNH HỆ THỐNG
+                        </span>
+                        <h6 class="fw-bold mb-0 text-dark">Cài đặt Công thức & Định mức Lương Mặc định</h6>
+                    </div>
+                    <small class="text-muted">Áp dụng tự động cho tất cả Instructor & Moderator chưa có tuỳ chỉnh cá nhân</small>
+                </div>
+                <div class="card-body p-4 bg-white">
+                    <form th:action="@{/admin/payroll/global-config}" method="post">
+                        <input type="hidden" name="period" th:value="${currentPeriod}">
+                        <input type="hidden" name="tab" th:value="${activeTab}">
+
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="p-3 rounded-4 border bg-light-subtle h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <span class="fw-bold text-success"><i class="bi bi-person-video3 me-2"></i>Công thức Lương Giảng viên (Instructor)</span>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Revenue Share + Rating Bonus</span>
+                                    </div>
+                                    <div class="small text-muted bg-white p-2 rounded-3 border mb-3">
+                                        <strong>Công thức:</strong> <code>Thực lĩnh = (Doanh thu × % Chia sẻ) + (Doanh thu × % Thưởng sao nếu ĐTB ≥ Mốc sao) + Phụ cấp</code>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-sm-4">
+                                            <label class="form-label small fw-semibold text-dark mb-1">% Chia sẻ doanh thu</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.5" min="0" max="100" name="instructorSharePercent" class="form-control fw-bold" th:value="${globalConfig.instructorSharePercent}" required>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label small fw-semibold text-dark mb-1">% Thưởng chất lượng</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.5" min="0" max="100" name="instructorRatingBonusPercent" class="form-control fw-bold" th:value="${globalConfig.instructorRatingBonusPercent}" required>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label class="form-label small fw-semibold text-dark mb-1">Mốc sao nhận thưởng</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.1" min="1" max="5" name="instructorRatingThreshold" class="form-control fw-bold" th:value="${globalConfig.instructorRatingThreshold}" required>
+                                                <span class="input-group-text"><i class="bi bi-star-fill text-warning"></i></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="p-3 rounded-4 border bg-light-subtle h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <span class="fw-bold text-info"><i class="bi bi-shield-lock me-2"></i>Công thức Lương Kiểm duyệt (Moderator)</span>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">Workload + OT + KPI - SLA</span>
+                                    </div>
+                                    <div class="small text-muted bg-white p-2 rounded-3 border mb-3">
+                                        <strong>Công thức:</strong> <code>Thực lĩnh = (Phút thường × Đơn giá) + (Phút OT × Đơn giá × Hệ số) + (Bài duyệt × Thưởng) - (Quá hạn × Phạt) + Phụ cấp</code>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-sm-3">
+                                            <label class="form-label small fw-semibold text-dark mb-1">Đơn giá / phút</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="50" min="0" name="moderatorMinuteRate" class="form-control fw-bold" th:value="${globalConfig.moderatorMinuteRate != null ? globalConfig.moderatorMinuteRate.longValue() : 500}" required>
+                                                <span class="input-group-text">đ</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small fw-semibold text-dark mb-1">Hệ số nhân OT</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.1" min="1" max="5" name="moderatorOtMultiplier" class="form-control fw-bold" th:value="${globalConfig.moderatorOtMultiplier}" required>
+                                                <span class="input-group-text">x</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small fw-semibold text-dark mb-1">Thưởng / bài duyệt</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="1000" min="0" name="moderatorTaskBonus" class="form-control fw-bold" th:value="${globalConfig.moderatorTaskBonus != null ? globalConfig.moderatorTaskBonus.longValue() : 10000}" required>
+                                                <span class="input-group-text">đ</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small fw-semibold text-dark mb-1">Phạt trễ SLA / bài</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="1000" min="0" name="moderatorSlaPenalty" class="form-control fw-bold" th:value="${globalConfig.moderatorSlaPenalty != null ? globalConfig.moderatorSlaPenalty.longValue() : 15000}" required>
+                                                <span class="input-group-text">đ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3 pt-3 border-top">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="small fw-semibold text-muted mb-0 text-nowrap">Phụ cấp cố định mặc định (nếu có):</label>
+                                <div class="input-group input-group-sm" style="width: 180px;">
+                                    <input type="number" step="10000" min="0" name="fixedAllowance" class="form-control fw-bold" th:value="${globalConfig.fixedAllowance != null ? globalConfig.fixedAllowance.longValue() : 0}">
+                                    <span class="input-group-text">VNĐ</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i>Lưu Công thức Mặc định
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-bottom p-3">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="nav nav-pills gap-2">
+                        <a th:href="@{/admin/payroll(period=${currentPeriod}, tab='INSTRUCTOR')}"
+                           class="nav-link rounded-pill px-3 py-1.5 small fw-bold d-inline-flex align-items-center gap-2"
+                           th:classappend="${activeTab == 'INSTRUCTOR'} ? 'active' : 'text-dark bg-light'">
+                            <i class="bi bi-mortarboard-fill"></i>
+                            <span>Bảng lương Giảng viên</span>
+                            <span class="badge rounded-pill" th:classappend="${activeTab == 'INSTRUCTOR'} ? 'bg-white text-primary' : 'bg-secondary-subtle text-dark'" th:text="${#lists.size(instructorPayrolls)}">0</span>
+                        </a>
+                        <a th:href="@{/admin/payroll(period=${currentPeriod}, tab='MODERATOR')}"
+                           class="nav-link rounded-pill px-3 py-1.5 small fw-bold d-inline-flex align-items-center gap-2"
+                           th:classappend="${activeTab == 'MODERATOR'} ? 'active' : 'text-dark bg-light'">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Bảng lương Kiểm duyệt viên</span>
+                            <span class="badge rounded-pill" th:classappend="${activeTab == 'MODERATOR'} ? 'bg-white text-primary' : 'bg-secondary-subtle text-dark'" th:text="${#lists.size(moderatorPayrolls)}">0</span>
+                        </a>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="text-muted small fw-semibold"><i class="bi bi-calendar3 me-1"></i>Kỳ tính lương:</span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a th:href="@{/admin/payroll(period='ALL', tab=${activeTab})}"
+                               class="btn rounded-start-pill px-3 fw-semibold"
+                               th:classappend="${currentPeriod == 'ALL'} ? 'btn-primary text-white' : 'btn-outline-secondary'">Tất cả</a>
+                            <a th:each="m, mStat : ${availableMonths}"
+                               th:href="@{/admin/payroll(period=${m}, tab=${activeTab})}"
+                               class="btn px-2.5 fw-semibold"
+                               th:classappend="${(currentPeriod == m ? 'btn-primary text-white ' : 'btn-outline-secondary ') + (mStat.last ? 'rounded-end-pill' : '')}"
+                               th:text="${m}">2026-10</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-0" th:if="${activeTab == 'INSTRUCTOR'}">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4 text-nowrap">Giảng viên</th>
+                                <th class="text-nowrap">Chế độ tính</th>
+                                <th class="text-center text-nowrap">Đợt / Học viên</th>
+                                <th class="text-end text-nowrap">Doanh thu (Gross)</th>
+                                <th class="text-center text-nowrap">% Chia sẻ</th>
+                                <th class="text-end text-nowrap">Thù lao cơ bản</th>
+                                <th class="text-center text-nowrap">Đánh giá & Thưởng</th>
+                                <th class="text-end text-nowrap">Phụ cấp</th>
+                                <th class="text-end text-nowrap">Tổng thực lĩnh</th>
+                                <th class="text-center pe-4 text-nowrap">Tuỳ chỉnh cá nhân</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(instructorPayrolls)}">
+                                <td colspan="10" class="text-center text-muted py-5">Chưa có dữ liệu giảng viên trong hệ thống.</td>
+                            </tr>
+                            <tr th:each="item : ${instructorPayrolls}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"
+                                             th:text="${item.fullName != null and !item.fullName.isEmpty() ? #strings.substring(item.fullName, 0, 1) : 'I'}">I</div>
+                                        <div>
+                                            <div class="fw-bold text-dark" th:text="${item.fullName}">Giảng viên</div>
+                                            <small class="text-muted" th:text="${item.email}">email@ute.edu.vn</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-nowrap">
+                                    <span th:if="${item.hasCustomConfig}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-star-fill me-1"></i>Cá nhân riêng
+                                    </span>
+                                    <span th:unless="${item.hasCustomConfig}" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">
+                                        Mặc định chung
+                                    </span>
+                                    <div th:if="${item.customNote != null and !item.customNote.isBlank()}" class="small text-muted mt-1 text-truncate" style="max-width: 150px;" th:title="${item.customNote}" th:text="${item.customNote}"></div>
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <span class="fw-bold text-dark" th:text="${item.cohortCount} + ' đợt'">0 đợt</span>
+                                    <span class="text-muted mx-1">•</span>
+                                    <span class="badge bg-info-subtle text-info rounded-pill" th:text="${item.studentCount} + ' HV'">0 HV</span>
+                                </td>
+                                <td class="text-end fw-semibold text-dark text-nowrap" th:text="${#numbers.formatDecimal(item.grossRevenue, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-center text-nowrap">
+                                    <span class="badge bg-primary-subtle text-primary fw-bold rounded-pill px-2.5 py-1" th:text="${item.effectiveSharePercent} + '%'">70%</span>
+                                </td>
+                                <td class="text-end fw-semibold text-primary text-nowrap" th:text="${#numbers.formatDecimal(item.baseCommissionAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-center text-nowrap">
+                                    <div th:if="${item.averageRating != null}">
+                                        <span class="fw-bold text-dark"><i class="bi bi-star-fill text-warning me-1"></i><span th:text="${item.averageRating}">4.8</span></span>
+                                        <small class="text-muted" th:text="'(' + ${item.ratingCount} + ')'"></small>
+                                        <div th:if="${item.qualifiedForRatingBonus}" class="small text-success fw-semibold">
+                                            +<span th:text="${#numbers.formatDecimal(item.ratingBonusAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
+                                            (<span th:text="'+' + ${item.effectiveRatingBonusPercent} + '%'">+5%</span>)
+                                        </div>
+                                    </div>
+                                    <span th:if="${item.averageRating == null}" class="text-muted small">Chưa có ĐG</span>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <span th:if="${item.effectiveFixedAllowance != null and item.effectiveFixedAllowance > 0}"
+                                          class="text-success fw-semibold"
+                                          th:text="'+' + ${#numbers.formatDecimal(item.effectiveFixedAllowance, 0, 'COMMA', 0, 'POINT')} + ' đ'">+0 đ</span>
+                                    <span th:unless="${item.effectiveFixedAllowance != null and item.effectiveFixedAllowance > 0}" class="text-muted small">0 đ</span>
+                                </td>
+                                <td class="text-end fw-bold text-success fs-6 text-nowrap" th:text="${#numbers.formatDecimal(item.totalNetPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-center pe-4 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary rounded-pill px-2.5 text-nowrap"
+                                                th:attr="data-user-id=${item.userId},
+                                                         data-full-name=${item.fullName},
+                                                         data-share=${item.customSharePercent != null ? item.customSharePercent : ''},
+                                                         data-bonus-pct=${item.customRatingBonusPercent != null ? item.customRatingBonusPercent : ''},
+                                                         data-threshold=${item.customRatingThreshold != null ? item.customRatingThreshold : ''},
+                                                         data-allowance=${item.customFixedAllowance != null ? item.customFixedAllowance.longValue() : ''},
+                                                         data-note=${item.customNote != null ? item.customNote : ''}"
+                                                onclick="openInstructorConfigModal(this)">
+                                            <i class="bi bi-pencil-square me-1"></i>Sửa cá nhân
+                                        </button>
+                                        <form th:if="${item.hasCustomConfig}"
+                                              th:action="@{/admin/payroll/user-config/{id}/reset(id=${item.userId})}"
+                                              method="post" class="d-inline">
+                                            <input type="hidden" name="period" th:value="${currentPeriod}">
+                                            <input type="hidden" name="tab" value="INSTRUCTOR">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Khôi phục về số mặc định của hệ thống">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-body p-0" th:if="${activeTab == 'MODERATOR'}">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4 text-nowrap">Kiểm duyệt viên</th>
+                                <th class="text-nowrap">Chế độ tính</th>
+                                <th class="text-center text-nowrap">Ngày trực</th>
+                                <th class="text-center text-nowrap">Phút chuẩn / OT</th>
+                                <th class="text-end text-nowrap">Lương ca chuẩn</th>
+                                <th class="text-end text-nowrap">Lương OT</th>
+                                <th class="text-center text-nowrap">KPI Duyệt bài</th>
+                                <th class="text-end text-nowrap">Phạt SLA / Phụ cấp</th>
+                                <th class="text-end text-nowrap">Tổng thực lĩnh</th>
+                                <th class="text-center pe-4 text-nowrap">Tuỳ chỉnh cá nhân</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(moderatorPayrolls)}">
+                                <td colspan="10" class="text-center text-muted py-5">Chưa có dữ liệu kiểm duyệt viên trong hệ thống.</td>
+                            </tr>
+                            <tr th:each="item : ${moderatorPayrolls}">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-info-subtle text-info fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;"
+                                             th:text="${item.fullName != null and !item.fullName.isEmpty() ? #strings.substring(item.fullName, 0, 1) : 'M'}">M</div>
+                                        <div>
+                                            <div class="fw-bold text-dark" th:text="${item.fullName}">Moderator</div>
+                                            <small class="text-muted" th:text="${item.email}">mod@ute.edu.vn</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-nowrap">
+                                    <span th:if="${item.hasCustomConfig}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                        <i class="bi bi-star-fill me-1"></i>Cá nhân riêng
+                                    </span>
+                                    <span th:unless="${item.hasCustomConfig}" class="badge bg-light text-secondary border rounded-pill px-2.5 py-1">
+                                        Mặc định chung
+                                    </span>
+                                    <div th:if="${item.customNote != null and !item.customNote.isBlank()}" class="small text-muted mt-1 text-truncate" style="max-width: 150px;" th:title="${item.customNote}" th:text="${item.customNote}"></div>
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <span class="badge bg-secondary-subtle text-dark rounded-pill px-2.5" th:text="${item.workDaysCount} + ' ngày'">0 ngày</span>
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <div class="fw-semibold text-dark" th:text="${item.regularMinutes} + ' phút'">0 phút</div>
+                                    <small class="text-warning-emphasis fw-semibold" th:if="${item.otMinutes > 0}" th:text="'+' + ${item.otMinutes} + 'p OT (x' + ${item.effectiveOtMultiplier} + ')'"></small>
+                                    <small class="text-muted" th:unless="${item.otMinutes > 0}" th:text="${#numbers.formatDecimal(item.effectiveMinuteRate, 0, 'COMMA', 0, 'POINT')} + ' đ/phút'"></small>
+                                </td>
+                                <td class="text-end fw-semibold text-dark text-nowrap" th:text="${#numbers.formatDecimal(item.regularShiftPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-end fw-semibold text-warning-emphasis text-nowrap" th:text="${#numbers.formatDecimal(item.otShiftPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-center text-nowrap">
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2" th:text="${item.completedTasksCount} + ' bài'">0 bài</span>
+                                    <div class="small text-success fw-semibold mt-1" th:text="'+' + ${#numbers.formatDecimal(item.taskBonusPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">+0 đ</div>
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <div th:if="${item.escalatedTasksCount > 0}" class="text-danger small fw-semibold"
+                                         th:text="'-' + ${#numbers.formatDecimal(item.slaPenaltyAmount, 0, 'COMMA', 0, 'POINT')} + ' đ (' + ${item.escalatedTasksCount} + ' bài)'"></div>
+                                    <div th:if="${item.effectiveFixedAllowance != null and item.effectiveFixedAllowance > 0}" class="text-success small fw-semibold"
+                                         th:text="'+' + ${#numbers.formatDecimal(item.effectiveFixedAllowance, 0, 'COMMA', 0, 'POINT')} + ' đ'"></div>
+                                    <span th:if="${item.escalatedTasksCount == 0 and (item.effectiveFixedAllowance == null or item.effectiveFixedAllowance == 0)}" class="text-muted small">0 đ</span>
+                                </td>
+                                <td class="text-end fw-bold text-success fs-6 text-nowrap" th:text="${#numbers.formatDecimal(item.totalNetPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                <td class="text-center pe-4 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary rounded-pill px-2.5 text-nowrap"
+                                                th:attr="data-user-id=${item.userId},
+                                                         data-full-name=${item.fullName},
+                                                         data-minute-rate=${item.customMinuteRate != null ? item.customMinuteRate.longValue() : ''},
+                                                         data-ot-mult=${item.customOtMultiplier != null ? item.customOtMultiplier : ''},
+                                                         data-task-bonus=${item.customTaskBonus != null ? item.customTaskBonus.longValue() : ''},
+                                                         data-sla-penalty=${item.customSlaPenalty != null ? item.customSlaPenalty.longValue() : ''},
+                                                         data-allowance=${item.customFixedAllowance != null ? item.customFixedAllowance.longValue() : ''},
+                                                         data-note=${item.customNote != null ? item.customNote : ''}"
+                                                onclick="openModeratorConfigModal(this)">
+                                            <i class="bi bi-pencil-square me-1"></i>Sửa cá nhân
+                                        </button>
+                                        <form th:if="${item.hasCustomConfig}"
+                                              th:action="@{/admin/payroll/user-config/{id}/reset(id=${item.userId})}"
+                                              method="post" class="d-inline">
+                                            <input type="hidden" name="period" th:value="${currentPeriod}">
+                                            <input type="hidden" name="tab" value="MODERATOR">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Khôi phục về số mặc định của hệ thống">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal fade" id="instructorConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form th:action="@{/admin/payroll/user-config}" method="post">
+                <input type="hidden" name="userId" id="instModalUserId">
+                <input type="hidden" name="period" th:value="${currentPeriod}">
+                <input type="hidden" name="tab" value="INSTRUCTOR">
+
+                <div class="modal-header border-bottom px-4 py-3">
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0">Tuỳ chỉnh Lương Cá nhân Giảng viên</h6>
+                        <small class="text-primary fw-semibold" id="instModalUserName"></small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 rounded-3 small mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>Ô nào để trống sẽ tự động áp dụng số <strong>Mặc định của hệ thống</strong>.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">% Chia sẻ doanh thu riêng</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.5" min="0" max="100" name="instructorSharePercent" id="instModalShare" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.instructorSharePercent}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">% Thưởng đánh giá riêng</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.5" min="0" max="100" name="instructorRatingBonusPercent" id="instModalBonusPct" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.instructorRatingBonusPercent}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Mốc sao nhận thưởng riêng</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.1" min="1" max="5" name="instructorRatingThreshold" id="instModalThreshold" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.instructorRatingThreshold}">
+                                <span class="input-group-text">sao</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Phụ cấp / Thưởng cố định thêm</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="10000" min="0" name="fixedAllowance" id="instModalAllowance" class="form-control" placeholder="0">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Ghi chú đãi ngộ cá nhân</label>
+                            <input type="text" name="note" id="instModalNote" class="form-control form-control-sm" placeholder="VD: Giảng viên thỉnh giảng cấp cao, hợp đồng đặc biệt...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Lưu cấu hình cá nhân</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="moderatorConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form th:action="@{/admin/payroll/user-config}" method="post">
+                <input type="hidden" name="userId" id="modModalUserId">
+                <input type="hidden" name="period" th:value="${currentPeriod}">
+                <input type="hidden" name="tab" value="MODERATOR">
+
+                <div class="modal-header border-bottom px-4 py-3">
+                    <div>
+                        <h6 class="modal-title fw-bold text-dark mb-0">Tuỳ chỉnh Lương Cá nhân Kiểm duyệt viên</h6>
+                        <small class="text-info fw-semibold" id="modModalUserName"></small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 rounded-3 small mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>Ô nào để trống sẽ tự động áp dụng số <strong>Mặc định của hệ thống</strong>.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Đơn giá / phút ca chuẩn</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="50" min="0" name="moderatorMinuteRate" id="modModalMinuteRate" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorMinuteRate != null ? globalConfig.moderatorMinuteRate.longValue() : 500}">
+                                <span class="input-group-text">đ/phút</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Hệ số nhân OT</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.1" min="1" max="5" name="moderatorOtMultiplier" id="modModalOtMult" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorOtMultiplier}">
+                                <span class="input-group-text">x</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Thưởng KPI / bài duyệt</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="1000" min="0" name="moderatorTaskBonus" id="modModalTaskBonus" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorTaskBonus != null ? globalConfig.moderatorTaskBonus.longValue() : 10000}">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Mức phạt trễ SLA / bài</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="1000" min="0" name="moderatorSlaPenalty" id="modModalSlaPenalty" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorSlaPenalty != null ? globalConfig.moderatorSlaPenalty.longValue() : 15000}">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Phụ cấp / Thưởng cố định thêm</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="10000" min="0" name="fixedAllowance" id="modModalAllowance" class="form-control" placeholder="0">
+                                <span class="input-group-text">VNĐ</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Ghi chú đãi ngộ cá nhân</label>
+                            <input type="text" name="note" id="modModalNote" class="form-control form-control-sm" placeholder="VD: Trưởng nhóm kiểm duyệt, phụ cấp ca đêm...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top px-4 py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Lưu cấu hình cá nhân</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script>
+    function openInstructorConfigModal(btn) {
+        document.getElementById('instModalUserId').value = btn.getAttribute('data-user-id') || '';
+        document.getElementById('instModalUserName').innerText = btn.getAttribute('data-full-name') || '';
+        document.getElementById('instModalShare').value = btn.getAttribute('data-share') || '';
+        document.getElementById('instModalBonusPct').value = btn.getAttribute('data-bonus-pct') || '';
+        document.getElementById('instModalThreshold').value = btn.getAttribute('data-threshold') || '';
+        document.getElementById('instModalAllowance').value = btn.getAttribute('data-allowance') || '';
+        document.getElementById('instModalNote').value = btn.getAttribute('data-note') || '';
+        var modal = new bootstrap.Modal(document.getElementById('instructorConfigModal'));
+        modal.show();
+    }
+
+    function openModeratorConfigModal(btn) {
+        document.getElementById('modModalUserId').value = btn.getAttribute('data-user-id') || '';
+        document.getElementById('modModalUserName').innerText = btn.getAttribute('data-full-name') || '';
+        document.getElementById('modModalMinuteRate').value = btn.getAttribute('data-minute-rate') || '';
+        document.getElementById('modModalOtMult').value = btn.getAttribute('data-ot-mult') || '';
+        document.getElementById('modModalTaskBonus').value = btn.getAttribute('data-task-bonus') || '';
+        document.getElementById('modModalSlaPenalty').value = btn.getAttribute('data-sla-penalty') || '';
+        document.getElementById('modModalAllowance').value = btn.getAttribute('data-allowance') || '';
+        document.getElementById('modModalNote').value = btn.getAttribute('data-note') || '';
+        var modal = new bootstrap.Modal(document.getElementById('moderatorConfigModal'));
+        modal.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var flashEl = document.getElementById('payrollFlashData');
+        if (!flashEl) return;
+        var successMsg = flashEl.getAttribute('data-success');
+        var errorMsg = flashEl.getAttribute('data-error');
+        if (successMsg && typeof showToast === 'function') {
+            showToast(successMsg, 'success');
+        }
+        if (errorMsg && typeof showToast === 'function') {
+            showToast(errorMsg, 'error');
+        }
+    });
+</script>
+</body>
+</html>
+
