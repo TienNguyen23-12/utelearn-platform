@@ -24,6 +24,12 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        if (isTablePresent("notifications")) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check");
+            } catch (Exception ignored) {}
+        }
+
         if (!properties.getSeeder().isEnabled()) {
             log.info("[DataSeeder] Đã tắt tính năng tự động nạp dữ liệu (utelearn.seeder.enabled=false).");
             return;
