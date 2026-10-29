@@ -54,6 +54,9 @@ public class ModerationFeatureTest {
     @Mock
     private vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
 
+    @Mock
+    private vn.edu.ute.utelearn.service.NotificationService notificationService;
+
     @InjectMocks
     private ModerationServiceImpl moderationService;
 
@@ -395,5 +398,48 @@ public class ModerationFeatureTest {
         assertThrows(IllegalStateException.class, () ->
                 moderationService.reassignTaskToModerator(1L, 30L, 10L, "Note")
         );
+    }
+
+    @Test
+    void testModerationNotifications_SentToModeratorsAndInstructor() {
+        when(courseRepository.findById(100L)).thenReturn(Optional.of(course));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(authorUser));
+        when(userRepository.findActiveModerators()).thenReturn(java.util.List.of(moderatorUser));
+        when(moderationTaskRepository.save(any(ModerationTask.class))).thenAnswer(invocation -> {
+            ModerationTask saved = invocation.getArgument(0);
+            saved.setId(99L);
+            return saved;
+        });
+
+        moderationService.createCourseModerationTask(100L, 10L);
+
+        verify(notificationService).sendNotificationToUsers(
+                eq(java.util.List.of(20L)),
+                argThat(ev -> ev.type() == vn.edu.ute.utelearn.entity.NotificationType.MODERATION_SUBMITTED
+                        && "/moderator/review/99".equals(ev.actionUrl()))
+        );
+
+        when(moderationTaskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(userRepository.findById(20L)).thenReturn(Optional.of(moderatorUser));
+        when(moderatorAttendanceRepository.findByModeratorAndWorkDate(moderatorUser, LocalDate.now()))
+                .thenReturn(Optional.of(attendance));
+
+        moderationService.approveTask(1L, 20L, "Noi dung chuan");
+
+        verify(notificationService).sendNotification(argThat(ev ->
+                Long.valueOf(10L).equals(ev.recipientId())
+                        && ev.type() == vn.edu.ute.utelearn.entity.NotificationType.MODERATION_APPROVED
+                        && ev.content().contains("Spring Boot Masterclass")
+                        && ev.content().contains("Noi dung chuan")
+        ));
+
+        task.setStatus("PENDING");
+        moderationService.rejectTask(1L, 20L, "Can bo sung video");
+
+        verify(notificationService).sendNotification(argThat(ev ->
+                Long.valueOf(10L).equals(ev.recipientId())
+                        && ev.type() == vn.edu.ute.utelearn.entity.NotificationType.MODERATION_REJECTED
+                        && ev.content().contains("Can bo sung video")
+        ));
     }
 }
