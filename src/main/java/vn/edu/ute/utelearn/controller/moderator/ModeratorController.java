@@ -148,10 +148,18 @@ public class ModeratorController {
             List<Section> sections = sectionService.getSectionsByCourseId(course.getId());
             model.addAttribute("sections", sections);
             Map<Long, List<Lesson>> lessonsMap = new HashMap<>();
+            Map<Long, Long> sectionDraftCountMap = new HashMap<>();
+            long totalDraftLessons = 0;
             for (Section s : sections) {
-                lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
+                List<Lesson> secLessons = lessonService.getLessonsBySectionId(s.getId());
+                lessonsMap.put(s.getId(), secLessons);
+                long draftsInSec = (secLessons != null) ? secLessons.stream().filter(l -> !l.isPublished()).count() : 0;
+                sectionDraftCountMap.put(s.getId(), draftsInSec);
+                totalDraftLessons += draftsInSec;
             }
             model.addAttribute("lessonsMap", lessonsMap);
+            model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
+            model.addAttribute("totalDraftLessons", totalDraftLessons);
             return "moderator/review_course";
         } else if ("COHORT".equals(task.getItemType())) {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
@@ -163,10 +171,18 @@ public class ModeratorController {
             List<Section> sections = sectionService.getSectionsByCohortId(cohort.getId());
             model.addAttribute("sections", sections);
             Map<Long, List<Lesson>> lessonsMap = new HashMap<>();
+            Map<Long, Long> sectionDraftCountMap = new HashMap<>();
+            long totalDraftLessons = 0;
             for (Section s : sections) {
-                lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
+                List<Lesson> secLessons = lessonService.getLessonsBySectionId(s.getId());
+                lessonsMap.put(s.getId(), secLessons);
+                long draftsInSec = (secLessons != null) ? secLessons.stream().filter(l -> !l.isPublished()).count() : 0;
+                sectionDraftCountMap.put(s.getId(), draftsInSec);
+                totalDraftLessons += draftsInSec;
             }
             model.addAttribute("lessonsMap", lessonsMap);
+            model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
+            model.addAttribute("totalDraftLessons", totalDraftLessons);
             return "moderator/review_course";
         }
 

@@ -364,7 +364,8 @@
                     </h1>
                     <p class="lead text-light opacity-90 mb-4 fs-6"
                         style="max-width: 580px; line-height: 1.7; color: #cbd5e1;">
-                        Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến, làm chủ công nghệ và nhận chứng chỉ hoàn thành chuẩn HCM-UTE.
+                        Học tập có mục tiêu theo đợt cùng giảng viên và bạn học. Thực hành dự án thực chiến, làm chủ
+                        công nghệ và nhận chứng chỉ hoàn thành chuẩn HCM-UTE.
                     </p>
                     <div class="d-flex flex-wrap align-items-center gap-3">
                         <a href="/cohorts" class="btn btn-gradient">
@@ -427,7 +428,8 @@
                             <h5 class="fw-bold text-dark mb-0">Thảo luận Lớp học Realtime</h5>
                         </div>
                         <p class="text-secondary small mb-0 lh-base">
-                            Trao đổi trực tiếp trong phòng học, giải đáp thắc mắc và tương tác cùng Giảng viên qua kênh thảo luận thời gian thực.
+                            Trao đổi trực tiếp trong phòng học, giải đáp thắc mắc và tương tác cùng Giảng viên qua kênh
+                            thảo luận thời gian thực.
                         </p>
                     </div>
                 </div>
@@ -439,7 +441,7 @@
                                 style="width: 56px; height: 56px;">
                                 <i class="bi bi-patch-check-fill"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-0">Chứng chỉ số HCM-UTE</h5>
+                            <h5 class="fw-bold text-dark mb-0">Chứng chỉ số UTELearn</h5>
                         </div>
                         <p class="text-secondary small mb-0 lh-base">
                             Cấp chứng chỉ hoàn thành đợt học có mã định danh xác thực số, tích hợp hồ sơ năng lực cá
@@ -507,20 +509,27 @@
                             th:alt="${cohort.name}" loading="lazy">
                         <span class="cohort-badge text-truncate" style="max-width: 88%;"
                             th:title="${cohort.course != null ? 'Thuộc khóa: ' + cohort.course.title : 'Module độc lập'}">
-                            <i th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i>
-                            <span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa học</span>
+                            <i
+                                th:class="${cohort.course != null ? 'bi bi-journal-bookmark' : 'bi bi-box-seam'} + ' me-1'"></i>
+                            <span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa
+                                học</span>
                         </span>
                     </div>
                     <div class="p-3.5 d-flex flex-column flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small fw-semibold"
-                                th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên đề</span>
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small fw-semibold">Học phần</span>
+                                th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên
+                                đề</span>
+                            <span
+                                class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small fw-semibold">Học
+                                phần</span>
                         </div>
 
-                        <h6 class="fw-bold text-dark mb-2 lh-base line-clamp-2" th:title="${cohort.name}" style="min-height: 44px;">
+                        <h6 class="fw-bold text-dark mb-2 lh-base line-clamp-2" th:title="${cohort.name}"
+                            style="min-height: 44px;">
                             <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug + '/modules/' + cohort.id : '/courses/standalone/modules/' + cohort.id}"
-                               class="text-dark text-decoration-none course-title-link" th:text="${cohort.name}">Tên Module</a>
+                                class="text-dark text-decoration-none course-title-link" th:text="${cohort.name}">Tên
+                                Module</a>
                         </h6>
 
 
@@ -530,23 +539,32 @@
                                 <i class="bi bi-person-circle text-secondary"></i>
                                 <span class="text-truncate" th:text="${cohort.instructorDisplayName}">Giảng viên</span>
                             </div>
-                            <div class="d-flex align-items-center gap-1 text-nowrap flex-shrink-0" title="Số học viên đã đăng ký">
+                            <div class="d-flex align-items-center gap-1 text-nowrap flex-shrink-0"
+                                title="Số học viên đã đăng ký">
                                 <i class="bi bi-people-fill text-primary" style="font-size: 12px;"></i>
-                                <span class="fw-semibold text-secondary" style="font-size: 12px;" th:text="${(cohort.enrolledCount != null ? cohort.enrolledCount : (cohort.currentEnrolled != null ? cohort.currentEnrolled : 0)) + ' HV'}">0 HV</span>
+                                <span class="fw-semibold text-secondary" style="font-size: 12px;"
+                                    th:text="${(cohort.enrolledCount != null ? cohort.enrolledCount : (cohort.currentEnrolled != null ? cohort.currentEnrolled : 0)) + ' HV'}">0
+                                    HV</span>
                             </div>
                         </div>
 
                         <div class="d-flex align-items-center gap-1 mb-3">
-                            <th:block th:if="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
-                                <span class="fw-bold text-dark me-1" style="font-size: 13px;" th:text="${#numbers.formatDecimal(cohort.averageRating, 1, 1)}">5.0</span>
-                                <span class="d-inline-flex align-items-center text-warning" style="gap: 2px; font-size: 12px;">
+                            <th:block
+                                th:if="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
+                                <span class="fw-bold text-dark me-1" style="font-size: 13px;"
+                                    th:text="${#numbers.formatDecimal(cohort.averageRating, 1, 1)}">5.0</span>
+                                <span class="d-inline-flex align-items-center text-warning"
+                                    style="gap: 2px; font-size: 12px;">
                                     <i th:each="star : ${#numbers.sequence(1, 5)}"
-                                       th:class="${cohort.averageRating >= star ? 'bi bi-star-fill text-warning' : (cohort.averageRating >= star - 0.5 ? 'bi bi-star-half text-warning' : 'bi bi-star text-muted')}"></i>
+                                        th:class="${cohort.averageRating >= star ? 'bi bi-star-fill text-warning' : (cohort.averageRating >= star - 0.5 ? 'bi bi-star-half text-warning' : 'bi bi-star text-muted')}"></i>
                                 </span>
-                                <span class="text-muted small ms-1" style="font-size: 11.5px;" th:text="'(' + ${cohort.ratingCount} + ' đánh giá)'">(0 đánh giá)</span>
+                                <span class="text-muted small ms-1" style="font-size: 11.5px;"
+                                    th:text="'(' + ${cohort.ratingCount} + ' đánh giá)'">(0 đánh giá)</span>
                             </th:block>
-                            <th:block th:unless="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
-                                <span class="d-inline-flex align-items-center text-muted" style="gap: 2px; font-size: 12px;">
+                            <th:block
+                                th:unless="${cohort.ratingCount != null && cohort.ratingCount > 0 && cohort.averageRating != null}">
+                                <span class="d-inline-flex align-items-center text-muted"
+                                    style="gap: 2px; font-size: 12px;">
                                     <i class="bi bi-star"></i>
                                     <i class="bi bi-star"></i>
                                     <i class="bi bi-star"></i>
@@ -559,7 +577,8 @@
 
                         <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
                             <span class="fw-bold text-success fs-6 lh-1 text-nowrap"
-                                th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
+                                th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0
+                                VNĐ</span>
                             <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug + '/modules/' + cohort.id : '/courses/standalone/modules/' + cohort.id}"
                                 class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap flex-shrink-0">
                                 <span>Xem chi tiết</span>

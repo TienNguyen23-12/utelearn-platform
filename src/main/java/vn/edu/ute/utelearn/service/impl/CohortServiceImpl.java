@@ -754,10 +754,19 @@ public class CohortServiceImpl implements CohortService {
     @Override
     @Transactional
     public void revertToDraftIfApproved(Cohort cohort) {
-        if (cohort != null && "APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
+        if (cohort == null) {
+            return;
+        }
+        if ("APPROVED".equalsIgnoreCase(cohort.getModerationStatus())) {
             cohort.setModerationStatus("DRAFT");
             cohortRepository.save(cohort);
             log.info("[CohortService] Tự động chuyển trạng thái Module id: {} về DRAFT do có thay đổi nội dung", cohort.getId());
+        }
+        if (cohort.getCourse() != null && "PUBLISHED".equalsIgnoreCase(cohort.getCourse().getStatus())) {
+            Course course = cohort.getCourse();
+            course.setStatus("DRAFT");
+            courseRepository.save(course);
+            log.info("[CohortService] Tự động chuyển trạng thái Khóa học id: {} về DRAFT do thay đổi nội dung module", course.getId());
         }
     }
 
