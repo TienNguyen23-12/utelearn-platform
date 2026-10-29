@@ -397,9 +397,9 @@ public class QuizFeatureTest {
         assertNotNull(updated);
         assertEquals("DRAFT", lesson.getStatus());
         assertEquals("DRAFT", cohort.getModerationStatus());
-        assertEquals("PUBLISHED", course.getStatus());
+        assertEquals("DRAFT", course.getStatus());
         verify(cohortRepository, atLeastOnce()).save(cohort);
-        verify(courseRepository, never()).save(course);
+        verify(courseRepository, atLeastOnce()).save(course);
         verify(lessonRepository, atLeastOnce()).save(lesson);
     }
 

@@ -112,10 +112,18 @@ public class ModeratorController {
             List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(course.getId());
             model.addAttribute("sections", sections);
             java.util.Map<Long, List<vn.edu.ute.utelearn.entity.Lesson>> lessonsMap = new java.util.HashMap<>();
+            java.util.Map<Long, Long> sectionDraftCountMap = new java.util.HashMap<>();
+            long totalDraftLessons = 0;
             for (vn.edu.ute.utelearn.entity.Section s : sections) {
-                lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
+                List<vn.edu.ute.utelearn.entity.Lesson> secLessons = lessonService.getLessonsBySectionId(s.getId());
+                lessonsMap.put(s.getId(), secLessons);
+                long draftsInSec = (secLessons != null) ? secLessons.stream().filter(l -> !l.isPublished()).count() : 0;
+                sectionDraftCountMap.put(s.getId(), draftsInSec);
+                totalDraftLessons += draftsInSec;
             }
             model.addAttribute("lessonsMap", lessonsMap);
+            model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
+            model.addAttribute("totalDraftLessons", totalDraftLessons);
             return "moderator/review_course";
         } else if ("COHORT".equals(task.getItemType())) {
             vn.edu.ute.utelearn.entity.Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
@@ -127,10 +135,18 @@ public class ModeratorController {
             List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCohortId(cohort.getId());
             model.addAttribute("sections", sections);
             java.util.Map<Long, List<vn.edu.ute.utelearn.entity.Lesson>> lessonsMap = new java.util.HashMap<>();
+            java.util.Map<Long, Long> sectionDraftCountMap = new java.util.HashMap<>();
+            long totalDraftLessons = 0;
             for (vn.edu.ute.utelearn.entity.Section s : sections) {
-                lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
+                List<vn.edu.ute.utelearn.entity.Lesson> secLessons = lessonService.getLessonsBySectionId(s.getId());
+                lessonsMap.put(s.getId(), secLessons);
+                long draftsInSec = (secLessons != null) ? secLessons.stream().filter(l -> !l.isPublished()).count() : 0;
+                sectionDraftCountMap.put(s.getId(), draftsInSec);
+                totalDraftLessons += draftsInSec;
             }
             model.addAttribute("lessonsMap", lessonsMap);
+            model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
+            model.addAttribute("totalDraftLessons", totalDraftLessons);
             return "moderator/review_course";
         }
 

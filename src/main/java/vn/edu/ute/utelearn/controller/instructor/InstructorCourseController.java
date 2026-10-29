@@ -348,6 +348,7 @@ public class InstructorCourseController {
                 }
             }
             log.info("[InstructorCourseController] Gán trực tiếp module độc lập id: {} vào course id: {}", sourceCohort.getId(), id);
+            courseService.revertToDraftIfPublished(id);
             redirectAttributes.addFlashAttribute("successMessage", "Đã thêm module '" + sourceCohort.getName() + "' vào khóa học thành công!");
             return "redirect:/instructor/courses/" + id + "/modules";
         }
@@ -494,6 +495,7 @@ public class InstructorCourseController {
         }
 
         log.info("[InstructorCourseController] Thêm module {} (id: {}) vào course id: {}", savedCohort.getName(), sourceCohort.getId(), id);
+        courseService.revertToDraftIfPublished(id);
         redirectAttributes.addFlashAttribute("successMessage", "Đã thêm module '" + sourceCohort.getName() + "' vào khóa học thành công!");
         return "redirect:/instructor/courses/" + id + "/modules";
     }
@@ -576,6 +578,7 @@ public class InstructorCourseController {
         }
 
         log.info("[InstructorCourseController] Tạo module mới: {} cho course id: {}", name, id);
+        courseService.revertToDraftIfPublished(id);
         redirectAttributes.addFlashAttribute("successMessage", "Tạo Module cho khóa học thành công!");
         return "redirect:/instructor/courses/" + id + "/modules";
     }
@@ -712,6 +715,7 @@ public class InstructorCourseController {
                 actualCourseId = cohortOpt.get().getCourse().getId();
             }
             cohortService.deleteCohort(moduleId, currentUser);
+            courseService.revertToDraftIfPublished(actualCourseId);
             log.info("[InstructorCourseController] Xóa module id: {} của course id: {}", moduleId, actualCourseId);
             redirectAttributes.addFlashAttribute("successMessage", "Xóa Module thành công!");
         } catch (Exception e) {

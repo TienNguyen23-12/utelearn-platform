@@ -94,13 +94,18 @@ public class QuizServiceImpl implements QuizService {
                     cohortRepository.save(cohort);
                     log.info("[QuizService] Chuyển module id: {} về DRAFT do cập nhật quiz", cohort.getId());
                 }
-            } else {
-                Course course = section.getCourse();
-                if (course != null && "PUBLISHED".equalsIgnoreCase(course.getStatus())) {
-                    course.setStatus("DRAFT");
-                    courseRepository.save(course);
-                    log.info("[QuizService] Chuyển khóa học id: {} về DRAFT do cập nhật quiz", course.getId());
+                if (cohort.getCourse() != null && "PUBLISHED".equalsIgnoreCase(cohort.getCourse().getStatus())) {
+                    Course c = cohort.getCourse();
+                    c.setStatus("DRAFT");
+                    courseRepository.save(c);
+                    log.info("[QuizService] Chuyển khóa học id: {} về DRAFT do cập nhật quiz trong module", c.getId());
                 }
+            }
+            Course course = section.getCourse();
+            if (course != null && "PUBLISHED".equalsIgnoreCase(course.getStatus())) {
+                course.setStatus("DRAFT");
+                courseRepository.save(course);
+                log.info("[QuizService] Chuyển khóa học id: {} về DRAFT do cập nhật quiz", course.getId());
             }
         }
     }

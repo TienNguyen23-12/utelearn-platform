@@ -1519,18 +1519,6 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6 activity-item-col" data-title="lap trinh online judge code thực hành oj" data-type="CODE_PRACTICE">
-                <div class="activity-card" onclick="notifyOjPhase2(event)">
-                  <div class="activity-card-icon icon-code-style"><i class="bi bi-code-square"></i></div>
-                  <div>
-                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
-                      <span>Bài tập Lập trình (OJ)</span>
-                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                    </h6>
-                    <div class="text-muted small lh-base">Chấm code tự động qua Online Judge với nhiều ngôn ngữ và testcases.</div>
-                  </div>
-                </div>
-              </div>
               <div class="col-md-6 activity-item-col" data-title="thong bao announcement hướng dẫn tin tức" data-type="ANNOUNCEMENT">
                 <div class="activity-card" onclick="selectActivityType('ANNOUNCEMENT')">
                   <div class="activity-card-icon icon-announcement-style"><i class="bi bi-megaphone-fill"></i></div>
@@ -1581,18 +1569,6 @@
                   <div>
                     <h6 class="fw-bold mb-1 text-dark">Kiểm tra Trắc nghiệm (Quiz)</h6>
                     <div class="text-muted small lh-base">Bài test trắc nghiệm đánh giá năng lực tự động.</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="activity-card" onclick="notifyOjPhase2(event)">
-                  <div class="activity-card-icon icon-code-style"><i class="bi bi-code-square"></i></div>
-                  <div>
-                    <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1 flex-wrap">
-                      <span>Bài tập Lập trình (OJ)</span>
-                      <span class="badge rounded-pill fw-semibold ms-1" style="font-size: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;">Coming Soon</span>
-                    </h6>
-                    <div class="text-muted small lh-base">Chấm điểm thuật toán và code tự động trực tuyến.</div>
                   </div>
                 </div>
               </div>
@@ -1654,7 +1630,6 @@
                         <option value="VIDEO">Video</option>
                         <option value="DOCUMENT">Tài liệu (Document)</option>
                         <option value="QUIZ">Trắc nghiệm (Quiz)</option>
-                        <option value="CODE_PRACTICE">Lập trình (Code)</option>
                         <option value="ASSIGNMENT">Bài tập (Assignment)</option>
                         <option value="ANNOUNCEMENT">Thông báo (Announcement)</option>
                     </select>
@@ -2695,10 +2670,6 @@
     }
 
     function selectActivityType(type, event = null) {
-        if (type === 'CODE_PRACTICE') {
-            notifyOjPhase2(event);
-            return;
-        }
         activityChooserModal.hide();
         openCreateLessonModal(pendingSectionId, type);
     }
@@ -2742,16 +2713,6 @@
         } else {
             alert(message);
         }
-    }
-
-    function notifyOjPhase2(event = null) {
-        if (event) {
-            event.preventDefault();
-            if (typeof event.stopPropagation === 'function') {
-                event.stopPropagation();
-            }
-        }
-        showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
     }
 
     function openCreateLessonModal(sectionId, preselectedType = 'VIDEO') {

@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,6 +58,12 @@ public class CurriculumApiControllerTest {
 
     @Mock
     private CourseRepository courseRepository;
+
+    @Mock
+    private vn.edu.ute.utelearn.service.CourseService courseService;
+
+    @Mock
+    private vn.edu.ute.utelearn.service.ModerationService moderationService;
 
     @InjectMocks
     private InstructorCurriculumApiController curriculumApiController;
@@ -185,5 +190,58 @@ public class CurriculumApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Cập nhật bài học thành công"))
                 .andExpect(jsonPath("$.id").value(100));
+    }
+
+    @Test
+    void testIsValidVideoUrlValidation() {
+        org.junit.jupiter.api.Assertions.assertTrue(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://youtu.be/dQw4w9WgXcQ"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://res.cloudinary.com/demo/video/upload/v123456/sample.mp4"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://vimeo.com/123456789"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://drive.google.com/file/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ/view"));
+
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl(""));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("not-a-url"));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://www.youtube.com/watch?v=invalid"));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://example.com/document.pdf"));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://res.cloudinary.com/demo/image/upload/v123456/banner.png"));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                vn.edu.ute.utelearn.util.ValidationUtils.isValidVideoUrl("https://google.com"));
+    }
+
+    @Test
+    void testCreateVideoLessonWithInvalidUrlThrowsException() {
+        vn.edu.ute.utelearn.dao.SectionRepository sectionRepo = org.mockito.Mockito.mock(vn.edu.ute.utelearn.dao.SectionRepository.class);
+        vn.edu.ute.utelearn.dao.LessonRepository lessonRepo = org.mockito.Mockito.mock(vn.edu.ute.utelearn.dao.LessonRepository.class);
+        vn.edu.ute.utelearn.dao.UserRepository userRepo = org.mockito.Mockito.mock(vn.edu.ute.utelearn.dao.UserRepository.class);
+        vn.edu.ute.utelearn.service.CloudinaryService cloudSvc = org.mockito.Mockito.mock(vn.edu.ute.utelearn.service.CloudinaryService.class);
+
+        vn.edu.ute.utelearn.service.impl.LessonServiceImpl lessonServiceImpl = new vn.edu.ute.utelearn.service.impl.LessonServiceImpl(
+                lessonRepo, sectionService, sectionRepo, cohortRepository, cohortScheduleRepository, userRepo, courseRepository, cloudSvc
+        );
+
+        User owner = User.builder().id(1L).build();
+        vn.edu.ute.utelearn.entity.Course course = vn.edu.ute.utelearn.entity.Course.builder().id(1L).createdBy(owner).build();
+        Section section = Section.builder().id(10L).course(course).build();
+        when(sectionService.getSectionById(10L)).thenReturn(section);
+
+        vn.edu.ute.utelearn.dto.LessonRequestDTO invalidReq = new vn.edu.ute.utelearn.dto.LessonRequestDTO();
+        invalidReq.setTitle("Bài giảng Video lỗi");
+        invalidReq.setLessonType("VIDEO");
+        invalidReq.setVideoUrl("https://example.com/file.pdf");
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            lessonServiceImpl.createLesson(10L, invalidReq, 1L);
+        });
     }
 }
