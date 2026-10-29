@@ -865,7 +865,7 @@
     }
     function handleMainPayment() {
         if (isFullCourse && activeCohortIds.length === 0) {
-            Toastify({text: 'Vui lòng chọn ít nhất 1 module để thanh toán', style: {background: '#dc3545'}}).showToast();
+            showToast('Vui lòng chọn ít nhất 1 module để thanh toán', 'error');
             return;
         }
         if (selectedMethod === 'WALLET') {
@@ -907,18 +907,18 @@
             btn.disabled = false;
             updatePaymentButtonLabel();
             if (data.success) {
-                Toastify({text: data.message, style: {background: '#00b050'}}).showToast();
+                showToast(data.message, 'success');
                 setTimeout(function() {
                     window.location.href = data.orderDetailUrl || '/orders';
                 }, 1200);
             } else {
-                Toastify({text: data.message || 'Không thể tạo đơn offline', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Không thể tạo đơn offline', 'error');
             }
         })
         .catch(function(err) {
             btn.disabled = false;
             updatePaymentButtonLabel();
-            Toastify({text: 'Lỗi kết nối khi đặt đơn offline', style: {background: '#dc3545'}}).showToast();
+            showToast('Lỗi kết nối khi đặt đơn offline', 'error');
         });
     }
     function processWalletPayment() {
@@ -952,13 +952,13 @@
                 updateBalanceUI(data.formattedBalance || '0 VNĐ');
                 showPaymentSuccessModal(data.targetLearnUrl);
             } else {
-                Toastify({text: data.message || 'Thanh toán ví thất bại', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Thanh toán ví thất bại', 'error');
             }
         })
         .catch(function(err) {
             btn.disabled = false;
             updatePaymentButtonLabel();
-            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+            showToast('Lỗi kết nối máy chủ', 'error');
         });
     }
     function openVietQrModal() {
@@ -1000,12 +1000,12 @@
                 startCountdown(15 * 60);
             } else {
                 vietQrModalInstance.hide();
-                Toastify({text: data.message || 'Không thể tạo mã VietQR', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Không thể tạo mã VietQR', 'error');
             }
         })
         .catch(function(err) {
             vietQrModalInstance.hide();
-            Toastify({text: 'Lỗi kết nối khi khởi tạo mã QR', style: {background: '#dc3545'}}).showToast();
+            showToast('Lỗi kết nối khi khởi tạo mã QR', 'error');
         });
     }
     function startPaymentPolling(orderCode) {
@@ -1061,7 +1061,7 @@
                 stopPaymentPolling();
                 showPaymentSuccessModal(data.redirectUrl);
             } else {
-                Toastify({text: data.message || 'Mô phỏng thất bại', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Mô phỏng thất bại', 'error');
             }
         })
         .catch(function(e) {
@@ -1089,7 +1089,7 @@
         var input = document.getElementById('depositAmountInput');
         var amount = parseInt(input.value, 10);
         if (!amount || amount < 10000) {
-            Toastify({text: 'Vui lòng nhập số tiền nạp tối thiểu 10.000 VNĐ', style: {background: '#dc3545'}}).showToast();
+            showToast('Vui lòng nhập số tiền nạp tối thiểu 10.000 VNĐ', 'error');
             return;
         }
         var btn = document.getElementById('btnConfirmDepositInput');
@@ -1118,13 +1118,13 @@
                 document.getElementById('depositQrView').classList.remove('d-none');
                 startDepositPolling(data.orderCode);
             } else {
-                Toastify({text: data.message || 'Không tạo được mã nạp tiền', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Không tạo được mã nạp tiền', 'error');
             }
         })
         .catch(function(err) {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-qr-code me-1"></i>Tạo mã VietQR nạp tiền';
-            Toastify({text: 'Lỗi kết nối máy chủ', style: {background: '#dc3545'}}).showToast();
+            showToast('Lỗi kết nối máy chủ', 'error');
         });
     }
     function startDepositPolling(orderCode) {
@@ -1169,7 +1169,7 @@
                 updateBalanceUI(data.formattedBalance);
                 showDepositSuccessView(data.formattedBalance);
             } else {
-                Toastify({text: data.message || 'Mô phỏng thất bại', style: {background: '#dc3545'}}).showToast();
+                showToast(data.message || 'Mô phỏng thất bại', 'error');
             }
         })
         .catch(function(e) {
@@ -1199,7 +1199,7 @@
         if (!el) return;
         var text = el.innerText.trim();
         navigator.clipboard.writeText(text).then(function() {
-            Toastify({text: successMsg, style: {background: '#00b050'}}).showToast();
+            showToast(successMsg, 'success');
         }).catch(function() {
             var temp = document.createElement('textarea');
             temp.value = text;
@@ -1207,7 +1207,7 @@
             temp.select();
             document.execCommand('copy');
             document.body.removeChild(temp);
-            Toastify({text: successMsg, style: {background: '#00b050'}}).showToast();
+            showToast(successMsg, 'success');
         });
     }
 </script>
