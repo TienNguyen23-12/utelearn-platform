@@ -10,13 +10,22 @@
 
 ---
 
+## 👥 Thành Viên Thực Hiện
+
+| Họ và Tên | Mã số Sinh viên (MSSV) | Vai trò trong dự án |
+| :--- | :--- | :--- |
+| **Nguyễn Thành Tiến** | **24110352** | Trưởng nhóm / Full-stack Developer (Tài chính, Realtime, Cloud & Security) |
+| **Nguyễn Đặng Cao Tường** | **24110375** | Thành viên / Full-stack Developer (Khảo thí, Sổ điểm, Kiểm duyệt & Lương) |
+
+---
+
 ## 🌟 Điểm Sáng Nổi Bật & Công Nghệ Chuẩn Doanh Nghiệp
 
-1. **Mô Hình Đào Tạo Theo Đợt Học (Cohort-Based Learning)**: Quản lý lớp học có lịch trình biểu, giới hạn sĩ số, theo dõi tiến độ bài học và phòng trao đổi trực tiếp thời gian thực.
-2. **Thanh Toán VietQR & Đối Soát SePay Webhook**: Tự động tạo mã QR động ngân hàng chuẩn NAPAS; tiếp nhận Webhook đối soát số dư thời gian thực và tự động cộng tiền vào Ví UTELearn.
+1. **Mô Hình Đào Tạo Theo Đợt Học (Cohort-Based Learning)**: Quản lý lớp học có lịch trình biểu, giới hạn sĩ số, theo dõi tiến độ bài học và trung tâm thảo luận trực tiếp thời gian thực.
+2. **Thanh Toán VietQR & Đối Soát SePay Webhook**: Tự động tạo mã QR động ngân hàng chuẩn NAPAS; tiếp nhận Webhook đối soát số dư thời gian thực và tự động nạp tiền vào Ví UTELearn.
 3. **Phòng Chat Lớp Học & Thông Báo Real-time (WebSocket / STOMP)**: Giao tiếp hai chiều tức thời bằng SockJS + STOMP Broker cho từng đợt học và kênh thông báo đẩy riêng biệt cho từng người dùng.
 4. **Sổ Điểm Điện Tử & Import/Export Excel (Apache POI)**: Tự động tổng hợp điểm chuyên cần, quiz, bài tập; xuất bảng điểm chuẩn `.xlsx` và nhập điểm hàng loạt với cơ chế kiểm tra lỗi dữ liệu chặt chẽ.
-5. **Chứng Chỉ Số Có Thể Xác Minh Toàn Cầu**: Cấp chứng chỉ tự động với mã định danh duy nhất, cho phép quét QR tra cứu công khai và đánh giá khóa học gắn liền với chứng chỉ.
+5. **Chứng Chỉ Số Có Thể Xác Minh Toàn Cầu**: Cấp chứng chỉ tự động với mã định danh duy nhất, cho phép tra cứu công khai và đánh giá khóa học gắn liền với chứng chỉ.
 6. **Kiểm Duyệt Khóa Học Đa Cấp (Content Moderation Workflow)**: Phân luồng kiểm duyệt nội dung: Giảng viên nộp -> Kiểm duyệt viên đánh giá/phản hồi/leo thang -> Quản trị viên phê duyệt cuối.
 7. **Hệ Thống Chấm Công & Tính Lương (Payroll & Attendance Engine)**: Quản lý ca trực, Check-in/Check-out, làm thêm giờ (OT) của Moderator; tính toán tự động tỷ lệ chia sẻ doanh thu (Revenue Share) cho Giảng viên và tính lương theo phút/ca/thưởng SLA cho Kiểm duyệt viên.
 8. **Tải Lên Trực Tiếp Ký Số Cloudinary (Direct Signed Uploads)**: Máy chủ tạo chữ ký SHA-1 cho phép trình duyệt tải trực tiếp video, bài giảng, tài liệu lên CDN Cloudinary, giải phóng 100% băng thông server.
@@ -24,19 +33,19 @@
 
 ---
 
-## 👥 Phân Chia Nghiệp Vụ Thực Hiện (2 Thành Viên)
+## 📋 Bảng Phân Chia Nghiệp Vụ Cụ Thể
 
-| Thành viên | Luồng Nghiệp Vụ Trọng Tâm | Chi Tiết Chức Năng Chính |
+| Thành viên | Luồng Nghiệp Vụ Trọng Tâm | Chi Tiết Chức Năng Chính Phụ Trách |
 | :--- | :--- | :--- |
-| **Thành viên A** | **1. Đợt học & Học tập tương tác thời gian thực** | - Vận hành đợt học (Cohort): Sĩ số, lịch trình, trạng thái động (`UPCOMING`, `OPENING`, `ONGOING`, `CLOSED`).<br>- Phòng chat lớp học WebSocket (STOMP/SockJS) theo đợt học.<br>- Ghi chú bài học thông minh gắn mốc thời gian video (`timestamp`). |
-| | **2. Sổ điểm tự động & Xử lý Excel doanh nghiệp** | - Tính toán điểm tổng hợp tự động từ bài học, trắc nghiệm và bài tập.<br>- Xuất danh sách sổ điểm lớp học/khóa học ra tệp Excel `.xlsx` (Apache POI).<br>- Nhập sổ điểm từ Excel kèm báo cáo lỗi dữ liệu theo từng dòng. |
-| | **3. Đánh giá năng lực & Hệ thống Khảo thí** | - Ngân hàng câu hỏi trắc nghiệm, tạo đề thi ngẫu nhiên, chấm điểm tự động.<br>- Nộp bài tập tự luận (tập tin đính kèm/link) và chấm điểm kèm tiêu chí phản hồi. |
-| | **4. Chứng chỉ số & Sân chơi Lập trình (OJ)** | - Cấp chứng chỉ số tự động khi đạt điều kiện hoàn thành khóa học.<br>- Trang tra cứu và xác thực chứng chỉ công khai (`/certificates/verify?code=...`).<br>- Sân chơi thực hành thuật toán lập trình trực tuyến (Online Judge playground). |
-| **Thành viên B** | **1. Tài chính, Ví điện tử & Cổng VietQR SePay** | - Tích hợp sinh mã VietQR động theo đơn hàng nạp ví/thanh toán.<br>- Endpoint tiếp nhận Webhook SePay đối soát biến động số dư ngân hàng tự động.<br>- Quản lý Ví UTELearn, thanh toán khóa học bằng số dư ví và mã giảm giá (Discount Engine). |
-| | **2. Quy trình Kiểm duyệt Nội dung Đa cấp** | - Luồng kiểm duyệt khóa học và đợt học: Nộp duyệt -> Tiếp nhận -> Duyệt/Từ chối có lý do -> Leo thang Admin.<br>- Theo dõi và xử lý vi phạm thời gian cam kết dịch vụ (SLA) của kiểm duyệt viên. |
-| | **3. Chấm công & Tính toán Lương Doanh nghiệp** | - Hệ thống chấm công ca trực, Check-in / Check-out, làm thêm giờ (OT) của Moderator.<br>- Công thức tính bảng lương tự động: Chia sẻ doanh thu cho Giảng viên; tính lương theo phút/ca/thưởng cho Kiểm duyệt viên kèm ghi đè cá nhân. |
-| | **4. Quản lý Tài nguyên Số Chữ Ký Bảo Mật** | - Tạo chữ ký số Cloudinary Signature để upload tệp trực tiếp an toàn.<br>- Kho tài nguyên số giảng viên với 4 cấp phân quyền: `PRIVATE`, `COHORT_PUBLIC`, `DEPARTMENT_SHARED`, `DIRECT_EMAIL_SHARED`. |
-| | **5. Bảo mật Đa tầng & Phân quyền RBAC Động** | - Đăng nhập tài khoản & Google OAuth2 một chạm.<br>- Xác thực phân quyền kết hợp JWT Cookie + Session và chống giả mạo kép CSRF.<br>- Quản lý vai trò (Role) và quyền hạn (Permission) động từ giao diện Quản trị. |
+| **Nguyễn Thành Tiến**<br>*(MSSV: 24110352)* | **1. Tài chính, Ví điện tử & Cổng VietQR SePay** | - Tích hợp sinh mã VietQR động theo đơn hàng nạp ví/mua khóa học.<br>- Xây dựng Webhook SePay đối soát biến động số dư ngân hàng thời gian thực.<br>- Vận hành Ví UTELearn, Giỏ hàng (Cart), Quầy thu ngân (POS) và Động cơ Voucher giảm giá (Discount Engine). |
+| | **2. Trao đổi Real-time & Hệ thống Thông báo** | - Phát triển phòng chat đợt học (Cohort Chat) & Trung tâm thảo luận giảng viên qua WebSocket (STOMP/SockJS).<br>- Hệ thống thông báo đẩy toàn cục theo người dùng (`/topic/notifications/{userId}`). |
+| | **3. Bảo mật Đa tầng & Phân quyền RBAC Động** | - Đăng ký xác thực qua Email OTP (Brevo SMTP), đăng nhập Google OAuth2 một chạm.<br>- Bảo mật kết hợp JWT Cookie + Session, phòng vệ kép CSRF và phân quyền vai trò động. |
+| | **4. Tải lên Ký số Cloudinary & Hạ tầng CI/CD** | - Cơ chế ký số SHA-1 upload trực tiếp tài nguyên số lên Cloudinary CDN.<br>- Xây dựng Pipeline GitHub Actions CI/CD tự động kiểm thử và deploy lên Render. |
+| **Nguyễn Đặng Cao Tường**<br>*(MSSV: 24110375)* | **1. Khảo thí & Đánh giá Năng lực Học viên** | - Ngân hàng câu hỏi trắc nghiệm, tạo đề thi ngẫu nhiên, cấu hình hạn chót và chấm điểm trắc nghiệm tự động (Quiz).<br>- Hệ thống nộp bài tập tự luận (Assignment Submission), chấm bài kèm tiêu chí (rubric) và phản hồi học viên. |
+| | **2. Sổ điểm Tự động & Xử lý Excel Doanh nghiệp** | - Tính toán điểm tổng hợp tự động từ bài học, trắc nghiệm và bài tập.<br>- Đồng bộ Sổ điểm Đợt học (Cohort Gradebook) và Sổ điểm Toàn khóa (Course Gradebook).<br>- Xuất/Nhập bảng điểm định dạng `.xlsx` bằng Apache POI kèm bắt lỗi dữ liệu từng dòng. |
+| | **3. Chứng chỉ Số & Đánh giá Khóa học (Rating)** | - Tự động thẩm định điều kiện hoàn thành khóa học và cấp Chứng chỉ số (Certificate Issuance).<br>- Trang tra cứu và xác thực chứng chỉ công khai (`/certificates/verify?code=...`).<br>- Hệ thống đánh giá sao và nhận xét khóa học/đợt học gắn liền với chứng chỉ. |
+| | **4. Quy trình Kiểm duyệt Nội dung Đa cấp** | - Luồng kiểm duyệt khóa học và đợt học giữa Giảng viên và Moderator.<br>- Thẩm định nội dung, gửi phản hồi duyệt/từ chối, leo thang Admin và giám sát vi phạm thời gian cam kết dịch vụ (SLA). |
+| | **5. Chấm công & Tính toán Lương Doanh nghiệp** | - Quản lý ca trực, Check-in / Check-out, làm thêm giờ (OT) của Kiểm duyệt viên.<br>- Công thức tính bảng lương tự động: Chia sẻ doanh thu cho Giảng viên; tính lương theo phút/ca/thưởng cho Moderator kèm ghi đè cá nhân. |
 
 ---
 
