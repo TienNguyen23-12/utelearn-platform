@@ -527,7 +527,7 @@
                 <div class="cert-field field-issued-date" th:text="${cert.issuedDateFormatted}">26/10/2026</div>
 
                 <div class="cert-field field-qr-box" id="qrContainer">
-                    <img th:src="'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + ${#uris.escapePath('https://utelearn.edu.vn' + cert.verifyUrl)}" 
+                    <img th:src="'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + ${#uris.escapePath((baseUrl != null ? baseUrl : 'https://utelearn-platform.onrender.com') + cert.verifyUrl)}" 
                          alt="Mã QR tra cứu" crossorigin="anonymous" id="qrImage">
                 </div>
             </div>

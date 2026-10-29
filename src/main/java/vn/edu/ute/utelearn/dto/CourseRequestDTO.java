@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 
 @Data
 public class CourseRequestDTO {
-    @NotBlank(message = "Mã khóa học không được để trống")
     @Size(max = 50, message = "Mã khóa học tối đa 50 ký tự")
     private String code;
 

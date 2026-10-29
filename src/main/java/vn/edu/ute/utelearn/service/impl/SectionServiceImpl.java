@@ -107,7 +107,22 @@ public class SectionServiceImpl implements SectionService {
     }
 
     @Override
+    @Transactional
     public List<Section> getSectionsByCohortId(Long cohortId) {
+        List<Section> directSections = sectionRepository.findByCohortIdOrderByOrderIndexAsc(cohortId);
+        if (!directSections.isEmpty()) {
+            java.util.Set<Long> directSectionIds = directSections.stream()
+                    .map(Section::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            List<vn.edu.ute.utelearn.entity.CohortSchedule> straySchedules = cohortScheduleRepository.findByCohortId(cohortId).stream()
+                    .filter(cs -> cs.getLesson() != null && cs.getLesson().getSection() != null && !directSectionIds.contains(cs.getLesson().getSection().getId()))
+                    .toList();
+            if (!straySchedules.isEmpty()) {
+                cohortScheduleRepository.deleteAll(straySchedules);
+                log.info("[SectionService] Đã dọn dẹp {} lịch học thừa ngoài các chương trực tiếp của module {}", straySchedules.size(), cohortId);
+            }
+            return directSections;
+        }
         return sectionRepository.findSectionsForCohort(cohortId);
     }
 

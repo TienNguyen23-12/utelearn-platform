@@ -88,6 +88,22 @@ public class CourseServiceImpl implements CourseService {
         vn.edu.ute.utelearn.entity.User creator = userRepository.findById(instructorId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
+        if (request.getCode() == null || request.getCode().trim().isEmpty()) {
+            String prefix = "CRS";
+            long count = courseRepository.count();
+            String year = String.valueOf(java.time.Year.now().getValue());
+            String autoCode = String.format("%s-%s-%02d", prefix, year, count + 1);
+            while (courseRepository.existsByCode(autoCode)) {
+                count++;
+                autoCode = String.format("%s-%s-%02d", prefix, year, count + 1);
+            }
+            request.setCode(autoCode);
+        } else if (courseRepository.existsByCode(request.getCode().trim())) {
+            throw new RuntimeException("Course code already exists");
+        } else {
+            request.setCode(request.getCode().trim());
+        }
+
         String slug = generateSlug(request.getTitle());
 
         String thumbnail = request.getThumbnailUrl();
@@ -134,7 +150,13 @@ public class CourseServiceImpl implements CourseService {
             thumbnail = thumbnail.trim();
         }
 
-        course.setCode(request.getCode());
+        if (request.getCode() != null && !request.getCode().trim().isEmpty()) {
+            String cleanCode = request.getCode().trim();
+            if (!cleanCode.equals(course.getCode()) && courseRepository.existsByCode(cleanCode)) {
+                throw new RuntimeException("Course code already exists");
+            }
+            course.setCode(cleanCode);
+        }
         course.setTitle(request.getTitle());
         course.setHeadline(request.getHeadline());
         course.setDescription(request.getDescription());

@@ -21,6 +21,8 @@ public class CertificateController {
     private final CertificateService certificateService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private vn.edu.ute.utelearn.service.AuthService authService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.config.UtelearnProperties properties;
 
     @GetMapping("/verify")
     public String verifyCertificate(
@@ -30,6 +32,11 @@ public class CertificateController {
         if (authService != null) {
             authService.getCurrentAuthenticatedUser().ifPresent(u -> model.addAttribute("currentUser", u));
         }
+
+        String baseUrl = (properties != null && properties.getRender() != null && properties.getRender().getKeepAliveUrl() != null && !properties.getRender().getKeepAliveUrl().isBlank())
+                ? properties.getRender().getKeepAliveUrl().replaceAll("/+$", "")
+                : "https://utelearn-platform.onrender.com";
+        model.addAttribute("baseUrl", baseUrl);
 
         if (code == null || code.isBlank()) {
             model.addAttribute("hasSearched", false);

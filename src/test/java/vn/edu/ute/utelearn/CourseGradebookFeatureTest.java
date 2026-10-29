@@ -232,7 +232,7 @@ public class CourseGradebookFeatureTest {
     @Test
     void testInstructorCourseController_ShowGradebook() {
         InstructorCourseController controller = new InstructorCourseController(
-                courseService, null, authService, null, null, null, null, null, null, null, null, null
+                courseService, null, authService, null, null, null, null, null, null, null, null, null, null, null, null
         );
         ReflectionTestUtils.setField(controller, "gradebookService", mockGradebookService);
 
@@ -255,7 +255,7 @@ public class CourseGradebookFeatureTest {
     @Test
     void testInstructorCourseController_CalculateAndSync() {
         InstructorCourseController controller = new InstructorCourseController(
-                courseService, null, authService, null, null, null, null, null, null, null, null, null
+                courseService, null, authService, null, null, null, null, null, null, null, null, null, null, null, null
         );
         ReflectionTestUtils.setField(controller, "gradebookService", mockGradebookService);
 
@@ -272,7 +272,7 @@ public class CourseGradebookFeatureTest {
     @Test
     void testInstructorCourseController_ExportExcel() {
         InstructorCourseController controller = new InstructorCourseController(
-                courseService, null, authService, null, null, null, null, null, null, null, null, null
+                courseService, null, authService, null, null, null, null, null, null, null, null, null, null, null, null
         );
         ReflectionTestUtils.setField(controller, "gradebookService", mockGradebookService);
 
@@ -290,7 +290,7 @@ public class CourseGradebookFeatureTest {
     @Test
     void testCourseController_GetStudentCourseGradesJson_Success() {
         CourseController courseController = new CourseController(
-                authService, courseService, null, cohortMemberRepository, cohortRepository, null, null, null
+                authService, courseService, null, cohortMemberRepository, cohortRepository, null, null, null, null
         );
         ReflectionTestUtils.setField(courseController, "gradebookService", mockGradebookService);
 
@@ -317,7 +317,7 @@ public class CourseGradebookFeatureTest {
     @Test
     void testCourseController_GetStudentCourseGradesJson_Unauthorized() {
         CourseController courseController = new CourseController(
-                authService, courseService, null, cohortMemberRepository, cohortRepository, null, null, null
+                authService, courseService, null, cohortMemberRepository, cohortRepository, null, null, null, null
         );
         when(authService.getCurrentAuthenticatedUser()).thenReturn(Optional.empty());
 
