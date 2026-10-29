@@ -26,7 +26,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h3 class="fw-bold mb-1">Hàng đợi Kiểm duyệt</h3>
-                <p class="text-muted mb-0">Các nội dung đang chờ kiểm duyệt theo cam kết chất lượng SLA</p>
+                <p class="text-muted mb-0">Các nội dung kiểm duyệt và lịch sử phê duyệt theo cam kết chất lượng SLA</p>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <a th:if="${@rbac.hasRole('ADMIN')}" th:href="@{/admin/moderation}" class="btn btn-sm btn-outline-danger rounded-pill px-3 position-relative">
@@ -57,13 +57,33 @@
             </a>
         </div>
 
-        <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden">
+        <ul class="nav nav-pills mb-4 gap-2">
+            <li class="nav-item">
+                <a class="nav-link rounded-pill px-4 py-2 fw-semibold" 
+                   th:classappend="${tab == 'PENDING' or tab == null} ? 'active' : 'bg-white border text-secondary shadow-sm'" 
+                   th:href="@{/moderator/queue(tab='PENDING')}">
+                    <i class="bi bi-inbox-fill me-1.5"></i> Hàng đợi chờ duyệt
+                    <span class="badge bg-danger rounded-pill ms-2" th:if="${pendingCount != null && pendingCount > 0}" th:text="${pendingCount}">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link rounded-pill px-4 py-2 fw-semibold" 
+                   th:classappend="${tab == 'HISTORY'} ? 'active' : 'bg-white border text-secondary shadow-sm'" 
+                   th:href="@{/moderator/queue(tab='HISTORY')}">
+                    <i class="bi bi-clock-history me-1.5"></i> Lịch sử kiểm duyệt
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-2" th:if="${historyCount != null}" th:text="${historyCount}">0</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden" th:if="${tab == 'PENDING' or tab == null}">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-muted" style="font-size: 13px;">
                     <tr>
                         <th class="fw-semibold ps-4">Mã Task</th>
                         <th class="fw-semibold">Loại</th>
+                        <th class="fw-semibold">Nội dung</th>
                         <th class="fw-semibold">Tác giả</th>
                         <th class="fw-semibold">Thời gian gửi</th>
                         <th class="fw-semibold">Hạn xử lý (SLA)</th>
@@ -72,7 +92,7 @@
                     </thead>
                     <tbody class="border-top-0">
                     <tr th:if="${#lists.isEmpty(tasks)}">
-                        <td colspan="6" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                             Tuyệt vời! Không có nội dung nào đang chờ duyệt.
                         </td>
@@ -82,8 +102,12 @@
                         <td>
                             <span th:if="${task.itemType == 'COURSE'}" class="badge bg-primary-subtle text-primary border"><i class="bi bi-book me-1"></i>Khóa học</span>
                             <span th:if="${task.itemType == 'COHORT'}" class="badge bg-success-subtle text-success border"><i class="bi bi-collection me-1"></i>Module lẻ</span>
-                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
+                            <span th:if="${task.itemType == 'ASSET'}" class="badge border" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;"><i class="bi bi-file-earmark-arrow-up me-1"></i>Tài nguyên số</span>
+                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT' or task.itemType == 'ASSET'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
                             <span th:if="${task.assignedTo != null}" class="badge bg-info-subtle text-info border ms-1" title="Được chỉ định cụ thể"><i class="bi bi-person-check-fill me-1"></i><span th:text="${task.assignedTo.fullName}"></span></span>
+                        </td>
+                        <td>
+                            <span class="fw-semibold text-dark text-truncate d-inline-block" style="max-width: 260px;" th:text="${itemTitles[task.id] ?: 'Nội dung #' + task.itemId}">Nội dung</span>
                         </td>
                         <td th:text="${task.author?.fullName}">Giảng viên</td>
                         <td>
@@ -97,8 +121,77 @@
                             <span th:if="${task.deadlineAt == null}" class="badge bg-secondary-subtle text-secondary border">Tiêu chuẩn 48h</span>
                         </td>
                         <td class="text-center">
-                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-primary rounded-pill px-3">
-                                <i class="bi bi-eye me-1"></i> Xem chi tiết
+                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-pencil-square me-1"></i> Kiểm duyệt
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card card-custom border-0 shadow-sm rounded-4 overflow-hidden" th:if="${tab == 'HISTORY'}">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted" style="font-size: 13px;">
+                    <tr>
+                        <th class="fw-semibold ps-4">Mã Task</th>
+                        <th class="fw-semibold">Loại</th>
+                        <th class="fw-semibold">Nội dung</th>
+                        <th class="fw-semibold">Tác giả</th>
+                        <th class="fw-semibold">Người duyệt</th>
+                        <th class="fw-semibold">Kết quả</th>
+                        <th class="fw-semibold">Nhận xét / Phản hồi</th>
+                        <th class="fw-semibold">Thời gian</th>
+                        <th class="fw-semibold text-center">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                    <tr th:if="${#lists.isEmpty(tasks)}">
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-clock-history fs-1 d-block mb-3"></i>
+                            Chưa có lịch sử kiểm duyệt nào được ghi nhận.
+                        </td>
+                    </tr>
+                    <tr th:each="task : ${tasks}">
+                        <td class="ps-4 fw-medium text-dark">#<span th:text="${task.id}">1</span></td>
+                        <td>
+                            <span th:if="${task.itemType == 'COURSE'}" class="badge bg-primary-subtle text-primary border"><i class="bi bi-book me-1"></i>Khóa học</span>
+                            <span th:if="${task.itemType == 'COHORT'}" class="badge bg-success-subtle text-success border"><i class="bi bi-collection me-1"></i>Module lẻ</span>
+                            <span th:if="${task.itemType == 'ASSET'}" class="badge border" style="background-color: #f3e8ff; color: #7e22ce; border-color: #e9d5ff;"><i class="bi bi-file-earmark-arrow-up me-1"></i>Tài nguyên số</span>
+                            <span th:unless="${task.itemType == 'COURSE' or task.itemType == 'COHORT' or task.itemType == 'ASSET'}" class="badge bg-secondary-subtle text-secondary border" th:text="${task.itemType}">ITEM</span>
+                        </td>
+                        <td>
+                            <span class="fw-semibold text-dark text-truncate d-inline-block" style="max-width: 220px;" th:text="${itemTitles[task.id] ?: 'Nội dung #' + task.itemId}">Nội dung</span>
+                        </td>
+                        <td th:text="${task.author?.fullName}">Giảng viên</td>
+                        <td>
+                            <span th:if="${task.assignedTo != null}" class="badge bg-light text-dark border">
+                                <i class="bi bi-person-check-fill text-primary me-1"></i><span th:text="${task.assignedTo.fullName}"></span>
+                            </span>
+                            <span th:unless="${task.assignedTo != null}" class="text-muted small">Hệ thống</span>
+                        </td>
+                        <td>
+                            <span th:if="${task.status == 'APPROVED'}" class="badge bg-success-subtle text-success border px-2.5 py-1 rounded-pill">
+                                <i class="bi bi-check-circle-fill me-1"></i> Đã duyệt
+                            </span>
+                            <span th:if="${task.status == 'REJECTED'}" class="badge bg-danger-subtle text-danger border px-2.5 py-1 rounded-pill">
+                                <i class="bi bi-x-circle-fill me-1"></i> Từ chối
+                            </span>
+                            <span th:if="${task.status == 'ESCALATED'}" class="badge bg-warning-subtle text-warning border px-2.5 py-1 rounded-pill">
+                                <i class="bi bi-shield-exclamation me-1"></i> Vượt cấp Admin
+                            </span>
+                        </td>
+                        <td>
+                            <span class="small text-muted text-truncate d-inline-block" style="max-width: 220px;" th:text="${task.feedback ?: (task.escalationReason ?: '-')}">-</span>
+                        </td>
+                        <td>
+                            <span th:if="${task.createdAt != null}" class="text-muted small" th:text="${#dates.format(T(java.util.Date).from(task.createdAt), 'HH:mm dd/MM/yyyy')}"></span>
+                        </td>
+                        <td class="text-center">
+                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                <i class="bi bi-eye me-1"></i> Xem lại
                             </a>
                         </td>
                     </tr>

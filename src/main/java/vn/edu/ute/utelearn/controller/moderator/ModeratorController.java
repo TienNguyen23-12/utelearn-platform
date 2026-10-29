@@ -9,17 +9,32 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import vn.edu.ute.utelearn.dao.CohortRepository;
+import vn.edu.ute.utelearn.dao.InstructorAssetRepository;
 import vn.edu.ute.utelearn.dao.ModerationTaskRepository;
+import vn.edu.ute.utelearn.dao.UserRepository;
+import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.Course;
+import vn.edu.ute.utelearn.entity.InstructorAsset;
+import vn.edu.ute.utelearn.entity.Lesson;
 import vn.edu.ute.utelearn.entity.ModerationTask;
 import vn.edu.ute.utelearn.entity.ModeratorAttendance;
+import vn.edu.ute.utelearn.entity.Section;
 import vn.edu.ute.utelearn.entity.User;
+import vn.edu.ute.utelearn.security.RbacHelper;
 import vn.edu.ute.utelearn.service.AttendanceService;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CourseService;
+import vn.edu.ute.utelearn.service.LessonService;
+import vn.edu.ute.utelearn.service.ModerationService;
+import vn.edu.ute.utelearn.service.SectionService;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -32,15 +47,21 @@ public class ModeratorController {
     private final CourseService courseService;
     private final AttendanceService attendanceService;
     private final AuthService authService;
-    private final vn.edu.ute.utelearn.dao.CohortRepository cohortRepository;
-    private final vn.edu.ute.utelearn.service.SectionService sectionService;
-    private final vn.edu.ute.utelearn.service.LessonService lessonService;
-    private final vn.edu.ute.utelearn.dao.UserRepository userRepository;
-    private final vn.edu.ute.utelearn.security.RbacHelper rbacHelper;
+    private final CohortRepository cohortRepository;
+    private final SectionService sectionService;
+    private final LessonService lessonService;
+    private final UserRepository userRepository;
+    private final RbacHelper rbacHelper;
+    private final InstructorAssetRepository assetRepository;
+    private final ModerationService moderationService;
 
     @GetMapping("/queue")
     @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
-    public String viewQueue(Model model, RedirectAttributes redirectAttributes) {
+    public String viewQueue(
+            @RequestParam(required = false, defaultValue = "PENDING") String tab,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isEmpty()) {
             return "redirect:/login";
@@ -58,8 +79,23 @@ public class ModeratorController {
             return "redirect:/moderator/attendance";
         }
 
-        List<ModerationTask> tasks = taskRepository.findByStatusOrderByCreatedAtAsc("PENDING");
+        List<ModerationTask> tasks;
+        if ("HISTORY".equalsIgnoreCase(tab)) {
+            tasks = taskRepository.findByStatusInOrderByCreatedAtDesc(List.of("APPROVED", "REJECTED", "ESCALATED"));
+        } else {
+            tasks = taskRepository.findByStatusOrderByCreatedAtAsc("PENDING");
+        }
+
+        Map<Long, String> itemTitles = new HashMap<>();
+        for (ModerationTask t : tasks) {
+            itemTitles.put(t.getId(), moderationService.resolveItemTitle(t.getItemType(), t.getItemId()));
+        }
+
         model.addAttribute("tasks", tasks);
+        model.addAttribute("itemTitles", itemTitles);
+        model.addAttribute("tab", tab != null ? tab.toUpperCase() : "PENDING");
+        model.addAttribute("pendingCount", taskRepository.countByStatus("PENDING"));
+        model.addAttribute("historyCount", taskRepository.countByStatusIn(List.of("APPROVED", "REJECTED", "ESCALATED")));
         model.addAttribute("currentAttendance", currentAttendance);
         model.addAttribute("isCheckedIn", isCheckedIn);
         return "moderator/queue";
@@ -98,7 +134,7 @@ public class ModeratorController {
         model.addAttribute("isSelfAuthored", isSelfAuthored);
         model.addAttribute("currentAttendance", currentAttendance);
 
-        List<User> activeModerators = java.util.Collections.emptyList();
+        List<User> activeModerators = Collections.emptyList();
         if (isAdmin) {
             activeModerators = userRepository.findActiveModerators().stream()
                     .filter(m -> task.getAuthor() == null || !task.getAuthor().getId().equals(m.getId()))
@@ -109,28 +145,34 @@ public class ModeratorController {
         if ("COURSE".equals(task.getItemType())) {
             Course course = courseService.getCourseById(task.getItemId());
             model.addAttribute("course", course);
-            List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCourseId(course.getId());
+            List<Section> sections = sectionService.getSectionsByCourseId(course.getId());
             model.addAttribute("sections", sections);
-            java.util.Map<Long, List<vn.edu.ute.utelearn.entity.Lesson>> lessonsMap = new java.util.HashMap<>();
-            for (vn.edu.ute.utelearn.entity.Section s : sections) {
+            Map<Long, List<Lesson>> lessonsMap = new HashMap<>();
+            for (Section s : sections) {
                 lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
             }
             model.addAttribute("lessonsMap", lessonsMap);
             return "moderator/review_course";
         } else if ("COHORT".equals(task.getItemType())) {
-            vn.edu.ute.utelearn.entity.Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
+            Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             model.addAttribute("cohort", cohort);
             if (cohort.getCourse() != null) {
                 Course course = courseService.getCourseById(cohort.getCourse().getId());
                 model.addAttribute("course", course);
             }
-            List<vn.edu.ute.utelearn.entity.Section> sections = sectionService.getSectionsByCohortId(cohort.getId());
+            List<Section> sections = sectionService.getSectionsByCohortId(cohort.getId());
             model.addAttribute("sections", sections);
-            java.util.Map<Long, List<vn.edu.ute.utelearn.entity.Lesson>> lessonsMap = new java.util.HashMap<>();
-            for (vn.edu.ute.utelearn.entity.Section s : sections) {
+            Map<Long, List<Lesson>> lessonsMap = new HashMap<>();
+            for (Section s : sections) {
                 lessonsMap.put(s.getId(), lessonService.getLessonsBySectionId(s.getId()));
             }
             model.addAttribute("lessonsMap", lessonsMap);
+            return "moderator/review_course";
+        }
+
+        if ("ASSET".equals(task.getItemType())) {
+            InstructorAsset asset = assetRepository.findById(task.getItemId()).orElseThrow();
+            model.addAttribute("asset", asset);
             return "moderator/review_course";
         }
 

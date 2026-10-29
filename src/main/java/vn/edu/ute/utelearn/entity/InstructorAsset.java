@@ -49,6 +49,10 @@ public class InstructorAsset {
     @Column(name = "shared_emails", columnDefinition = "TEXT")
     private String sharedEmails;
 
+    @Column(name = "status", length = 30)
+    @Builder.Default
+    private String status = "PENDING_MODERATOR";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

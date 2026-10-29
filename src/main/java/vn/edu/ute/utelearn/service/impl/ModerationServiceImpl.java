@@ -9,16 +9,16 @@ import vn.edu.ute.utelearn.dao.CourseRepository;
 import vn.edu.ute.utelearn.dao.ModerationTaskRepository;
 import vn.edu.ute.utelearn.dao.ModeratorAttendanceRepository;
 import vn.edu.ute.utelearn.dao.UserRepository;
-import vn.edu.ute.utelearn.dto.NotificationEvent;
 import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.Course;
 import vn.edu.ute.utelearn.entity.ModerationTask;
 import vn.edu.ute.utelearn.entity.ModeratorAttendance;
 import vn.edu.ute.utelearn.entity.NotificationCategory;
+import vn.edu.ute.utelearn.dto.NotificationEvent;
 import vn.edu.ute.utelearn.entity.NotificationType;
 import vn.edu.ute.utelearn.entity.User;
-import vn.edu.ute.utelearn.service.ModerationService;
 import vn.edu.ute.utelearn.service.NotificationService;
+import vn.edu.ute.utelearn.service.ModerationService;
 import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.time.Instant;
@@ -28,8 +28,8 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class ModerationServiceImpl implements ModerationService {
 
     private final ModerationTaskRepository moderationTaskRepository;
@@ -41,6 +41,7 @@ public class ModerationServiceImpl implements ModerationService {
     private final vn.edu.ute.utelearn.dao.CohortScheduleRepository cohortScheduleRepository;
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final NotificationService notificationService;
+    private final vn.edu.ute.utelearn.dao.InstructorAssetRepository assetRepository;
 
     @Override
     public ModerationTask createCourseModerationTask(Long courseId, Long authorId) {
@@ -85,12 +86,12 @@ public class ModerationServiceImpl implements ModerationService {
         ModerationTask task = ModerationTask.builder()
                 .itemType("COHORT")
                 .itemId(cohortId)
-                .cohort(cohort)
                 .author(author)
+                .cohort(cohort)
                 .status("PENDING")
                 .assignedAt(now)
                 .deadlineAt(now.plus(48, ChronoUnit.HOURS))
-                .estimatedReviewMinutes(45)
+                .estimatedReviewMinutes(30)
                 .escalationLevel(1)
                 .build();
 
@@ -98,6 +99,35 @@ public class ModerationServiceImpl implements ModerationService {
         notifyModeratorsOnSubmission(savedTask, author, "module", cohort.getName(), "COHORT_MODERATION");
         log.info("[ModerationService] Khoi tao nhiem vu kiem duyet module id: {}, cohortId: {}, authorId: {}, deadlineAt: {}",
                 savedTask.getId(), cohortId, authorId, savedTask.getDeadlineAt());
+        return savedTask;
+    }
+
+    @Override
+    public ModerationTask createAssetModerationTask(Long assetId, Long authorId) {
+        vn.edu.ute.utelearn.entity.InstructorAsset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new RuntimeException("Asset not found"));
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        asset.setStatus("PENDING_MODERATOR");
+        assetRepository.save(asset);
+
+        Instant now = Instant.now();
+        ModerationTask task = ModerationTask.builder()
+                .itemType("ASSET")
+                .itemId(assetId)
+                .author(author)
+                .status("PENDING")
+                .assignedAt(now)
+                .deadlineAt(now.plus(48, ChronoUnit.HOURS))
+                .estimatedReviewMinutes(15)
+                .escalationLevel(1)
+                .build();
+
+        ModerationTask savedTask = moderationTaskRepository.save(task);
+        notifyModeratorsOnSubmission(savedTask, author, "tài nguyên số", asset.getName(), "ASSET_MODERATION");
+        log.info("[ModerationService] Khoi tao nhiem vu kiem duyet tai nguyen id: {}, assetId: {}, authorId: {}, deadlineAt: {}",
+                savedTask.getId(), assetId, authorId, savedTask.getDeadlineAt());
         return savedTask;
     }
 
@@ -135,6 +165,15 @@ public class ModerationServiceImpl implements ModerationService {
             itemTitle = cohort.getName();
             if (author == null) {
                 author = cohort.getCreatedBy();
+            }
+        } else if ("ASSET".equals(task.getItemType())) {
+            vn.edu.ute.utelearn.entity.InstructorAsset asset = assetRepository.findById(task.getItemId()).orElseThrow();
+            asset.setStatus("APPROVED");
+            assetRepository.save(asset);
+            itemLabel = "tài nguyên số";
+            itemTitle = asset.getName();
+            if (author == null) {
+                author = asset.getInstructor();
             }
         }
 
@@ -176,6 +215,15 @@ public class ModerationServiceImpl implements ModerationService {
             if (author == null) {
                 author = cohort.getCreatedBy();
             }
+        } else if ("ASSET".equals(task.getItemType())) {
+            vn.edu.ute.utelearn.entity.InstructorAsset asset = assetRepository.findById(task.getItemId()).orElseThrow();
+            asset.setStatus("REJECTED");
+            assetRepository.save(asset);
+            itemLabel = "tài nguyên số";
+            itemTitle = asset.getName();
+            if (author == null) {
+                author = asset.getInstructor();
+            }
         }
 
         recordModeratorProductivity(moderator);
@@ -206,6 +254,10 @@ public class ModerationServiceImpl implements ModerationService {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             cohort.setModerationStatus("PENDING_ADMIN");
             cohortRepository.save(cohort);
+        } else if ("ASSET".equals(task.getItemType())) {
+            vn.edu.ute.utelearn.entity.InstructorAsset asset = assetRepository.findById(task.getItemId()).orElseThrow();
+            asset.setStatus("PENDING_ADMIN");
+            assetRepository.save(asset);
         }
 
         recordModeratorProductivity(moderator);
@@ -248,6 +300,10 @@ public class ModerationServiceImpl implements ModerationService {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElseThrow();
             cohort.setModerationStatus("PENDING_MODERATOR");
             cohortRepository.save(cohort);
+        } else if ("ASSET".equals(task.getItemType())) {
+            vn.edu.ute.utelearn.entity.InstructorAsset asset = assetRepository.findById(task.getItemId()).orElseThrow();
+            asset.setStatus("PENDING_MODERATOR");
+            assetRepository.save(asset);
         }
 
         log.info("[ModerationService] Admin {} chuyen giao task {} ve Moderator {}: {}",
@@ -319,7 +375,7 @@ public class ModerationServiceImpl implements ModerationService {
             }
             moderationTaskRepository.save(task);
             if (approved != null && task.getAuthor() != null && task.getAuthor().getId() != null) {
-                String itemLabel = "COHORT".equalsIgnoreCase(itemType) ? "module" : "khóa học";
+                String itemLabel = "COHORT".equalsIgnoreCase(itemType) ? "module" : ("ASSET".equalsIgnoreCase(itemType) ? "tài nguyên số" : "khóa học");
                 String itemTitle = resolveItemTitle(itemType, itemId);
                 notifyAuthorOnDecision(task, task.getAuthor(), actor, itemLabel, itemTitle, approved, task.getFeedback());
             }
@@ -327,12 +383,16 @@ public class ModerationServiceImpl implements ModerationService {
         }
     }
 
-    private String resolveItemTitle(String itemType, Long itemId) {
+    @Override
+    public String resolveItemTitle(String itemType, Long itemId) {
         if (itemId == null) {
             return "";
         }
         if ("COHORT".equalsIgnoreCase(itemType)) {
             return cohortRepository.findById(itemId).map(Cohort::getName).orElse("");
+        }
+        if ("ASSET".equalsIgnoreCase(itemType)) {
+            return assetRepository.findById(itemId).map(vn.edu.ute.utelearn.entity.InstructorAsset::getName).orElse("");
         }
         return courseRepository.findById(itemId).map(Course::getTitle).orElse("");
     }
@@ -388,12 +448,16 @@ public class ModerationServiceImpl implements ModerationService {
             String content = cleanFeedback != null
                     ? (baseContent + (approved ? " Phản hồi: " : " Lý do: ") + cleanFeedback)
                     : baseContent;
-            String actionUrl = "COHORT".equalsIgnoreCase(task.getItemType())
-                    ? ("/instructor/cohorts/" + task.getItemId() + "/curriculum")
-                    : ("/instructor/courses/" + task.getItemId() + "/curriculum");
-            String referenceType = "COHORT".equalsIgnoreCase(task.getItemType())
-                    ? "COHORT_MODERATION"
-                    : "COURSE_MODERATION";
+            String actionUrl = "ASSET".equalsIgnoreCase(task.getItemType())
+                    ? "/instructor/assets"
+                    : ("COHORT".equalsIgnoreCase(task.getItemType())
+                            ? ("/instructor/cohorts/" + task.getItemId() + "/curriculum")
+                            : ("/instructor/courses/" + task.getItemId() + "/curriculum"));
+            String referenceType = "ASSET".equalsIgnoreCase(task.getItemType())
+                    ? "ASSET_MODERATION"
+                    : ("COHORT".equalsIgnoreCase(task.getItemType())
+                            ? "COHORT_MODERATION"
+                            : "COURSE_MODERATION");
 
             NotificationEvent event = NotificationEvent.builder()
                     .recipientId(authorId)

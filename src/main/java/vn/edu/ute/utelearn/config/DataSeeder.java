@@ -116,6 +116,13 @@ public class DataSeeder implements CommandLineRunner {
             }
 
             initCartAndWishlistTables();
+            if (isTablePresent("instructor_assets")) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE instructor_assets ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'PENDING_MODERATOR'");
+                    jdbcTemplate.execute("ALTER TABLE instructor_assets ADD COLUMN IF NOT EXISTS shared_emails TEXT");
+                    jdbcTemplate.execute("UPDATE instructor_assets SET status = 'APPROVED' WHERE status IS NULL");
+                } catch (Exception ignored) {}
+            }
             seedSampleQuizzes();
 
             log.info("[DataSeeder] Quá trình nạp dữ liệu mẫu hoàn tất thành công!");
