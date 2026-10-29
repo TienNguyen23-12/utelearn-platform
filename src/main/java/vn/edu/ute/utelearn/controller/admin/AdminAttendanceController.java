@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AttendanceService;
 import vn.edu.ute.utelearn.service.AuthService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.util.Optional;
 
@@ -26,9 +27,8 @@ public class AdminAttendanceController {
             return "redirect:/login";
         }
         User currentUser = currentUserOpt.get();
-        boolean isAdmin = currentUser.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
-        if (!isAdmin) {
-            return "redirect:/home?error=admin_only";
+        if (!SecurityUtils.isAdmin(currentUser)) {
+            return "redirect:/home?error=access_denied";
         }
         
         model.addAttribute("currentUser", currentUser);

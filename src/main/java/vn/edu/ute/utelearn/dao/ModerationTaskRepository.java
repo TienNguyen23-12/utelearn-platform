@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.edu.ute.utelearn.entity.ModerationTask;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ModerationTaskRepository extends JpaRepository<ModerationTask, Long> {
@@ -15,17 +17,21 @@ public interface ModerationTaskRepository extends JpaRepository<ModerationTask, 
     
     @EntityGraph(attributePaths = {"author", "escalatedBy", "cohort"})
     List<ModerationTask> findByStatusAndEscalationLevelGreaterThanOrderByCreatedAtAsc(String status, Integer escalationLevel);
+
+    @EntityGraph(attributePaths = {"author", "assignedTo", "escalatedBy", "cohort"})
+    List<ModerationTask> findByStatusInOrderByCreatedAtDesc(Collection<String> statuses);
     
     @EntityGraph(attributePaths = {"author", "cohort", "assignedTo", "escalatedBy"})
-    java.util.Optional<ModerationTask> findById(Long id);
+    Optional<ModerationTask> findById(Long id);
 
     long countByStatus(String status);
+    long countByStatusIn(Collection<String> statuses);
     long countByStatusAndCreatedAtBetween(String status, java.time.Instant start, java.time.Instant end);
 
     @EntityGraph(attributePaths = {"author", "assignedTo"})
-    java.util.Optional<ModerationTask> findTopByItemTypeAndItemIdOrderByCreatedAtDesc(String itemType, Long itemId);
+    Optional<ModerationTask> findTopByItemTypeAndItemIdOrderByCreatedAtDesc(String itemType, Long itemId);
 
-    java.util.List<ModerationTask> findByItemTypeAndItemIdAndStatusIn(String itemType, Long itemId, java.util.Collection<String> statuses);
+    List<ModerationTask> findByItemTypeAndItemIdAndStatusIn(String itemType, Long itemId, Collection<String> statuses);
 
     @EntityGraph(attributePaths = {"assignedTo", "escalatedBy"})
     @org.springframework.data.jpa.repository.Query("SELECT t FROM ModerationTask t")

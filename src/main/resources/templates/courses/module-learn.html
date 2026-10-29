@@ -902,30 +902,18 @@
                         <span class="fw-bold text-success small" th:text="${currentUser.formattedBalance}">0 VNĐ</span>
                     </div>
                 </li>
-                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
-                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/profile"><i class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
-                <li th:if="${@rbac.hasRole('STUDENT')}"><a class="dropdown-item py-2 small rounded-3 mt-1" href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
-                <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/orders"><i class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
-                <li th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
-                    <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/admin/orders">
-                        <i class="bi bi-credit-card-2-front me-2"></i>Quản lý Đơn hàng
-                    </a>
-                </li>
-                <li th:if="${@rbac.hasRole('ADMIN')}">
-                    <a class="dropdown-item py-2 small rounded-3 text-primary fw-semibold" href="/dashboard">
-                        <i class="bi bi-shield-lock-fill me-2"></i>Trang Quản trị Hệ thống
-                    </a>
-                </li>
-                <li th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
-                    <a class="dropdown-item py-2 small rounded-3 text-success fw-semibold" href="/instructor/courses">
-                        <i class="bi bi-easel-fill me-2"></i>Quản lý Đào tạo
-                    </a>
-                </li>
-                <li th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
-                    <a class="dropdown-item py-2 small rounded-3 text-danger fw-semibold" href="/moderator/queue">
-                        <i class="bi bi-check2-circle me-2"></i>Hàng đợi Kiểm duyệt
-                    </a>
-                </li>
+                                        <li><a class="dropdown-item py-2 small rounded-3 mt-1" href="/home"><i
+                                    class="bi bi-house-door-fill me-2 text-primary"></i>Trang chủ</a></li>
+                        <li th:if="${@rbac.hasAnyPermission('USER_MANAGE', 'ROLE_MANAGE', 'CONTENT_APPROVE', 'COURSE_CREATE', 'ORDER_MANAGE', 'ASSET_MANAGE') or @rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/dashboard"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bảng điều khiển</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3" href="/profile"><i
+                                    class="bi bi-person-circle me-2 text-success"></i>Hồ sơ cá nhân</a></li>
+                        <li th:if="${@rbac.hasRole('STUDENT') or @rbac.hasRole('ADMIN')}"><a class="dropdown-item py-2 small rounded-3"
+                                href="/courses/my-courses"><i class="bi bi-journal-bookmark-fill me-2 text-warning"></i>Khóa học của tôi</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3" href="/orders"><i
+                                    class="bi bi-receipt me-2 text-info"></i>Đơn hàng của tôi</a></li>
+                        <li><a class="dropdown-item py-2 small rounded-3" href="/cart"><i
+                                    class="bi bi-cart3 me-2 text-primary"></i>Giỏ hàng của tôi</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <a class="dropdown-item py-2 small rounded-3 text-danger" href="/logout">
@@ -2947,6 +2935,27 @@ function showToast(message, type = 'success') {
                 isChatConnected = true;
                 isConnectingChat = false;
                 updateChatStatus('connected');
+                const curUid = document.body.getAttribute('data-current-user-id');
+                function onLockMsg(msgOutput) {
+                    try {
+                        const p = JSON.parse(msgOutput.body);
+                        if (p && (p.type === 'ACCOUNT_LOCKED' || p.action === 'FORCE_LOGOUT') && (!p.userId || String(p.userId) === String(curUid))) {
+                            window.location.href = '/login?error=account_locked';
+                        }
+                    } catch (e) {}
+                }
+                if (curUid) {
+                    stompClient.subscribe('/topic/notifications/' + curUid, onLockMsg);
+                    stompClient.subscribe('/topic/account-status/' + curUid, onLockMsg);
+                    stompClient.subscribe('/topic/account-status', onLockMsg);
+                }
+                if (!window.__lockCheckInterval) {
+                    window.__lockCheckInterval = setInterval(() => {
+                        fetch('/api/notifications/unread-count').then(r => {
+                            if (r.status === 401) window.location.href = '/login?error=account_locked';
+                        }).catch(() => {});
+                    }, 3000);
+                }
 
                 stompClient.subscribe('/topic/cohort/' + moduleId, function (messageOutput) {
                     try {

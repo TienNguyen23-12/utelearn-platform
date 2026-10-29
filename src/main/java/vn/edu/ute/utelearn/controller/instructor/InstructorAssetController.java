@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -14,39 +15,46 @@ import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.service.InstructorAssetService;
+import vn.edu.ute.utelearn.service.ModerationService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Controller
-@RequestMapping("/instructor/assets")
+@RequestMapping({"/assets", "/instructor/assets"})
+@PreAuthorize("hasAnyAuthority('ASSET_MANAGE', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('ASSET_MANAGE')")
 @RequiredArgsConstructor
 public class InstructorAssetController {
 
     private final InstructorAssetService assetService;
     private final AuthService authService;
     private final CloudinaryService cloudinaryService;
+    private final ModerationService moderationService;
 
     @GetMapping
     public String listAssets(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String type,
+            @RequestParam(required = false, defaultValue = "ALL") String scope,
             @RequestParam(defaultValue = "0") int page,
             Model model
     ) {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
 
-        Page<InstructorAsset> assets = assetService.getAssetsByInstructor(
-                currentUser, keyword, type, PageRequest.of(page, 12)
+        Page<InstructorAsset> assets = assetService.getAssets(
+                currentUser, keyword, type, scope, PageRequest.of(page, 12)
         );
 
         model.addAttribute("assets", assets);
         model.addAttribute("folders", assetService.getFoldersByInstructor(currentUser));
         model.addAttribute("keyword", keyword);
         model.addAttribute("type", type);
+        model.addAttribute("scope", scope);
         model.addAttribute("currentUser", currentUser);
+        model.addAttribute("isAdmin", SecurityUtils.isAdmin(currentUser));
         
         return "instructor/assets/index";
     }
@@ -100,6 +108,12 @@ public class InstructorAssetController {
         try {
             InstructorAsset asset = assetService.saveAssetMetadata(currentUser.get(), name, assetType, folderPath, visibility, sharedEmails, cloudinaryUrl, fileSizeBytes);
             
+            if (!SecurityUtils.isAdmin(currentUser.get())) {
+                try {
+                    moderationService.createAssetModerationTask(asset.getId(), currentUser.get().getId());
+                } catch (Exception ignored) {}
+            }
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("asset", asset);
@@ -110,6 +124,45 @@ public class InstructorAssetController {
             error.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(error);
         }
+    }
+
+    @PostMapping("/{id}/edit")
+    public String editAsset(
+            @PathVariable Long id,
+            @RequestParam("name") String name,
+            @RequestParam(value = "folderPath", defaultValue = "/") String folderPath,
+            @RequestParam(value = "visibility", defaultValue = "PRIVATE") String visibility,
+            @RequestParam(value = "sharedEmails", required = false) String sharedEmails,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser()
+                    .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
+            assetService.updateAssetMetadata(id, currentUser, name, folderPath, visibility, sharedEmails);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin tài nguyên thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/assets";
+    }
+
+    @PostMapping("/{id}/submit-review")
+    public String submitAssetForReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser()
+                    .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
+            InstructorAsset asset = assetService.getAssetById(id);
+            boolean isOwner = asset.getInstructor() != null && asset.getInstructor().getId().equals(currentUser.getId());
+            boolean isAdmin = SecurityUtils.isAdmin(currentUser);
+            if (!isOwner && !isAdmin) {
+                throw new RuntimeException("Bạn không có quyền gửi duyệt tài nguyên này");
+            }
+            moderationService.createAssetModerationTask(id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi tài nguyên cho Moderator kiểm duyệt!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/assets";
     }
 
     @PostMapping("/{id}/delete")
@@ -123,6 +176,6 @@ public class InstructorAssetController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }
-        return "redirect:/instructor/assets";
+        return "redirect:/assets";
     }
 }

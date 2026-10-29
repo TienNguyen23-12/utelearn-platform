@@ -6,7 +6,7 @@
     "url": "/dashboard",
     "badge": "Chính",
     "badgeClass": "bg-primary",
-    "allowedRoles": ["ADMIN", "INSTRUCTOR", "MODERATOR", "TA", "STUDENT"]
+    "requiredPermissions": []
   },
   {
     "id": "courses",
@@ -15,16 +15,16 @@
     "url": "/instructor/courses",
     "badge": "Giảng dạy",
     "badgeClass": "bg-info text-dark",
-    "allowedRoles": ["ADMIN", "INSTRUCTOR"]
+    "requiredPermissions": ["COURSE_CREATE"]
   },
   {
     "id": "assets",
-    "title": "Kho Tài nguyên Số Giảng viên",
+    "title": "Kho Tài nguyên Số",
     "icon": "bi-cloud-arrow-up-fill",
-    "url": "/instructor/assets",
+    "url": "/assets",
     "badge": "Cloudinary",
     "badgeClass": "bg-secondary",
-    "allowedRoles": ["ADMIN", "INSTRUCTOR"]
+    "requiredPermissions": ["ASSET_MANAGE"]
   },
   {
     "id": "moderation",
@@ -33,33 +33,33 @@
     "url": "/moderator/queue",
     "badge": "Kiểm duyệt",
     "badgeClass": "bg-warning text-dark",
-    "allowedRoles": ["ADMIN", "MODERATOR"]
+    "requiredPermissions": ["CONTENT_APPROVE"]
   },
   {
-    "id": "oj",
-    "title": "Luyện code Online Judge",
-    "icon": "bi-code-slash",
-    "url": "/oj/problems",
-    "badge": "Coming Soon",
-    "badgeClass": "bg-warning text-dark",
-    "allowedRoles": ["ADMIN", "INSTRUCTOR", "STUDENT"]
-  },
-  {
-    "id": "roles",
-    "title": "Quản lý Vai trò & Phân quyền (Tick chọn)",
-    "icon": "bi-shield-check",
-    "url": "/admin/roles",
-    "badge": "Dynamic RBAC",
-    "badgeClass": "bg-warning text-dark",
-    "allowedRoles": ["ADMIN"]
+    "id": "orders",
+    "title": "Quản lý Đơn hàng & Thanh toán",
+    "icon": "bi-credit-card-2-front",
+    "url": "/admin/orders",
+    "badge": "Tài chính",
+    "badgeClass": "bg-primary",
+    "requiredPermissions": ["ORDER_MANAGE"]
   },
   {
     "id": "users",
     "title": "Quản trị Tài khoản Người dùng",
     "icon": "bi-people-fill",
     "url": "/admin/users",
-    "badge": "Admin Only",
+    "badge": "Quản trị",
     "badgeClass": "bg-danger",
-    "allowedRoles": ["ADMIN"]
+    "requiredPermissions": ["USER_MANAGE"]
+  },
+  {
+    "id": "roles",
+    "title": "Vai trò & Phân quyền Động",
+    "icon": "bi-shield-check",
+    "url": "/admin/roles",
+    "badge": "Dynamic RBAC",
+    "badgeClass": "bg-warning text-dark",
+    "requiredPermissions": ["ROLE_MANAGE"]
   }
 ]

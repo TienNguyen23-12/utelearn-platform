@@ -66,7 +66,7 @@ public class InstructorAssetUploadFeatureTest {
         cloudinaryService = new CloudinaryServiceImpl(cloudinary, properties);
         stubAuthService = new StubAuthService();
         stubAssetService = new StubInstructorAssetService();
-        controller = new InstructorAssetController(stubAssetService, stubAuthService, cloudinaryService);
+        controller = new InstructorAssetController(stubAssetService, stubAuthService, cloudinaryService, new StubModerationService());
 
         stubRepo = new StubAssetRepository();
         assetServiceImpl = new InstructorAssetServiceImpl(stubRepo, cloudinaryService);
@@ -241,6 +241,16 @@ public class InstructorAssetUploadFeatureTest {
         }
 
         @Override
+        public Page<InstructorAsset> getAssets(User instructor, String keyword, String type, String scope, Pageable pageable) {
+            return Page.empty();
+        }
+
+        @Override
+        public InstructorAsset updateAssetMetadata(Long assetId, User user, String name, String folderPath, String visibility, String sharedEmails) {
+            return null;
+        }
+
+        @Override
         public List<String> getFoldersByInstructor(User instructor) {
             return List.of("Thư mục chung");
         }
@@ -343,5 +353,21 @@ public class InstructorAssetUploadFeatureTest {
         @Override public InstructorAsset getOne(Long id) { return findById(id).orElse(null); }
         @Override public InstructorAsset getById(Long id) { return findById(id).orElse(null); }
         @Override public InstructorAsset getReferenceById(Long id) { return findById(id).orElse(null); }
+        @Override public Page<InstructorAsset> findAccessibleAssets(User user, boolean isAdmin, boolean isInstructor, String userEmailPattern, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
+        @Override public Page<InstructorAsset> findMyAssets(User user, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
+        @Override public Page<InstructorAsset> findSharedAssets(User user, boolean isInstructor, String userEmailPattern, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
+    }
+
+    private static class StubModerationService implements vn.edu.ute.utelearn.service.ModerationService {
+        @Override public vn.edu.ute.utelearn.entity.ModerationTask createCourseModerationTask(Long courseId, Long authorId) { return null; }
+        @Override public vn.edu.ute.utelearn.entity.ModerationTask createCohortModerationTask(Long cohortId, Long authorId) { return null; }
+        @Override public vn.edu.ute.utelearn.entity.ModerationTask createAssetModerationTask(Long assetId, Long authorId) { return null; }
+        @Override public void approveTask(Long taskId, Long moderatorId, String feedback) {}
+        @Override public void rejectTask(Long taskId, Long moderatorId, String feedback) {}
+        @Override public void escalateTask(Long taskId, Long moderatorId, String reason) {}
+        @Override public void reassignTaskToModerator(Long taskId, Long adminId, Long targetModeratorId, String note) {}
+        @Override public Optional<vn.edu.ute.utelearn.entity.ModerationTask> getLatestTask(String itemType, Long itemId) { return Optional.empty(); }
+        @Override public void syncStatusFromExternalChange(String itemType, Long itemId, String newStatus, User actor) {}
+        @Override public String resolveItemTitle(String itemType, Long itemId) { return ""; }
     }
 }

@@ -91,6 +91,17 @@
         };
     }
 
+    function checkForceLogout(data, currentUserId) {
+        if (!data) return false;
+        if (data.type === 'ACCOUNT_LOCKED' || data.action === 'FORCE_LOGOUT' || data.message === 'FORCE_LOGOUT') {
+            if (!data.userId || String(data.userId) === String(currentUserId)) {
+                window.location.href = '/login?error=account_locked';
+                return true;
+            }
+        }
+        return false;
+    }
+
     function showToast(n) {
         if (typeof Toastify !== 'function') return;
         const styleInfo = resolveToastStyle(n.type);
@@ -176,6 +187,10 @@
     async function fetchUnreadCount() {
         try {
             const resp = await fetch('/api/notifications/unread-count');
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (!resp.ok) return;
             const data = await resp.json();
             updateBadge(data.unreadCount || 0);
@@ -202,26 +217,18 @@
                 `;
                 return;
             }
-            list.innerHTML = filtered.map(renderNotificationItem).join('');
-            attachItemClickListeners(list);
-        });
-    }
 
-    function attachItemClickListeners(container) {
-        const links = container.querySelectorAll('.nav-notif-link');
-        links.forEach(link => {
-            link.addEventListener('click', function (e) {
-                const id = this.getAttribute('data-notification-id');
-                if (id) {
-                    fetch(`/api/notifications/${id}/read`, { method: 'PUT' });
-                }
-            });
+            list.innerHTML = filtered.map(renderNotificationItem).join('');
         });
     }
 
     async function loadRecentNotifications() {
         try {
             const resp = await fetch('/api/notifications/recent');
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (!resp.ok) return;
             const data = await resp.json();
             cachedNotifications = data || [];
@@ -232,7 +239,16 @@
 
     async function markAllAsRead() {
         try {
-            const resp = await fetch('/api/notifications/mark-all-read', { method: 'PUT' });
+            const resp = await fetch('/api/notifications/read-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (resp.ok) {
                 updateBadge(0);
                 cachedNotifications.forEach(n => n.isRead = true);
@@ -243,6 +259,9 @@
     }
 
     function handleIncomingNotification(n) {
+        if (checkForceLogout(n, null)) {
+            return;
+        }
         cachedNotifications.unshift(n);
         fetchUnreadCount();
         filterAndRenderNotifications();
@@ -285,7 +304,24 @@
                 stompClient.subscribe('/topic/notifications/' + userId, function (msg) {
                     try {
                         const notif = JSON.parse(msg.body);
+                        if (checkForceLogout(notif, userId)) return;
                         handleIncomingNotification(notif);
+                    } catch (err) {
+                    }
+                });
+
+                stompClient.subscribe('/topic/account-status/' + userId, function (msg) {
+                    try {
+                        const payload = JSON.parse(msg.body);
+                        if (checkForceLogout(payload, userId)) return;
+                    } catch (err) {
+                    }
+                });
+
+                stompClient.subscribe('/topic/account-status', function (msg) {
+                    try {
+                        const payload = JSON.parse(msg.body);
+                        if (checkForceLogout(payload, userId)) return;
                     } catch (err) {
                     }
                 });
@@ -293,6 +329,7 @@
                 stompClient.subscribe('/topic/users/' + userId + '/notifications', function (msg) {
                     try {
                         const raw = JSON.parse(msg.body);
+                        if (checkForceLogout(raw, userId)) return;
                         const chatNotif = {
                             id: null,
                             title: 'Thảo luận lớp học: ' + (raw.cohortName || ''),
@@ -327,6 +364,7 @@
 
         setupEventListeners();
         fetchUnreadCount();
+        setInterval(fetchUnreadCount, 3000);
         ensureDependencies(() => {
             connectWebSocket(userId);
             loadRecentNotifications();

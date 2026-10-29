@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+@PreAuthorize("hasAnyAuthority('USER_MANAGE', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('USER_MANAGE')")
 public class UserController {
 
     private final UserService userService;

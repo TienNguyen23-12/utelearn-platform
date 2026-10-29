@@ -116,6 +116,13 @@ public class DataSeeder implements CommandLineRunner {
             }
 
             initCartAndWishlistTables();
+            if (isTablePresent("instructor_assets")) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE instructor_assets ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'PENDING_MODERATOR'");
+                    jdbcTemplate.execute("ALTER TABLE instructor_assets ADD COLUMN IF NOT EXISTS shared_emails TEXT");
+                    jdbcTemplate.execute("UPDATE instructor_assets SET status = 'APPROVED' WHERE status IS NULL");
+                } catch (Exception ignored) {}
+            }
             seedSampleQuizzes();
 
             log.info("[DataSeeder] Quá trình nạp dữ liệu mẫu hoàn tất thành công!");
@@ -281,12 +288,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedPermissions() {
-        Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM permissions", Integer.class);
-        if (count != null && count > 0) {
-            return;
-        }
-        log.info("[DataSeeder] Nạp danh sách Quyền hạn (Permissions)...");
-        String sql = "INSERT INTO permissions (code, name, module) VALUES (?, ?, ?) ON CONFLICT (code) DO NOTHING";
+        log.info("[DataSeeder] Náº¡p vÃ  cáº­p nháº­t danh sÃ¡ch Quyá»n háº¡n (Permissions)...");
+        String sql = "INSERT INTO permissions (code, name, module) VALUES (?, ?, ?) ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, module = EXCLUDED.module";
 
         List<Object[]> permissions = List.of(
             new Object[]{"USER_MANAGE", "Quản lý tài khoản người dùng", "AUTH"},
@@ -294,13 +297,15 @@ public class DataSeeder implements CommandLineRunner {
             new Object[]{"COURSE_CREATE", "Tạo và chỉnh sửa khóa học chuẩn", "COURSE"},
             new Object[]{"CONTENT_APPROVE", "Phê duyệt nội dung bài giảng và đề thi", "MODERATION"},
             new Object[]{"ASSET_MANAGE", "Quản lý kho tài nguyên số cá nhân", "ASSET"},
-            new Object[]{"CODE_SUBMIT", "Nộp bài chấm Online Judge", "OJ"},
             new Object[]{"ORDER_MANAGE", "Quản lý và đối soát đơn hàng", "PAYMENT"}
         );
 
         for (Object[] permission : permissions) {
             jdbcTemplate.update(sql, permission);
         }
+
+        jdbcTemplate.update("DELETE FROM role_permissions WHERE permission_id IN (SELECT id FROM permissions WHERE code = 'CODE_SUBMIT')");
+        jdbcTemplate.update("DELETE FROM permissions WHERE code = 'CODE_SUBMIT'");
     }
 
     private void assignPermissionsToRoles() {

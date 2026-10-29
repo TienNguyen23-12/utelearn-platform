@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.service.DashboardService;
+import vn.edu.ute.utelearn.util.SecurityUtils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,8 +25,8 @@ public class DashboardController {
         Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
         if (currentUserOpt.isPresent()) {
             User user = currentUserOpt.get();
-            boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
-            return isAdmin ? "redirect:/dashboard" : "redirect:/home";
+            boolean hasStaffAccess = SecurityUtils.isAdmin(user) || SecurityUtils.hasAnyPermission(user, "USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE");
+            return hasStaffAccess ? "redirect:/dashboard" : "redirect:/home";
         }
         return "redirect:/home";
     }
@@ -38,9 +39,9 @@ public class DashboardController {
         }
 
         User user = currentUserOpt.get();
-        boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
-        if (!isAdmin) {
-            return "redirect:/home?error=admin_only";
+        boolean hasStaffAccess = SecurityUtils.isAdmin(user) || SecurityUtils.hasAnyPermission(user, "USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE");
+        if (!hasStaffAccess) {
+            return "redirect:/home?error=access_denied";
         }
 
         Map<String, Object> stats = dashboardService.getDashboardStatistics(filter);

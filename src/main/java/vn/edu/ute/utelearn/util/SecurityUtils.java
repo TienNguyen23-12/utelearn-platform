@@ -33,19 +33,51 @@ public final class SecurityUtils {
         return false;
     }
 
+    public static boolean hasPermission(User user, String permissionCode) {
+        if (user == null || permissionCode == null) {
+            return false;
+        }
+        if (isAdmin(user)) {
+            return true;
+        }
+        if (user.getRoles() == null) {
+            return false;
+        }
+        return user.getRoles().stream()
+                .filter(Objects::nonNull)
+                .flatMap(r -> r.getPermissions().stream())
+                .filter(Objects::nonNull)
+                .anyMatch(p -> permissionCode.equalsIgnoreCase(p.getCode()));
+    }
+
+    public static boolean hasAnyPermission(User user, String... permissionCodes) {
+        if (user == null || permissionCodes == null || permissionCodes.length == 0) {
+            return false;
+        }
+        if (isAdmin(user)) {
+            return true;
+        }
+        for (String perm : permissionCodes) {
+            if (hasPermission(user, perm)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean isAdmin(User user) {
         return hasRole(user, "ADMIN");
     }
 
     public static boolean isAdminOrFinance(User user) {
-        return hasRole(user, "ADMIN", "FINANCE");
+        return hasRole(user, "ADMIN", "FINANCE") || hasPermission(user, "ORDER_MANAGE");
     }
 
     public static boolean isInstructor(User user) {
-        return hasRole(user, "INSTRUCTOR", "TEACHER");
+        return hasRole(user, "INSTRUCTOR", "TEACHER") || hasPermission(user, "COURSE_CREATE") || hasPermission(user, "ASSET_MANAGE");
     }
 
     public static boolean isModerator(User user) {
-        return hasRole(user, "MODERATOR");
+        return hasRole(user, "MODERATOR") || hasPermission(user, "CONTENT_APPROVE");
     }
 }

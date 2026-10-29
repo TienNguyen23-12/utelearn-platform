@@ -210,6 +210,7 @@ public class AuthServiceImpl implements AuthService {
             .email(user.getEmail())
             .fullName(user.getFullName())
             .roles(roleCodes)
+            .permissions(permissionCodes)
             .build();
     }
 
@@ -235,7 +236,12 @@ public class AuthServiceImpl implements AuthService {
             username = auth.getName();
         }
 
-        return userRepository.findByUsername(username);
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty() || Boolean.FALSE.equals(userOpt.get().getIsActive())) {
+            SecurityContextHolder.clearContext();
+            return Optional.empty();
+        }
+        return userOpt;
     }
 
     @Override

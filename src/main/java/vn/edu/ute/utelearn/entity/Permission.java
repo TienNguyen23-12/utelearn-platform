@@ -32,4 +32,20 @@ public class Permission {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    public String getDisplayName() {
+        if (code == null) {
+            return name != null ? name : "";
+        }
+        return switch (code) {
+            case "USER_MANAGE" -> "Quản lý người dùng";
+            case "ROLE_MANAGE" -> "Cấu hình phân quyền";
+            case "COURSE_CREATE" -> "Tạo & quản lý khóa học";
+            case "CONTENT_APPROVE" -> "Kiểm duyệt nội dung";
+            case "ASSET_MANAGE" -> "Quản lý kho tài nguyên";
+            case "CODE_SUBMIT" -> "Luyện code Online Judge";
+            case "ORDER_MANAGE" -> "Quản lý đơn hàng & doanh thu";
+            default -> (name != null && !name.isBlank() && !name.equalsIgnoreCase(code)) ? name : code;
+        };
+    }
 }

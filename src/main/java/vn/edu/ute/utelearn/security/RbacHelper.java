@@ -30,6 +30,10 @@ public class RbacHelper {
             .collect(Collectors.toList());
     }
 
+    public String getPermissionsString() {
+        return String.join(",", getCurrentUserPermissions());
+    }
+
     public boolean hasRole(String role) {
         if (role == null || !isLoggedIn()) return false;
         String cleanRole = role.trim();
@@ -48,6 +52,7 @@ public class RbacHelper {
 
     public boolean hasPermission(String permission) {
         if (permission == null || !isLoggedIn()) return false;
+        if (hasRole("ADMIN")) return true;
         String cleanPerm = permission.trim();
         return getAuthorities().stream()
             .anyMatch(a -> a.getAuthority().equalsIgnoreCase(cleanPerm));
@@ -55,13 +60,14 @@ public class RbacHelper {
 
     public boolean hasAnyPermission(String... permissions) {
         if (permissions == null || !isLoggedIn()) return false;
+        if (hasRole("ADMIN")) return true;
         for (String p : permissions) {
             if (hasPermission(p)) return true;
         }
         return false;
     }
 
-        public boolean isAllowed(Collection<String> allowedRoles) {
+    public boolean isAllowed(Collection<String> allowedRoles) {
         if (allowedRoles == null || allowedRoles.isEmpty()) {
             return true;
         }

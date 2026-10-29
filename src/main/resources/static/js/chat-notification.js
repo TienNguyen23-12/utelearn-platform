@@ -113,10 +113,10 @@
         const roleText = getRoleLabel(n.senderRole);
         const targetUrl = resolveActionUrl(n);
         const iconBg = (n.senderRole === 'INSTRUCTOR' || n.senderRole === 'TEACHER') ? '#00b050' : '#0ea5e9';
-        const iconHtml = `<div style="background-color: ${iconBg}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+        const iconHtml = `<div style="background-color: ${iconBg}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${iconHtml => iconHtml}</svg></div>`;
         Toastify({
             text: `<div style="display: flex; align-items: center; gap: 10px;">
-                    ${iconHtml}
+                    <div style="background-color: ${iconBg}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
                     <span style="color: #111; font-weight: 500; font-size: 14.5px; font-family: 'Plus Jakarta Sans', sans-serif;">[${escapeHtml(n.cohortName)}] ${escapeHtml(roleText)} ${escapeHtml(n.senderName)}: ${escapeHtml(n.message)}</span>
                    </div>`,
             escapeMarkup: false,
@@ -139,6 +139,10 @@
     }
 
     function handleIncomingNotification(n) {
+        if (n && (n.type === 'ACCOUNT_LOCKED' || n.action === 'FORCE_LOGOUT' || n.message === 'FORCE_LOGOUT')) {
+            window.location.href = '/login?error=account_locked';
+            return;
+        }
         unreadCount++;
         const badges = document.querySelectorAll('.nav-notification-badge');
         badges.forEach(b => {
@@ -165,6 +169,10 @@
     async function loadRecentNotifications() {
         try {
             const resp = await fetch('/api/cohorts/notifications/recent');
+            if (resp.status === 401) {
+                window.location.href = '/login?error=account_locked';
+                return;
+            }
             if (!resp.ok) return;
             const data = await resp.json();
             const lists = document.querySelectorAll('.nav-notification-list');
@@ -172,8 +180,8 @@
                 if (!data || data.length === 0) {
                     list.innerHTML = `
                         <div class="text-center text-muted py-4 small nav-notification-empty">
-                            <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary opacity-50"></i>
-                            Chưa có thông báo thảo luận mới
+                            <i class="bi bi-chat-square-dots fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                            Chưa có tin nhắn lớp học nào
                         </div>
                     `;
                     return;
@@ -185,8 +193,8 @@
     }
 
     function initNotificationDropdowns() {
-        const buttons = document.querySelectorAll('.nav-notification-btn');
-        buttons.forEach(btn => {
+        const toggleButtons = document.querySelectorAll('.nav-notification-btn');
+        toggleButtons.forEach(btn => {
             btn.addEventListener('click', function () {
                 unreadCount = 0;
                 const badges = document.querySelectorAll('.nav-notification-badge');
@@ -204,14 +212,20 @@
             const socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
             stompClient.debug = null;
-            stompClient.connect({}, function () {
-                stompClient.subscribe('/topic/users/' + userId + '/notifications', function (msg) {
-                    try {
-                        const notif = JSON.parse(msg.body);
+            function onMsg(msg) {
+                try {
+                    const notif = JSON.parse(msg.body);
+                    if (!notif.userId || String(notif.userId) === String(userId)) {
                         handleIncomingNotification(notif);
-                    } catch (err) {
                     }
-                });
+                } catch (e) {
+                }
+            }
+            stompClient.connect({}, function () {
+                stompClient.subscribe('/topic/users/' + userId + '/notifications', onMsg);
+                stompClient.subscribe('/topic/account-status/' + userId, onMsg);
+                stompClient.subscribe('/topic/account-status', onMsg);
+                stompClient.subscribe('/topic/notifications/' + userId, onMsg);
             }, function () {
                 setTimeout(() => connectWebSocket(userId), 7000);
             });

@@ -88,7 +88,9 @@ CREATE TABLE instructor_assets (
     cloudinary_url TEXT NOT NULL,
     file_size_bytes BIGINT DEFAULT 0,
     folder_path VARCHAR(255) DEFAULT '/',         -- VD: '/JavaSpringBoot/Week01/'
-    visibility VARCHAR(30) DEFAULT 'PRIVATE',     -- 'PRIVATE', 'DEPARTMENT_SHARED', 'COHORT_PUBLIC'
+    visibility VARCHAR(30) DEFAULT 'PRIVATE',
+    shared_emails TEXT,
+    status VARCHAR(30) DEFAULT 'PENDING_MODERATOR',
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
