@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/admin/orders/api/**",
                                 "/certificates/api/**",
                                 "/checkout/payment/**",
-                                "/cart/**"
+                                "/cart/**",
+                                "/instructor/assets/**"
                         ))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))

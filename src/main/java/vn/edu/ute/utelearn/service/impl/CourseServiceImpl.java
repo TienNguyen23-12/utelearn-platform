@@ -32,6 +32,11 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Pageable pageable) {
+        return getPublishedCourses(keyword, categorySlug, level, null, pageable);
+    }
+
+    @Override
+    public Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Long cursor, Pageable pageable) {
         Specification<Course> spec = (root, query, cb) -> {
             if (Long.class != query.getResultType() && long.class != query.getResultType()) {
                 root.fetch("category", jakarta.persistence.criteria.JoinType.LEFT);
@@ -49,6 +54,9 @@ public class CourseServiceImpl implements CourseService {
             }
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(level) && !level.equals("ALL_LEVELS")) {
                 predicates.add(cb.equal(root.get("level"), level));
+            }
+            if (cursor != null) {
+                predicates.add(cb.lessThan(root.get("id"), cursor));
             }
             
             return cb.and(predicates.toArray(new Predicate[0]));

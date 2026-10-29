@@ -6,6 +6,7 @@ import vn.edu.ute.utelearn.entity.Course;
 
 public interface CourseService {
     Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Pageable pageable);
+    Page<Course> getPublishedCourses(String keyword, String categorySlug, String level, Long cursor, Pageable pageable);
     Course getCourseBySlug(String slug);
     Page<Course> getCoursesByInstructor(Long instructorId, Pageable pageable);
     Page<Course> getAllCourses(Pageable pageable);

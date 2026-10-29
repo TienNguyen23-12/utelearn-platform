@@ -70,20 +70,32 @@ public class CohortApiController {
         return ResponseEntity.ok(progress);
     }
 
+    public ResponseEntity<Map<String, Object>> getPublicCohorts(
+            String q,
+            String category,
+            int page,
+            int size
+    ) {
+        return getPublicCohorts(q, category, null, page, size);
+    }
+
     @GetMapping
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Map<String, Object>> getPublicCohorts(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size
+            @RequestParam(defaultValue = "10") int size
     ) {
         try {
             String safeQ = ValidationUtils.stripHtmlTags(q);
             String safeCategory = ValidationUtils.stripHtmlTags(category);
 
             Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-            Page<Cohort> cohortPage = cohortService.searchPublicCohorts(safeQ, safeCategory, pageable);
+            Page<Cohort> cohortPage = (cursor != null)
+                    ? cohortService.searchPublicCohorts(safeQ, safeCategory, cursor, PageRequest.of(0, size, Sort.by("id").descending()))
+                    : cohortService.searchPublicCohorts(safeQ, safeCategory, pageable);
             java.util.Optional<vn.edu.ute.utelearn.entity.User> currentUserOpt = authService.getCurrentAuthenticatedUser();
 
             List<Map<String, Object>> cohorts = cohortPage.getContent().stream().map(cohort -> {
@@ -177,7 +189,11 @@ public class CohortApiController {
                 return map;
             }).collect(Collectors.toList());
 
+            boolean hasNext = cohortPage.hasNext();
+            Long nextCursor = (hasNext && !cohorts.isEmpty()) ? (Long) cohorts.get(cohorts.size() - 1).get("id") : null;
             Map<String, Object> response = new HashMap<>();
+            response.put("nextCursor", nextCursor);
+            response.put("hasNext", hasNext);
             response.put("content", cohorts);
             response.put("currentPage", cohortPage.getNumber());
             response.put("totalItems", cohortPage.getTotalElements());
