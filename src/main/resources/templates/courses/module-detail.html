@@ -429,6 +429,11 @@
                 <i class="bi bi-award-fill"></i>
                 <span>Điểm số</span>
             </a>
+            <a href="#tab-reviews" class="secondary-nav-link" id="navLinkReviews" onclick="switchModuleTab('reviews', event)">
+                <i class="bi bi-star-fill text-warning"></i>
+                <span>Đánh giá</span>
+                <span th:if="${totalReviewsCount != null and totalReviewsCount > 0}" class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-2 py-0.5 ms-1" style="font-size: 11px;" th:text="${totalReviewsCount}">0</span>
+            </a>
             <a th:if="${isModEnrolled || hasAccessRole}" th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '/learn'}" class="secondary-nav-link">
                 <i class="bi bi-easel-fill"></i>
                 <span>Không gian học tập (Focus View)</span>
@@ -1302,8 +1307,154 @@
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
     </div>
+
+    <div id="moduleTabReviews" class="module-tab-pane" style="display: none;">
+            <a id="tab-reviews" class="d-block" style="position: relative; top: -80px; visibility: hidden;"></a>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-4 text-center border-end-md">
+                        <div class="display-3 fw-bolder text-dark mb-1" th:text="${moduleRating != null ? #numbers.formatDecimal(moduleRating, 1, 1) : '0.0'}">5.0</div>
+                        <div class="text-warning fs-5 mb-2">
+                            <i th:each="star : ${#numbers.sequence(1, 5)}" class="bi" th:classappend="${moduleRating != null and star <= moduleRating ? 'bi-star-fill' : (moduleRating != null and star - 0.5 <= moduleRating ? 'bi-star-half' : 'bi-star')}"></i>
+                        </div>
+                        <div class="text-muted small" th:text="${totalReviewsCount > 0 ? totalReviewsCount + ' lượt đánh giá từ học viên' : 'Chưa có lượt đánh giá nào'}">0 lượt đánh giá</div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <div class="d-flex flex-column gap-2">
+                            <div th:each="starNum : ${#numbers.sequence(5, 1, -1)}"
+                                 th:with="countVal=${ratingBreakdown != null ? (ratingBreakdown[starNum] != null ? ratingBreakdown[starNum] : (ratingBreakdown['' + starNum] != null ? ratingBreakdown['' + starNum] : 0)) : 0}"
+                                 class="d-flex align-items-center gap-2 small">
+                                <span class="text-secondary fw-semibold text-nowrap" style="width: 45px;" th:text="${starNum} + ' sao'">5 sao</span>
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" role="progressbar"
+                                         th:style="'width: ' + (${totalReviewsCount > 0 ? (countVal * 100 / totalReviewsCount) : 0}) + '%;'"></div>
+                                </div>
+                                <span class="text-muted font-monospace text-end" style="width: 35px;"
+                                      th:text="${countVal}">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 text-center text-md-start ps-md-4">
+                        <div th:if="${currentUser != null and isModEnrolled}">
+                            <h6 class="fw-bold text-dark mb-1">Đánh giá của bạn</h6>
+                            <p class="text-muted small mb-3">Chia sẻ trải nghiệm học tập của bạn về đợt học này.</p>
+                            <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm w-100" onclick="toggleCohortReviewForm()">
+                                <i class="bi bi-pencil-fill me-1"></i>
+                                <span th:text="${userCohortMember != null and userCohortMember.hasReviewed() ? 'Cập nhật đánh giá' : 'Viết đánh giá'}">Viết đánh giá</span>
+                            </button>
+                        </div>
+                        <div th:if="${currentUser != null and !isModEnrolled}">
+                            <h6 class="fw-bold text-dark mb-1">Tham gia môn học</h6>
+                            <p class="text-muted small mb-3">Ghi danh để học tập và để lại đánh giá thực tế.</p>
+                            <a th:href="@{'/courses/' + ${course.slug} + '/modules/' + ${module.id} + '#tab-overview'}" class="btn btn-outline-primary rounded-pill px-4 fw-semibold w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Xem ghi danh
+                            </a>
+                        </div>
+                        <div th:if="${currentUser == null}">
+                            <h6 class="fw-bold text-dark mb-1">Đăng nhập để đánh giá</h6>
+                            <p class="text-muted small mb-3">Đăng nhập tài khoản UTELearn để chia sẻ nhận xét.</p>
+                            <a href="/login" class="btn btn-primary rounded-pill px-4 fw-semibold w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cohortReviewFormCard" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4" th:if="${currentUser != null and isModEnrolled}" th:style="${userCohortMember != null and userCohortMember.hasReviewed() ? 'display: none;' : ''}">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-chat-square-heart-fill text-primary"></i>
+                        <span th:text="${userCohortMember != null and userCohortMember.hasReviewed() ? 'Chỉnh sửa đánh giá của bạn' : 'Gửi đánh giá môn học'}">Gửi đánh giá môn học</span>
+                    </h5>
+                    <button type="button" class="btn-close" onclick="toggleCohortReviewForm()" aria-label="Đóng"></button>
+                </div>
+
+                <input type="hidden" id="cohortReviewRatingVal" th:value="${userCohortMember != null and userCohortMember.rating != null ? userCohortMember.rating : 5}">
+
+                <div class="mb-3 text-center p-3 bg-light rounded-4 border">
+                    <label class="form-label fw-bold text-dark small mb-2 d-block">Bạn cảm thấy môn học này như thế nào?</label>
+                    <div class="d-flex justify-content-center gap-2 mb-2" id="cohortStarWrap">
+                        <i th:each="s : ${#numbers.sequence(1, 5)}" class="bi bi-star-fill fs-2 text-warning cohort-star-item" th:data-val="${s}" style="cursor: pointer; transition: transform 0.15s ease;"></i>
+                    </div>
+                    <div id="cohortStarDesc" class="fw-semibold text-warning small">5 sao - Rất hài lòng &amp; Xuất sắc!</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cohortReviewCommentInput" class="form-label fw-semibold text-dark small">Nhận xét chi tiết (không bắt buộc)</label>
+                    <textarea class="form-control rounded-3" id="cohortReviewCommentInput" rows="4" 
+                              placeholder="Chia sẻ cảm nhận về phương pháp giảng dạy, bài tập thực hành, tài liệu..." 
+                              th:text="${userCohortMember != null ? userCohortMember.reviewComment : ''}"></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4" onclick="toggleCohortReviewForm()">Hủy bỏ</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" id="btnSubmitCohortReview" onclick="submitCohortReviewAction()">
+                        <i class="bi bi-send-fill me-1"></i>
+                        <span>Gửi đánh giá</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom flex-wrap gap-2">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-chat-quote-fill text-primary"></i>
+                        <span>Danh sách đánh giá</span>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill small" th:text="${totalReviewsCount}">0</span>
+                    </h5>
+
+                    <div class="d-flex align-items-center gap-1 flex-wrap" id="reviewFilterBtns">
+                        <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active" data-filter="all" onclick="filterReviews('all', this)">Tất cả</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="5" onclick="filterReviews(5, this)">5 sao</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="4" onclick="filterReviews(4, this)">4 sao</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="3" onclick="filterReviews(3, this)">3 sao</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="2" onclick="filterReviews(2, this)">2 sao</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="1" onclick="filterReviews(1, this)">1 sao</button>
+                    </div>
+                </div>
+
+                <div th:if="${moduleReviews == null or moduleReviews.isEmpty()}" class="text-center py-5">
+                    <div class="rounded-circle bg-warning-subtle text-warning mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-star fs-2"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Chưa có đánh giá nào</h6>
+                    <p class="text-muted small mb-3">Đợt học này chưa có học viên nào gửi đánh giá. Hãy là người đầu tiên chia sẻ cảm nhận!</p>
+                </div>
+
+                <div th:unless="${moduleReviews == null or moduleReviews.isEmpty()}" class="d-flex flex-column gap-3" id="reviewsListContainer">
+                    <div th:each="rev : ${moduleReviews}" class="p-4 rounded-4 bg-light border review-item-card" th:data-stars="${rev.rating}">
+                        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-xs" 
+                                     style="width: 42px; height: 42px; font-size: 15px;"
+                                     th:text="${rev.user != null and rev.user.fullName != null and !rev.user.fullName.isEmpty() ? rev.user.fullName.substring(0, 1) : 'U'}">U</div>
+                                <div>
+                                    <div class="fw-bold text-dark" th:text="${rev.user != null and rev.user.fullName != null ? rev.user.fullName : 'Học viên'}">Học viên</div>
+                                    <div class="text-muted small" th:text="${rev.formattedReviewedAt != null and !rev.formattedReviewedAt.isEmpty() ? rev.formattedReviewedAt : (rev.reviewedAt != null ? #temporals.format(rev.reviewedAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : '')}">28/10/2026</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 text-warning">
+                                <i th:each="st : ${#numbers.sequence(1, 5)}" class="bi" th:classappend="${st <= rev.rating ? 'bi-star-fill' : 'bi-star'}"></i>
+                                <span class="ms-1 fw-bold text-dark small" th:text="${rev.rating} + '/5'">5/5</span>
+                            </div>
+                        </div>
+                        <div class="text-secondary small lh-base ps-md-5 ms-md-2" th:if="${rev.reviewComment != null and !rev.reviewComment.trim().isEmpty()}" th:text="${rev.reviewComment}">
+                            Nội dung nhận xét...
+                        </div>
+                        <div class="text-muted fst-italic small ps-md-5 ms-md-2" th:unless="${rev.reviewComment != null and !rev.reviewComment.trim().isEmpty()}">
+                            (Học viên không để lại lời nhận xét)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 </main>
 
 <div class="modal fade" id="activityChooserModal" tabindex="-1">
@@ -2143,6 +2294,7 @@
 <script th:inline="javascript">
     const currentModuleId = /*[[${module.id}]]*/ 0;
     const currentCourseId = /*[[${course.id}]]*/ 0;
+    const courseSlug = /*[[${course.slug}]]*/ 'standalone';
     const totalLessonsCount = /*[[${moduleLessons != null ? moduleLessons.size() : 0}]]*/ 0;
     const hasAccessRole = /*[[${hasAccessRole != null ? hasAccessRole : false}]]*/ false;
     const canEdit = /*[[${canEdit != null ? canEdit : false}]]*/ false;
@@ -2161,23 +2313,32 @@
         }
         const overviewPane = document.getElementById('moduleTabOverview');
         const gradesPane = document.getElementById('moduleTabGrades');
+        const reviewsPane = document.getElementById('moduleTabReviews');
         const navOverview = document.getElementById('navLinkOverview');
         const navGrades = document.getElementById('navLinkGrades');
+        const navReviews = document.getElementById('navLinkReviews');
 
-        if (!overviewPane || !gradesPane) return;
+        if (overviewPane) overviewPane.style.display = 'none';
+        if (gradesPane) gradesPane.style.display = 'none';
+        if (reviewsPane) reviewsPane.style.display = 'none';
+        if (navOverview) navOverview.classList.remove('active');
+        if (navGrades) navGrades.classList.remove('active');
+        if (navReviews) navReviews.classList.remove('active');
 
-        if (tabId === 'grades') {
-            overviewPane.style.display = 'none';
+        if (tabId === 'grades' && gradesPane) {
             gradesPane.style.display = 'block';
-            if (navOverview) navOverview.classList.remove('active');
             if (navGrades) navGrades.classList.add('active');
             if (window.location.hash !== '#tab-grades') {
                 history.replaceState(null, null, '#tab-grades');
             }
+        } else if (tabId === 'reviews' && reviewsPane) {
+            reviewsPane.style.display = 'block';
+            if (navReviews) navReviews.classList.add('active');
+            if (window.location.hash !== '#tab-reviews') {
+                history.replaceState(null, null, '#tab-reviews');
+            }
         } else {
-            gradesPane.style.display = 'none';
-            overviewPane.style.display = 'block';
-            if (navGrades) navGrades.classList.remove('active');
+            if (overviewPane) overviewPane.style.display = 'block';
             if (navOverview) navOverview.classList.add('active');
             if (window.location.hash !== '#tab-overview' && window.location.hash !== '') {
                 history.replaceState(null, null, '#tab-overview');
@@ -2186,9 +2347,107 @@
     }
     window.switchModuleTab = switchModuleTab;
 
+    function toggleCohortReviewForm() {
+        const card = document.getElementById('cohortReviewFormCard');
+        if (!card) return;
+        if (card.style.display === 'none' || card.style.display === '') {
+            card.style.display = 'block';
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            card.style.display = 'none';
+        }
+    }
+    window.toggleCohortReviewForm = toggleCohortReviewForm;
+
+    function filterReviews(stars, btn) {
+        document.querySelectorAll('.filter-rev-btn').forEach(b => {
+            b.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn';
+        });
+        if (btn) btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active';
+
+        document.querySelectorAll('.review-item-card').forEach(item => {
+            const itemStars = item.getAttribute('data-stars');
+            if (stars === 'all' || itemStars === String(stars)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    window.filterReviews = filterReviews;
+
+    function setCohortReviewStars(val) {
+        const hiddenInput = document.getElementById('cohortReviewRatingVal');
+        if (hiddenInput) hiddenInput.value = val;
+        const labels = {
+            1: '1 sao - Rất không hài lòng',
+            2: '2 sao - Cần cải thiện',
+            3: '3 sao - Đạt yêu cầu / Bình thường',
+            4: '4 sao - Tốt & Hài lòng',
+            5: '5 sao - Rất hài lòng & Xuất sắc!'
+        };
+        const descEl = document.getElementById('cohortStarDesc');
+        if (descEl) descEl.textContent = labels[val] || (val + ' sao');
+
+        document.querySelectorAll('.cohort-star-item').forEach(star => {
+            const sVal = parseInt(star.getAttribute('data-val'), 10);
+            if (sVal <= val) {
+                star.className = 'bi bi-star-fill fs-2 text-warning cohort-star-item';
+            } else {
+                star.className = 'bi bi-star fs-2 text-muted cohort-star-item';
+            }
+        });
+    }
+    window.setCohortReviewStars = setCohortReviewStars;
+
+    async function submitCohortReviewAction() {
+        const ratingInput = document.getElementById('cohortReviewRatingVal');
+        const rating = ratingInput ? parseInt(ratingInput.value, 10) : 5;
+        const commentInput = document.getElementById('cohortReviewCommentInput');
+        const comment = commentInput ? commentInput.value.trim() : '';
+
+        const btn = document.getElementById('btnSubmitCohortReview');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang gửi...';
+        }
+
+        try {
+            const res = await fetch(`/courses/${courseSlug}/modules/${currentModuleId}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cohortId: currentModuleId, rating: rating, comment: comment })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Lỗi khi gửi đánh giá');
+            }
+            if (window.Toastify) {
+                Toastify({ text: data.message || 'Đánh giá thành công!', style: { background: '#10b981' } }).showToast();
+            }
+            setTimeout(() => {
+                window.location.hash = '#tab-reviews';
+                window.location.reload();
+            }, 1000);
+        } catch (e) {
+            if (window.Toastify) {
+                Toastify({ text: e.message, style: { background: '#dc3545' } }).showToast();
+            } else {
+                alert('Lỗi: ' + e.message);
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Gửi đánh giá';
+            }
+        }
+    }
+    window.submitCohortReviewAction = submitCohortReviewAction;
+
     window.addEventListener('hashchange', function() {
         if (window.location.hash === '#tab-grades') {
             switchModuleTab('grades');
+        } else if (window.location.hash === '#tab-reviews') {
+            switchModuleTab('reviews');
         } else if (window.location.hash === '#tab-overview') {
             switchModuleTab('overview');
         }
@@ -2197,7 +2456,22 @@
     document.addEventListener("DOMContentLoaded", function() {
         if (window.location.hash === '#tab-grades' || window.location.search.includes('tab=grades')) {
             switchModuleTab('grades');
+        } else if (window.location.hash === '#tab-reviews' || window.location.search.includes('tab=reviews')) {
+            switchModuleTab('reviews');
         }
+
+        document.querySelectorAll('.cohort-star-item').forEach(star => {
+            star.addEventListener('click', function() {
+                const val = parseInt(this.getAttribute('data-val'), 10);
+                setCohortReviewStars(val);
+            });
+            star.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.25)';
+            });
+            star.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
 
         if (canEdit) {
             setupInstructorEditMode();
@@ -2242,6 +2516,8 @@
                 const targetHref = this.getAttribute('href');
                 if (targetHref === '#tab-grades') {
                     switchModuleTab('grades', e);
+                } else if (targetHref === '#tab-reviews') {
+                    switchModuleTab('reviews', e);
                 } else if (targetHref === '#tab-overview') {
                     switchModuleTab('overview', e);
                 } else if (targetHref && targetHref.startsWith('#')) {

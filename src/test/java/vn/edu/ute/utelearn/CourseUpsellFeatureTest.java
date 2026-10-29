@@ -112,6 +112,7 @@ public class CourseUpsellFeatureTest {
                 cohortRepository,
                 cohortScheduleRepository,
                 lessonRepository,
+                null,
                 null
         );
         courseMvc = MockMvcBuilders.standaloneSetup(courseController)

@@ -35,14 +35,20 @@
         </div>
 
         <div class="card card-custom p-4" style="max-width: 800px;">
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show rounded-3 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div id="errorData" th:data-error="${errorMessage}" style="display:none;"></div>
             <form id="courseForm" th:action="@{${isEdit ? '/instructor/courses/' + course.id + '/edit' : '/instructor/courses/create'}}" method="post">
                 
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Mã khóa học <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="code" name="code" th:value="${course != null ? course.code : ''}" required placeholder="VD: CS101">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Mã khóa học</label>
+                        <input type="text" class="form-control bg-light" id="code" name="code" th:value="${course != null ? course.code : ''}" readonly th:placeholder="${!isEdit ? 'Hệ thống sẽ tự động sinh khi lưu' : ''}">
                     </div>
-                    <div class="col-md-9">
+                    <div class="col-md-8">
                         <label class="form-label fw-semibold">Tiêu đề khóa học <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="title" name="title" th:value="${course != null ? course.title : ''}" required placeholder="VD: Lập trình Java Spring Boot căn bản">
                     </div>
@@ -117,6 +123,11 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-layout.js}"></script>
 <script>
+    const errorDataEl = document.getElementById('errorData');
+    const errorMsg = errorDataEl ? errorDataEl.getAttribute('data-error') : null;
+    if (errorMsg) {
+        Toastify({text: errorMsg, style: {background: "#dc3545"}}).showToast();
+    }
     const thumbnailInput = document.getElementById('thumbnailUrl');
     const coverPreview = document.getElementById('coverPreview');
     const defaultCover = '/images/courses/default-cover.png';

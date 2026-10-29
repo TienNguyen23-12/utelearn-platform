@@ -28,4 +28,6 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     long countByCategoryId(Long categoryId);
 
     List<Course> findByCategoryId(Long categoryId);
+
+    boolean existsByCode(String code);
 }

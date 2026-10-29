@@ -47,6 +47,15 @@ public class StudentGradeItemDTO {
         return (rating != null && rating >= 1 && rating <= 5) || hasReviewed;
     }
 
+    public String getFormattedReviewedAt() {
+        if (reviewedAt == null) {
+            return "";
+        }
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(reviewedAt);
+    }
+
     public List<StudentColumnGradeDTO> getAllColumnGrades() {
         List<StudentColumnGradeDTO> list = new java.util.ArrayList<>();
         if (processColumnGrades != null) {

@@ -3,6 +3,7 @@ package vn.edu.ute.utelearn.controller.admin;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,12 +21,14 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/admin/roles")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
 public class RoleController {
 
     private final RoleService roleService;
 
     @GetMapping
     public String listRoles(Model model) {
+        log.info("[RoleController] Truy cap danh sach vai tro");
         model.addAttribute("roles", roleService.getAllRoles());
         return "admin/roles/index";
     }

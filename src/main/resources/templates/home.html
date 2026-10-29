@@ -511,7 +511,7 @@
                             <span th:text="${cohort.course != null ? cohort.course.title : 'Module độc lập'}">Khóa học</span>
                         </span>
                     </div>
-                    <div class="p-3.5 p-md-4 d-flex flex-column flex-grow-1">
+                    <div class="p-3.5 d-flex flex-column flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small fw-semibold"
                                 th:text="${cohort.course != null && cohort.course.category != null ? cohort.course.category.name : 'Chuyên đề'}">Chuyên đề</span>
@@ -528,11 +528,11 @@
                             <span class="text-truncate" th:text="${cohort.course != null && cohort.course.createdBy != null ? cohort.course.createdBy.fullName : 'Giảng viên'}">Giảng viên</span>
                         </div>
 
-                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
-                            <span class="fw-bold text-success fs-6 lh-1"
+                        <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
+                            <span class="fw-bold text-success fs-6 lh-1 text-nowrap"
                                 th:text="${cohort.price != null && cohort.price > 0 ? #numbers.formatDecimal(cohort.price, 0, 'COMMA', 0, 'POINT') + ' VNĐ' : 'Miễn phí'}">0 VNĐ</span>
                             <a th:href="${cohort.course != null ? '/courses/' + cohort.course.slug + '/modules/' + cohort.id : '/courses/standalone/modules/' + cohort.id}"
-                                class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap flex-shrink-0">
                                 <span>Xem chi tiết</span>
                             </a>
                         </div>

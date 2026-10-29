@@ -35,6 +35,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import vn.edu.ute.utelearn.entity.Quiz;
+import vn.edu.ute.utelearn.entity.Question;
+import vn.edu.ute.utelearn.entity.Assignment;
+import vn.edu.ute.utelearn.dao.QuizRepository;
+import vn.edu.ute.utelearn.dao.QuestionRepository;
+import vn.edu.ute.utelearn.dao.AssignmentRepository;
 import vn.edu.ute.utelearn.dao.CohortRepository;
 import vn.edu.ute.utelearn.dao.CohortScheduleRepository;
 import vn.edu.ute.utelearn.dao.LessonRepository;
@@ -67,6 +73,9 @@ public class InstructorCourseController {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final vn.edu.ute.utelearn.dao.CohortMemberRepository cohortMemberRepository;
     private final CohortService cohortService;
+    private final QuizRepository quizRepository;
+    private final QuestionRepository questionRepository;
+    private final AssignmentRepository assignmentRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private GradebookService gradebookService;
 
@@ -124,10 +133,17 @@ public class InstructorCourseController {
             return "instructor/courses/form";
         }
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
-        courseService.createCourse(request, currentUser.getId());
-        log.info("[InstructorCourseController] Tạo khóa học mới: {}, user: {}", request.getTitle(), currentUser.getEmail());
-        redirectAttributes.addFlashAttribute("successMessage", "Tạo khóa học thành công");
-        return "redirect:/instructor/courses";
+        try {
+            courseService.createCourse(request, currentUser.getId());
+            log.info("[InstructorCourseController] Tạo khóa học mới: {}, user: {}", request.getTitle(), currentUser.getEmail());
+            redirectAttributes.addFlashAttribute("successMessage", "Tạo khóa học thành công");
+            return "redirect:/instructor/courses";
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("categories", categoryService.getRootCategories());
+            model.addAttribute("isEdit", false);
+            return "instructor/courses/form";
+        }
     }
 
     @PostMapping("/{id}/edit")
@@ -140,10 +156,17 @@ public class InstructorCourseController {
             return "instructor/courses/form";
         }
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
-        courseService.updateCourse(id, request, currentUser.getId());
-        log.info("[InstructorCourseController] Cập nhật khóa học id: {}, user: {}", id, currentUser.getEmail());
-        redirectAttributes.addFlashAttribute("successMessage", "Cập nhật khóa học thành công");
-        return "redirect:/instructor/courses";
+        try {
+            courseService.updateCourse(id, request, currentUser.getId());
+            log.info("[InstructorCourseController] Cập nhật khóa học id: {}, user: {}", id, currentUser.getEmail());
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật khóa học thành công");
+            return "redirect:/instructor/courses";
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("categories", categoryService.getRootCategories());
+            model.addAttribute("isEdit", true);
+            return "instructor/courses/form";
+        }
     }
 
     @PostMapping("/{id}/delete")
@@ -313,7 +336,8 @@ public class InstructorCourseController {
             return "redirect:/instructor/courses/" + id + "/modules";
         }
 
-        if (sourceCohort.getCourse() == null) {
+        boolean isCreator = sourceCohort.getCreatedBy() != null && sourceCohort.getCreatedBy().getId().equals(currentUser.getId());
+        if (sourceCohort.getCourse() == null && isCreator) {
             sourceCohort.setCourse(course);
             cohortRepository.save(sourceCohort);
             List<vn.edu.ute.utelearn.entity.Section> directSections = sectionRepository.findByCohortIdOrderByOrderIndexAsc(sourceCohort.getId());
@@ -364,22 +388,22 @@ public class InstructorCourseController {
                 .enrollmentEnd(sourceCohort.getEnrollmentEnd() != null ? sourceCohort.getEnrollmentEnd() : Instant.now().plus(365, java.time.temporal.ChronoUnit.DAYS))
                 .studyStart(Instant.now())
                 .studyEnd(sourceCohort.getStudyEnd() != null ? sourceCohort.getStudyEnd() : Instant.now().plus(365, java.time.temporal.ChronoUnit.DAYS))
+                .gradingPolicy(sourceCohort.getGradingPolicy())
+                .processWeight(sourceCohort.getProcessWeight())
+                .finalWeight(sourceCohort.getFinalWeight())
+                .minPassingGrade(sourceCohort.getMinPassingGrade())
+                .minFinalExamScore(sourceCohort.getMinFinalExamScore())
                 .build();
         Cohort savedCohort = cohortRepository.save(newCohort);
         log.info("[InstructorCourseController] Nhân bản module id: {} vào course id: {} với mã: {} và visibility=COURSE_INTERNAL", sourceCohort.getId(), id, newCode);
 
-        List<CohortSchedule> schedules = cohortScheduleRepository.findByCohortId(sourceCohort.getId());
-        for (CohortSchedule cs : schedules) {
-            CohortSchedule newSchedule = CohortSchedule.builder()
-                    .cohort(savedCohort)
-                    .lesson(cs.getLesson())
-                    .unlockAt(Instant.now())
-                    .build();
-            cohortScheduleRepository.save(newSchedule);
-        }
+        List<CohortSchedule> sourceSchedules = cohortScheduleRepository.findByCohortId(sourceCohort.getId());
+        java.util.Map<Long, CohortSchedule> scheduleByLessonId = sourceSchedules.stream()
+                .filter(cs -> cs.getLesson() != null)
+                .collect(java.util.stream.Collectors.toMap(cs -> cs.getLesson().getId(), cs -> cs, (a, b) -> a));
 
-        List<vn.edu.ute.utelearn.entity.Section> directSections = sectionRepository.findByCohortIdOrderByOrderIndexAsc(sourceCohort.getId());
-        for (vn.edu.ute.utelearn.entity.Section s : directSections) {
+        List<vn.edu.ute.utelearn.entity.Section> sourceSections = sectionRepository.findSectionsForCohort(sourceCohort.getId());
+        for (vn.edu.ute.utelearn.entity.Section s : sourceSections) {
             vn.edu.ute.utelearn.entity.Section newSection = vn.edu.ute.utelearn.entity.Section.builder()
                     .course(course)
                     .cohort(savedCohort)
@@ -387,8 +411,12 @@ public class InstructorCourseController {
                     .orderIndex(s.getOrderIndex())
                     .build();
             vn.edu.ute.utelearn.entity.Section savedSection = sectionRepository.save(newSection);
+
             List<vn.edu.ute.utelearn.entity.Lesson> lessons = lessonRepository.findBySectionIdOrderByOrderIndexAsc(s.getId());
             for (vn.edu.ute.utelearn.entity.Lesson l : lessons) {
+                if (!scheduleByLessonId.isEmpty() && !scheduleByLessonId.containsKey(l.getId()) && s.getCohort() == null) {
+                    continue;
+                }
                 vn.edu.ute.utelearn.entity.Lesson newLesson = vn.edu.ute.utelearn.entity.Lesson.builder()
                         .section(savedSection)
                         .title(l.getTitle())
@@ -398,14 +426,70 @@ public class InstructorCourseController {
                         .videoUrl(l.getVideoUrl())
                         .durationSeconds(l.getDurationSeconds())
                         .documentContent(l.getDocumentContent())
+                        .assetUrl(l.getAssetUrl())
+                        .isPublicForCohorts(l.getIsPublicForCohorts())
+                        .status(l.getStatus())
                         .build();
                 vn.edu.ute.utelearn.entity.Lesson savedLesson = lessonRepository.save(newLesson);
+
+                CohortSchedule origSchedule = scheduleByLessonId.get(l.getId());
                 CohortSchedule newSchedule = CohortSchedule.builder()
                         .cohort(savedCohort)
                         .lesson(savedLesson)
-                        .unlockAt(Instant.now())
+                        .unlockAt(origSchedule != null && origSchedule.getUnlockAt() != null ? origSchedule.getUnlockAt() : Instant.now())
+                        .deadlineAt(origSchedule != null ? origSchedule.getDeadlineAt() : null)
+                        .showScoreType(origSchedule != null && origSchedule.getShowScoreType() != null ? origSchedule.getShowScoreType() : "IMMEDIATELY")
+                        .isScorePublished(origSchedule != null ? origSchedule.getIsScorePublished() : true)
+                        .allowReviewAnswers(origSchedule != null ? origSchedule.getAllowReviewAnswers() : true)
                         .build();
                 cohortScheduleRepository.save(newSchedule);
+
+                if ("QUIZ".equalsIgnoreCase(l.getLessonType())) {
+                    quizRepository.findByLessonId(l.getId()).ifPresent(origQuiz -> {
+                        Quiz newQuiz = Quiz.builder()
+                                .lesson(savedLesson)
+                                .title(origQuiz.getTitle())
+                                .durationMinutes(origQuiz.getDurationMinutes())
+                                .passingScore(origQuiz.getPassingScore())
+                                .maxAttempts(origQuiz.getMaxAttempts())
+                                .shuffleQuestions(origQuiz.getShuffleQuestions())
+                                .allowReview(origQuiz.getAllowReview())
+                                .allowLateSubmission(origQuiz.getAllowLateSubmission())
+                                .examRules(origQuiz.getExamRules())
+                                .build();
+                        Quiz savedQuiz = quizRepository.save(newQuiz);
+                        List<Question> questions = questionRepository.findByQuizIdOrderByOrderIndexAscCreatedAtAsc(origQuiz.getId());
+                        for (Question q : questions) {
+                            Question newQ = Question.builder()
+                                    .quiz(savedQuiz)
+                                    .content(q.getContent())
+                                    .questionType(q.getQuestionType())
+                                    .points(q.getPoints())
+                                    .explanation(q.getExplanation())
+                                    .options(q.getOptions())
+                                    .orderIndex(q.getOrderIndex())
+                                    .build();
+                            questionRepository.save(newQ);
+                        }
+                    });
+                } else if ("ASSIGNMENT".equalsIgnoreCase(l.getLessonType())) {
+                    assignmentRepository.findByLessonId(l.getId()).ifPresent(origAssign -> {
+                        Assignment newAssign = Assignment.builder()
+                                .lesson(savedLesson)
+                                .title(origAssign.getTitle())
+                                .instruction(origAssign.getInstruction())
+                                .attachmentUrl(origAssign.getAttachmentUrl())
+                                .maxScore(origAssign.getMaxScore())
+                                .passingScore(origAssign.getPassingScore())
+                                .allowFileSubmission(origAssign.getAllowFileSubmission())
+                                .allowTextSubmission(origAssign.getAllowTextSubmission())
+                                .allowedFileTypes(origAssign.getAllowedFileTypes())
+                                .maxFileSizeMb(origAssign.getMaxFileSizeMb())
+                                .allowLateSubmission(origAssign.getAllowLateSubmission())
+                                .build();
+                        assignmentRepository.save(newAssign);
+                    });
+                }
             }
         }
 

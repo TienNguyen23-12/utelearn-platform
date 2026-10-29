@@ -2,6 +2,7 @@ package vn.edu.ute.utelearn.controller.admin;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
 public class UserController {
 
     private final UserService userService;
@@ -26,6 +28,7 @@ public class UserController {
 
     @GetMapping
     public String listUsers(Model model) {
+        log.info("[UserController] Truy cap danh sach nguoi dung");
         model.addAttribute("users", userService.getAllUsers());
         return "admin/users/index";
     }

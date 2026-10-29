@@ -75,4 +75,13 @@ public class CohortMember {
     public boolean hasReviewed() {
         return rating != null && rating >= 1 && rating <= 5;
     }
+
+    public String getFormattedReviewedAt() {
+        if (reviewedAt == null) {
+            return "";
+        }
+        return java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+                .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(reviewedAt);
+    }
 }
