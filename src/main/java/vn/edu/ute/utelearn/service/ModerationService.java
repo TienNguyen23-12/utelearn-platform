@@ -13,4 +13,5 @@ public interface ModerationService {
     java.util.Optional<ModerationTask> getLatestTask(String itemType, Long itemId);
     void syncStatusFromExternalChange(String itemType, Long itemId, String newStatus, vn.edu.ute.utelearn.entity.User actor);
     String resolveItemTitle(String itemType, Long itemId);
+    default void cleanupTasksForItem(String itemType, Long itemId) {}
 }
