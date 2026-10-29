@@ -3155,6 +3155,25 @@ function showToast(message, type = 'success') {
             `;
         }
 
+        if (quiz.hasInProgressAttempt) {
+            const remMins = quiz.remainingSeconds ? Math.max(1, Math.ceil(quiz.remainingSeconds / 60)) : null;
+            statusBannerHtml = `
+                <div class="alert alert-info border-0 rounded-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 shadow-sm">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary text-white p-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                            <i class="bi bi-cloud-check-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Bạn có phiên làm bài đang dở đã được tự động lưu!</div>
+                            <div class="small text-muted">Toàn bộ đáp án đã chọn và các câu đánh cờ đã được lưu giữ.${remMins ? ' Thời gian còn lại khoảng <strong>' + remMins + ' phút</strong>.' : ''}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold" onclick="startQuizTest(${quiz.id})">
+                        <i class="bi bi-play-fill me-1"></i>Tiếp tục làm ngay
+                    </button>
+                </div>
+            ` + statusBannerHtml;
+        }
         let actionButtonsHtml = '';
         if (isLateBlocked && !quiz.userPassed) {
             actionButtonsHtml += `
@@ -3167,7 +3186,7 @@ function showToast(message, type = 'success') {
             actionButtonsHtml += `
                 <button class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2" onclick="startQuizTest(${quiz.id})">
                     <i class="bi bi-play-circle-fill fs-5"></i>
-                    <span>${quiz.userAttemptsCount > 0 ? 'Làm lại bài kiểm tra' : 'Bắt đầu làm bài thi'}</span>
+                    <span>${quiz.hasInProgressAttempt ? 'Tiếp tục làm bài đang dở' : (quiz.userAttemptsCount > 0 ? 'Làm lại bài kiểm tra' : 'Bắt đầu làm bài thi')}</span>
                 </button>
             `;
         } else {
@@ -3179,7 +3198,7 @@ function showToast(message, type = 'success') {
             `;
         }
 
-        if (quiz.userAttemptsCount > 0) {
+        if (quiz.userAttemptsCount > 0 || quiz.hasInProgressAttempt) {
             actionButtonsHtml += `
                 <button class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-bold ms-2" onclick="showQuizSubmissionsList(${quiz.id})">
                     <i class="bi bi-clock-history me-1"></i>Lịch sử làm bài (${quiz.userAttemptsCount})
@@ -3276,6 +3295,9 @@ function showToast(message, type = 'success') {
     }
 
     function startQuizTest(quizId) {
+        const slugPart = (typeof courseSlug !== 'undefined' && courseSlug) ? courseSlug : 'standalone';
+        window.location.href = '/courses/' + slugPart + '/modules/' + moduleId + '/quizzes/' + quizId + '/attempt';
+        return;
         const container = document.getElementById('quizPlayerContainer');
         if (!container) return;
 
@@ -3945,7 +3967,55 @@ function showToast(message, type = 'success') {
                     alert('Chưa có lịch sử làm bài.');
                     return;
                 }
-                let tableHtml = '<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Lần làm</th><th>Điểm số</th><th>Trạng thái</th><th>Thời gian nộp</th><th>Thao tác</th></tr></thead><tbody>';
+                let tableHtml = '<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Lần làm</th><th>Điểm / Tiến độ</th><th>Đánh cờ</th><th>Trạng thái</th><th>Thời gian</th><th>Thao tác</th></tr></thead><tbody>';
+                list.forEach((sub, i) => {
+                    const isDraft = sub.status === 'IN_PROGRESS';
+                    const timeStr = sub.submittedAt
+                        ? new Date(sub.submittedAt).toLocaleString('vi-VN')
+                        : (sub.startedAt ? new Date(sub.startedAt).toLocaleString('vi-VN') : '');
+                    const slugPart = (typeof courseSlug !== 'undefined' && courseSlug) ? courseSlug : 'standalone';
+                    const dedicatedReviewUrl = `/courses/${slugPart}/modules/${moduleId}/quizzes/${quizId}/attempt?mode=review&submissionId=${sub.submissionId}`;
+                    tableHtml += `
+                        <tr>
+                            <td class="fw-bold">#${list.length - i}</td>
+                            <td class="fw-bold ${isDraft ? 'text-primary small' : ('fs-6 ' + (sub.isPassed ? 'text-success' : 'text-danger'))}">
+                                ${isDraft ? `Đã lưu ${sub.answeredCount ?? 0}/${sub.totalQuestions ?? 0} câu` : `${sub.score ?? 0} / 10`}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25">
+                                    <i class="bi bi-flag-fill text-warning me-1"></i>${sub.flaggedCount ?? 0}
+                                </span>
+                            </td>
+                            <td>
+                                ${isDraft
+                                    ? '<span class="badge bg-warning text-dark rounded-pill">ĐANG LÀM DỞ</span>'
+                                    : `<span class="badge ${sub.isPassed ? 'bg-success' : 'bg-danger'} rounded-pill">${sub.isPassed ? 'ĐẠT' : 'CHƯA ĐẠT'}</span>`}
+                                ${sub.isLate ? '<span class="badge bg-danger text-white rounded-pill ms-1 fw-semibold" style="font-size: 10px;"><i class="bi bi-clock-history me-1"></i>Làm trễ</span>' : ''}
+                            </td>
+                            <td class="small text-muted">${timeStr}</td>
+                            <td>
+                                ${isDraft ? `
+                                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="startQuizTest(${quizId})">
+                                        <i class="bi bi-play-fill me-1"></i>Tiếp tục làm
+                                    </button>
+                                ` : (sub.allowReview !== false ? `
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="viewSubmissionPopup(${sub.submissionId})">
+                                            Xem nhanh
+                                        </button>
+                                        <a href="${dedicatedReviewUrl}" class="btn btn-sm btn-light border rounded-pill px-3">
+                                            Trang riêng
+                                        </a>
+                                    </div>
+                                ` : `
+                                    <span class="badge bg-light text-muted border">Không cho xem lại</span>
+                                `)}
+                            </td>
+                        </tr>
+                    `;
+                });
+                const skipOldRows = [];
+                if (false)
                 list.forEach((sub, i) => {
                     const timeStr = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '';
                     tableHtml += `

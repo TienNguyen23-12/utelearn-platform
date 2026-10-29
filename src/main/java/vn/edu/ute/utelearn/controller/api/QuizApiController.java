@@ -38,6 +38,20 @@ public class QuizApiController {
         }
     }
 
+    @GetMapping("/{quizId}/overview")
+    public ResponseEntity<?> getQuizOverview(
+            @PathVariable Long quizId,
+            @RequestParam(required = false) Long cohortId) {
+        try {
+            Long userId = authService.getCurrentAuthenticatedUser().map(User::getId).orElse(null);
+            QuizDTO quiz = quizService.getQuizByIdForAttempt(quizId, cohortId, userId);
+            return ResponseEntity.ok(quiz);
+        } catch (Exception e) {
+            log.error("[QuizApiController] Lỗi lấy tổng quan Quiz {}: {}", quizId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/{quizId}/start")
     public ResponseEntity<?> startQuiz(
             @PathVariable Long quizId,
@@ -49,6 +63,21 @@ public class QuizApiController {
             return ResponseEntity.ok(quiz);
         } catch (Exception e) {
             log.error("[QuizApiController] Lỗi bắt đầu Quiz {}: {}", quizId, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{quizId}/save-progress")
+    public ResponseEntity<?> saveQuizProgress(
+            @PathVariable Long quizId,
+            @RequestBody QuizSubmissionRequestDTO request) {
+        try {
+            User user = authService.getCurrentAuthenticatedUser()
+                    .orElseThrow(() -> new RuntimeException("Vui lòng đăng nhập để lưu tiến độ bài làm"));
+            Map<String, Object> result = quizService.saveQuizProgress(quizId, request, user.getId());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("[QuizApiController] Lỗi lưu tiến độ Quiz {}: {}", quizId, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }

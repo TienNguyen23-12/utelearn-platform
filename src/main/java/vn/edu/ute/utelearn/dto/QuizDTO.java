@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,4 +39,10 @@ public class QuizDTO {
     private String deadlineAtDisplay;
     private Boolean isPastDeadline;
     private Boolean allowLateSubmission;
+    private Long activeSubmissionId;
+    private Boolean hasInProgressAttempt;
+    private Integer remainingSeconds;
+    private Instant startedAt;
+    @Builder.Default
+    private List<StudentAnswerDTO> savedAnswers = new ArrayList<>();
 }
