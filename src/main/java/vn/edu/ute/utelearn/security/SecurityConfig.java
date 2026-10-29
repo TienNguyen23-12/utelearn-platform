@@ -107,7 +107,7 @@ public class SecurityConfig {
                                 "/ws/**")
                         .permitAll()
 
-                        .requestMatchers("/admin/orders/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
+                        .requestMatchers("/admin/orders/**", "/admin/payroll/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
                         .requestMatchers("/admin/**", "/dashboard/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/instructor/assignments/**")
                         .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN", "MODERATOR", "ROLE_MODERATOR")

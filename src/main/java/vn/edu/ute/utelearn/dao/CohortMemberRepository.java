@@ -55,4 +55,7 @@ public interface CohortMemberRepository extends JpaRepository<CohortMember, Long
 
     @org.springframework.data.jpa.repository.Query("SELECT cm FROM CohortMember cm LEFT JOIN FETCH cm.user u WHERE cm.cohort.id = :cohortId AND cm.rating IS NOT NULL ORDER BY cm.reviewedAt DESC NULLS LAST, cm.id DESC")
     java.util.List<CohortMember> findReviewsByCohortIdWithUser(@org.springframework.data.repository.query.Param("cohortId") Long cohortId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT cm FROM CohortMember cm JOIN FETCH cm.cohort c LEFT JOIN FETCH c.createdBy LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy WHERE cm.roleInCohort = 'STUDENT' OR cm.roleInCohort IS NULL")
+    java.util.List<CohortMember> findAllStudentEnrollmentsWithCohortAndInstructor();
 }
