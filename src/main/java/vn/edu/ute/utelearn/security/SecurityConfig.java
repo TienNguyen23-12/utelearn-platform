@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/certificates/api/**",
                                 "/checkout/payment/**",
                                 "/cart/**",
-                                "/instructor/assets/**"
+                                "/instructor/assets/**",
+                                "/assets/**"
                         ))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
@@ -107,14 +108,28 @@ public class SecurityConfig {
                                 "/ws/**")
                         .permitAll()
 
-                        .requestMatchers("/admin/orders/**", "/admin/payroll/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
-                        .requestMatchers("/admin/**", "/dashboard/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/assets/**", "/instructor/assets/**")
+                        .hasAnyAuthority("ASSET_MANAGE", "ADMIN", "ROLE_ADMIN", "INSTRUCTOR", "ROLE_INSTRUCTOR")
+                        .requestMatchers("/admin/orders/**", "/admin/payroll/**", "/admin/discounts/**")
+                        .hasAnyAuthority("ORDER_MANAGE", "ADMIN", "ROLE_ADMIN", "FINANCE", "ROLE_FINANCE")
+                        .requestMatchers("/admin/users/**")
+                        .hasAnyAuthority("USER_MANAGE", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/admin/roles/**")
+                        .hasAnyAuthority("ROLE_MANAGE", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/admin/categories/**")
+                        .hasAnyAuthority("COURSE_CREATE", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/admin/moderation/**", "/admin/attendance/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/moderation/**", "/moderator/**")
+                        .hasAnyAuthority("CONTENT_APPROVE", "MODERATOR", "ROLE_MODERATOR", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/courses/manage/**", "/instructor/**", "/api/instructor/**")
+                        .hasAnyAuthority("COURSE_CREATE", "INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/api/instructor/assignments/**")
                         .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN", "MODERATOR", "ROLE_MODERATOR")
-                        .requestMatchers("/instructor/**", "/api/instructor/**")
-                        .hasAnyAuthority("INSTRUCTOR", "ROLE_INSTRUCTOR", "ADMIN", "ROLE_ADMIN")
-                        .requestMatchers("/moderator/**")
-                        .hasAnyAuthority("MODERATOR", "ROLE_MODERATOR", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/admin/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/dashboard/**")
+                        .hasAnyAuthority("ADMIN", "ROLE_ADMIN", "USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE")
                         .requestMatchers("/student/**", "/profile/**", "/orders/**").authenticated()
 
                         .anyRequest().authenticated())

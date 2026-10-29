@@ -47,7 +47,7 @@
         <div class="sidebar-nav-container">
             <div class="sidebar-heading">TỔNG QUAN</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasAnyPermission('USER_MANAGE', 'ROLE_MANAGE', 'CONTENT_APPROVE', 'COURSE_CREATE', 'ORDER_MANAGE', 'ASSET_MANAGE') or @rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'dashboard'} ? ' active' : ''"
                         href="/dashboard">
                         <i class="bi bi-grid-1x2-fill text-primary"></i>
@@ -61,7 +61,7 @@
                         <span>Hồ sơ cá nhân</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasRole('STUDENT')}">
+                                <li class="nav-item" th:if="${@rbac.hasRole('STUDENT') or @rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_courses'} ? ' active' : ''"
                         href="/courses/my-courses">
                         <i class="bi bi-journal-bookmark-fill text-warning"></i>
@@ -99,51 +99,51 @@
                 </li>
             </ul>
 
-            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">QUẢN TRỊ & TÀI CHÍNH</div>
-            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
-                <li class="nav-item">
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyPermission('ORDER_MANAGE', 'USER_MANAGE', 'ROLE_MANAGE') or @rbac.hasAnyRole('ADMIN', 'FINANCE')}">QUẢN TRỊ & TÀI CHÍNH</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyPermission('ORDER_MANAGE', 'USER_MANAGE', 'ROLE_MANAGE') or @rbac.hasAnyRole('ADMIN', 'FINANCE')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('ORDER_MANAGE') or @rbac.hasAnyRole('ADMIN', 'FINANCE')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_orders'} ? ' active' : ''"
                         href="/admin/orders">
                         <i class="bi bi-credit-card-2-front text-primary"></i>
                         <span>Quản lý Đơn hàng</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_payroll'} ? ' active' : ''"
                         href="/admin/payroll">
                         <i class="bi bi-cash-coin text-success"></i>
                         <span>Bảng lương & Thù lao</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('USER_MANAGE') or @rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'users'} ? ' active' : ''"
                         href="/admin/users">
                         <i class="bi bi-people-fill text-info"></i>
                         <span>Quản lý Tài khoản</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('ROLE_MANAGE') or @rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'roles'} ? ' active' : ''"
                         href="/admin/roles">
                         <i class="bi bi-shield-lock-fill text-warning"></i>
                         <span>Vai trò & Phân quyền</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('COURSE_CREATE') or @rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'categories'} ? ' active' : ''"
                         href="/admin/categories">
                         <i class="bi bi-tags-fill text-success"></i>
                         <span>Danh mục Khóa học</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasAnyRole('ADMIN', 'FINANCE')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('ORDER_MANAGE') or @rbac.hasAnyRole('ADMIN', 'FINANCE')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'admin_discounts'} ? ' active' : ''"
                         href="/admin/discounts">
                         <i class="bi bi-percent text-danger"></i>
                         <span>Mã giảm giá (Discount)</span>
                     </a>
                 </li>
-                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
+                                <li class="nav-item" th:if="${@rbac.hasRole('ADMIN')}">
                     <a class="nav-link sidebar-item d-flex align-items-center justify-content-between"
                         th:classappend="${activePage == 'admin_moderation'} ? ' active' : ''" href="/admin/moderation">
                         <div class="d-flex align-items-center gap-2">
@@ -157,37 +157,37 @@
                 </li>
             </ul>
 
-            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">QUẢN LÝ ĐÀO TẠO</div>
-            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
-                <li class="nav-item">
+            <div class="sidebar-heading" th:if="${@rbac.hasAnyPermission('COURSE_CREATE', 'ASSET_MANAGE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">QUẢN LÝ ĐÀO TẠO & TÀI NGUYÊN</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyPermission('COURSE_CREATE', 'ASSET_MANAGE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('COURSE_CREATE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'courses'} ? ' active' : ''"
                         href="/instructor/courses">
                         <i class="bi bi-journal-bookmark-fill text-success"></i>
                         <span>Khóa học chuẩn</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasPermission('COURSE_CREATE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'cohorts'} ? ' active' : ''"
                         href="/instructor/cohorts">
                         <i class="bi bi-calendar2-week-fill text-purple" style="color: #8b5cf6;"></i>
                         <span>Module & Chuyên đề</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasPermission('ASSET_MANAGE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'assets'} ? ' active' : ''"
-                        href="/instructor/assets">
+                        href="/assets">
                         <i class="bi bi-cloud-arrow-up-fill text-secondary"></i>
                         <span>Kho tài nguyên số</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasPermission('COURSE_CREATE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'discussions'} ? ' active' : ''"
                         href="/instructor/discussions">
                         <i class="bi bi-chat-dots-fill text-primary"></i>
                         <span>Thảo luận Lớp học</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasPermission('COURSE_CREATE') or @rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_payroll'} ? ' active' : ''"
                         href="/payroll/my-income">
                         <i class="bi bi-wallet-fill text-warning"></i>
@@ -196,9 +196,9 @@
                 </li>
             </ul>
 
-            <div class="sidebar-heading" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">KIỂM DUYỆT NỘI DUNG</div>
-            <ul class="nav flex-column mb-2" th:if="${@rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
-                <li class="nav-item">
+            <div class="sidebar-heading" th:if="${@rbac.hasPermission('CONTENT_APPROVE') or @rbac.hasAnyRole('MODERATOR', 'ADMIN')}">KIỂM DUYỆT NỘI DUNG</div>
+            <ul class="nav flex-column mb-2" th:if="${@rbac.hasPermission('CONTENT_APPROVE') or @rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('CONTENT_APPROVE') or @rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
                     <a class="nav-link sidebar-item"
                         th:classappend="${activePage == 'moderator-attendance'} ? ' active' : ''"
                         href="/moderator/attendance">
@@ -213,14 +213,14 @@
                         <span>Thống kê điểm danh</span>
                     </a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" th:if="${@rbac.hasPermission('CONTENT_APPROVE') or @rbac.hasAnyRole('MODERATOR', 'ADMIN')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'moderation'} ? ' active' : ''"
                         href="/moderator/queue">
                         <i class="bi bi-check2-circle text-danger"></i>
                         <span>Hàng đợi kiểm duyệt</span>
                     </a>
                 </li>
-                <li class="nav-item" th:unless="${@rbac.hasAnyRole('INSTRUCTOR', 'TEACHER', 'ADMIN')}">
+                <li class="nav-item" th:if="${@rbac.hasPermission('CONTENT_APPROVE') and !@rbac.hasPermission('COURSE_CREATE')}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_payroll'} ? ' active' : ''"
                         href="/payroll/my-income">
                         <i class="bi bi-wallet-fill text-warning"></i>
@@ -238,6 +238,7 @@
                 <span>Đăng xuất tài khoản</span>
             </a>
         </div>
+        <script th:src="@{/js/dynamic-rbac.js}"></script>
     </aside>
 
 </body>

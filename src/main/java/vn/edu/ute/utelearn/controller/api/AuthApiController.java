@@ -14,9 +14,11 @@ import vn.edu.ute.utelearn.dto.SendOtpRequestDTO;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.dto.ForgotPasswordRequestDTO;
 import vn.edu.ute.utelearn.dto.ResetPasswordRequestDTO;
+import vn.edu.ute.utelearn.security.RbacHelper;
 import vn.edu.ute.utelearn.util.ValidationUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -26,6 +28,7 @@ import java.util.Map;
 public class AuthApiController {
 
     private final AuthService authService;
+    private final RbacHelper rbacHelper;
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequestDTO requestDTO, BindingResult bindingResult, HttpServletResponse response) {
@@ -111,7 +114,7 @@ public class AuthApiController {
         }
     }
 
-        @PostMapping("/logout")
+    @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logout(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         Map<String, Object> res = new HashMap<>();
         authService.logout(response);
@@ -178,5 +181,14 @@ public class AuthApiController {
             res.put("message", ex.getMessage());
             return ResponseEntity.badRequest().body(res);
         }
+    }
+
+    @GetMapping("/me/permissions")
+    public ResponseEntity<Map<String, Object>> getCurrentUserPermissions() {
+        Map<String, Object> res = new HashMap<>();
+        List<String> permissions = rbacHelper.getCurrentUserPermissions();
+        res.put("success", true);
+        res.put("permissions", permissions);
+        return ResponseEntity.ok(res);
     }
 }

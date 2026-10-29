@@ -19,7 +19,7 @@ public class AdminModerationController {
     private final ModerationTaskRepository taskRepository;
 
     @GetMapping
-    @PreAuthorize("@rbac.hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN') or @rbac.hasRole('ADMIN')")
     public String viewEscalatedQueue(Model model) {
         List<ModerationTask> tasks = taskRepository.findByStatusOrderByCreatedAtAsc("ESCALATED");
         model.addAttribute("tasks", tasks);

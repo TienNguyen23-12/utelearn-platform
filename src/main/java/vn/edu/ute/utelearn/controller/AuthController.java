@@ -20,6 +20,8 @@ import vn.edu.ute.utelearn.dto.RegisterRequestDTO;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 import vn.edu.ute.utelearn.util.ValidationUtils;
+import vn.edu.ute.utelearn.util.SecurityUtils;
+import java.util.List;
 
 @Slf4j
 @Controller
@@ -37,8 +39,8 @@ public class AuthController {
     ) {
         if (authService.getCurrentAuthenticatedUser().isPresent()) {
             User user = authService.getCurrentAuthenticatedUser().get();
-            boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
-            return isAdmin ? "redirect:/dashboard" : "redirect:/home";
+            boolean hasStaffAccess = SecurityUtils.isAdmin(user) || SecurityUtils.hasAnyPermission(user, "USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE");
+            return hasStaffAccess ? "redirect:/dashboard" : "redirect:/home";
         }
 
         if (!model.containsAttribute("loginForm")) {
@@ -79,9 +81,8 @@ public class AuthController {
 
         try {
             AuthResponseDTO authResponse = authService.login(loginForm, response);
-            boolean isAdmin = authResponse.getRoles() != null &&
-                (authResponse.getRoles().contains("ADMIN") || authResponse.getRoles().contains("ROLE_ADMIN"));
-            if (isAdmin) {
+            boolean hasStaffAccess = (authResponse.getRoles() != null && (authResponse.getRoles().contains("ADMIN") || authResponse.getRoles().contains("ROLE_ADMIN"))) || (authResponse.getPermissions() != null && authResponse.getPermissions().stream().anyMatch(p -> List.of("USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE").contains(p)));
+            if (hasStaffAccess) {
                 return "redirect:/dashboard";
             } else {
                 return "redirect:/home";
@@ -103,8 +104,8 @@ public class AuthController {
     public String showRegisterPage(Model model) {
         if (authService.getCurrentAuthenticatedUser().isPresent()) {
             User user = authService.getCurrentAuthenticatedUser().get();
-            boolean isAdmin = user.getRoles().stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getCode()));
-            return isAdmin ? "redirect:/dashboard" : "redirect:/home";
+            boolean hasStaffAccess = SecurityUtils.isAdmin(user) || SecurityUtils.hasAnyPermission(user, "USER_MANAGE", "ROLE_MANAGE", "CONTENT_APPROVE", "COURSE_CREATE", "ORDER_MANAGE", "ASSET_MANAGE");
+            return hasStaffAccess ? "redirect:/dashboard" : "redirect:/home";
         }
 
         if (!model.containsAttribute("registerForm")) {

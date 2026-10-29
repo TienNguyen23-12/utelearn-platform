@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/admin/categories")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+@PreAuthorize("hasAnyAuthority('COURSE_CREATE', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
 public class AdminCategoryController {
 
     private final CategoryService categoryService;

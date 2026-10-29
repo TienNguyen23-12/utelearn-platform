@@ -54,11 +54,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void sendRegistrationOtp(String email) {
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Địa chỉ email không được để trống!");
+            throw new IllegalArgumentException("Äá»‹a chá»‰ email khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng!");
         }
         String normalizedEmail = email.trim().toLowerCase();
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new IllegalArgumentException("Địa chỉ email '" + normalizedEmail + "' đã được đăng ký tài khoản!");
+            throw new IllegalArgumentException("Äá»‹a chá»‰ email '" + normalizedEmail + "' Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½ tÃ i khoáº£n!");
         }
 
         String otp = String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
@@ -73,36 +73,36 @@ public class AuthServiceImpl implements AuthService {
         registrationOtpRepository.save(registrationOtp);
 
         emailService.sendRegistrationOtpEmail(normalizedEmail, otp);
-        log.info("Đã gửi mã OTP xác thực đăng ký tài khoản tới email {}", normalizedEmail);
+        log.info("ÄÃ£ gá»­i mÃ£ OTP xÃ¡c thá»±c Ä‘Äƒng kÃ½ tÃ i khoáº£n tá»›i email {}", normalizedEmail);
     }
 
     @Override
     @Transactional
     public User register(RegisterRequestDTO requestDTO) {
         if (!requestDTO.isPasswordMatching()) {
-            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp!");
+            throw new IllegalArgumentException("Máº­t kháº©u xÃ¡c nháº­n khÃ´ng khá»›p!");
         }
 
         if (!ValidationUtils.isStrongPassword(requestDTO.getPassword())) {
-            throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
+            throw new IllegalArgumentException("Máº­t kháº©u pháº£i cÃ³ Ã­t nháº¥t 8 kÃ½ tá»±, bao gá»“m chá»¯ hoa, chá»¯ thÆ°á»ng, chá»¯ sá»‘ vÃ  kÃ½ tá»± Ä‘áº·c biá»‡t!");
         }
 
         String email = requestDTO.getEmail().trim().toLowerCase();
         if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Địa chỉ email '" + email + "' đã được đăng ký tài khoản!");
+            throw new IllegalArgumentException("Äá»‹a chá»‰ email '" + email + "' Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½ tÃ i khoáº£n!");
         }
 
         String inputOtp = requestDTO.getOtp() != null ? requestDTO.getOtp().trim() : "";
         if (inputOtp.isBlank()) {
-            throw new IllegalArgumentException("Vui lòng nhập mã OTP xác thực!");
+            throw new IllegalArgumentException("Vui lÃ²ng nháº­p mÃ£ OTP xÃ¡c thá»±c!");
         }
 
         RegistrationOtp storedOtp = registrationOtpRepository.findTopByEmailOrderByCreatedAtDesc(email)
-            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy mã OTP cho email này. Vui lòng nhấn gửi lại mã!"));
+            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y mÃ£ OTP cho email nÃ y. Vui lÃ²ng nháº¥n gá»­i láº¡i mÃ£!"));
 
         if (storedOtp.isExpired()) {
             registrationOtpRepository.delete(storedOtp);
-            throw new IllegalArgumentException("Mã OTP đã hết hạn. Vui lòng nhận mã mới!");
+            throw new IllegalArgumentException("MÃ£ OTP Ä‘Ã£ háº¿t háº¡n. Vui lÃ²ng nháº­n mÃ£ má»›i!");
         }
 
         if (!storedOtp.getOtp().equals(inputOtp)) {
@@ -110,10 +110,10 @@ public class AuthServiceImpl implements AuthService {
             storedOtp.setAttemptCount(attempts);
             if (attempts >= 5) {
                 registrationOtpRepository.delete(storedOtp);
-                throw new IllegalArgumentException("Bạn đã nhập sai mã OTP quá 5 lần. Mã OTP đã bị hủy, vui lòng gửi lại mã mới!");
+                throw new IllegalArgumentException("Báº¡n Ä‘Ã£ nháº­p sai mÃ£ OTP quÃ¡ 5 láº§n. MÃ£ OTP Ä‘Ã£ bá»‹ há»§y, vui lÃ²ng gá»­i láº¡i mÃ£ má»›i!");
             }
             registrationOtpRepository.save(storedOtp);
-            throw new IllegalArgumentException("Mã OTP không chính xác. Bạn còn " + (5 - attempts) + " lần thử!");
+            throw new IllegalArgumentException("MÃ£ OTP khÃ´ng chÃ­nh xÃ¡c. Báº¡n cÃ²n " + (5 - attempts) + " láº§n thá»­!");
         }
 
         registrationOtpRepository.delete(storedOtp);
@@ -122,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
         if (requestDTO.getUsername() != null && !requestDTO.getUsername().isBlank()) {
             username = requestDTO.getUsername().trim();
             if (userRepository.existsByUsername(username)) {
-                throw new IllegalArgumentException("Tên đăng nhập '" + username + "' đã tồn tại trên hệ thống!");
+                throw new IllegalArgumentException("TÃªn Ä‘Äƒng nháº­p '" + username + "' Ä‘Ã£ tá»“n táº¡i trÃªn há»‡ thá»‘ng!");
             }
         } else {
             String baseUsername = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "");
@@ -148,8 +148,8 @@ public class AuthServiceImpl implements AuthService {
             .orElseGet(() -> roleRepository.save(
                 Role.builder()
                     .code("STUDENT")
-                    .name("Học viên")
-                    .description("Tài khoản học viên tự đăng ký")
+                    .name("Há»c viÃªn")
+                    .description("TÃ i khoáº£n há»c viÃªn tá»± Ä‘Äƒng kÃ½")
                     .build()
             ));
 
@@ -164,7 +164,7 @@ public class AuthServiceImpl implements AuthService {
             .build();
 
         User savedUser = userRepository.save(newUser);
-        log.info("Đăng ký tài khoản người dùng thành công: email={}, username={}, role=STUDENT", email, savedUser.getUsername());
+        log.info("ÄÄƒng kÃ½ tÃ i khoáº£n ngÆ°á»i dÃ¹ng thÃ nh cÃ´ng: email={}, username={}, role=STUDENT", email, savedUser.getUsername());
         return savedUser;
     }
 
@@ -174,14 +174,14 @@ public class AuthServiceImpl implements AuthService {
         String loginId = requestDTO.getUsernameOrEmail().trim();
 
         User user = userRepository.findByUsernameOrEmail(loginId, loginId)
-            .orElseThrow(() -> new BadCredentialsException("Tên đăng nhập hoặc mật khẩu không chính xác!"));
+            .orElseThrow(() -> new BadCredentialsException("TÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u khÃ´ng chÃ­nh xÃ¡c!"));
 
         if (!passwordEncoder.matches(requestDTO.getPassword(), user.getPasswordHash())) {
-            throw new BadCredentialsException("Tên đăng nhập hoặc mật khẩu không chính xác!");
+            throw new BadCredentialsException("TÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u khÃ´ng chÃ­nh xÃ¡c!");
         }
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new DisabledException("Tài khoản của bạn đã bị khóa hoặc tạm ngưng hoạt động!");
+            throw new DisabledException("TÃ i khoáº£n cá»§a báº¡n Ä‘Ã£ bá»‹ khÃ³a hoáº·c táº¡m ngÆ°ng hoáº¡t Ä‘á»™ng!");
         }
 
         List<String> roleCodes = user.getRoles().stream()
@@ -199,7 +199,7 @@ public class AuthServiceImpl implements AuthService {
 
         tokenProvider.setTokenCookie(response, accessToken, requestDTO.isRememberMe());
 
-        log.info("Người dùng đăng nhập thành công: username={}, roles={}", user.getUsername(), roleCodes);
+        log.info("NgÆ°á»i dÃ¹ng Ä‘Äƒng nháº­p thÃ nh cÃ´ng: username={}, roles={}", user.getUsername(), roleCodes);
 
         return AuthResponseDTO.builder()
             .accessToken(accessToken)
@@ -210,6 +210,7 @@ public class AuthServiceImpl implements AuthService {
             .email(user.getEmail())
             .fullName(user.getFullName())
             .roles(roleCodes)
+            .permissions(permissionCodes)
             .build();
     }
 
@@ -217,7 +218,7 @@ public class AuthServiceImpl implements AuthService {
     public void logout(HttpServletResponse response) {
         tokenProvider.clearTokenCookie(response);
         SecurityContextHolder.clearContext();
-        log.info("Người dùng đã đăng xuất và xóa Token Cookie.");
+        log.info("NgÆ°á»i dÃ¹ng Ä‘Ã£ Ä‘Äƒng xuáº¥t vÃ  xÃ³a Token Cookie.");
     }
 
     @Override
@@ -242,7 +243,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void processForgotPassword(String email) {
         User user = userRepository.findByEmail(email.trim().toLowerCase())
-            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nào với email này!"));
+            .orElseThrow(() -> new IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y tÃ i khoáº£n nÃ o vá»›i email nÃ y!"));
 
         String token = java.util.UUID.randomUUID().toString();
         passwordResetTokenRepository.deleteByUser(user);
@@ -263,29 +264,29 @@ public class AuthServiceImpl implements AuthService {
         }
         String resetUrl = baseUrl + "/reset-password?token=" + token;
         
-        String emailContent = "<h3>Đặt lại mật khẩu UTELearn</h3>"
-            + "<p>Xin chào " + user.getFullName() + ",</p>"
-            + "<p>Bạn đã yêu cầu đặt lại mật khẩu. Vui lòng click vào link bên dưới để đặt lại mật khẩu của bạn. Link này sẽ hết hạn sau 15 phút.</p>"
-            + "<p><a href=\"" + resetUrl + "\">Nhấn vào đây để đặt lại mật khẩu</a></p>"
-            + "<br><p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>";
+        String emailContent = "<h3>Äáº·t láº¡i máº­t kháº©u UTELearn</h3>"
+            + "<p>Xin chÃ o " + user.getFullName() + ",</p>"
+            + "<p>Báº¡n Ä‘Ã£ yÃªu cáº§u Ä‘áº·t láº¡i máº­t kháº©u. Vui lÃ²ng click vÃ o link bÃªn dÆ°á»›i Ä‘á»ƒ Ä‘áº·t láº¡i máº­t kháº©u cá»§a báº¡n. Link nÃ y sáº½ háº¿t háº¡n sau 15 phÃºt.</p>"
+            + "<p><a href=\"" + resetUrl + "\">Nháº¥n vÃ o Ä‘Ã¢y Ä‘á»ƒ Ä‘áº·t láº¡i máº­t kháº©u</a></p>"
+            + "<br><p>Náº¿u báº¡n khÃ´ng yÃªu cáº§u, vui lÃ²ng bá» qua email nÃ y.</p>";
 
         log.info("[AuthService] Link dat lai mat khau cho {}: {}", user.getEmail(), resetUrl);
-        emailService.sendHtmlEmail(user.getEmail(), "Yêu cầu đặt lại mật khẩu UTELearn", emailContent);
+        emailService.sendHtmlEmail(user.getEmail(), "YÃªu cáº§u Ä‘áº·t láº¡i máº­t kháº©u UTELearn", emailContent);
     }
 
     @Override
     @Transactional
     public void processResetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-            .orElseThrow(() -> new IllegalArgumentException("Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!"));
+            .orElseThrow(() -> new IllegalArgumentException("Link Ä‘áº·t láº¡i máº­t kháº©u khÃ´ng há»£p lá»‡ hoáº·c Ä‘Ã£ háº¿t háº¡n!"));
 
         if (resetToken.isExpired()) {
             passwordResetTokenRepository.delete(resetToken);
-            throw new IllegalArgumentException("Link đặt lại mật khẩu đã hết hạn!");
+            throw new IllegalArgumentException("Link Ä‘áº·t láº¡i máº­t kháº©u Ä‘Ã£ háº¿t háº¡n!");
         }
 
         if (!ValidationUtils.isStrongPassword(newPassword)) {
-            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt!");
+            throw new IllegalArgumentException("Máº­t kháº©u má»›i pháº£i cÃ³ Ã­t nháº¥t 8 kÃ½ tá»±, bao gá»“m chá»¯ hoa, chá»¯ thÆ°á»ng, chá»¯ sá»‘ vÃ  kÃ½ tá»± Ä‘áº·c biá»‡t!");
         }
 
         User user = resetToken.getUser();
@@ -293,6 +294,6 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         passwordResetTokenRepository.delete(resetToken);
-        log.info("Người dùng {} đã đặt lại mật khẩu thành công.", user.getUsername());
+        log.info("NgÆ°á»i dÃ¹ng {} Ä‘Ã£ Ä‘áº·t láº¡i máº­t kháº©u thÃ nh cÃ´ng.", user.getUsername());
     }
 }

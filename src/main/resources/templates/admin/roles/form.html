@@ -116,7 +116,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
                             <h5 class="fw-bold text-dark mb-1"><i class="bi bi-check-all text-primary me-2"></i>2. Danh sách Quyền hạn (Tick chọn để gán)</h5>
-                            <p class="text-muted small mb-0">Các quyền hạn được phân nhóm theo Mô-đun hệ thống (AUTH, COURSE, MODERATION, ASSET, OJ)</p>
+                            <p class="text-muted small mb-0">Các quyền hạn được phân nhóm theo Mô-đun hệ thống (AUTH, COURSE, MODERATION, ASSET, PAYMENT)</p>
                         </div>
                         <button type="button" class="btn btn-sm btn-soft-primary rounded-pill px-3" onclick="toggleAllCheckboxes(true)">
                             <i class="bi bi-check2-all me-1"></i>Chọn tất cả
@@ -145,7 +145,7 @@
                                                th:field="*{permissionIds}" th:value="${perm.id}"
                                                th:attr="data-module=${entry.key}">
                                         <div>
-                                            <div class="fw-semibold text-dark small" th:text="${perm.name}">Tạo khóa học</div>
+                                            <div class="fw-semibold text-dark small" th:text="${perm.displayName}">Tạo khóa học</div>
                                             <code class="text-primary mt-1 d-inline-block" style="font-size: 11px;" th:text="${perm.code}">COURSE_CREATE</code>
                                         </div>
                                     </label>

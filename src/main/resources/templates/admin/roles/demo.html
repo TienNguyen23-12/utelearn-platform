@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Phân Quyền Động (Client JSON + Server Permissions) - UTELearn</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+
+    <style>
+        .json-code-box {
+            background-color: #0f172a;
+            color: #38bdf8;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            border-radius: 12px;
+            padding: 16px;
+            max-height: 380px;
+            overflow-y: auto;
+            white-space: pre;
+        }
+        .demo-sidebar-box {
+            background-color: #ffffff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 250px;
+        }
+        .role-pill-btn {
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .role-pill-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+        .role-pill-btn.active {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            color: #ffffff;
+        }
+        .feature-card-item {
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .feature-granted {
+            background-color: #f0fdf4;
+            border-color: #86efac;
+        }
+        .feature-denied {
+            background-color: #fef2f2;
+            border-color: #fca5a5;
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<aside th:replace="~{fragments/sidebar :: sidebar('roles')}"></aside>
+
+<div class="app-content-wrapper">
+    <header th:replace="~{fragments/navbar :: navbar('Demo Phân Quyền Động')}"></header>
+
+    <main class="app-main-content">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Mô Hình Phân Quyền Động (Client JSON &amp; Server Permissions)</h3>
+                <p class="text-muted small mb-0">So sánh quyền giữa danh mục tính năng phía Client và danh sách quyền từ Server, loại bỏ hoàn toàn lối chia cứng <code>/role/feature</code></p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/admin/roles}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại Quản lý Vai trò
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="card card-custom p-4 h-100">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge bg-danger-subtle text-danger p-2 rounded-circle">
+                            <i class="bi bi-x-circle-fill fs-5"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-0">Cách Cũ (Phân Quyền Tĩnh Theo Role &amp; URL)</h5>
+                    </div>
+                    <ul class="text-secondary small mb-0 ps-3">
+                        <li class="mb-2">Gắn cứng đường dẫn theo vai trò: <code>/admin/users</code>, <code>/instructor/courses</code>, <code>/moderator/queue</code>.</li>
+                        <li class="mb-2">Kiểm tra vai trò trực tiếp: <code>if (role == 'ADMIN')</code> hoặc <code>allowedRoles: ['ADMIN', 'INSTRUCTOR']</code>.</li>
+                        <li class="mb-2">Khi tạo vai trò mới hoặc đổi quyền của một vai trò, giao diện và router không thể tự thích ứng nếu không viết thêm code.</li>
+                        <li>Người dùng có vai trò khác nhưng được cấp quyền tương đương vẫn bị chặn bởi tiền tố URL vai trò.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card card-custom p-4 h-100 border-primary-subtle" style="background: linear-gradient(180deg, #f8fafc 0%, #f0f9ff 100%);">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="badge bg-success-subtle text-success p-2 rounded-circle">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-0">Cách Mới (Phân Quyền Động Theo Quyền Hạn Thực Tế)</h5>
+                    </div>
+                    <ul class="text-secondary small mb-0 ps-3">
+                        <li class="mb-2"><strong>Client:</strong> Lưu 1 file JSON danh mục tổng quyền hệ thống (<code>system-menus.json</code>) chỉ định <code>requiredPermissions</code>.</li>
+                        <li class="mb-2"><strong>Server:</strong> Chỉ trả về mảng quyền user đang sở hữu: <code>["COURSE_CREATE", "ASSET_MANAGE"]</code>.</li>
+                        <li class="mb-2"><strong>Client Engine:</strong> Tự động đối chiếu mảng quyền với file JSON, có bao nhiêu quyền thì cấp bấy nhiêu tính năng.</li>
+                        <li>Độc lập hoàn toàn với tên Role; thêm bớt quyền trong Database là UI tự động co giãn ngay lập tức.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-4">
+                <div class="card card-custom p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="fw-bold text-dark">
+                            <i class="bi bi-file-earmark-code-fill text-primary me-1"></i>1. Client JSON (Tổng Quyền)
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary" style="font-size: 11px;">system-menus.json</span>
+                    </div>
+                    <p class="text-muted small mb-2">Danh mục tất cả tính năng trên Client kèm mã quyền yêu cầu:</p>
+                    <div id="catalogJsonViewer" class="json-code-box">Đang tải...</div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-custom p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="fw-bold text-dark">
+                            <i class="bi bi-cloud-arrow-down-fill text-success me-1"></i>2. Server Trả Về Quyền
+                        </div>
+                        <span class="badge bg-success-subtle text-success" style="font-size: 11px;">userPermissions</span>
+                    </div>
+
+                    <p class="text-muted small mb-2">Chọn nhanh Role để mô phỏng Server phản hồi:</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button type="button" class="role-pill-btn" onclick="applyPresetRole('ADMIN')">ADMIN</button>
+                        <button type="button" class="role-pill-btn active" onclick="applyPresetRole('INSTRUCTOR')">INSTRUCTOR</button>
+                        <button type="button" class="role-pill-btn" onclick="applyPresetRole('MODERATOR')">MODERATOR</button>
+                        <button type="button" class="role-pill-btn" onclick="applyPresetRole('FINANCE')">FINANCE</button>
+                        <button type="button" class="role-pill-btn" onclick="applyPresetRole('STUDENT')">STUDENT</button>
+                        <button type="button" class="role-pill-btn" onclick="applyPresetRole('CUSTOM')">CUSTOM</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Tick chọn mã quyền thực tế:</label>
+                        <div class="border rounded-3 p-2 bg-light" style="max-height: 160px; overflow-y: auto;">
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="COURSE_CREATE" id="p_course" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_course"><code>COURSE_CREATE</code> (Quản lý khóa học)</label>
+                            </div>
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="ASSET_MANAGE" id="p_asset" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_asset"><code>ASSET_MANAGE</code> (Kho tài nguyên số)</label>
+                            </div>
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="CONTENT_APPROVE" id="p_approve" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_approve"><code>CONTENT_APPROVE</code> (Kiểm duyệt bài)</label>
+                            </div>
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="ORDER_MANAGE" id="p_order" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_order"><code>ORDER_MANAGE</code> (Đối soát đơn hàng)</label>
+                            </div>
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="USER_MANAGE" id="p_user" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_user"><code>USER_MANAGE</code> (Quản trị tài khoản)</label>
+                            </div>
+                            <div class="form-check form-check-sm mb-1">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="ROLE_MANAGE" id="p_role" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_role"><code>ROLE_MANAGE</code> (Cấu hình vai trò)</label>
+                            </div>
+                            <div class="form-check form-check-sm">
+                                <input class="form-check-input perm-toggle" type="checkbox" value="CODE_SUBMIT" id="p_oj" onchange="onCustomPermChange()">
+                                <label class="form-check-label small" for="p_oj"><code>CODE_SUBMIT</code> (Chấm code OJ)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label class="form-label small fw-semibold text-dark">JSON quyền từ Server:</label>
+                    <div id="serverPayloadViewer" class="json-code-box" style="max-height: 90px; color: #4ade80;">[]</div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-custom p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="fw-bold text-dark">
+                            <i class="bi bi-cpu-fill text-warning me-1"></i>3. Client So Sánh &amp; Cấp Quyền
+                        </div>
+                        <span id="evalStatsBadge" class="badge bg-info text-dark" style="font-size: 11px;">0 được cấp</span>
+                    </div>
+
+                    <p class="text-muted small mb-2">Sidebar mô phỏng render tự động theo quyền được cấp:</p>
+                    <div id="dynamicSidebarDemo" class="demo-sidebar-box mb-3"></div>
+
+                    <div class="border-top pt-3">
+                        <div class="fw-semibold small text-dark mb-2">Thử nghiệm Nút UI (Directive <code>data-permission</code>):</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-success rounded-pill" data-permission="COURSE_CREATE">
+                                <i class="bi bi-plus-lg me-1"></i>Tạo Khóa Học
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning rounded-pill text-dark" data-permission="CONTENT_APPROVE">
+                                <i class="bi bi-check2-circle me-1"></i>Duyệt Bài
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger rounded-pill" data-permission="USER_MANAGE">
+                                <i class="bi bi-trash3-fill me-1"></i>Xóa User
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info rounded-pill text-dark" data-permission="ASSET_MANAGE">
+                                <i class="bi bi-cloud-arrow-up me-1"></i>Kho Tài Nguyên
+                            </button>
+                        </div>
+                        <div class="text-muted mt-2" style="font-size: 11px;">
+                            <i class="bi bi-info-circle me-1"></i>Nút bấm tự ẩn/hiện tức thì khi user có hoặc không có quyền tương ứng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-custom p-4">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-list-check text-primary me-2"></i>Chi Tiết Đánh Giá Từng Tính Năng</h5>
+            <div id="featureEvaluationList" class="row g-2"></div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script th:src="@{/js/admin-layout.js}"></script>
+<script th:src="@{/js/dynamic-rbac.js}"></script>
+
+<script>
+    const rolePresets = {
+        ADMIN: ['ADMIN', 'COURSE_CREATE', 'ASSET_MANAGE', 'CONTENT_APPROVE', 'ORDER_MANAGE', 'USER_MANAGE', 'ROLE_MANAGE', 'CODE_SUBMIT'],
+        INSTRUCTOR: ['COURSE_CREATE', 'ASSET_MANAGE'],
+        MODERATOR: ['CONTENT_APPROVE', 'ASSET_MANAGE'],
+        FINANCE: ['ORDER_MANAGE'],
+        STUDENT: ['CODE_SUBMIT'],
+        CUSTOM: []
+    };
+
+    let activeUserPermissions = ['COURSE_CREATE', 'ASSET_MANAGE'];
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await UteRbac.init({
+            catalogUrl: '/data/system-menus.json',
+            userPermissions: activeUserPermissions
+        });
+
+        document.getElementById('catalogJsonViewer').textContent = JSON.stringify(UteRbac.catalog, null, 2);
+        applyPresetRole('INSTRUCTOR');
+    });
+
+    function applyPresetRole(roleKey) {
+        document.querySelectorAll('.role-pill-btn').forEach(btn => {
+            if (btn.textContent.trim() === roleKey) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        activeUserPermissions = [...(rolePresets[roleKey] || [])];
+        syncCheckboxesFromPerms(activeUserPermissions);
+        runEvaluation();
+    }
+
+    function onCustomPermChange() {
+        document.querySelectorAll('.role-pill-btn').forEach(btn => {
+            if (btn.textContent.trim() === 'CUSTOM') {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        const checkedPerms = [];
+        document.querySelectorAll('.perm-toggle:checked').forEach(cb => {
+            checkedPerms.push(cb.value);
+        });
+
+        activeUserPermissions = checkedPerms;
+        runEvaluation();
+    }
+
+    function syncCheckboxesFromPerms(perms) {
+        document.querySelectorAll('.perm-toggle').forEach(cb => {
+            cb.checked = perms.includes(cb.value);
+        });
+    }
+
+    function runEvaluation() {
+        document.getElementById('serverPayloadViewer').textContent = JSON.stringify(activeUserPermissions, null, 2);
+
+        const result = UteRbac.setUserPermissions(activeUserPermissions);
+
+        document.getElementById('evalStatsBadge').textContent = `${result.grantedCount}/${result.total} được cấp`;
+        document.getElementById('evalStatsBadge').className = result.grantedCount > 0 ? 'badge bg-success' : 'badge bg-danger';
+
+        UteRbac.renderMenu('dynamicSidebarDemo', result.granted, 'courses');
+
+        renderEvaluationList(result);
+    }
+
+    function renderEvaluationList(result) {
+        const container = document.getElementById('featureEvaluationList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        result.granted.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            const reqPerms = item.requiredPermissions && item.requiredPermissions.length > 0 
+                ? item.requiredPermissions.join(', ') 
+                : 'Công khai';
+
+            col.innerHTML = `
+                <div class="feature-card-item feature-granted h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-success small"><i class="bi bi-check-circle-fill me-1"></i>ĐƯỢC CẤP</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 10px;">${item.badge || 'Active'}</span>
+                    </div>
+                    <div class="fw-semibold text-dark mb-1"><i class="bi ${item.icon} text-primary me-1"></i>${item.title}</div>
+                    <div class="text-muted small" style="font-size: 11px;">URL: <code>${item.url}</code></div>
+                    <div class="text-muted small mt-1" style="font-size: 11px;">Yêu cầu: <code>${reqPerms}</code></div>
+                </div>
+            `;
+            container.appendChild(col);
+        });
+
+        result.denied.forEach(item => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+            const reqPerms = item.requiredPermissions.join(', ');
+
+            col.innerHTML = `
+                <div class="feature-card-item feature-denied h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-danger small"><i class="bi bi-slash-circle-fill me-1"></i>BỊ CHẶN</span>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 10px;">Thiếu quyền</span>
+                    </div>
+                    <div class="fw-semibold text-secondary mb-1"><i class="bi ${item.icon} text-secondary me-1"></i>${item.title}</div>
+                    <div class="text-muted small" style="font-size: 11px;">URL: <code>${item.url}</code></div>
+                    <div class="text-danger small mt-1" style="font-size: 11px;">Cần quyền: <code>${reqPerms}</code></div>
+                </div>
+            `;
+            container.appendChild(col);
+        });
+    }
+</script>
+
+</body>
+</html>

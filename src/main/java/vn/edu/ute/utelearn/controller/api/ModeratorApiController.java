@@ -21,7 +21,7 @@ public class ModeratorApiController {
     private final AuthService authService;
 
     @PostMapping("/{taskId}/approve")
-    @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
+    @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
     public ResponseEntity<?> approveTask(@PathVariable Long taskId, @RequestBody Map<String, String> payload) {
         try {
             User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
@@ -34,7 +34,7 @@ public class ModeratorApiController {
     }
 
     @PostMapping("/{taskId}/reject")
-    @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
+    @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
     public ResponseEntity<?> rejectTask(@PathVariable Long taskId, @RequestBody Map<String, String> payload) {
         try {
             User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
@@ -47,7 +47,7 @@ public class ModeratorApiController {
     }
 
     @PostMapping("/{taskId}/escalate")
-    @PreAuthorize("@rbac.hasRole('MODERATOR') or @rbac.hasRole('ADMIN')")
+    @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
     public ResponseEntity<?> escalateTask(@PathVariable Long taskId, @RequestBody Map<String, String> payload) {
         try {
             User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
