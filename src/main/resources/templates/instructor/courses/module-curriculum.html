@@ -1188,6 +1188,21 @@
           </div>
 
           <div class="tab-pane fade" id="pane-assignment-submissions">
+            <div class="p-3 mb-3 rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
+              <div class="d-flex align-items-center gap-2.5">
+                <div class="rounded-3 p-2 bg-primary text-white">
+                  <i class="bi bi-award-fill fs-5"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark small">Giao diện chấm bài tập chuyên dụng</div>
+                  <div class="text-muted" style="font-size: 11px;">Xem trước trực tiếp file PDF, hình ảnh, mã nguồn và chấm bài nhanh mà không cần tải file về máy.</div>
+                </div>
+              </div>
+              <a id="btnOpenDedicatedGradingPage" href="#" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Mở trang chấm bài riêng
+              </a>
+            </div>
+
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-light rounded-3 border">
               <div>
                 <span class="text-muted small me-3">Tổng số bài nộp: <strong class="text-dark" id="assignmentStatTotal">0</strong></span>
@@ -1641,8 +1656,11 @@
                             </button>
                         ` : ''}
                         ${l.lessonType === 'ASSIGNMENT' ? `
-                            <button class="btn btn-sm btn-outline-info text-dark border me-1 fw-semibold" onclick="openAssignmentConfigModal(${l.id})" title="Cấu hình & Chấm bài">
-                                <i class="bi bi-journal-check text-info me-1"></i>Chấm bài &amp; Cấu hình
+                            <a href="/instructor/assignments/by-lesson/${l.id}${typeof moduleId !== 'undefined' && moduleId ? '?cohortId=' + moduleId : ''}" class="btn btn-sm btn-primary border me-1 fw-semibold" title="Mở trang chấm bài riêng">
+                                <i class="bi bi-award-fill me-1"></i>Chấm bài
+                            </a>
+                            <button class="btn btn-sm btn-outline-info text-dark border me-1 fw-semibold" onclick="openAssignmentConfigModal(${l.id})" title="Cấu hình đề bài &amp; Hạn nộp">
+                                <i class="bi bi-gear text-info me-1"></i>Cấu hình
                             </button>
                         ` : ''}
                         <button class="btn btn-light text-primary border me-1" data-lesson='${JSON.stringify(l).replace(/'/g, "&apos;")}' onclick="editLesson(JSON.parse(this.getAttribute('data-lesson')), ${sectionId})"><i class="bi bi-pencil"></i></button>
@@ -3274,6 +3292,11 @@
             currentAssignmentData = assignment;
 
             document.getElementById('assignmentModalAssignmentId').value = assignment.id;
+            const dedicatedBtn = document.getElementById('btnOpenDedicatedGradingPage');
+            if (dedicatedBtn) {
+                const cParam = typeof moduleId !== 'undefined' && moduleId ? `?cohortId=${moduleId}` : '';
+                dedicatedBtn.href = `/instructor/assignments/${assignment.id}${cParam}`;
+            }
             document.getElementById('assignmentCfgTitle').value = assignment.title || '';
             if (titleEl && assignment.title) titleEl.textContent = ` - ${assignment.title}`;
             document.getElementById('assignmentCfgInstruction').value = assignment.instruction || '';
@@ -3495,9 +3518,9 @@
                             <div class="small">${scoreDisplay}</div>
                         </td>
                         <td style="text-align: right;">
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="openGradeModal(${sub.id})">
+                            <a href="/instructor/assignments/${assignmentId}?submissionId=${sub.id}${typeof moduleId !== 'undefined' && moduleId ? '&cohortId=' + moduleId : ''}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
                                 ${gradeBtnLabel}
-                            </button>
+                            </a>
                         </td>
                     </tr>
                 `;

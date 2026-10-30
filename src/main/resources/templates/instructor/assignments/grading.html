@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <link rel="apple-touch-icon" href="/images/brand/UTELearn_SquareLogo_2.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Chấm bài tập - ' + ${assignment.title} + ' - UTELearn'">Chấm bài tập - UTELearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin-layout.css}">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        :root {
+            --app-header-h: 70px;
+            --grading-panel-h: calc(100vh - 170px);
+        }
+        body.grading-focus-mode .app-sidebar,
+        body.grading-focus-mode .app-navbar,
+        body.grading-focus-mode .grading-breadcrumb {
+            display: none !important;
+        }
+        body.grading-focus-mode .app-content-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 0 !important;
+        }
+        body.grading-focus-mode .app-main-content {
+            padding: 12px 16px !important;
+        }
+        .grading-container {
+            display: flex;
+            gap: 16px;
+            height: calc(100vh - 210px);
+            min-height: 640px;
+        }
+        body.grading-focus-mode .grading-container {
+            height: calc(100vh - 90px);
+        }
+        .submissions-sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .submissions-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .student-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            position: relative;
+        }
+        .student-item:hover {
+            background-color: #f8fafc;
+        }
+        .student-item.active {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+        .preview-canvas {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .preview-header {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .preview-viewport {
+            flex: 1;
+            min-height: 0;
+            background: #0f172a;
+            position: relative;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-viewport.light-bg {
+            background: #f1f5f9;
+        }
+        .preview-pane-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+        }
+        .preview-pane-file {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+        .preview-pane-text {
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .grading-panel {
+            width: 360px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .grading-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .code-preview-wrap {
+            font-family: 'Fira Code', ui-monospace, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            tab-size: 4;
+            color: #e2e8f0;
+            background: #0f172a;
+            padding: 16px;
+            margin: 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .code-preview-wrap.wrap-lines {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .quick-score-btn {
+            min-width: 42px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .quick-feedback-chip {
+            font-size: 11.5px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            display: inline-block;
+        }
+        .quick-feedback-chip:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <aside th:replace="~{fragments/sidebar :: sidebar('cohorts')}"></aside>
+
+    <div class="app-content-wrapper">
+        <header th:replace="~{fragments/navbar :: navbar('Chấm bài tập')}"></header>
+
+        <main class="app-main-content">
+            <nav aria-label="breadcrumb" class="mb-2 grading-breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a th:href="@{/instructor/cohorts}" class="text-decoration-none text-muted">Module &amp; Đợt học</a></li>
+                    <li th:if="${cohort != null}" class="breadcrumb-item">
+                        <a th:href="@{'/instructor/cohorts/' + ${cohort.id} + '/curriculum'}" class="text-decoration-none text-muted" th:text="${cohort.name}">Tên lớp</a>
+                    </li>
+                    <li th:if="${course != null and cohort == null}" class="breadcrumb-item">
+                        <a th:href="@{'/instructor/courses/' + ${course.id} + '/curriculum'}" class="text-decoration-none text-muted" th:text="${course.title}">Tên khóa học</a>
+                    </li>
+                    <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Chấm bài tập</li>
+                </ol>
+            </nav>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-3 overflow-hidden text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 p-2.5 bg-primary bg-opacity-25 text-primary-subtle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-journal-check fs-3 text-info"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
+                                        BÀI TẬP TỰ LUẬN
+                                    </span>
+                                    <span th:if="${cohort != null}" class="badge bg-light text-dark rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
+                                        <i class="bi bi-people me-1"></i><span th:text="${cohort.name}">Lớp học</span>
+                                    </span>
+                                    <span th:if="${assignmentDto.deadlineAtDisplay != null}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 11px;">
+                                        <i class="bi bi-clock-history me-1"></i>Hạn nộp: <span th:text="${assignmentDto.deadlineAtDisplay}">30/10/2026</span>
+                                    </span>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-white" th:text="${assignment.title}">Tiêu đề bài tập</h4>
+                                <div class="text-white-50 small mt-1">
+                                    <span>Thang điểm: <strong class="text-white" th:text="${assignment.maxScore != null ? assignment.maxScore : 10.0}">10</strong></span>
+                                    <span class="mx-2">•</span>
+                                    <span>Điểm sàn đạt: <strong class="text-white" th:text="${assignmentDto != null and assignmentDto.passingScore != null ? assignmentDto.passingScore : (assignment.passingScore != null and assignment.passingScore > 0 ? assignment.passingScore : 5.0)}">5.0</strong></span>
+                                    <span class="mx-2">•</span>
+                                    <span>Định dạng: <span class="text-white" th:text="${assignment.allowedFileTypes != null ? assignment.allowedFileTypes : 'pdf,doc,docx,zip'}">pdf,doc,docx</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <div th:if="${availableCohorts != null and availableCohorts.size() > 1}" class="me-2">
+                                <select class="form-select form-select-sm rounded-pill bg-dark text-white border-secondary" style="font-size: 12px;" onchange="switchCohort(this.value)">
+                                    <option th:each="c : ${availableCohorts}" th:value="${c.id}" th:text="${c.name}" th:selected="${cohort != null and c.id == cohort.id}">Đợt học</option>
+                                </select>
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="toggleFocusMode()" title="Chế độ toàn màn hình để chấm bài">
+                                <i class="bi bi-arrows-fullscreen me-1" id="focusModeIcon"></i><span id="focusModeText">Toàn màn hình</span>
+                            </button>
+
+                            <a th:if="${cohort != null}" th:href="@{'/instructor/cohorts/' + ${cohort.id} + '/gradebook'}" class="btn btn-sm btn-light text-dark rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-table me-1"></i>Bảng điểm
+                            </a>
+
+                            <a th:if="${cohort != null}" th:href="@{'/instructor/cohorts/' + ${cohort.id} + '/curriculum'}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                                <i class="bi bi-arrow-left me-1"></i>Lộ trình
+                            </a>
+                            <a th:if="${cohort == null and course != null}" th:href="@{'/instructor/courses/' + ${course.id} + '/curriculum'}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                                <i class="bi bi-arrow-left me-1"></i>Lộ trình
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="stat-badge d-flex align-items-center gap-2">
+                            <i class="bi bi-people-fill text-info"></i>
+                            <div>
+                                <div class="small text-white-50" style="font-size: 11px;">Tổng bài nộp</div>
+                                <div class="fw-bold fs-6 text-white" id="statTotalSubmissions" th:text="${totalSubmissions}">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-badge d-flex align-items-center gap-2">
+                            <i class="bi bi-hourglass-split text-warning"></i>
+                            <div>
+                                <div class="small text-white-50" style="font-size: 11px;">Chờ chấm</div>
+                                <div class="fw-bold fs-6 text-warning" id="statPendingSubmissions" th:text="${pendingCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-badge d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <div class="small text-white-50" style="font-size: 11px;">Đã chấm</div>
+                                <div class="fw-bold fs-6 text-success" id="statGradedSubmissions" th:text="${gradedCount}">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-badge d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-history text-danger"></i>
+                            <div>
+                                <div class="small text-white-50" style="font-size: 11px;">Nộp trễ</div>
+                                <div class="fw-bold fs-6 text-danger" id="statLateSubmissions" th:text="${lateCount}">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grading-container">
+                <div class="submissions-sidebar">
+                    <div class="p-3 border-bottom bg-light">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" id="searchStudentInput" placeholder="Tìm tên hoặc email học viên..." oninput="filterStudents()">
+                            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearSearch()" title="Xóa tìm kiếm">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-xs btn-primary rounded-pill px-2.5 py-1 fw-semibold filter-pill active" data-filter="all" onclick="setFilter('all', this)" style="font-size: 11px;">
+                                Tất cả (<span id="filterCountAll" th:text="${totalSubmissions}">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 filter-pill" data-filter="pending" onclick="setFilter('pending', this)" style="font-size: 11px;">
+                                Chờ chấm (<span id="filterCountPending" th:text="${pendingCount}">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 filter-pill" data-filter="graded" onclick="setFilter('graded', this)" style="font-size: 11px;">
+                                Đã chấm (<span id="filterCountGraded" th:text="${gradedCount}">0</span>)
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1 filter-pill" data-filter="late" onclick="setFilter('late', this)" style="font-size: 11px;">
+                                Trễ (<span id="filterCountLate" th:text="${lateCount}">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="submissions-scroll-area" id="studentsListContainer">
+                        <div th:if="${submissions.isEmpty()}" class="p-4 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <div class="fw-semibold">Chưa có bài nộp nào</div>
+                            <small class="text-muted">Học viên chưa nộp bài tập trong đợt này</small>
+                        </div>
+
+                        <div th:each="sub : ${submissions}" 
+                             class="student-item" 
+                             th:id="'student-item-' + ${sub.id}"
+                             th:data-id="${sub.id}"
+                             th:data-name="${sub.studentName}"
+                             th:data-email="${sub.studentEmail}"
+                             th:data-status="${sub.status}"
+                             th:data-late="${sub.isLate}"
+                             th:classappend="${selectedSubmissionId != null and sub.id == selectedSubmissionId} ? ' active' : ''"
+                             th:onclick="'selectSubmission(' + ${sub.id} + ')'">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; font-size: 13px;">
+                                    <span th:text="${sub.studentName != null and !sub.studentName.isEmpty() ? #strings.substring(sub.studentName, 0, 1).toUpperCase() : 'H'}">H</span>
+                                </div>
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between gap-1">
+                                        <div class="fw-bold text-dark text-truncate small" th:text="${sub.studentName != null ? sub.studentName : 'Học viên'}">Nguyễn Văn A</div>
+                                        <div th:if="${sub.status == 'GRADED'}" 
+                                             th:class="'badge rounded-pill px-2 py-0.5 fw-bold ' + (${sub.isPassed} ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle')" 
+                                             style="font-size: 10px;">
+                                            <span th:text="${sub.score}">10</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted text-truncate" style="font-size: 11px;" th:text="${sub.studentEmail}">student@ute.edu.vn</div>
+                                    <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
+                                        <span th:if="${sub.status != 'GRADED' and sub.status != 'COMPLETED'}" class="badge rounded-pill px-2 py-0.5 fw-semibold" style="background-color: #fef3c7; color: #92400e; font-size: 10px; border: 1px solid #fcd34d;">
+                                            <i class="bi bi-hourglass-split me-0.5"></i>Chờ chấm
+                                        </span>
+                                        <span th:if="${sub.status == 'GRADED' and sub.isPassed}" class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 10px;">
+                                            Đạt
+                                        </span>
+                                        <span th:if="${sub.status == 'GRADED' and !sub.isPassed}" class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 10px;">
+                                            Chưa đạt
+                                        </span>
+                                        <span th:if="${sub.isLate}" class="badge bg-danger text-white rounded-pill px-1.5 py-0.5 fw-semibold" style="font-size: 9px;">
+                                            Trễ
+                                        </span>
+                                        <span th:if="${sub.fileUrl != null}" class="badge bg-light text-secondary border rounded-pill px-1.5 py-0.5" style="font-size: 9px;" title="Có tệp đính kèm">
+                                            <i class="bi bi-paperclip"></i> File
+                                        </span>
+                                        <span th:if="${sub.submissionText != null and !sub.submissionText.isEmpty()}" class="badge bg-light text-secondary border rounded-pill px-1.5 py-0.5" style="font-size: 9px;" title="Có văn bản / liên kết">
+                                            <i class="bi bi-card-text"></i> Văn bản
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-canvas">
+                    <div class="preview-header">
+                        <div class="d-flex align-items-center gap-2 overflow-hidden">
+                            <div class="rounded p-1.5 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-file-earmark-text fs-5" id="previewFileTypeIcon"></i>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="fw-bold text-dark text-truncate small" id="previewFileName">Tệp bài nộp của học viên</div>
+                                <div class="text-muted" style="font-size: 11px;" id="previewFileSize">Đang tải...</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <ul class="nav nav-pills nav-pills-sm bg-light p-1 rounded-pill d-none" id="previewModeTabs">
+                                <li class="nav-item">
+                                    <button class="nav-link active rounded-pill px-3 py-1 fw-semibold" id="tabBtnFile" style="font-size: 12px;" onclick="switchPreviewTab('file')">
+                                        <i class="bi bi-paperclip me-1"></i>Tệp đính kèm
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link rounded-pill px-3 py-1 fw-semibold" id="tabBtnText" style="font-size: 12px;" onclick="switchPreviewTab('text')">
+                                        <i class="bi bi-card-text me-1"></i>Văn bản / Link
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-2.5 py-1 d-none" id="previewOpenRawBtn" target="_blank" title="Mở trong tab mới">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </button>
+                                <a id="previewDownloadBtn" class="btn btn-outline-secondary rounded-pill px-2.5 py-1 ms-1 d-none" download title="Tải tệp về máy tính">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preview-viewport" id="previewViewport">
+                        <div id="previewEmptyState" class="preview-pane-center p-5 text-white-50">
+                            <i class="bi bi-file-earmark-arrow-up display-3 text-secondary opacity-25 mb-3"></i>
+                            <h5 class="fw-bold text-white mb-1">Chưa chọn bài nộp nào</h5>
+                            <p class="small text-secondary mb-0">Vui lòng bấm chọn một học viên trong danh sách bên trái để xem trước bài làm và chấm điểm.</p>
+                        </div>
+
+                        <div id="previewLoadingState" class="preview-pane-center p-5 d-none">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <div class="text-white small fw-semibold">Đang tải tài liệu xem trước...</div>
+                        </div>
+
+                        <div id="previewContainerFile" class="preview-pane-file d-none"></div>
+
+                        <div id="previewContainerText" class="preview-pane-text text-light d-none">
+                            <div class="p-4 rounded-3 border border-secondary border-opacity-25 bg-dark" style="max-width: 900px; margin: 0 auto;">
+                                <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-secondary border-opacity-25">
+                                    <div class="fw-bold text-info small d-flex align-items-center gap-2">
+                                        <i class="bi bi-card-text"></i>Nội dung học viên nhập trực tiếp
+                                    </div>
+                                    <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-3" onclick="copySubmissionText()">
+                                        <i class="bi bi-clipboard me-1"></i>Sao chép
+                                    </button>
+                                </div>
+                                <div id="previewTextContent" class="small lh-lg" style="white-space: pre-wrap; word-break: break-word;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grading-panel">
+                    <div class="p-3 border-bottom bg-light d-flex align-items-center justify-content-between">
+                        <div class="fw-bold text-dark small d-flex align-items-center gap-2">
+                            <i class="bi bi-award-fill text-primary"></i>Đánh giá &amp; Cho điểm
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="navigateStudent(-1)" title="Bài trước (Phím [)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span class="small text-muted px-1" id="studentNavIndex">1 / 1</span>
+                            <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2" onclick="navigateStudent(1)" title="Bài sau (Phím ])">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grading-scroll-area">
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 14px;" id="panelStudentAvatar">
+                                    A
+                                </div>
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="fw-bold text-dark text-truncate" id="panelStudentName">Nguyễn Văn A</div>
+                                    <div class="text-muted text-truncate small" id="panelStudentEmail">student@ute.edu.vn</div>
+                                </div>
+                            </div>
+                            <div class="mt-2.5 pt-2.5 border-top d-flex align-items-center justify-content-between" style="font-size: 11px;">
+                                <span class="text-muted">Nộp lúc: <span class="fw-semibold text-dark" id="panelStudentSubmittedAt">--</span></span>
+                                <span id="panelStudentLateBadge"></span>
+                            </div>
+                        </div>
+
+                        <div th:if="${assignmentDto.requiresGrading != false}">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                    <label class="form-label small fw-bold text-dark mb-0">
+                                        Điểm số (Thang <span th:text="${assignment.maxScore != null ? assignment.maxScore : 10}">10</span>) <span class="text-danger">*</span>
+                                    </label>
+                                    <span id="panelScoreEvaluationBadge" class="badge rounded-pill px-2 py-0.5 d-none" style="font-size: 10px;"></span>
+                                </div>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control form-control-lg fw-bold rounded-start-3 text-primary text-center fs-4" 
+                                           id="gradingScoreInput" 
+                                           min="0" 
+                                           th:max="${assignment.maxScore != null ? assignment.maxScore : 10}" 
+                                           step="0.1" 
+                                           placeholder="0.0" 
+                                           oninput="handleScoreInput(this.value)">
+                                    <span class="input-group-text bg-light fw-bold text-muted rounded-end-3" th:text="'/ ' + ${assignment.maxScore != null ? assignment.maxScore : 10}">/ 10</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="small text-muted mb-1.5" style="font-size: 11px;">Cho điểm nhanh:</div>
+                                <div class="d-flex flex-wrap gap-1.5" id="quickScoreContainer"></div>
+                            </div>
+                        </div>
+
+                        <div th:unless="${assignmentDto.requiresGrading != false}" class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+                            <i class="bi bi-info-circle me-1"></i>Bài tập này không tính điểm số. Giảng viên chỉ cần ghi nhận xét phản hồi.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-dark mb-1">
+                                Lời nhận xét / Phản hồi (Feedback)
+                            </label>
+                            <textarea class="form-control rounded-3" id="gradingFeedbackInput" rows="5" placeholder="Nhập nhận xét ưu/nhược điểm, hướng dẫn cải thiện cho học viên..."></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="small text-muted mb-1.5" style="font-size: 11px;">Mẫu nhận xét nhanh:</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="quick-feedback-chip" onclick="appendFeedback('Bài làm rất tốt, nội dung đầy đủ và đúng yêu cầu! 👏')">Rất tốt 👍</span>
+                                <span class="quick-feedback-chip" onclick="appendFeedback('Trình bày sạch sẽ, cấu trúc rõ ràng mạch lạc.')">Trình bày đẹp ✨</span>
+                                <span class="quick-feedback-chip" onclick="appendFeedback('Cần bổ sung thêm ví dụ thực tế và giải thích chi tiết hơn.')">Cần thêm ví dụ 📝</span>
+                                <span class="quick-feedback-chip" onclick="appendFeedback('Nộp bài đúng hạn, đáp ứng yêu cầu cơ bản.')">Đạt yêu cầu ✔</span>
+                                <span class="quick-feedback-chip" onclick="appendFeedback('Bài làm còn thiếu một số phần quan trọng, cần xem lại đề bài.')">Thiếu ý ⚠</span>
+                            </div>
+                        </div>
+
+                        <div id="panelGradedInfo" class="p-2.5 bg-success-subtle border border-success-subtle rounded-3 small mb-3 d-none" style="font-size: 11.5px;">
+                            <div class="fw-semibold text-success d-flex align-items-center gap-1.5">
+                                <i class="bi bi-check2-circle"></i><span id="panelGradedByText">Đã chấm điểm</span>
+                            </div>
+                            <div class="text-secondary mt-0.5" id="panelGradedAtText">Vào lúc --</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-top bg-light d-flex flex-column gap-2">
+                        <button type="button" class="btn btn-primary rounded-pill py-2 fw-semibold w-100 shadow-sm" onclick="saveGrade(false)" id="saveGradeBtn">
+                            <i class="bi bi-check-lg me-1"></i>Lưu điểm &amp; Phản hồi
+                        </button>
+                        <button type="button" class="btn btn-success rounded-pill py-2 fw-semibold w-100 shadow-sm" onclick="saveGrade(true)" id="saveAndNextBtn">
+                            <i class="bi bi-arrow-right-circle me-1"></i>Lưu &amp; Tiếp tục bài sau
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script th:src="@{/js/admin-layout.js}"></script>
+    <script th:inline="javascript">
+        const assignmentData = /*[[${assignmentDto}]]*/ {};
+        const allSubmissions = /*[[${submissions}]]*/ [];
+        const initialSelectedId = /*[[${selectedSubmissionId}]]*/ null;
+        const currentCohortId = /*[[${cohort != null ? cohort.id : null}]]*/ null;
+        const maxScoreVal = assignmentData.maxScore != null ? parseFloat(assignmentData.maxScore) : 10.0;
+        const rawPassing = assignmentData.passingScore != null ? parseFloat(assignmentData.passingScore) : null;
+        const passingScoreVal = (rawPassing != null && rawPassing > 0) ? rawPassing : (maxScoreVal > 0 ? 5.0 : 0.0);
+        const requiresGrading = assignmentData.requiresGrading !== false && maxScoreVal > 0;
+
+        let filteredSubmissions = [...allSubmissions];
+        let currentFilter = 'all';
+        let currentSearchQuery = '';
+        let currentSubmission = null;
+        let activePreviewTab = 'file';
+        let codeWordWrap = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuickScores();
+            if (initialSelectedId) {
+                selectSubmission(initialSelectedId);
+            } else if (allSubmissions.length > 0) {
+                selectSubmission(allSubmissions[0].id);
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        e.preventDefault();
+                        saveGrade(true);
+                    } else if (e.ctrlKey && e.key === 's') {
+                        e.preventDefault();
+                        saveGrade(false);
+                    }
+                    return;
+                }
+                if (e.key === '[' || e.key === 'PageUp') {
+                    e.preventDefault();
+                    navigateStudent(-1);
+                } else if (e.key === ']' || e.key === 'PageDown') {
+                    e.preventDefault();
+                    navigateStudent(1);
+                }
+            });
+        });
+
+        function renderQuickScores() {
+            const container = document.getElementById('quickScoreContainer');
+            if (!container) return;
+            const scores = maxScoreVal === 10 
+                ? [10, 9.5, 9, 8.5, 8, 7.5, 7, 6, 5, 0]
+                : [maxScoreVal, +(maxScoreVal * 0.9).toFixed(1), +(maxScoreVal * 0.8).toFixed(1), +(maxScoreVal * 0.5).toFixed(1), 0];
+
+            container.innerHTML = scores.map(s => `
+                <button type="button" class="btn btn-sm btn-outline-secondary quick-score-btn rounded-pill" onclick="setQuickScore(${s})">
+                    ${s}
+                </button>
+            `).join('');
+        }
+
+        function setQuickScore(score) {
+            const input = document.getElementById('gradingScoreInput');
+            if (!input) return;
+            input.value = score;
+            handleScoreInput(score);
+        }
+
+        function handleScoreInput(val) {
+            const badge = document.getElementById('panelScoreEvaluationBadge');
+            if (!badge) return;
+            if (val === '' || isNaN(val)) {
+                badge.classList.add('d-none');
+                return;
+            }
+            const num = parseFloat(val);
+            badge.classList.remove('d-none');
+            if (num >= passingScoreVal) {
+                badge.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-0.5 fw-bold';
+                badge.textContent = '✓ ĐẠT';
+            } else {
+                badge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-0.5 fw-bold';
+                badge.textContent = '✗ CHƯA ĐẠT';
+            }
+        }
+
+        function appendFeedback(text) {
+            const textarea = document.getElementById('gradingFeedbackInput');
+            if (!textarea) return;
+            const current = textarea.value.trim();
+            if (!current) {
+                textarea.value = text;
+            } else if (!current.includes(text)) {
+                textarea.value = current + '\n' + text;
+            }
+            textarea.focus();
+        }
+
+        function selectSubmission(id) {
+            const sub = allSubmissions.find(s => s.id === id);
+            if (!sub) return;
+            currentSubmission = sub;
+
+            document.querySelectorAll('.student-item').forEach(el => el.classList.remove('active'));
+            const activeEl = document.getElementById('student-item-' + id);
+            if (activeEl) {
+                activeEl.classList.add('active');
+                activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+
+            const visibleIdx = filteredSubmissions.findIndex(s => s.id === id);
+            const navIndexEl = document.getElementById('studentNavIndex');
+            if (navIndexEl) {
+                navIndexEl.textContent = `${visibleIdx >= 0 ? visibleIdx + 1 : 1} / ${filteredSubmissions.length}`;
+            }
+
+            updateGradingPanel(sub);
+            renderPreview(sub);
+
+            const url = new URL(window.location);
+            url.searchParams.set('submissionId', id);
+            window.history.replaceState({}, '', url);
+        }
+
+        function updateGradingPanel(sub) {
+            document.getElementById('panelStudentName').textContent = sub.studentName || 'Học viên';
+            document.getElementById('panelStudentEmail').textContent = sub.studentEmail || '';
+            const initial = sub.studentName ? sub.studentName.charAt(0).toUpperCase() : 'H';
+            document.getElementById('panelStudentAvatar').textContent = initial;
+
+            const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('vi-VN') : '--';
+            document.getElementById('panelStudentSubmittedAt').textContent = subDate;
+
+            const lateBadgeEl = document.getElementById('panelStudentLateBadge');
+            if (sub.isLate) {
+                lateBadgeEl.innerHTML = '<span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fw-semibold"><i class="bi bi-clock-history me-1"></i>Nộp trễ</span>';
+            } else {
+                lateBadgeEl.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-semibold">Đúng hạn</span>';
+            }
+
+            const scoreInput = document.getElementById('gradingScoreInput');
+            if (scoreInput) {
+                scoreInput.value = sub.score != null ? sub.score : '';
+                handleScoreInput(scoreInput.value);
+            }
+
+            const feedbackInput = document.getElementById('gradingFeedbackInput');
+            if (feedbackInput) {
+                feedbackInput.value = sub.feedback || '';
+            }
+
+            const gradedInfoEl = document.getElementById('panelGradedInfo');
+            if (sub.status === 'GRADED' && sub.gradedByName) {
+                gradedInfoEl.classList.remove('d-none');
+                document.getElementById('panelGradedByText').textContent = 'Đã chấm bởi: ' + sub.gradedByName;
+                const gradedDate = sub.gradedAt ? new Date(sub.gradedAt).toLocaleString('vi-VN') : '';
+                document.getElementById('panelGradedAtText').textContent = gradedDate ? 'Thời gian: ' + gradedDate : '';
+            } else {
+                gradedInfoEl.classList.add('d-none');
+            }
+        }
+
+        function renderPreview(sub) {
+            const emptyState = document.getElementById('previewEmptyState');
+            const loadingState = document.getElementById('previewLoadingState');
+            const containerFile = document.getElementById('previewContainerFile');
+            const containerText = document.getElementById('previewContainerText');
+            const modeTabs = document.getElementById('previewModeTabs');
+            const openRawBtn = document.getElementById('previewOpenRawBtn');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+
+            emptyState.classList.add('d-none');
+            loadingState.classList.add('d-none');
+            containerFile.classList.add('d-none');
+            containerText.classList.add('d-none');
+
+            const hasFile = !!sub.fileUrl;
+            const hasText = !!(sub.submissionText && sub.submissionText.trim());
+
+            if (hasFile && hasText) {
+                modeTabs.classList.remove('d-none');
+            } else {
+                modeTabs.classList.add('d-none');
+            }
+
+            activePreviewTab = hasFile ? 'file' : 'text';
+            updatePreviewTabButtons();
+
+            if (!hasFile && !hasText) {
+                emptyState.classList.remove('d-none');
+                document.getElementById('previewFileName').textContent = 'Không có bài nộp';
+                document.getElementById('previewFileSize').textContent = '--';
+                openRawBtn.classList.add('d-none');
+                downloadBtn.classList.add('d-none');
+                return;
+            }
+
+            if (hasFile) {
+                renderFilePreview(sub);
+            }
+
+            if (hasText) {
+                renderTextPreview(sub);
+            }
+
+            if (hasFile && activePreviewTab === 'file') {
+                containerFile.classList.remove('d-none');
+                containerText.classList.add('d-none');
+            } else if (hasText) {
+                containerFile.classList.add('d-none');
+                containerText.classList.remove('d-none');
+                document.getElementById('previewFileName').textContent = 'Bài nộp dạng văn bản';
+                document.getElementById('previewFileSize').textContent = (sub.submissionText || '').length + ' ký tự';
+                openRawBtn.classList.add('d-none');
+                downloadBtn.classList.add('d-none');
+            }
+        }
+
+        function switchPreviewTab(tab) {
+            activePreviewTab = tab;
+            updatePreviewTabButtons();
+            const containerFile = document.getElementById('previewContainerFile');
+            const containerText = document.getElementById('previewContainerText');
+            if (tab === 'file') {
+                containerFile.classList.remove('d-none');
+                containerText.classList.add('d-none');
+            } else {
+                containerFile.classList.add('d-none');
+                containerText.classList.remove('d-none');
+            }
+        }
+
+        function updatePreviewTabButtons() {
+            const btnFile = document.getElementById('tabBtnFile');
+            const btnText = document.getElementById('tabBtnText');
+            if (activePreviewTab === 'file') {
+                btnFile.classList.add('active');
+                btnText.classList.remove('active');
+            } else {
+                btnFile.classList.remove('active');
+                btnText.classList.add('active');
+            }
+        }
+
+        function renderFilePreview(sub) {
+            const container = document.getElementById('previewContainerFile');
+            container.classList.remove('d-none');
+            container.innerHTML = '';
+
+            const filename = sub.fileName || 'file_nop_bai';
+            const fileUrl = sub.fileUrl;
+            const previewStreamUrl = `/api/instructor/assignments/submissions/${sub.id}/file`;
+            const downloadUrl = `/api/instructor/assignments/submissions/${sub.id}/file?download=true`;
+
+            document.getElementById('previewFileName').textContent = filename;
+            const sizeStr = sub.fileSizeBytes ? formatFileSize(sub.fileSizeBytes) : '';
+            document.getElementById('previewFileSize').textContent = sizeStr;
+
+            const openRawBtn = document.getElementById('previewOpenRawBtn');
+            const downloadBtn = document.getElementById('previewDownloadBtn');
+            openRawBtn.classList.remove('d-none');
+            openRawBtn.onclick = () => window.open(previewStreamUrl, '_blank');
+            downloadBtn.classList.remove('d-none');
+            downloadBtn.href = downloadUrl;
+
+            const lower = filename.toLowerCase();
+            const ext = lower.split('.').pop();
+
+            if (ext === 'pdf') {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-pdf fs-5 text-danger';
+                container.innerHTML = `
+                    <iframe src="${previewStreamUrl}" class="w-100 h-100 border-0" style="min-height: 100%; flex: 1;"></iframe>
+                `;
+            } else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-image fs-5 text-success';
+                container.innerHTML = `
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center p-3 overflow-auto" style="background: repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 50% / 20px 20px;">
+                        <img src="${previewStreamUrl}" id="previewTargetImg" class="img-fluid rounded shadow" style="max-height: 90%; max-width: 90%; object-fit: contain; transition: transform 0.2s ease;">
+                        <div class="mt-3 d-flex align-items-center gap-2 bg-dark bg-opacity-75 p-1.5 rounded-pill border border-secondary border-opacity-50">
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="zoomImage(0.2)"><i class="bi bi-zoom-in"></i></button>
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="zoomImage(-0.2)"><i class="bi bi-zoom-out"></i></button>
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="resetZoomImage()">100%</button>
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="rotateImage()"><i class="bi bi-arrow-clockwise"></i></button>
+                        </div>
+                    </div>
+                `;
+            } else if (['txt', 'sql', 'java', 'py', 'cpp', 'c', 'h', 'cs', 'js', 'ts', 'html', 'css', 'json', 'xml', 'md', 'sh', 'yml', 'yaml'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-code fs-5 text-warning';
+                container.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between p-2.5 bg-dark border-bottom border-secondary border-opacity-25 text-white-50 small flex-shrink-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-uppercase px-2">${ext}</span>
+                            <span id="codeLineCount">Đang tải mã nguồn...</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="toggleCodeWordWrap()">
+                                <i class="bi bi-text-wrap me-1"></i>Xuống dòng
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-2.5" onclick="copySourceCode()">
+                                <i class="bi bi-clipboard me-1"></i>Sao chép
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="code-preview-wrap flex-grow-1" id="codePreviewContent">Đang tải nội dung tệp...</pre>
+                `;
+                fetchSourceCode(previewStreamUrl);
+            } else if (['docx', 'doc', 'pptx', 'ppt', 'xlsx', 'xls'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-word fs-5 text-primary';
+                const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+                container.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between p-2 bg-dark border-bottom border-secondary border-opacity-25 text-white small flex-shrink-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-info text-dark text-uppercase px-2">${ext}</span>
+                            <span class="text-white-50">Xem trước qua Google Docs Viewer</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="${fileUrl}" target="_blank" class="btn btn-xs btn-outline-light rounded-pill px-2.5">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Mở trực tiếp
+                            </a>
+                            <a href="${downloadUrl}" class="btn btn-xs btn-primary rounded-pill px-2.5">
+                                <i class="bi bi-download me-1"></i>Tải về máy
+                            </a>
+                        </div>
+                    </div>
+                    <iframe src="${googleViewerUrl}" class="w-100 flex-grow-1 border-0" style="min-height: 500px;"></iframe>
+                `;
+            } else if (['mp4', 'webm', 'ogg'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-play fs-5 text-danger';
+                container.innerHTML = `
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center p-4 bg-dark">
+                        <video controls class="rounded shadow-lg w-100" style="max-height: 80vh; max-width: 900px;">
+                            <source src="${previewStreamUrl}" type="video/${ext === 'mp4' ? 'mp4' : ext}">
+                            Trình duyệt của bạn không hỗ trợ phát video này.
+                        </video>
+                    </div>
+                `;
+            } else if (['mp3', 'wav'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-music fs-5 text-info';
+                container.innerHTML = `
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 bg-dark text-white text-center">
+                        <i class="bi bi-soundwave display-1 text-info mb-3"></i>
+                        <h6 class="fw-bold mb-3">${escapeHtml(filename)}</h6>
+                        <audio controls class="w-100" style="max-width: 500px;">
+                            <source src="${previewStreamUrl}">
+                            Trình duyệt không hỗ trợ phát âm thanh.
+                        </audio>
+                    </div>
+                `;
+            } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark-zip fs-5 text-warning';
+                container.innerHTML = `
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-center bg-dark text-white">
+                        <div class="rounded-circle p-4 bg-warning bg-opacity-10 text-warning mb-3">
+                            <i class="bi bi-file-earmark-zip display-3"></i>
+                        </div>
+                        <h5 class="fw-bold text-white mb-2">${escapeHtml(filename)}</h5>
+                        <p class="text-white-50 small mb-4" style="max-width: 480px;">
+                            Đây là tệp nén mã nguồn hoặc tài liệu (${ext.toUpperCase()}). Trình duyệt không thể giải nén trực tiếp trên trang. Bạn có thể tải tệp về để kiểm tra source code.
+                        </p>
+                        <a href="${downloadUrl}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow">
+                            <i class="bi bi-download me-2"></i>Tải tệp nén (${sizeStr})
+                        </a>
+                    </div>
+                `;
+            } else {
+                document.getElementById('previewFileTypeIcon').className = 'bi bi-file-earmark fs-5 text-secondary';
+                container.innerHTML = `
+                    <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-center bg-dark text-white">
+                        <i class="bi bi-file-earmark-text display-3 text-secondary mb-3"></i>
+                        <h5 class="fw-bold text-white mb-2">${escapeHtml(filename)}</h5>
+                        <p class="text-white-50 small mb-4">Định dạng .${ext} không hỗ trợ hiển thị trực tiếp trong khung xem.</p>
+                        <div class="d-flex gap-2">
+                            <a href="${previewStreamUrl}" target="_blank" class="btn btn-outline-light rounded-pill px-4">Mở liên kết</a>
+                            <a href="${downloadUrl}" class="btn btn-primary rounded-pill px-4"><i class="bi bi-download me-1"></i>Tải về</a>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchSourceCode(url) {
+            const pre = document.getElementById('codePreviewContent');
+            const linesEl = document.getElementById('codeLineCount');
+            if (!pre) return;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Không thể tải mã nguồn');
+                const text = await res.text();
+                pre.textContent = text;
+                const lineCount = text.split('\n').length;
+                if (linesEl) linesEl.textContent = `${lineCount} dòng • ${text.length} ký tự`;
+            } catch (e) {
+                pre.textContent = 'Lỗi tải mã nguồn: ' + e.message;
+            }
+        }
+
+        function toggleCodeWordWrap() {
+            const pre = document.getElementById('codePreviewContent');
+            if (!pre) return;
+            codeWordWrap = !codeWordWrap;
+            if (codeWordWrap) {
+                pre.classList.add('wrap-lines');
+            } else {
+                pre.classList.remove('wrap-lines');
+            }
+        }
+
+        function copySourceCode() {
+            const pre = document.getElementById('codePreviewContent');
+            if (!pre) return;
+            navigator.clipboard.writeText(pre.textContent).then(() => {
+                showToast('Đã sao chép mã nguồn vào bộ nhớ tạm!', 'success');
+            });
+        }
+
+        let currentImgZoom = 1;
+        let currentImgRotate = 0;
+        function zoomImage(delta) {
+            const img = document.getElementById('previewTargetImg');
+            if (!img) return;
+            currentImgZoom = Math.max(0.2, Math.min(3, currentImgZoom + delta));
+            applyImgTransform(img);
+        }
+        function resetZoomImage() {
+            const img = document.getElementById('previewTargetImg');
+            if (!img) return;
+            currentImgZoom = 1;
+            currentImgRotate = 0;
+            applyImgTransform(img);
+        }
+        function rotateImage() {
+            const img = document.getElementById('previewTargetImg');
+            if (!img) return;
+            currentImgRotate = (currentImgRotate + 90) % 360;
+            applyImgTransform(img);
+        }
+        function applyImgTransform(img) {
+            img.style.transform = `scale(${currentImgZoom}) rotate(${currentImgRotate}deg)`;
+        }
+
+        function renderTextPreview(sub) {
+            const contentEl = document.getElementById('previewTextContent');
+            if (!contentEl) return;
+            const text = sub.submissionText || '';
+
+            const isUrl = text.startsWith('http://') || text.startsWith('https://');
+            if (isUrl) {
+                const youtubeMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                let embedHtml = '';
+                if (youtubeMatch && youtubeMatch[1]) {
+                    embedHtml = `
+                        <div class="ratio ratio-16x9 rounded-3 overflow-hidden shadow mt-3">
+                            <iframe src="https://www.youtube.com/embed/${youtubeMatch[1]}" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+
+                contentEl.innerHTML = `
+                    <div class="p-3 bg-dark border border-secondary border-opacity-50 rounded-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <span class="badge bg-primary text-uppercase px-2 mb-1">Liên kết bài làm</span>
+                                <div class="fw-bold text-white fs-6 text-break">${escapeHtml(text)}</div>
+                            </div>
+                            <a href="${escapeHtml(text)}" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Truy cập liên kết
+                            </a>
+                        </div>
+                        ${embedHtml}
+                    </div>
+                `;
+            } else {
+                contentEl.textContent = text;
+            }
+        }
+
+        function copySubmissionText() {
+            if (!currentSubmission || !currentSubmission.submissionText) return;
+            navigator.clipboard.writeText(currentSubmission.submissionText).then(() => {
+                showToast('Đã sao chép văn bản bài làm!', 'success');
+            });
+        }
+
+        async function saveGrade(andNext = false) {
+            if (!currentSubmission) return;
+
+            let score = 0;
+            if (requiresGrading) {
+                const scoreVal = document.getElementById('gradingScoreInput').value;
+                if (scoreVal === '' || isNaN(scoreVal)) {
+                    showToast('Vui lòng nhập điểm số hợp lệ', 'error');
+                    return;
+                }
+                score = parseFloat(scoreVal);
+                if (score < 0 || score > maxScoreVal) {
+                    showToast(`Điểm số phải từ 0 đến ${maxScoreVal}`, 'error');
+                    return;
+                }
+            }
+
+            const feedback = document.getElementById('gradingFeedbackInput').value.trim();
+            const btn = document.getElementById('saveGradeBtn');
+            const nextBtn = document.getElementById('saveAndNextBtn');
+            btn.disabled = true;
+            nextBtn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/instructor/assignments/submissions/${currentSubmission.id}/grade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ score: score, feedback: feedback })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || 'Lỗi khi lưu điểm');
+                }
+
+                const updated = await res.json();
+                showToast('Đã lưu điểm và nhận xét thành công!', 'success');
+
+                const idx = allSubmissions.findIndex(s => s.id === currentSubmission.id);
+                const isPass = (updated.score != null && !isNaN(updated.score) && requiresGrading)
+                    ? (parseFloat(updated.score) >= passingScoreVal)
+                    : (updated.isPassed !== false);
+                updated.isPassed = isPass;
+
+                if (idx !== -1) {
+                    allSubmissions[idx].score = updated.score;
+                    allSubmissions[idx].feedback = updated.feedback;
+                    allSubmissions[idx].status = updated.status;
+                    allSubmissions[idx].isPassed = isPass;
+                    allSubmissions[idx].gradedByName = updated.gradedByName;
+                    allSubmissions[idx].gradedAt = updated.gradedAt;
+                }
+
+                updateStudentListItemUI(currentSubmission.id, updated);
+                updateStatsUI();
+
+                if (andNext) {
+                    navigateStudent(1);
+                } else {
+                    updateGradingPanel(allSubmissions[idx]);
+                }
+            } catch (e) {
+                showToast('Lỗi: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                nextBtn.disabled = false;
+            }
+        }
+
+        function updateStudentListItemUI(subId, data) {
+            const item = document.getElementById('student-item-' + subId);
+            if (!item) return;
+            item.setAttribute('data-status', data.status);
+
+            const isPass = (data.score != null && !isNaN(data.score) && requiresGrading)
+                ? (parseFloat(data.score) >= passingScoreVal)
+                : (data.isPassed !== false);
+
+            const badgesContainer = item.querySelector('.d-flex.align-items-center.flex-wrap.gap-1.mt-1');
+            if (badgesContainer) {
+                let badgeHtml = '';
+                if (data.status === 'GRADED') {
+                    badgeHtml = isPass
+                        ? '<span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 10px;">Đạt</span>'
+                        : '<span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 10px;">Chưa đạt</span>';
+                } else {
+                    badgeHtml = '<span class="badge rounded-pill px-2 py-0.5 fw-semibold" style="background-color: #fef3c7; color: #92400e; font-size: 10px; border: 1px solid #fcd34d;"><i class="bi bi-hourglass-split me-0.5"></i>Chờ chấm</span>';
+                }
+                if (data.isLate) {
+                    badgeHtml += '<span class="badge bg-danger text-white rounded-pill px-1.5 py-0.5 fw-semibold" style="font-size: 9px;">Trễ</span>';
+                }
+                if (data.fileUrl) {
+                    badgeHtml += '<span class="badge bg-light text-secondary border rounded-pill px-1.5 py-0.5" style="font-size: 9px;" title="Có tệp đính kèm"><i class="bi bi-paperclip"></i> File</span>';
+                }
+                if (data.submissionText) {
+                    badgeHtml += '<span class="badge bg-light text-secondary border rounded-pill px-1.5 py-0.5" style="font-size: 9px;" title="Có văn bản / liên kết"><i class="bi bi-card-text"></i> Văn bản</span>';
+                }
+                badgesContainer.innerHTML = badgeHtml;
+            }
+
+            const headerScoreContainer = item.querySelector('.fw-bold.text-dark.text-truncate.small').parentElement;
+            if (headerScoreContainer) {
+                let scorePill = headerScoreContainer.querySelector('.badge');
+                if (data.status === 'GRADED') {
+                    if (!scorePill) {
+                        scorePill = document.createElement('div');
+                        scorePill.style.fontSize = '10px';
+                        headerScoreContainer.appendChild(scorePill);
+                    }
+                    scorePill.className = isPass
+                        ? 'badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-bold'
+                        : 'badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 fw-bold';
+                    scorePill.textContent = data.score;
+                } else if (scorePill) {
+                    scorePill.remove();
+                }
+            }
+        }
+
+        function updateStatsUI() {
+            const total = allSubmissions.length;
+            const graded = allSubmissions.filter(s => s.status === 'GRADED' || s.status === 'COMPLETED').length;
+            const pending = total - graded;
+            const late = allSubmissions.filter(s => s.isLate).length;
+
+            const elTotal = document.getElementById('statTotalSubmissions');
+            const elGraded = document.getElementById('statGradedSubmissions');
+            const elPending = document.getElementById('statPendingSubmissions');
+            const elLate = document.getElementById('statLateSubmissions');
+
+            if (elTotal) elTotal.textContent = total;
+            if (elGraded) elGraded.textContent = graded;
+            if (elPending) elPending.textContent = pending;
+            if (elLate) elLate.textContent = late;
+
+            const fAll = document.getElementById('filterCountAll');
+            const fPending = document.getElementById('filterCountPending');
+            const fGraded = document.getElementById('filterCountGraded');
+            const fLate = document.getElementById('filterCountLate');
+
+            if (fAll) fAll.textContent = total;
+            if (fPending) fPending.textContent = pending;
+            if (fGraded) fGraded.textContent = graded;
+            if (fLate) fLate.textContent = late;
+        }
+
+        function navigateStudent(direction) {
+            if (filteredSubmissions.length === 0) return;
+            let currentIdx = filteredSubmissions.findIndex(s => s.id === currentSubmission?.id);
+            if (currentIdx === -1) currentIdx = 0;
+            let newIdx = currentIdx + direction;
+            if (newIdx < 0) newIdx = filteredSubmissions.length - 1;
+            if (newIdx >= filteredSubmissions.length) newIdx = 0;
+            selectSubmission(filteredSubmissions[newIdx].id);
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-pill').forEach(el => {
+                el.classList.remove('active', 'btn-primary');
+                el.classList.add('btn-outline-secondary');
+            });
+            btn.classList.add('active', 'btn-primary');
+            btn.classList.remove('btn-outline-secondary');
+            applyFilterAndSearch();
+        }
+
+        function filterStudents() {
+            currentSearchQuery = document.getElementById('searchStudentInput').value.trim().toLowerCase();
+            applyFilterAndSearch();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchStudentInput').value = '';
+            currentSearchQuery = '';
+            applyFilterAndSearch();
+        }
+
+        function applyFilterAndSearch() {
+            filteredSubmissions = allSubmissions.filter(sub => {
+                let matchesFilter = true;
+                if (currentFilter === 'pending') {
+                    matchesFilter = sub.status !== 'GRADED' && sub.status !== 'COMPLETED';
+                } else if (currentFilter === 'graded') {
+                    matchesFilter = sub.status === 'GRADED' || sub.status === 'COMPLETED';
+                } else if (currentFilter === 'late') {
+                    matchesFilter = !!sub.isLate;
+                }
+
+                let matchesSearch = true;
+                if (currentSearchQuery) {
+                    const name = (sub.studentName || '').toLowerCase();
+                    const email = (sub.studentEmail || '').toLowerCase();
+                    matchesSearch = name.includes(currentSearchQuery) || email.includes(currentSearchQuery);
+                }
+
+                return matchesFilter && matchesSearch;
+            });
+
+            document.querySelectorAll('.student-item').forEach(item => {
+                const subId = parseInt(item.getAttribute('data-id'));
+                const isVisible = filteredSubmissions.some(s => s.id === subId);
+                if (isVisible) {
+                    item.classList.remove('d-none');
+                } else {
+                    item.classList.add('d-none');
+                }
+            });
+
+            if (currentSubmission && !filteredSubmissions.some(s => s.id === currentSubmission.id)) {
+                if (filteredSubmissions.length > 0) {
+                    selectSubmission(filteredSubmissions[0].id);
+                }
+            } else if (currentSubmission) {
+                const idx = filteredSubmissions.findIndex(s => s.id === currentSubmission.id);
+                const navIndexEl = document.getElementById('studentNavIndex');
+                if (navIndexEl) {
+                    navIndexEl.textContent = `${idx >= 0 ? idx + 1 : 1} / ${filteredSubmissions.length}`;
+                }
+            }
+        }
+
+        function switchCohort(cohortId) {
+            if (!cohortId) return;
+            const url = new URL(window.location);
+            url.searchParams.set('cohortId', cohortId);
+            url.searchParams.delete('submissionId');
+            window.location.href = url.toString();
+        }
+
+        let isFocusMode = false;
+        function toggleFocusMode() {
+            isFocusMode = !isFocusMode;
+            document.body.classList.toggle('grading-focus-mode', isFocusMode);
+            const icon = document.getElementById('focusModeIcon');
+            const text = document.getElementById('focusModeText');
+            if (isFocusMode) {
+                icon.className = 'bi bi-fullscreen-exit me-1';
+                text.textContent = 'Thu nhỏ';
+            } else {
+                icon.className = 'bi bi-arrows-fullscreen me-1';
+                text.textContent = 'Toàn màn hình';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message, type = 'success') {
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: message,
+                    duration: 3000,
+                    gravity: 'top',
+                    position: 'right',
+                    style: {
+                        background: type === 'success' 
+                            ? 'linear-gradient(to right, #10b981, #059669)' 
+                            : 'linear-gradient(to right, #ef4444, #dc2626)',
+                        borderRadius: '10px',
+                        fontWeight: '600',
+                        fontSize: '13.5px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }
+                }).showToast();
+            } else {
+                alert(message);
+            }
+        }
+    </script>
+</body>
+</html>
+
