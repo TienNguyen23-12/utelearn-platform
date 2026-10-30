@@ -491,6 +491,7 @@ public class DataSeeder implements CommandLineRunner {
 
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_assignment_submissions_user ON assignment_submissions(cohort_id, user_id, assignment_id)");
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_assignment_submissions_assignment ON assignment_submissions(assignment_id)");
+            jdbcTemplate.execute("UPDATE assignments SET passing_score = 5.0 WHERE (passing_score IS NULL OR passing_score = 0) AND max_score > 0");
             log.info("[DataSeeder] Đã kiểm tra và khởi tạo bảng assignments và assignment_submissions thành công.");
         } catch (Exception e) {
             log.warn("[DataSeeder] Không thể khởi tạo bảng assignment: {}", e.getMessage());

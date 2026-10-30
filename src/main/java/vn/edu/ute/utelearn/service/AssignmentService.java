@@ -11,6 +11,7 @@ import java.util.List;
 public interface AssignmentService {
     AssignmentDTO getOrCreateAssignmentForLesson(Long lessonId, Long instructorId);
     AssignmentDTO getAssignmentByLessonId(Long lessonId, Long cohortId, Long userId);
+    AssignmentDTO getAssignmentById(Long assignmentId, Long cohortId, Long userId);
     AssignmentDTO updateAssignment(Long assignmentId, AssignmentRequestDTO request, Long instructorId);
     AssignmentSubmissionDTO submitAssignment(Long assignmentId, Long cohortId, String submissionText, MultipartFile file, Long userId);
     List<AssignmentSubmissionDTO> getSubmissionsForInstructor(Long assignmentId, Long cohortId, Long instructorId);
