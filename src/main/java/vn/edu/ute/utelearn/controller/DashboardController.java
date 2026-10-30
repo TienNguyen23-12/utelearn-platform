@@ -44,9 +44,11 @@ public class DashboardController {
             return "redirect:/home?error=access_denied";
         }
 
-        Map<String, Object> stats = dashboardService.getDashboardStatistics(filter);
+        if (SecurityUtils.isAdmin(user)) {
+            Map<String, Object> stats = dashboardService.getDashboardStatistics(filter);
+            model.addAllAttributes(stats);
+        }
         model.addAttribute("currentUser", user);
-        model.addAllAttributes(stats);
 
         return "dashboard/index";
     }
