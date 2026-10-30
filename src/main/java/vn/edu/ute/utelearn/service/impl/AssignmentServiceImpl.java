@@ -83,12 +83,24 @@ public class AssignmentServiceImpl implements AssignmentService {
         return false;
     }
 
+    private BigDecimal resolveEffectivePassingScore(BigDecimal maxScore, BigDecimal passingScore) {
+        boolean requiresGrading = maxScore != null && maxScore.compareTo(BigDecimal.ZERO) > 0;
+        if (!requiresGrading) {
+            return BigDecimal.ZERO;
+        }
+        if (passingScore != null && passingScore.compareTo(BigDecimal.ZERO) > 0) {
+            return passingScore;
+        }
+        return new BigDecimal("5.0");
+    }
+
     private AssignmentSubmissionDTO mapToSubmissionDTO(AssignmentSubmission sub, BigDecimal maxScore, BigDecimal passingScore) {
         if (sub == null) {
             return null;
         }
         boolean requiresGrading = maxScore != null && maxScore.compareTo(BigDecimal.ZERO) > 0;
-        boolean passed = !requiresGrading || (sub.getScore() != null && passingScore != null && sub.getScore().compareTo(passingScore) >= 0);
+        BigDecimal effectivePassing = resolveEffectivePassingScore(maxScore, passingScore);
+        boolean passed = !requiresGrading || (sub.getScore() != null && sub.getScore().compareTo(effectivePassing) >= 0);
         String gradedByName = sub.getGradedBy() != null ? sub.getGradedBy().getFullName() : null;
         String studentName = sub.getUser() != null ? sub.getUser().getFullName() : null;
         String studentEmail = sub.getUser() != null ? sub.getUser().getEmail() : null;
@@ -156,6 +168,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         boolean requiresGrading = assignment.getMaxScore() != null && assignment.getMaxScore().compareTo(BigDecimal.ZERO) > 0;
+        BigDecimal effectivePassing = resolveEffectivePassingScore(assignment.getMaxScore(), assignment.getPassingScore());
         AssignmentSubmissionDTO currentSubDTO = null;
         boolean isPassed = false;
         if (userId != null) {
@@ -164,11 +177,10 @@ public class AssignmentServiceImpl implements AssignmentService {
                     : assignmentSubmissionRepository.findByAssignmentIdAndUserId(assignment.getId(), userId);
             if (subOpt.isPresent()) {
                 AssignmentSubmission sub = subOpt.get();
-                currentSubDTO = mapToSubmissionDTO(sub, assignment.getMaxScore(), assignment.getPassingScore());
+                currentSubDTO = mapToSubmissionDTO(sub, assignment.getMaxScore(), effectivePassing);
                 if (!requiresGrading) {
                     isPassed = true;
-                } else if (sub.getScore() != null && assignment.getPassingScore() != null
-                        && sub.getScore().compareTo(assignment.getPassingScore()) >= 0) {
+                } else if (sub.getScore() != null && sub.getScore().compareTo(effectivePassing) >= 0) {
                     isPassed = true;
                 }
             }
@@ -190,7 +202,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .instruction(assignment.getInstruction())
                 .attachmentUrl(assignment.getAttachmentUrl())
                 .maxScore(assignment.getMaxScore())
-                .passingScore(assignment.getPassingScore())
+                .passingScore(effectivePassing)
                 .allowLateSubmission(assignment.getAllowLateSubmission() != null ? assignment.getAllowLateSubmission() : true)
                 .allowFileSubmission(assignment.getAllowFileSubmission())
                 .allowTextSubmission(assignment.getAllowTextSubmission())
@@ -266,6 +278,15 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public AssignmentDTO getAssignmentById(Long assignmentId, Long cohortId, Long userId) {
+        log.info("[AssignmentService] Tải thông tin Assignment ID: {}, cohortId: {}, userId: {}", assignmentId, cohortId, userId);
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập với ID: " + assignmentId));
+        return mapToDTO(assignment, cohortId, userId);
+    }
+
+    @Override
     @Transactional
     public AssignmentDTO updateAssignment(Long assignmentId, AssignmentRequestDTO request, Long instructorId) {
         log.info("[AssignmentService] Cập nhật Assignment ID: {} bởi instructorId: {}", assignmentId, instructorId);
@@ -281,12 +302,13 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         boolean requiresGrading = request.getMaxScore() != null && request.getMaxScore().compareTo(BigDecimal.ZERO) > 0;
+        BigDecimal effectivePassing = resolveEffectivePassingScore(request.getMaxScore(), request.getPassingScore());
 
         assignment.setTitle(request.getTitle());
         assignment.setInstruction(request.getInstruction());
         assignment.setAttachmentUrl(request.getAttachmentUrl());
         assignment.setMaxScore(requiresGrading ? request.getMaxScore() : BigDecimal.ZERO);
-        assignment.setPassingScore(requiresGrading ? (request.getPassingScore() != null ? request.getPassingScore() : BigDecimal.ZERO) : BigDecimal.ZERO);
+        assignment.setPassingScore(effectivePassing);
         assignment.setAllowLateSubmission(request.getAllowLateSubmission() != null ? request.getAllowLateSubmission() : true);
         assignment.setAllowFileSubmission(request.getAllowFileSubmission());
         assignment.setAllowTextSubmission(request.getAllowTextSubmission());
@@ -481,7 +503,7 @@ public class AssignmentServiceImpl implements AssignmentService {
             eventPublisher.publishEvent(submissionEvent);
         }
 
-        return mapToSubmissionDTO(saved, assignment.getMaxScore(), assignment.getPassingScore());
+        return mapToSubmissionDTO(saved, assignment.getMaxScore(), resolveEffectivePassingScore(assignment.getMaxScore(), assignment.getPassingScore()));
     }
 
     @Override
@@ -502,8 +524,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 ? assignmentSubmissionRepository.findByAssignmentIdAndCohortIdOrderBySubmittedAtDesc(assignmentId, cohortId)
                 : assignmentSubmissionRepository.findByAssignmentIdOrderBySubmittedAtDesc(assignmentId);
 
+        BigDecimal effectivePassing = resolveEffectivePassingScore(assignment.getMaxScore(), assignment.getPassingScore());
         return list.stream()
-                .map(s -> mapToSubmissionDTO(s, assignment.getMaxScore(), assignment.getPassingScore()))
+                .map(s -> mapToSubmissionDTO(s, assignment.getMaxScore(), effectivePassing))
                 .toList();
     }
 
@@ -556,9 +579,23 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         if (cohort != null) {
-            boolean isPass = !requiresGrading || (request.getScore().compareTo(assignment.getPassingScore()) >= 0);
+            BigDecimal effectivePassing = resolveEffectivePassingScore(assignment.getMaxScore(), assignment.getPassingScore());
+            boolean isPass = !requiresGrading || (request.getScore().compareTo(effectivePassing) >= 0);
             if (isPass) {
                 recordLessonCompletion(cohort, assignment.getLesson(), submission.getUser());
+            } else {
+                lessonCompletionRepository.deleteByCohortIdAndLessonIdAndUserId(cohort.getId(), assignment.getLesson().getId(), submission.getUser().getId());
+                long completedCount = lessonCompletionRepository.countByCohort_IdAndUser_Id(cohort.getId(), submission.getUser().getId());
+                List<Long> cohortLessonIds = cohortScheduleRepository.findLessonIdsByCohortId(cohort.getId());
+                int totalCount = cohortLessonIds != null ? cohortLessonIds.size() : 0;
+                Optional<CohortMember> memberOpt = cohortMemberRepository.findByCohort_IdAndUser_Id(cohort.getId(), submission.getUser().getId());
+                if (memberOpt.isPresent()) {
+                    CohortMember member = memberOpt.get();
+                    if (totalCount > 0 && completedCount < totalCount) {
+                        member.setIsPassed(false);
+                    }
+                    cohortMemberRepository.save(member);
+                }
             }
             try {
                 gradebookService.syncStudentGrade(cohort.getId(), submission.getUser().getId());
@@ -580,7 +617,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .build();
         eventPublisher.publishEvent(gradeEvent);
 
-        return mapToSubmissionDTO(saved, assignment.getMaxScore(), assignment.getPassingScore());
+        return mapToSubmissionDTO(saved, assignment.getMaxScore(), resolveEffectivePassingScore(assignment.getMaxScore(), assignment.getPassingScore()));
     }
 
     private void recordLessonCompletion(Cohort cohort, Lesson lesson, User user) {
