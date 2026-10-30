@@ -108,9 +108,11 @@ public class InstructorCohortController {
 
         try {
             cohortService.createCohort(cohortDto, currentUser);
+            log.info("[InstructorCohortController] Tạo lớp học mới: {}, user: {}", cohortDto.getName(), currentUser.getEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Lớp học đã được tạo thành công!");
             return "redirect:/instructor/cohorts";
         } catch (Exception e) {
+            log.warn("[InstructorCohortController] Lỗi khi tạo lớp học: {}", e.getMessage());
             result.rejectValue("code", "error.cohort", e.getMessage());
             Page<Course> courses = courseService.getCoursesByInstructor(currentUser.getId(), PageRequest.of(0, 100));
             model.addAttribute("courses", courses.getContent());

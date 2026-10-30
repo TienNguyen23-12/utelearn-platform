@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.http.ResponseEntity;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
 
@@ -65,8 +67,58 @@ public class HomeController {
         }
         model.addAttribute("latestCohorts", featuredCohorts);
 
-
         return "home";
+    }
+
+    @GetMapping("/api/cohorts/featured")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getFeaturedCohortsApi(
+            @RequestParam(name = "timeframe", defaultValue = "all") String timeframe,
+            @RequestParam(name = "limit", defaultValue = "4") int limit) {
+        log.info("[HomeController] API lấy danh sách module nổi bật (timeframe: {}, limit: {})", timeframe, limit);
+        List<vn.edu.ute.utelearn.entity.Cohort> featuredCohorts = cohortService.getFeaturedCohorts(limit, timeframe);
+        if (featuredCohorts == null || featuredCohorts.isEmpty()) {
+            org.springframework.data.domain.Page<vn.edu.ute.utelearn.entity.Cohort> latestCohortsPage =
+                    cohortService.searchPublicCohorts(
+                            null, null,
+                            org.springframework.data.domain.PageRequest.of(0, limit, org.springframework.data.domain.Sort.by("id").descending())
+                    );
+            featuredCohorts = latestCohortsPage != null ? latestCohortsPage.getContent() : java.util.Collections.emptyList();
+        }
+        java.text.DecimalFormatSymbols symbols = new java.text.DecimalFormatSymbols(java.util.Locale.US);
+        symbols.setGroupingSeparator('.');
+        java.text.DecimalFormat currencyFormatter = new java.text.DecimalFormat("#,###", symbols);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (vn.edu.ute.utelearn.entity.Cohort cohort : featuredCohorts) {
+            Map<String, Object> item = new java.util.LinkedHashMap<>();
+            item.put("id", cohort.getId());
+            item.put("name", cohort.getName());
+            item.put("code", cohort.getCode());
+            String thumb = (cohort.getThumbnailUrl() != null && !cohort.getThumbnailUrl().isBlank())
+                    ? cohort.getThumbnailUrl()
+                    : (cohort.getCourse() != null && cohort.getCourse().getThumbnailUrl() != null && !cohort.getCourse().getThumbnailUrl().isBlank())
+                    ? cohort.getCourse().getThumbnailUrl()
+                    : "/images/courses/default-cover.png";
+            item.put("thumbnailUrl", thumb);
+            item.put("courseTitle", cohort.getCourse() != null ? cohort.getCourse().getTitle() : "Module độc lập");
+            item.put("courseSlug", (cohort.getCourse() != null && cohort.getCourse().getSlug() != null) ? cohort.getCourse().getSlug() : "standalone");
+            item.put("isStandalone", cohort.getCourse() == null);
+            item.put("categoryName", (cohort.getCourse() != null && cohort.getCourse().getCategory() != null) ? cohort.getCourse().getCategory().getName() : "Chuyên đề");
+            item.put("instructorDisplayName", cohort.getInstructorDisplayName());
+            long enrolled = (cohort.getEnrolledCount() != null ? cohort.getEnrolledCount() : (cohort.getCurrentEnrolled() != null ? cohort.getCurrentEnrolled().longValue() : 0L));
+            item.put("enrolledCount", enrolled);
+            item.put("averageRating", cohort.getAverageRating());
+            item.put("ratingCount", cohort.getRatingCount() != null ? cohort.getRatingCount() : 0L);
+            java.math.BigDecimal price = cohort.getPrice();
+            item.put("price", price);
+            if (price != null && price.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                item.put("formattedPrice", currencyFormatter.format(price) + " VNĐ");
+            } else {
+                item.put("formattedPrice", "Miễn phí");
+            }
+            result.add(item);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/cohorts")

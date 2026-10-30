@@ -32,6 +32,10 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class CohortServiceImpl implements CohortService {
 
+    private final java.util.concurrent.atomic.AtomicReference<Instant> lastSyncTime = new java.util.concurrent.atomic.AtomicReference<>(Instant.EPOCH);
+    private record CachedFeaturedResult(List<Cohort> cohorts, Instant timestamp) {}
+    private final java.util.concurrent.ConcurrentHashMap<String, CachedFeaturedResult> featuredCohortsCache = new java.util.concurrent.ConcurrentHashMap<>();
+
     private final CohortRepository cohortRepository;
     private final CohortScheduleRepository cohortScheduleRepository;
     private final CourseRepository courseRepository;
@@ -89,21 +93,79 @@ public class CohortServiceImpl implements CohortService {
 
     @Override
     public List<Cohort> getFeaturedCohorts(int limit) {
+        return getFeaturedCohorts(limit, "all");
+    }
+
+    @Override
+    public List<Cohort> getFeaturedCohorts(int limit, String timeframe) {
         int safeLimit = Math.max(1, limit);
-        log.info("[CohortService] Bắt đầu tính điểm xếp hạng cho top {} module nổi bật", safeLimit);
+        String safeTimeframe = (timeframe == null || timeframe.isBlank()) ? "all" : timeframe.trim().toLowerCase();
+        String cacheKey = safeLimit + "_" + safeTimeframe;
+        Instant now = Instant.now();
+
+        CachedFeaturedResult cached = featuredCohortsCache.get(cacheKey);
+        if (cached != null && java.time.Duration.between(cached.timestamp(), now).toSeconds() < 20) {
+            return cached.cohorts();
+        }
+
+        log.info("[CohortService] Bắt đầu tính điểm xếp hạng cho top {} module nổi bật (timeframe: {})", safeLimit, safeTimeframe);
         syncCohortStatuses();
         Page<Cohort> candidatesPage = cohortRepository.searchPublicCohorts(
                 "",
                 "",
-                org.springframework.data.domain.PageRequest.of(0, 100, org.springframework.data.domain.Sort.by("id").descending())
+                org.springframework.data.domain.PageRequest.of(0, 24, org.springframework.data.domain.Sort.by("id").descending())
         );
         if (candidatesPage == null || candidatesPage.isEmpty()) {
             return java.util.Collections.emptyList();
         }
         List<Cohort> candidates = new java.util.ArrayList<>(candidatesPage.getContent());
-        Instant now = Instant.now();
+        Instant since = null;
+        if ("week".equals(safeTimeframe)) {
+            since = now.minus(java.time.Duration.ofDays(7));
+        } else if ("month".equals(safeTimeframe)) {
+            since = now.minus(java.time.Duration.ofDays(30));
+        }
+
+        List<Long> cohortIds = candidates.stream().map(Cohort::getId).filter(java.util.Objects::nonNull).toList();
+        java.util.Map<Long, Object[]> overallMap = new java.util.HashMap<>();
+        java.util.Map<Long, Long> periodEnrolledMap = new java.util.HashMap<>();
+        java.util.Map<Long, Object[]> periodRatingsMap = new java.util.HashMap<>();
+
+        if (cohortMemberRepository != null && !cohortIds.isEmpty()) {
+            try {
+                List<Object[]> overallList = cohortMemberRepository.findAggregateMetricsByCohortIds(cohortIds);
+                if (overallList != null) {
+                    for (Object[] row : overallList) {
+                        if (row != null && row.length >= 4 && row[0] instanceof Long cid) {
+                            overallMap.put(cid, row);
+                        }
+                    }
+                }
+                if (since != null) {
+                    List<Object[]> enrolledList = cohortMemberRepository.findEnrolledCountsSinceByCohortIds(cohortIds, since);
+                    if (enrolledList != null) {
+                        for (Object[] row : enrolledList) {
+                            if (row != null && row.length >= 2 && row[0] instanceof Long cid && row[1] instanceof Number num) {
+                                periodEnrolledMap.put(cid, num.longValue());
+                            }
+                        }
+                    }
+                    List<Object[]> ratingsList = cohortMemberRepository.findRatingsSinceByCohortIds(cohortIds, since);
+                    if (ratingsList != null) {
+                        for (Object[] row : ratingsList) {
+                            if (row != null && row.length >= 3 && row[0] instanceof Long cid) {
+                                periodRatingsMap.put(cid, row);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("[CohortService] Lỗi batch query metrics cho cohorts: {}", e.getMessage());
+            }
+        }
+
         for (Cohort cohort : candidates) {
-            enrichCohortFeaturedMetrics(cohort, now);
+            enrichCohortFeaturedMetrics(cohort, now, since, safeTimeframe, overallMap, periodEnrolledMap, periodRatingsMap);
         }
         candidates.sort((a, b) -> {
             int scoreCompare = Double.compare(
@@ -133,42 +195,116 @@ public class CohortServiceImpl implements CohortService {
             );
         });
         List<Cohort> featured = candidates.stream().limit(safeLimit).toList();
-        log.info("[CohortService] Hoàn tất xếp hạng {} module nổi bật từ {} ứng viên", featured.size(), candidates.size());
+        log.info("[CohortService] Hoàn tất xếp hạng {} module nổi bật từ {} ứng viên (timeframe: {})", featured.size(), candidates.size(), safeTimeframe);
+        featuredCohortsCache.put(cacheKey, new CachedFeaturedResult(featured, now));
         return featured;
     }
 
-    private void enrichCohortFeaturedMetrics(Cohort cohort, Instant now) {
-        long memberCount = (cohortMemberRepository != null && cohort.getId() != null)
-                ? cohortMemberRepository.countByCohort_Id(cohort.getId())
-                : 0L;
-        long currentEnrolled = cohort.getCurrentEnrolled() != null ? cohort.getCurrentEnrolled().longValue() : 0L;
-        long enrolledCount = Math.max(memberCount, currentEnrolled);
+    private void enrichCohortFeaturedMetrics(
+            Cohort cohort, Instant now, Instant since, String timeframe,
+            java.util.Map<Long, Object[]> overallMap,
+            java.util.Map<Long, Long> periodEnrolledMap,
+            java.util.Map<Long, Object[]> periodRatingsMap
+    ) {
+        long memberCount = 0L;
+        Double rawAvgRating = null;
+        long ratingCount = 0L;
 
-        Double rawAvgRating = (cohortMemberRepository != null && cohort.getId() != null)
-                ? cohortMemberRepository.getAverageRatingByCohortId(cohort.getId())
-                : null;
-        long ratingCount = (cohortMemberRepository != null && cohort.getId() != null)
-                ? cohortMemberRepository.countRatingsByCohortId(cohort.getId())
-                : 0L;
+        if (cohort.getId() != null && overallMap.containsKey(cohort.getId())) {
+            Object[] row = overallMap.get(cohort.getId());
+            if (row != null) {
+                memberCount = (row[1] instanceof Number n) ? n.longValue() : 0L;
+                rawAvgRating = (row[2] instanceof Number n) ? n.doubleValue() : null;
+                ratingCount = (row[3] instanceof Number n) ? n.longValue() : 0L;
+            }
+        } else if (cohortMemberRepository != null && cohort.getId() != null) {
+            memberCount = cohortMemberRepository.countByCohort_Id(cohort.getId());
+            rawAvgRating = cohortMemberRepository.getAverageRatingByCohortId(cohort.getId());
+            ratingCount = cohortMemberRepository.countRatingsByCohortId(cohort.getId());
+        }
+
+        long currentEnrolled = cohort.getCurrentEnrolled() != null ? cohort.getCurrentEnrolled().longValue() : 0L;
+        long totalEnrolledCount = Math.max(memberCount, currentEnrolled);
         Double roundedRating = (rawAvgRating != null && ratingCount > 0)
                 ? Math.round(rawAvgRating * 10.0) / 10.0
                 : null;
 
-        double score = calculateFeaturedScore(cohort, enrolledCount, roundedRating, ratingCount, now);
-        cohort.setEnrolledCount(enrolledCount);
+        long periodEnrolledCount = totalEnrolledCount;
+        Double periodAvgRating = roundedRating;
+        long periodRatingCount = ratingCount;
+
+        if (since != null && cohort.getId() != null) {
+            if (periodEnrolledMap.containsKey(cohort.getId())) {
+                periodEnrolledCount = periodEnrolledMap.get(cohort.getId());
+            } else if (cohortMemberRepository != null) {
+                try {
+                    periodEnrolledCount = cohortMemberRepository.countEnrolledByCohortIdSince(cohort.getId(), since);
+                } catch (Exception ignored) {}
+            }
+
+            if (periodRatingsMap.containsKey(cohort.getId())) {
+                Object[] pRow = periodRatingsMap.get(cohort.getId());
+                Double pAvg = (pRow != null && pRow.length >= 3 && pRow[1] instanceof Number n) ? n.doubleValue() : null;
+                long pCount = (pRow != null && pRow.length >= 3 && pRow[2] instanceof Number n) ? n.longValue() : 0L;
+                periodRatingCount = pCount;
+                periodAvgRating = (pAvg != null && pCount > 0) ? Math.round(pAvg * 10.0) / 10.0 : null;
+            } else if (cohortMemberRepository != null) {
+                try {
+                    Double periodAvg = cohortMemberRepository.getAverageRatingByCohortIdSince(cohort.getId(), since);
+                    periodRatingCount = cohortMemberRepository.countRatingsByCohortIdSince(cohort.getId(), since);
+                    periodAvgRating = (periodAvg != null && periodRatingCount > 0)
+                            ? Math.round(periodAvg * 10.0) / 10.0
+                            : null;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        double score = calculateFeaturedScore(
+                cohort, totalEnrolledCount, roundedRating, ratingCount,
+                periodEnrolledCount, periodAvgRating, periodRatingCount,
+                timeframe, now
+        );
+
+        cohort.setEnrolledCount(totalEnrolledCount);
         cohort.setAverageRating(roundedRating);
         cohort.setRatingCount(ratingCount);
         cohort.setFeaturedScore(Math.round(score * 10.0) / 10.0);
     }
 
-    private double calculateFeaturedScore(Cohort cohort, long enrolledCount, Double avgRating, long ratingCount, Instant now) {
+    private double calculateFeaturedScore(
+            Cohort cohort, long totalEnrolledCount, Double avgRating, long ratingCount,
+            long periodEnrolledCount, Double periodAvgRating, long periodRatingCount,
+            String timeframe, Instant now
+    ) {
         int maxCapacity = (cohort.getMaxCapacity() != null && cohort.getMaxCapacity() > 0) ? cohort.getMaxCapacity() : 50;
-        double fillRatioBonus = Math.min(((double) enrolledCount / maxCapacity) * 20.0, 20.0);
-        double enrollmentScore = (enrolledCount * 10.0) + fillRatioBonus;
+        double fillRatioBonus = Math.min(((double) totalEnrolledCount / maxCapacity) * 20.0, 20.0);
 
-        double ratingScore = (avgRating != null && ratingCount > 0)
-                ? (avgRating * 15.0) + (Math.min(ratingCount, 20L) * 5.0)
-                : 0.0;
+        double enrollmentScore;
+        double ratingScore;
+        double recencyScore = 0.0;
+        long daysOld = (cohort.getCreatedAt() != null && now != null)
+                ? Math.max(0L, java.time.Duration.between(cohort.getCreatedAt(), now).toDays())
+                : 999L;
+
+        if ("week".equalsIgnoreCase(timeframe)) {
+            enrollmentScore = (periodEnrolledCount * 25.0) + (totalEnrolledCount * 2.0) + fillRatioBonus;
+            ratingScore = (periodAvgRating != null && periodRatingCount > 0)
+                    ? (periodAvgRating * 20.0) + (Math.min(periodRatingCount, 10L) * 10.0)
+                    : ((avgRating != null && ratingCount > 0) ? (avgRating * 5.0) : 0.0);
+            recencyScore = Math.max(0.0, 7.0 - daysOld) * 3.0;
+        } else if ("month".equalsIgnoreCase(timeframe)) {
+            enrollmentScore = (periodEnrolledCount * 15.0) + (totalEnrolledCount * 5.0) + fillRatioBonus;
+            ratingScore = (periodAvgRating != null && periodRatingCount > 0)
+                    ? (periodAvgRating * 18.0) + (Math.min(periodRatingCount, 15L) * 7.0)
+                    : ((avgRating != null && ratingCount > 0) ? (avgRating * 10.0) : 0.0);
+            recencyScore = Math.max(0.0, 30.0 - daysOld) * 1.0;
+        } else {
+            enrollmentScore = (totalEnrolledCount * 10.0) + fillRatioBonus;
+            ratingScore = (avgRating != null && ratingCount > 0)
+                    ? (avgRating * 15.0) + (Math.min(ratingCount, 20L) * 5.0)
+                    : 0.0;
+            recencyScore = Math.max(0.0, 30.0 - daysOld) * 0.5;
+        }
 
         String effectiveStatus = cohort.getStatus();
         double statusScore = 0.0;
@@ -178,12 +314,6 @@ public class CohortServiceImpl implements CohortService {
             statusScore = 20.0;
         } else if ("UPCOMING".equalsIgnoreCase(effectiveStatus)) {
             statusScore = 10.0;
-        }
-
-        double recencyScore = 0.0;
-        if (cohort.getCreatedAt() != null && now != null) {
-            long daysOld = Math.max(0L, java.time.Duration.between(cohort.getCreatedAt(), now).toDays());
-            recencyScore = Math.max(0.0, 30.0 - daysOld) * 0.5;
         }
 
         return enrollmentScore + ratingScore + statusScore + recencyScore;
@@ -224,8 +354,10 @@ public class CohortServiceImpl implements CohortService {
                 autoCode = String.format("%s-%s-%02d", prefix, year, count + 1);
             }
             dto.setCode(autoCode);
-        } else if (cohortRepository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Cohort code already exists");
+        } else if (cohortRepository.existsByCode(dto.getCode().trim())) {
+            throw new RuntimeException("Mã module/lớp học đã tồn tại");
+        } else {
+            dto.setCode(dto.getCode().trim());
         }
 
         String finalThumbnail = dto.getThumbnailUrl();
@@ -289,8 +421,9 @@ public class CohortServiceImpl implements CohortService {
     public Cohort updateCohort(Long id, CohortRequestDTO dto, User instructor) {
         Cohort cohort = getCohortByIdAndInstructor(id, instructor.getId());
 
-        if (!cohort.getCode().equals(dto.getCode()) && cohortRepository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Cohort code already exists");
+        String cleanCode = dto.getCode() != null ? dto.getCode().trim() : "";
+        if (!cleanCode.isEmpty() && !cohort.getCode().equals(cleanCode) && cohortRepository.existsByCode(cleanCode)) {
+            throw new RuntimeException("Mã module/lớp học đã tồn tại");
         }
 
         if (cohort.getCreatedBy() == null) {
@@ -765,8 +898,15 @@ public class CohortServiceImpl implements CohortService {
     @Override
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void syncCohortStatuses() {
+        Instant now = Instant.now();
+        Instant last = lastSyncTime.get();
+        if (last != null && java.time.Duration.between(last, now).toSeconds() < 30) {
+            return;
+        }
+        if (!lastSyncTime.compareAndSet(last, now)) {
+            return;
+        }
         try {
-            Instant now = Instant.now();
             int enrolledCount = cohortRepository.autoPromoteUpcomingToEnrolling(now);
             int inProgressCount = cohortRepository.autoPromoteToInProgress(now);
             int completedCount = cohortRepository.autoPromoteToCompleted(now);

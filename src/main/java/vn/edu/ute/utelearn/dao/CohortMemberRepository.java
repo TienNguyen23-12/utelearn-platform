@@ -53,6 +53,35 @@ public interface CohortMemberRepository extends JpaRepository<CohortMember, Long
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(cm.id) FROM CohortMember cm WHERE cm.cohort.id = :cohortId AND cm.rating IS NOT NULL")
     long countRatingsByCohortId(@org.springframework.data.repository.query.Param("cohortId") Long cohortId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT AVG(cm.rating) FROM CohortMember cm WHERE cm.cohort.id = :cohortId AND cm.rating IS NOT NULL AND cm.reviewedAt >= :since")
+    Double getAverageRatingByCohortIdSince(
+            @org.springframework.data.repository.query.Param("cohortId") Long cohortId,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(cm.id) FROM CohortMember cm WHERE cm.cohort.id = :cohortId AND cm.rating IS NOT NULL AND cm.reviewedAt >= :since")
+    long countRatingsByCohortIdSince(
+            @org.springframework.data.repository.query.Param("cohortId") Long cohortId,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(cm.id) FROM CohortMember cm WHERE cm.cohort.id = :cohortId AND cm.enrolledAt >= :since")
+    long countEnrolledByCohortIdSince(
+            @org.springframework.data.repository.query.Param("cohortId") Long cohortId,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
+    @org.springframework.data.jpa.repository.Query("SELECT cm.cohort.id, COUNT(cm.id), AVG(cm.rating), COUNT(cm.rating) FROM CohortMember cm WHERE cm.cohort.id IN :cohortIds GROUP BY cm.cohort.id")
+    java.util.List<Object[]> findAggregateMetricsByCohortIds(
+            @org.springframework.data.repository.query.Param("cohortIds") java.util.Collection<Long> cohortIds);
+
+    @org.springframework.data.jpa.repository.Query("SELECT cm.cohort.id, COUNT(cm.id) FROM CohortMember cm WHERE cm.cohort.id IN :cohortIds AND cm.enrolledAt >= :since GROUP BY cm.cohort.id")
+    java.util.List<Object[]> findEnrolledCountsSinceByCohortIds(
+            @org.springframework.data.repository.query.Param("cohortIds") java.util.Collection<Long> cohortIds,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
+    @org.springframework.data.jpa.repository.Query("SELECT cm.cohort.id, AVG(cm.rating), COUNT(cm.id) FROM CohortMember cm WHERE cm.cohort.id IN :cohortIds AND cm.rating IS NOT NULL AND cm.reviewedAt >= :since GROUP BY cm.cohort.id")
+    java.util.List<Object[]> findRatingsSinceByCohortIds(
+            @org.springframework.data.repository.query.Param("cohortIds") java.util.Collection<Long> cohortIds,
+            @org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
     @org.springframework.data.jpa.repository.Query("SELECT cm FROM CohortMember cm LEFT JOIN FETCH cm.user u WHERE cm.cohort.id = :cohortId AND cm.rating IS NOT NULL ORDER BY cm.reviewedAt DESC NULLS LAST, cm.id DESC")
     java.util.List<CohortMember> findReviewsByCohortIdWithUser(@org.springframework.data.repository.query.Param("cohortId") Long cohortId);
 

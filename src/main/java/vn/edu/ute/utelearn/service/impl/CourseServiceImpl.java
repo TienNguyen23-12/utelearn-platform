@@ -110,7 +110,7 @@ public class CourseServiceImpl implements CourseService {
             }
             request.setCode(autoCode);
         } else if (courseRepository.existsByCode(request.getCode().trim())) {
-            throw new RuntimeException("Course code already exists");
+            throw new RuntimeException("Mã khóa học đã tồn tại");
         } else {
             request.setCode(request.getCode().trim());
         }
@@ -164,7 +164,7 @@ public class CourseServiceImpl implements CourseService {
         if (request.getCode() != null && !request.getCode().trim().isEmpty()) {
             String cleanCode = request.getCode().trim();
             if (!cleanCode.equals(course.getCode()) && courseRepository.existsByCode(cleanCode)) {
-                throw new RuntimeException("Course code already exists");
+                throw new RuntimeException("Mã khóa học đã tồn tại");
             }
             course.setCode(cleanCode);
         }
