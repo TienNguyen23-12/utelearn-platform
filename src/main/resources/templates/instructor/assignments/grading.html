@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -301,7 +301,7 @@
                     <div class="p-3 border-bottom bg-light">
                         <div class="input-group input-group-sm mb-2">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control border-start-0 ps-0" id="searchStudentInput" placeholder="Tìm tên hoặc email học viên..." oninput="filterStudents()">
+                            <input type="text" class="form-control border-start-0 ps-0" id="searchStudentInput" placeholder="Tìm tên hoặc email học viên..." oninput="debouncedFilterStudents()">
                             <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearSearch()" title="Xóa tìm kiếm">
                                 <i class="bi bi-x"></i>
                             </button>

@@ -49,8 +49,18 @@ public class CourseServiceImpl implements CourseService {
             predicates.add(cb.equal(root.get("status"), "PUBLISHED"));
             
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(keyword)) {
-                String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword).toLowerCase();
-                predicates.add(cb.like(cb.lower(root.get("title")), "%" + safeKeyword + "%"));
+                String safeKeyword = vn.edu.ute.utelearn.util.ValidationUtils.stripHtmlTags(keyword).trim().toLowerCase();
+                String unaccentKeyword = vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(safeKeyword).toLowerCase();
+                jakarta.persistence.criteria.Expression<String> unaccentTitle = cb.function("unaccent", String.class, cb.lower(root.get("title")));
+                jakarta.persistence.criteria.Expression<String> unaccentHeadline = cb.function("unaccent", String.class, cb.lower(root.get("headline")));
+                jakarta.persistence.criteria.Expression<String> unaccentCode = cb.function("unaccent", String.class, cb.lower(root.get("code")));
+
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), "%" + safeKeyword + "%"),
+                        cb.like(unaccentTitle, "%" + unaccentKeyword + "%"),
+                        cb.like(unaccentHeadline, "%" + unaccentKeyword + "%"),
+                        cb.like(unaccentCode, "%" + unaccentKeyword + "%")
+                ));
             }
             if (!vn.edu.ute.utelearn.util.ValidationUtils.isNullOrEmpty(categorySlug)) {
                 predicates.add(cb.equal(root.join("category").get("slug"), categorySlug));

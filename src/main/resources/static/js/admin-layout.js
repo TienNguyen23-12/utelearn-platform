@@ -1,4 +1,4 @@
-function toggleSidebar() {
+﻿function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
@@ -642,3 +642,21 @@ document.addEventListener('DOMContentLoaded', () => {
     setupUniversalGridPagination();
     setupUniversalListPagination();
 });
+
+function removeVietnameseTones(str) {
+    if (!str) return '';
+    return str.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase()
+        .trim();
+}
+
+function debounce(fn, delay = 300) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
