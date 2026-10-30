@@ -481,7 +481,7 @@
     </section>
 
     <section id="cohorts" class="container my-5 py-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
             <div>
                 <span
                     class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 mb-2 fw-bold"
@@ -490,12 +490,22 @@
                 </span>
                 <h2 class="fw-bold text-dark mb-0">Chuyên đề & Module học tập nổi bật</h2>
             </div>
-            <div class="text-muted small">
-                Học lẻ từng kỹ năng • Học phí linh hoạt • Tích lũy lộ trình
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="btn-group p-1 bg-light border rounded-pill shadow-xs" role="group" id="featuredTimeframeBtnGroup">
+                    <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1.5 fw-semibold featured-timeframe-btn active" data-timeframe="all" onclick="switchFeaturedTimeframe('all', this)">
+                        <i class="bi bi-stars me-1"></i>Tất cả
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border-0 rounded-pill px-3 py-1.5 fw-semibold featured-timeframe-btn text-secondary" data-timeframe="week" onclick="switchFeaturedTimeframe('week', this)">
+                        <i class="bi bi-lightning-charge me-1"></i>Tuần này
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border-0 rounded-pill px-3 py-1.5 fw-semibold featured-timeframe-btn text-secondary" data-timeframe="month" onclick="switchFeaturedTimeframe('month', this)">
+                        <i class="bi bi-calendar-event me-1"></i>Tháng này
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4" id="featuredCohortsContainer">
             <div class="col-12" th:if="${latestCohorts == null || latestCohorts.empty}">
                 <div class="text-center text-muted py-5">
                     <i class="bi bi-inbox fs-1"></i>
@@ -638,12 +648,158 @@
             showToast('Tính năng Luyện thi Online Judge đang được hoàn thiện trong tương lai!', 'warning');
         }
 
+        const featuredCache = {};
+
+        function switchFeaturedTimeframe(timeframe, btn) {
+            document.querySelectorAll('.featured-timeframe-btn').forEach(b => {
+                b.className = 'btn btn-sm btn-light border-0 rounded-pill px-3 py-1.5 fw-semibold featured-timeframe-btn text-secondary';
+            });
+            if (btn) {
+                btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1.5 fw-semibold featured-timeframe-btn active';
+            }
+            const container = document.getElementById('featuredCohortsContainer');
+            if (!container) return;
+
+            if (timeframe === 'all' && featuredCache['all_html']) {
+                container.innerHTML = featuredCache['all_html'];
+                return;
+            }
+
+            if (featuredCache[timeframe]) {
+                renderFeaturedCohorts(featuredCache[timeframe]);
+                return;
+            }
+
+            container.style.opacity = '0.5';
+            fetch('/api/cohorts/featured?timeframe=' + encodeURIComponent(timeframe) + '&limit=4')
+                .then(res => res.json())
+                .then(data => {
+                    featuredCache[timeframe] = data;
+                    renderFeaturedCohorts(data);
+                    container.style.opacity = '1';
+                })
+                .catch(err => {
+                    container.style.opacity = '1';
+                });
+        }
+
+        function renderFeaturedCohorts(cohorts) {
+            const container = document.getElementById('featuredCohortsContainer');
+            if (!container) return;
+            if (!cohorts || cohorts.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mt-2">Chưa có module nào nổi bật trong khoảng thời gian này.</p>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            cohorts.forEach(c => {
+                const detailUrl = c.courseSlug && c.courseSlug !== 'standalone'
+                    ? `/courses/${c.courseSlug}/modules/${c.id}`
+                    : `/courses/standalone/modules/${c.id}`;
+
+                let ratingHtml = '';
+                if (c.ratingCount && c.ratingCount > 0 && c.averageRating) {
+                    const avg = Number(c.averageRating).toFixed(1);
+                    let starsHtml = '';
+                    for (let s = 1; s <= 5; s++) {
+                        if (c.averageRating >= s) {
+                            starsHtml += '<i class="bi bi-star-fill text-warning"></i>';
+                        } else if (c.averageRating >= s - 0.5) {
+                            starsHtml += '<i class="bi bi-star-half text-warning"></i>';
+                        } else {
+                            starsHtml += '<i class="bi bi-star text-muted"></i>';
+                        }
+                    }
+                    ratingHtml = `
+                        <span class="fw-bold text-dark me-1" style="font-size: 13px;">${avg}</span>
+                        <span class="d-inline-flex align-items-center text-warning" style="gap: 2px; font-size: 12px;">
+                            ${starsHtml}
+                        </span>
+                        <span class="text-muted small ms-1" style="font-size: 11.5px;">(${c.ratingCount} đánh giá)</span>
+                    `;
+                } else {
+                    ratingHtml = `
+                        <span class="d-inline-flex align-items-center text-muted" style="gap: 2px; font-size: 12px;">
+                            <i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i>
+                            <span class="ms-1" style="font-size: 11.5px;">(Chưa có đánh giá)</span>
+                        </span>
+                    `;
+                }
+
+                html += `
+                    <div class="col-12 col-md-6 col-lg-3 mb-4">
+                        <div class="course-card h-100 d-flex flex-column">
+                            <div class="course-image-wrapper position-relative">
+                                <img src="${c.thumbnailUrl || '/images/courses/default-cover.png'}" alt="${c.name}" loading="lazy">
+                                <span class="cohort-badge text-truncate" style="max-width: 88%;" title="${c.courseTitle || 'Module độc lập'}">
+                                    <i class="${c.isStandalone ? 'bi bi-box-seam' : 'bi bi-journal-bookmark'} me-1"></i>
+                                    <span>${c.courseTitle || 'Module độc lập'}</span>
+                                </span>
+                            </div>
+                            <div class="p-3.5 d-flex flex-column flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 small fw-semibold">${c.categoryName || 'Chuyên đề'}</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small fw-semibold">Học phần</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-2 lh-base line-clamp-2" title="${c.name}" style="min-height: 44px;">
+                                    <a href="${detailUrl}" class="text-dark text-decoration-none course-title-link">${c.name}</a>
+                                </h6>
+                                <div class="text-muted small mb-2 d-flex align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-1 text-truncate">
+                                        <i class="bi bi-person-circle text-secondary"></i>
+                                        <span class="text-truncate">${c.instructorDisplayName || 'Giảng viên'}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1 text-nowrap flex-shrink-0" title="Số học viên đã đăng ký">
+                                        <i class="bi bi-people-fill text-primary" style="font-size: 12px;"></i>
+                                        <span class="fw-semibold text-secondary" style="font-size: 12px;">${c.enrolledCount || 0} HV</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 mb-3">
+                                    ${ratingHtml}
+                                </div>
+                                <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
+                                    <span class="fw-bold text-success fs-6 lh-1 text-nowrap">${c.formattedPrice || 'Miễn phí'}</span>
+                                    <a href="${detailUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-nowrap flex-shrink-0">
+                                        <span>Xem chi tiết</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('featuredCohortsContainer');
+            if (container) {
+                featuredCache['all_html'] = container.innerHTML;
+            }
+
+            setTimeout(function () {
+                ['week', 'month'].forEach(function (tf) {
+                    if (!featuredCache[tf]) {
+                        fetch('/api/cohorts/featured?timeframe=' + tf + '&limit=4')
+                            .then(r => r.json())
+                            .then(data => {
+                                featuredCache[tf] = data;
+                            })
+                            .catch(function () {});
+                    }
+                });
+            }, 200);
+
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('loginSuccess')) {
                 showToast('Đăng nhập thành công!', 'success');
-
-                // Remove loginSuccess param from URL
                 urlParams.delete('loginSuccess');
                 const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
                 window.history.replaceState({}, document.title, newUrl);

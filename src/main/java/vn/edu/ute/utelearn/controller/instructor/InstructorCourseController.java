@@ -128,6 +128,7 @@ public class InstructorCourseController {
     public String createCourse(@Valid @ModelAttribute("course") CourseRequestDTO request, 
                                BindingResult result, Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
+            model.addAttribute("courseObjectives", request.getObjectives());
             model.addAttribute("categories", categoryService.getRootCategories());
             model.addAttribute("isEdit", false);
             return "instructor/courses/form";
@@ -139,7 +140,9 @@ public class InstructorCourseController {
             redirectAttributes.addFlashAttribute("successMessage", "Tạo khóa học thành công");
             return "redirect:/instructor/courses";
         } catch (Exception e) {
+            log.warn("[InstructorCourseController] Lỗi khi tạo khóa học: {}", e.getMessage());
             model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("courseObjectives", request.getObjectives());
             model.addAttribute("categories", categoryService.getRootCategories());
             model.addAttribute("isEdit", false);
             return "instructor/courses/form";
@@ -532,6 +535,13 @@ public class InstructorCourseController {
                 count++;
                 finalCode = course.getCode() + "-MOD" + count;
             }
+        } else {
+            finalCode = finalCode.trim();
+            if (cohortRepository.existsByCode(finalCode)) {
+                log.warn("[InstructorCourseController] Mã module trùng: {}", finalCode);
+                redirectAttributes.addFlashAttribute("errorMessage", "Mã module/lớp học đã tồn tại");
+                return "redirect:/instructor/courses/" + id + "/modules/create";
+            }
         }
 
         String finalThumbnail = thumbnailUrl;
@@ -665,8 +675,16 @@ public class InstructorCourseController {
         if (cohort.getCreatedBy() == null) {
             cohort.setCreatedBy(currentUser);
         }
+        String trimmedCode = (code != null) ? code.trim() : "";
+        if (!trimmedCode.isEmpty() && !trimmedCode.equals(cohort.getCode()) && cohortRepository.existsByCode(trimmedCode)) {
+            log.warn("[InstructorCourseController] Mã module trùng khi cập nhật: {}", trimmedCode);
+            redirectAttributes.addFlashAttribute("errorMessage", "Mã module/lớp học đã tồn tại");
+            return "redirect:/instructor/courses/" + courseId + "/modules/" + moduleId + "/edit";
+        }
+        if (!trimmedCode.isEmpty()) {
+            cohort.setCode(trimmedCode);
+        }
         cohort.setName(name);
-        cohort.setCode(code);
         cohort.setPrice(price != null ? price : java.math.BigDecimal.ZERO);
         cohort.setVisibility(visibility != null && !visibility.isBlank() ? visibility : "PUBLIC");
         cohort.setDescription(description);

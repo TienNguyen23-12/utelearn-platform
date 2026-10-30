@@ -833,13 +833,23 @@
                             <span class="badge bg-secondary-subtle text-secondary rounded-pill small" th:text="${totalReviewsCount}">0</span>
                         </h5>
 
-                        <div class="d-flex align-items-center gap-1 flex-wrap" id="courseReviewFilterBtns">
-                            <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 filter-course-rev-btn active" data-filter="all" onclick="filterCourseReviews('all', this)">Tất cả</button>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="5" onclick="filterCourseReviews(5, this)">5 sao</button>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="4" onclick="filterCourseReviews(4, this)">4 sao</button>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="3" onclick="filterCourseReviews(3, this)">3 sao</button>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="2" onclick="filterCourseReviews(2, this)">2 sao</button>
-                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="1" onclick="filterCourseReviews(1, this)">1 sao</button>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <div class="d-flex align-items-center gap-1 flex-wrap" id="courseReviewFilterBtns">
+                                <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 filter-course-rev-btn active" data-filter="all" onclick="filterCourseReviews('all', this)">Tất cả</button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="5" onclick="filterCourseReviews(5, this)">5 sao</button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="4" onclick="filterCourseReviews(4, this)">4 sao</button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="3" onclick="filterCourseReviews(3, this)">3 sao</button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="2" onclick="filterCourseReviews(2, this)">2 sao</button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn" data-filter="1" onclick="filterCourseReviews(1, this)">1 sao</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <select class="form-select form-select-sm rounded-pill px-3 py-1 bg-white border text-secondary fw-semibold shadow-xs" id="courseReviewTimeFilterSelect" onchange="filterCourseReviewsByTime(this.value)" style="width: auto;">
+                                    <option value="newest" selected>Mới nhất</option>
+                                    <option value="30days">30 ngày qua</option>
+                                    <option value="90days">90 ngày qua</option>
+                                    <option value="oldest">Cũ nhất</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -852,7 +862,7 @@
                     </div>
 
                     <div th:unless="${courseReviews == null or courseReviews.isEmpty()}" class="d-flex flex-column gap-3" id="courseReviewsListContainer">
-                        <div th:each="rev : ${courseReviews}" class="p-4 rounded-4 bg-light border course-review-item-card" th:data-stars="${rev.rating}">
+                        <div th:each="rev : ${courseReviews}" class="p-4 rounded-4 bg-light border course-review-item-card" th:data-stars="${rev.rating}" th:data-time="${rev.reviewedAt != null ? rev.reviewedAt.toEpochMilli() : 0}">
                             <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-xs" 
@@ -1153,22 +1163,59 @@
     }
     window.toggleCourseReviewForm = toggleCourseReviewForm;
 
-    function filterCourseReviews(stars, btn) {
-        document.querySelectorAll('.filter-course-rev-btn').forEach(b => {
-            b.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn';
-        });
-        if (btn) btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1 filter-course-rev-btn active';
+    let currentCourseReviewStars = 'all';
+    let currentCourseReviewTime = 'newest';
 
-        document.querySelectorAll('.course-review-item-card').forEach(item => {
+    function applyCourseReviewFilters() {
+        const now = Date.now();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        const container = document.getElementById('courseReviewsListContainer');
+        if (!container) return;
+
+        const items = Array.from(container.querySelectorAll('.course-review-item-card'));
+        items.forEach(item => {
             const itemStars = item.getAttribute('data-stars');
-            if (stars === 'all' || itemStars === String(stars)) {
+            const itemTime = Number(item.getAttribute('data-time') || 0);
+
+            const matchStar = (currentCourseReviewStars === 'all' || itemStars === String(currentCourseReviewStars));
+            let matchTime = true;
+            if (currentCourseReviewTime === '30days') {
+                matchTime = (itemTime > 0 && (now - itemTime) <= thirtyDaysMs);
+            } else if (currentCourseReviewTime === '90days') {
+                matchTime = (itemTime > 0 && (now - itemTime) <= ninetyDaysMs);
+            }
+
+            if (matchStar && matchTime) {
                 item.style.display = 'block';
             } else {
                 item.style.display = 'none';
             }
         });
+
+        items.sort((a, b) => {
+            const timeA = Number(a.getAttribute('data-time') || 0);
+            const timeB = Number(b.getAttribute('data-time') || 0);
+            return currentCourseReviewTime === 'oldest' ? (timeA - timeB) : (timeB - timeA);
+        });
+        items.forEach(item => container.appendChild(item));
+    }
+
+    function filterCourseReviews(stars, btn) {
+        currentCourseReviewStars = stars;
+        document.querySelectorAll('.filter-course-rev-btn').forEach(b => {
+            b.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1 filter-course-rev-btn';
+        });
+        if (btn) btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1 filter-course-rev-btn active';
+        applyCourseReviewFilters();
     }
     window.filterCourseReviews = filterCourseReviews;
+
+    function filterCourseReviewsByTime(timeVal) {
+        currentCourseReviewTime = timeVal;
+        applyCourseReviewFilters();
+    }
+    window.filterCourseReviewsByTime = filterCourseReviewsByTime;
 
     function setCourseReviewStars(val) {
         const hiddenInput = document.getElementById('courseReviewRatingVal');

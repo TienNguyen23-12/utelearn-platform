@@ -44,8 +44,9 @@
                   
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Mã Module</label>
-                        <input type="text" class="form-control bg-light" th:field="*{code}" readonly th:placeholder="${cohortId == null ? 'Hệ thống sẽ tự động sinh khi lưu' : ''}">
+                        <label class="form-label fw-semibold">Mã Module / Lớp học</label>
+                        <input type="text" class="form-control font-monospace" th:classappend="${cohortId != null ? 'bg-light' : ''}" th:field="*{code}" th:readonly="${cohortId != null}" placeholder="Để trống để tự động sinh mã">
+                        <div class="form-text" style="font-size: 11px;">Để trống để hệ thống tự sinh mã. Nếu nhập, mã phải là duy nhất.</div>
                         <div class="text-danger small mt-1" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></div>
                     </div>
                     
