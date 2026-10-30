@@ -514,3 +514,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient_read ON notifications(recipient_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_type_ref ON notifications(type, reference_type, reference_id);
+
+
+ALTER TABLE cohort_messages ADD COLUMN IF NOT EXISTS is_deleted_for_all BOOLEAN DEFAULT FALSE;
+ALTER TABLE cohort_messages ADD COLUMN IF NOT EXISTS deleted_by_user_id BIGINT;
+ALTER TABLE cohort_messages ADD COLUMN IF NOT EXISTS hidden_for_user_ids TEXT;

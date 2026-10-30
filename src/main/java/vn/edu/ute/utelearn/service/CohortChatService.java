@@ -9,7 +9,9 @@ import java.util.List;
 
 public interface CohortChatService {
     boolean canUserAccessCohort(User user, Long cohortId);
+    boolean canUserModerateCohort(User user, Long cohortId);
     List<ChatMessageResponseDTO> getRecentMessages(Long cohortId, User user);
     ChatMessageResponseDTO processAndSendMessage(Long cohortId, User user, ChatMessageRequestDTO request);
+    void deleteMessage(Long cohortId, Long messageId, User user, String mode);
     List<ChatNotificationDTO> getRecentNotifications(User user);
 }

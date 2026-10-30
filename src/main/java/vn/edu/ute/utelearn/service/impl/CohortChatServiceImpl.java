@@ -71,6 +71,40 @@ public class CohortChatServiceImpl implements CohortChatService {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean canUserModerateCohort(User user, Long cohortId) {
+        if (user == null || cohortId == null) {
+            return false;
+        }
+
+        if (SecurityUtils.isAdmin(user) || SecurityUtils.isModerator(user) || SecurityUtils.isInstructor(user)) {
+            return true;
+        }
+
+        Cohort cohort = cohortRepository.findById(cohortId).orElse(null);
+        if (cohort == null) {
+            return false;
+        }
+
+        if (cohort.getCreatedBy() != null && cohort.getCreatedBy().getId().equals(user.getId())) {
+            return true;
+        }
+
+        if (cohort.getCourse() != null && cohort.getCourse().getCreatedBy() != null
+                && cohort.getCourse().getCreatedBy().getId().equals(user.getId())) {
+            return true;
+        }
+
+        Optional<CohortMember> memberOpt = cohortMemberRepository.findByCohort_IdAndUser_Id(cohortId, user.getId());
+        if (memberOpt.isPresent()) {
+            String role = memberOpt.get().getRoleInCohort();
+            return "INSTRUCTOR".equalsIgnoreCase(role) || "TEACHER".equalsIgnoreCase(role) || "TA".equalsIgnoreCase(role);
+        }
+
+        return false;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ChatMessageResponseDTO> getRecentMessages(Long cohortId, User user) {
         if (!canUserAccessCohort(user, cohortId)) {
             throw new AccessDeniedException("Bạn không có quyền truy cập thảo luận của lớp học này.");
@@ -81,7 +115,11 @@ public class CohortChatServiceImpl implements CohortChatService {
             return Collections.emptyList();
         }
 
-        List<CohortMessage> messages = new ArrayList<>(rawMessages);
+        String userToken = user != null ? ("," + user.getId() + ",") : null;
+        List<CohortMessage> messages = new ArrayList<>(rawMessages.stream()
+                .filter(m -> !Boolean.TRUE.equals(m.getIsDeletedForAll()))
+                .filter(m -> userToken == null || m.getHiddenForUserIds() == null || !m.getHiddenForUserIds().contains(userToken))
+                .toList());
         Collections.reverse(messages);
 
         Map<Long, String> roleMap = cohortMemberRepository.findByCohort_Id(cohortId).stream()
@@ -147,6 +185,57 @@ public class CohortChatServiceImpl implements CohortChatService {
     }
 
     @Override
+    @Transactional
+    public void deleteMessage(Long cohortId, Long messageId, User user, String mode) {
+        if (user == null) {
+            throw new AccessDeniedException("Yêu cầu đăng nhập trước khi thao tác tin nhắn.");
+        }
+
+        if (!canUserAccessCohort(user, cohortId)) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập thảo luận của lớp học này.");
+        }
+
+        CohortMessage message = cohortMessageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tin nhắn: " + messageId));
+
+        if (message.getCohort() == null || !message.getCohort().getId().equals(cohortId)) {
+            throw new IllegalArgumentException("Tin nhắn không thuộc đợt học này.");
+        }
+
+        if ("ALL".equalsIgnoreCase(mode)) {
+            boolean isSender = message.getSender() != null && message.getSender().getId().equals(user.getId());
+            boolean isModeratorOrInstructor = canUserModerateCohort(user, cohortId);
+
+            if (!isSender && !isModeratorOrInstructor) {
+                throw new AccessDeniedException("Bạn không có quyền xóa tin nhắn này đối với mọi người.");
+            }
+
+            message.setIsDeletedForAll(true);
+            message.setDeletedByUserId(user.getId());
+            cohortMessageRepository.save(message);
+
+            ChatMessageResponseDTO event = ChatMessageResponseDTO.builder()
+                    .id(messageId)
+                    .cohortId(cohortId)
+                    .messageType("DELETED")
+                    .isDeleted(true)
+                    .deletedByUserId(user.getId())
+                    .build();
+            messagingTemplate.convertAndSend("/topic/cohort/" + cohortId, event);
+            return;
+        }
+
+        String currentHidden = message.getHiddenForUserIds();
+        String userToken = "," + user.getId() + ",";
+        if (currentHidden == null || currentHidden.isBlank()) {
+            message.setHiddenForUserIds(userToken);
+        } else if (!currentHidden.contains(userToken)) {
+            message.setHiddenForUserIds(currentHidden + user.getId() + ",");
+        }
+        cohortMessageRepository.save(message);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ChatNotificationDTO> getRecentNotifications(User user) {
         if (user == null) {
@@ -174,7 +263,10 @@ public class CohortChatServiceImpl implements CohortChatService {
                 PageRequest.of(0, 10)
         );
 
+        String userToken = "," + user.getId() + ",";
         return recentMessages.stream()
+                .filter(m -> !Boolean.TRUE.equals(m.getIsDeletedForAll()))
+                .filter(m -> m.getHiddenForUserIds() == null || !m.getHiddenForUserIds().contains(userToken))
                 .map(m -> {
                     Cohort c = m.getCohort();
                     String cohortTitle = c != null && c.getName() != null && !c.getName().isBlank()
@@ -317,6 +409,8 @@ public class CohortChatServiceImpl implements CohortChatService {
                 .senderRole(senderRole)
                 .message(message.getMessage())
                 .messageType(message.getMessageType())
+                .isDeleted(Boolean.TRUE.equals(message.getIsDeletedForAll()))
+                .deletedByUserId(message.getDeletedByUserId())
                 .createdAt(createdAt)
                 .createdAtFormatted(TIME_FORMATTER.format(createdAt))
                 .build();
