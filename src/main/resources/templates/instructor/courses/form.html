@@ -41,7 +41,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             <div id="errorData" th:data-error="${errorMessage}" style="display:none;"></div>
-            <form id="courseForm" th:action="@{${isEdit ? '/instructor/courses/' + course.id + '/edit' : '/instructor/courses/create'}}" method="post">
+            <form id="courseForm" th:action="@{${isEdit ? '/instructor/courses/' + course.id + '/edit' : '/instructor/courses/create'}}" method="post" enctype="multipart/form-data">
                 
                 <div class="row g-3">
                     <div class="col-md-4">
@@ -90,14 +90,18 @@
                     </div>
 
                     <div class="col-md-12">
-                        <label class="form-label fw-semibold">URL Ảnh bìa (Thumbnail)</label>
-                        <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl" th:value="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.equals('/images/courses/default-cover.png') ? course.thumbnailUrl : ''}" placeholder="https://... (Để trống để sử dụng ảnh bìa mặc định)">
+                        <label class="form-label fw-semibold">Ảnh bìa (Thumbnail)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-upload text-primary"></i></span>
+                            <input type="file" class="form-control" id="thumbnailFile" name="thumbnailFile" accept="image/*">
+                        </div>
+                        <input type="hidden" id="thumbnailUrl" name="thumbnailUrl" th:value="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.equals('/images/courses/default-cover.png') ? course.thumbnailUrl : ''}">
                         <div class="mt-2 d-flex align-items-center gap-3">
                             <span class="text-muted small">Xem trước ảnh bìa:</span>
                             <div style="width: 80px; height: 50px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;" class="flex-shrink-0 bg-light">
-                                <img id="coverPreview" th:src="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="w-100 h-100 object-fit-cover" alt="Preview">
+                                <img id="coverPreview" th:data-default-cover="'/images/courses/default-cover.png'" th:src="${course != null && course.thumbnailUrl != null && !course.thumbnailUrl.isBlank() ? course.thumbnailUrl : '/images/courses/default-cover.png'}" class="w-100 h-100 object-fit-cover" alt="Preview">
                             </div>
-                            <small class="text-muted" style="font-size: 11px;">Nếu không điền link ảnh, hệ thống sẽ tự động sử dụng ảnh bìa mặc định của UTELearn.</small>
+                            <small class="text-muted" style="font-size: 11px;">Chọn file ảnh từ thiết bị để tải lên trực tiếp. Nếu không chọn, hệ thống sẽ tự động sử dụng ảnh bìa mặc định của UTELearn.</small>
                         </div>
                     </div>
 
@@ -129,13 +133,19 @@
     if (errorMsg) {
         showToast(errorMsg, 'error');
     }
-    const thumbnailInput = document.getElementById('thumbnailUrl');
+    const thumbnailFileInput = document.getElementById('thumbnailFile');
     const coverPreview = document.getElementById('coverPreview');
     const defaultCover = '/images/courses/default-cover.png';
-    if (thumbnailInput && coverPreview) {
-        thumbnailInput.addEventListener('input', function() {
-            const val = this.value.trim();
-            coverPreview.src = val ? val : defaultCover;
+    if (thumbnailFileInput && coverPreview) {
+        thumbnailFileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    coverPreview.src = e.target.result;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+
         });
         coverPreview.addEventListener('error', function() {
             this.src = defaultCover;

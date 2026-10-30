@@ -229,7 +229,7 @@ body {
 }
 
 .stat-widget {
-    padding: 24px 28px;
+    padding: 24px 20px;
     border-radius: 20px;
     background: #ffffff;
     border: 1px solid var(--card-border);
