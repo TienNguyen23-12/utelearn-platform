@@ -167,8 +167,14 @@ public class CohortChatFeatureTest {
                         if (msg.getCreatedAt() == null) {
                             msg.setCreatedAt(Instant.now());
                         }
-                        savedMessages.add(msg);
+                        if (!savedMessages.contains(msg)) {
+                            savedMessages.add(msg);
+                        }
                         return msg;
+                    }
+                    if ("findById".equals(method.getName()) && args != null && args.length > 0) {
+                        Long id = (Long) args[0];
+                        return savedMessages.stream().filter(m -> id.equals(m.getId())).findFirst();
                     }
                     if ("findRecentMessagesByCohortIdDesc".equals(method.getName()) || "findRecentMessagesByCohortId".equals(method.getName())) {
                         return new ArrayList<>(savedMessages);
@@ -390,5 +396,77 @@ public class CohortChatFeatureTest {
         ChatMessageRequestDTO wsReq = ChatMessageRequestDTO.builder().message("Tin nhắn STOMP").build();
         assertDoesNotThrow(() -> cohortChatController.handleChatMessage(500L, wsReq, principal));
         assertTrue(broadcastedMessages.containsKey("/topic/cohort/500"));
+    }
+
+    @Test
+    void testDeleteMessage_Self_HidesForCallerOnly() {
+        cohortChatService.processAndSendMessage(500L, studentUser, ChatMessageRequestDTO.builder().message("Tin nhắn của sinh viên").build());
+        assertEquals(1, savedMessages.size());
+        Long msgId = savedMessages.get(0).getId();
+
+        cohortChatService.deleteMessage(500L, msgId, studentUser, "SELF");
+
+        List<ChatMessageResponseDTO> studentView = cohortChatService.getRecentMessages(500L, studentUser);
+        assertTrue(studentView.isEmpty());
+
+        List<ChatMessageResponseDTO> instructorView = cohortChatService.getRecentMessages(500L, instructorUser);
+        assertEquals(1, instructorView.size());
+        assertEquals("Tin nhắn của sinh viên", instructorView.get(0).getMessage());
+    }
+
+    @Test
+    void testDeleteMessage_All_BySender() {
+        cohortChatService.processAndSendMessage(500L, studentUser, ChatMessageRequestDTO.builder().message("Tin nhắn cần thu hồi").build());
+        Long msgId = savedMessages.get(0).getId();
+
+        cohortChatService.deleteMessage(500L, msgId, studentUser, "ALL");
+
+        assertTrue(savedMessages.get(0).getIsDeletedForAll());
+        assertEquals(studentUser.getId(), savedMessages.get(0).getDeletedByUserId());
+
+        assertTrue(cohortChatService.getRecentMessages(500L, studentUser).isEmpty());
+        assertTrue(cohortChatService.getRecentMessages(500L, instructorUser).isEmpty());
+
+        assertTrue(broadcastedMessages.containsKey("/topic/cohort/500"));
+        ChatMessageResponseDTO event = (ChatMessageResponseDTO) broadcastedMessages.get("/topic/cohort/500");
+        assertTrue(event.getIsDeleted());
+        assertEquals("DELETED", event.getMessageType());
+    }
+
+    @Test
+    void testDeleteMessage_All_ByInstructor_Violation() {
+        cohortChatService.processAndSendMessage(500L, studentUser, ChatMessageRequestDTO.builder().message("Nội dung vi phạm quy tắc").build());
+        Long msgId = savedMessages.get(0).getId();
+
+        cohortChatService.deleteMessage(500L, msgId, instructorUser, "ALL");
+
+        assertTrue(savedMessages.get(0).getIsDeletedForAll());
+        assertEquals(instructorUser.getId(), savedMessages.get(0).getDeletedByUserId());
+
+        assertTrue(cohortChatService.getRecentMessages(500L, studentUser).isEmpty());
+        assertTrue(cohortChatService.getRecentMessages(500L, instructorUser).isEmpty());
+
+        ChatMessageResponseDTO event = (ChatMessageResponseDTO) broadcastedMessages.get("/topic/cohort/500");
+        assertTrue(event.getIsDeleted());
+        assertEquals(instructorUser.getId(), event.getDeletedByUserId());
+    }
+
+    @Test
+    void testDeleteMessage_All_ByOtherStudent_ThrowsAccessDenied() {
+        cohortChatService.processAndSendMessage(500L, instructorUser, ChatMessageRequestDTO.builder().message("Thông báo từ giảng viên").build());
+        Long msgId = savedMessages.get(0).getId();
+
+        assertThrows(AccessDeniedException.class, () ->
+                cohortChatService.deleteMessage(500L, msgId, studentUser, "ALL")
+        );
+    }
+
+    @Test
+    void testCohortChatController_DeleteCohortMessage() {
+        cohortChatService.processAndSendMessage(500L, studentUser, ChatMessageRequestDTO.builder().message("Tin xóa qua API").build());
+        Long msgId = savedMessages.get(0).getId();
+
+        ResponseEntity<?> resp = cohortChatController.deleteCohortMessage(500L, msgId, "SELF");
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
     }
 }

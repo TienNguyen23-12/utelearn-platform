@@ -20,6 +20,8 @@ public class ChatMessageResponseDTO {
     private String senderRole;
     private String message;
     private String messageType;
+    private Boolean isDeleted;
+    private Long deletedByUserId;
     private Instant createdAt;
     private String createdAtFormatted;
 }

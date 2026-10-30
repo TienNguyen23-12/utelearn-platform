@@ -182,6 +182,19 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
+        .chat-msg-actions {
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .chat-bubble-row:hover .chat-msg-actions {
+            opacity: 1;
+        }
+
+        .chat-bubble-row.mine .chat-msg-wrap .chat-msg-content-row {
+            flex-direction: row-reverse;
+        }
+
         .chat-input-panel {
             padding: 16px 24px;
             background: #ffffff;
@@ -354,6 +367,24 @@
         </main>
     </div>
 
+    <div class="modal fade" id="deleteChatModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+                <div class="modal-body p-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" id="deleteChatModalIconWrap" style="width: 56px; height: 56px; background-color: #fee2e2; color: #dc2626;">
+                        <i class="bi bi-trash3 fs-3" id="deleteChatModalIcon"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2" id="deleteChatModalTitle">Xác nhận xóa tin nhắn</h5>
+                    <p class="text-secondary small mb-4" id="deleteChatModalMessage">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light border rounded-pill px-4 py-2 small fw-semibold" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-danger rounded-pill px-4 py-2 small fw-semibold shadow-sm" id="btnConfirmDeleteChat">Đồng ý</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
@@ -435,6 +466,10 @@
                 ? `<div class="chat-avatar-circle"><img src="${escapeHtml(msg.senderAvatar)}" alt="${escapeHtml(msg.senderName)}" class="w-100 h-100 object-fit-cover"></div>`
                 : `<div class="chat-avatar-circle">${initial}</div>`;
 
+            const actionAllHtml = isMine
+                ? `<li><button type="button" class="dropdown-item py-1.5 text-danger" onclick="deleteChatMessage(${msg.id}, 'ALL')"><i class="bi bi-trash3 me-2"></i>Xóa với mọi người</button></li>`
+                : `<li><button type="button" class="dropdown-item py-1.5 text-danger" onclick="deleteChatMessage(${msg.id}, 'ALL')"><i class="bi bi-shield-x me-2"></i>Xóa tin nhắn vi phạm</button></li>`;
+
             return `
                 <div class="chat-bubble-row ${rowClass}" id="chat-msg-${msg.id}">
                     ${avatarHtml}
@@ -444,8 +479,23 @@
                             ${roleBadge}
                             <span class="text-muted" style="font-size: 11px;">${escapeHtml(msg.createdAtFormatted || '')}</span>
                         </div>
-                        <div class="chat-speech-bubble">
-                            ${escapeHtml(msg.message)}
+                        <div class="d-flex align-items-center gap-1 chat-msg-content-row">
+                            <div class="chat-speech-bubble">
+                                ${escapeHtml(msg.message)}
+                            </div>
+                            <div class="dropdown chat-msg-actions">
+                                <button class="btn btn-sm btn-link text-muted p-1 lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Tùy chọn">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu ${isMine ? 'dropdown-menu-start' : 'dropdown-menu-end'} shadow-sm border py-1" style="font-size: 12.5px; min-width: 170px;">
+                                    <li>
+                                        <button type="button" class="dropdown-item py-1.5 text-secondary" onclick="deleteChatMessage(${msg.id}, 'SELF')">
+                                            <i class="bi bi-eye-slash me-2"></i>Xóa cho bản thân
+                                        </button>
+                                    </li>
+                                    ${actionAllHtml}
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -541,6 +591,10 @@
                     stompClient.subscribe('/topic/cohort/' + cohortId, function (message) {
                         try {
                             const newMsg = JSON.parse(message.body);
+                            if (newMsg.messageType === 'DELETED' || newMsg.isDeleted) {
+                                removeMessageFromUI(newMsg.id);
+                                return;
+                            }
                             appendMessage(newMsg);
                             moveCohortToTop(cohortId, false);
                         } catch (err) {
@@ -612,15 +666,116 @@
                     appendMessage(savedMsg);
                     moveCohortToTop(cohortId, false);
                 } else if (response.status === 403) {
-                    alert('Bạn không có quyền gửi tin nhắn trong lớp này.');
+                    Toastify({ text: 'Bạn không có quyền gửi tin nhắn trong lớp này.', duration: 3000, gravity: 'top', position: 'right', style: { background: '#ef4444' } }).showToast();
                 } else {
-                    alert('Không thể gửi tin nhắn. Vui lòng thử lại.');
+                    Toastify({ text: 'Không thể gửi tin nhắn. Vui lòng thử lại.', duration: 3000, gravity: 'top', position: 'right', style: { background: '#ef4444' } }).showToast();
                 }
             } catch (err) {
-                alert('Lỗi kết nối khi gửi tin nhắn.');
+                Toastify({ text: 'Lỗi kết nối khi gửi tin nhắn.', duration: 3000, gravity: 'top', position: 'right', style: { background: '#ef4444' } }).showToast();
             } finally {
                 if (sendBtn) sendBtn.disabled = false;
                 input.focus();
+            }
+        }
+
+        function removeMessageFromUI(messageId) {
+            const el = document.getElementById('chat-msg-' + messageId);
+            if (el) {
+                el.style.transition = 'all 0.25s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    el.remove();
+                    const index = chatMessagesList.findIndex(m => m.id === messageId);
+                    if (index !== -1) {
+                        chatMessagesList.splice(index, 1);
+                    }
+                    if (chatMessagesList.length === 0) {
+                        renderMessages();
+                    }
+                }, 250);
+            }
+        }
+
+        let pendingDeleteChat = null;
+
+        function deleteChatMessage(messageId, mode) {
+            pendingDeleteChat = { messageId, mode };
+            const titleEl = document.getElementById('deleteChatModalTitle');
+            const msgEl = document.getElementById('deleteChatModalMessage');
+            const iconWrap = document.getElementById('deleteChatModalIconWrap');
+            const icon = document.getElementById('deleteChatModalIcon');
+            const btnConfirm = document.getElementById('btnConfirmDeleteChat');
+
+            if (mode === 'ALL') {
+                if (titleEl) titleEl.textContent = 'Xác nhận xóa tin nhắn';
+                if (msgEl) msgEl.textContent = 'Bạn có chắc chắn muốn xóa tin nhắn này đối với mọi người trong lớp học không?';
+                if (iconWrap) {
+                    iconWrap.style.backgroundColor = '#fee2e2';
+                    iconWrap.style.color = '#dc2626';
+                }
+                if (icon) icon.className = 'bi bi-shield-x fs-3';
+                if (btnConfirm) btnConfirm.textContent = 'Xóa với mọi người';
+            } else {
+                if (titleEl) titleEl.textContent = 'Ẩn tin nhắn cho bản thân';
+                if (msgEl) msgEl.textContent = 'Tin nhắn này sẽ bị ẩn khỏi khung chat của bạn và không thể khôi phục lại.';
+                if (iconWrap) {
+                    iconWrap.style.backgroundColor = '#f1f5f9';
+                    iconWrap.style.color = '#475569';
+                }
+                if (icon) icon.className = 'bi bi-eye-slash fs-3';
+                if (btnConfirm) btnConfirm.textContent = 'Ẩn tin nhắn';
+            }
+
+            const modalEl = document.getElementById('deleteChatModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
+        async function executeDeleteChat() {
+            if (!pendingDeleteChat) return;
+            const { messageId, mode } = pendingDeleteChat;
+            const modalEl = document.getElementById('deleteChatModal');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+
+            try {
+                const response = await fetch('/api/cohorts/' + cohortId + '/messages/' + messageId + '?mode=' + mode, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    removeMessageFromUI(messageId);
+                    Toastify({
+                        text: mode === 'ALL' ? 'Đã xóa tin nhắn đối với mọi người' : 'Đã ẩn tin nhắn cho bản thân',
+                        duration: 2500,
+                        gravity: 'top',
+                        position: 'right',
+                        style: { background: '#10b981' }
+                    }).showToast();
+                } else {
+                    const errData = await response.json().catch(() => ({}));
+                    Toastify({
+                        text: errData.message || 'Không thể xóa tin nhắn.',
+                        duration: 3000,
+                        gravity: 'top',
+                        position: 'right',
+                        style: { background: '#ef4444' }
+                    }).showToast();
+                }
+            } catch (e) {
+                Toastify({
+                    text: 'Lỗi kết nối khi xóa tin nhắn.',
+                    duration: 3000,
+                    gravity: 'top',
+                    position: 'right',
+                    style: { background: '#ef4444' }
+                }).showToast();
+            } finally {
+                pendingDeleteChat = null;
             }
         }
 
@@ -631,6 +786,10 @@
         document.addEventListener('DOMContentLoaded', function () {
             loadHistory();
             connectWebSocket();
+            const btnConfirm = document.getElementById('btnConfirmDeleteChat');
+            if (btnConfirm) {
+                btnConfirm.addEventListener('click', executeDeleteChat);
+            }
             const input = document.getElementById('chatInputMessage');
             if (input) {
                 setTimeout(() => input.focus(), 200);

@@ -33,6 +33,16 @@ public class CohortMessage {
     @Builder.Default
     private String messageType = "TEXT";
 
+    @Column(name = "is_deleted_for_all")
+    @Builder.Default
+    private Boolean isDeletedForAll = false;
+
+    @Column(name = "deleted_by_user_id")
+    private Long deletedByUserId;
+
+    @Column(name = "hidden_for_user_ids", columnDefinition = "TEXT")
+    private String hiddenForUserIds;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

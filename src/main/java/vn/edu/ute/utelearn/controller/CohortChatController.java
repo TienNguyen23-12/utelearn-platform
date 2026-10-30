@@ -21,6 +21,7 @@ import vn.edu.ute.utelearn.service.CohortChatService;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -83,6 +84,26 @@ public class CohortChatController {
 
         ChatMessageResponseDTO response = cohortChatService.processAndSendMessage(cohortId, user, request);
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/api/cohorts/{cohortId}/messages/{messageId}")
+    @ResponseBody
+    public ResponseEntity<?> deleteCohortMessage(
+            @PathVariable Long cohortId,
+            @PathVariable Long messageId,
+            @RequestParam(value = "mode", defaultValue = "SELF") String mode
+    ) {
+        User user = authService.getCurrentAuthenticatedUser().orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!cohortChatService.canUserAccessCohort(user, cohortId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        cohortChatService.deleteMessage(cohortId, messageId, user, mode);
+        return ResponseEntity.ok(Map.of("success", true, "messageId", messageId, "mode", mode));
     }
 
     @GetMapping("/api/cohorts/notifications/recent")
