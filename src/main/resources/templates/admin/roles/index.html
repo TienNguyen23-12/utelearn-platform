@@ -39,9 +39,6 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a th:href="@{/admin/roles/demo}" class="btn btn-outline-primary rounded-pill px-3">
-                    <i class="bi bi-play-circle-fill me-1"></i>Demo Phân Quyền Động
-                </a>
                 <a th:href="@{/admin/roles/create}" class="btn btn-gradient-primary">
                     <i class="bi bi-plus-circle-fill me-2"></i>Thêm vai trò mới
                 </a>
@@ -97,18 +94,26 @@
                                 <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-bold" th:text="${role.permissions != null ? #sets.size(role.permissions) : 0}">0</span>
                             </td>
                             <td class="text-center">
-                                <div class="d-flex align-items-center justify-content-center gap-2">
-                                    <a th:href="@{/admin/roles/{id}/edit(id=${role.id})}" class="btn btn-soft-primary btn-sm rounded-pill px-3" title="Chỉnh sửa vai trò & phân quyền">
-                                        <i class="bi bi-pencil-square me-1"></i>Sửa
-                                    </a>
-                                    <button th:if="${role.code != 'ADMIN'}" 
-                                            type="button" 
-                                            class="btn btn-soft-danger btn-sm rounded-circle p-2" 
-                                            title="Xóa vai trò"
-                                            th:data-id="${role.id}"
-                                            onclick="deleteRole(this)">
-                                        <i class="bi bi-trash-fill"></i>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                                        <i class="bi bi-gear-wide-connected"></i>
+                                        <span>Thao tác</span>
                                     </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 py-2 text-start" style="min-width: 170px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small" th:href="@{/admin/roles/{id}/edit(id=${role.id})}">
+                                                <i class="bi bi-pencil-square text-primary"></i>
+                                                <span>Chỉnh sửa</span>
+                                            </a>
+                                        </li>
+                                        <li th:if="${role.code != 'ADMIN'}"><hr class="dropdown-divider"></li>
+                                        <li th:if="${role.code != 'ADMIN'}">
+                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-danger" th:data-id="${role.id}" onclick="deleteRole(this)">
+                                                <i class="bi bi-trash-fill text-danger"></i>
+                                                <span>Xóa vai trò</span>
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

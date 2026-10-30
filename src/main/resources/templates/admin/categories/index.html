@@ -127,15 +127,28 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <div class="d-flex justify-content-center align-items-center gap-2">
-                                    <a th:href="@{'/admin/categories/' + ${cat.id} + '/edit'}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1" title="Chỉnh sửa danh mục">
-                                        <i class="bi bi-pencil-square me-1"></i>Sửa
-                                    </a>
-                                    <form th:id="'deleteCategoryForm_' + ${cat.id}" th:action="@{'/admin/categories/' + ${cat.id} + '/delete'}" method="post" class="d-inline">
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1" title="Xóa danh mục" th:data-id="${cat.id}" th:data-name="${cat.name}" onclick="confirmDeleteCategory(this)">
-                                            <i class="bi bi-trash3 me-1"></i>Xóa
-                                        </button>
-                                    </form>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                                        <i class="bi bi-gear-wide-connected"></i>
+                                        <span>Thao tác</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 py-2 text-start" style="min-width: 170px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small" th:href="@{'/admin/categories/' + ${cat.id} + '/edit'}">
+                                                <i class="bi bi-pencil-square text-primary"></i>
+                                                <span>Chỉnh sửa</span>
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form th:id="'deleteCategoryForm_' + ${cat.id}" th:action="@{'/admin/categories/' + ${cat.id} + '/delete'}" method="post" class="m-0 p-0">
+                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-danger" th:data-id="${cat.id}" th:data-name="${cat.name}" onclick="confirmDeleteCategory(this)">
+                                                    <i class="bi bi-trash3 text-danger"></i>
+                                                    <span>Xóa danh mục</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

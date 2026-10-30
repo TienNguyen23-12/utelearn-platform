@@ -77,9 +77,20 @@
                             <span th:if="${task.createdAt != null}" class="text-muted small" th:text="${#dates.format(T(java.util.Date).from(task.createdAt), 'HH:mm dd/MM/yyyy')}"></span>
                         </td>
                         <td class="text-center">
-                            <a th:href="@{/moderator/review/{id}(id=${task.id})}" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm">
-                                <i class="bi bi-hammer me-1"></i> Xử lý ngay
-                            </a>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                                    <i class="bi bi-gear-wide-connected"></i>
+                                    <span>Thao tác</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 py-2 text-start" style="min-width: 170px; z-index: 1050;">
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-danger fw-semibold" th:href="@{/moderator/review/{id}(id=${task.id})}">
+                                            <i class="bi bi-hammer text-danger"></i>
+                                            <span>Xử lý ngay</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
                     </tbody>

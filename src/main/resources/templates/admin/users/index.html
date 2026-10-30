@@ -125,21 +125,31 @@
                                 </span>
                             </td>
                             <td class="text-center text-nowrap">
-                                <div class="d-flex align-items-center justify-content-center gap-1.5">
-                                    <a th:href="@{/admin/users/{id}/edit(id=${u.id})}" class="btn btn-soft-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1 fw-semibold" title="Gán vai trò">
-                                        <i class="bi bi-shield-plus"></i><span>Gán quyền</span>
-                                    </a>
-                                    <button th:if="${u.username != 'admin'}" 
-                                            type="button" 
-                                            class="btn btn-sm rounded-pill px-2.5 py-1 text-nowrap d-inline-flex align-items-center gap-1 fw-semibold status-toggle-btn" 
-                                            th:classappend="${u.isActive != null and u.isActive} ? 'btn-soft-danger' : 'btn-soft-success'" 
-                                            th:title="${u.isActive != null and u.isActive ? 'Khóa tài khoản này' : 'Mở khóa tài khoản này'}"
-                                            th:data-id="${u.id}"
-                                            th:data-is-active="${u.isActive != null and u.isActive}"
-                                            onclick="openToggleModal(this)">
-                                        <i th:class="${u.isActive != null and u.isActive ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'}"></i>
-                                        <span th:text="${u.isActive != null and u.isActive ? 'Khóa' : 'Mở'}">Khóa</span>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                                        <i class="bi bi-gear-wide-connected"></i>
+                                        <span>Thao tác</span>
                                     </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 py-2 text-start" style="min-width: 170px; z-index: 1050;">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small" th:href="@{/admin/users/{id}/edit(id=${u.id})}">
+                                                <i class="bi bi-shield-plus text-primary"></i>
+                                                <span>Gán quyền</span>
+                                            </a>
+                                        </li>
+                                        <li th:if="${u.username != 'admin'}"><hr class="dropdown-divider"></li>
+                                        <li th:if="${u.username != 'admin'}">
+                                            <button type="button" 
+                                                    class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small status-toggle-btn" 
+                                                    th:classappend="${u.isActive != null and u.isActive} ? 'text-danger' : 'text-success'" 
+                                                    th:data-id="${u.id}" 
+                                                    th:data-is-active="${u.isActive != null and u.isActive}" 
+                                                    onclick="openToggleModal(this)">
+                                                <i th:class="${u.isActive != null and u.isActive ? 'bi bi-lock-fill text-danger' : 'bi bi-unlock-fill text-success'}"></i>
+                                                <span th:text="${u.isActive != null and u.isActive ? 'Khóa tài khoản' : 'Mở khóa'}">Khóa tài khoản</span>
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

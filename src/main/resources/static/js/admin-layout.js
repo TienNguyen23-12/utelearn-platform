@@ -1,4 +1,4 @@
-﻿function toggleSidebar() {
+function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
@@ -659,4 +659,11 @@ function debounce(fn, delay = 300) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
+}
+
+if (typeof window !== 'undefined' && !document.querySelector('script[src*="adminlte"]')) {
+    const adminLteScript = document.createElement('script');
+    adminLteScript.src = 'https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/js/adminlte.min.js';
+    adminLteScript.defer = true;
+    document.head.appendChild(adminLteScript);
 }
