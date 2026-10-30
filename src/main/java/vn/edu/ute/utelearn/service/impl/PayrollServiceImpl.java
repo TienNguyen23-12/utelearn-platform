@@ -78,7 +78,7 @@ public class PayrollServiceImpl implements PayrollService {
         global.setInstructorRatingBonusPercent(clampPercent(instructorRatingBonusPercent, new BigDecimal("5.00")));
         global.setInstructorRatingThreshold(clampThreshold(instructorRatingThreshold, new BigDecimal("4.50")));
         global.setModeratorMinuteRate(sanitizeNonNegative(moderatorMinuteRate, new BigDecimal("500")));
-        global.setModeratorOtMultiplier(sanitizeNonNegative(moderatorOtMultiplier, new BigDecimal("1.50")));
+        global.setModeratorOtMultiplier(normalizeOtMultiplier(moderatorOtMultiplier, new BigDecimal("1.50")));
         global.setModeratorTaskBonus(sanitizeNonNegative(moderatorTaskBonus, new BigDecimal("10000")));
         global.setModeratorSlaPenalty(sanitizeNonNegative(moderatorSlaPenalty, new BigDecimal("15000")));
         global.setFixedAllowance(sanitizeNonNegative(fixedAllowance, BigDecimal.ZERO));
@@ -118,7 +118,7 @@ public class PayrollServiceImpl implements PayrollService {
         userConfig.setInstructorRatingBonusPercent(instructorRatingBonusPercent != null ? clampPercent(instructorRatingBonusPercent, null) : null);
         userConfig.setInstructorRatingThreshold(instructorRatingThreshold != null ? clampThreshold(instructorRatingThreshold, null) : null);
         userConfig.setModeratorMinuteRate(moderatorMinuteRate != null ? sanitizeNonNegative(moderatorMinuteRate, null) : null);
-        userConfig.setModeratorOtMultiplier(moderatorOtMultiplier != null ? sanitizeNonNegative(moderatorOtMultiplier, null) : null);
+        userConfig.setModeratorOtMultiplier(moderatorOtMultiplier != null ? normalizeOtMultiplier(moderatorOtMultiplier, null) : null);
         userConfig.setModeratorTaskBonus(moderatorTaskBonus != null ? sanitizeNonNegative(moderatorTaskBonus, null) : null);
         userConfig.setModeratorSlaPenalty(moderatorSlaPenalty != null ? sanitizeNonNegative(moderatorSlaPenalty, null) : null);
         userConfig.setFixedAllowance(fixedAllowance != null ? sanitizeNonNegative(fixedAllowance, BigDecimal.ZERO) : null);
@@ -573,6 +573,16 @@ public class PayrollServiceImpl implements PayrollService {
     private BigDecimal sanitizeNonNegative(BigDecimal val, BigDecimal fallback) {
         if (val == null) {
             return fallback;
+        }
+        return val.max(BigDecimal.ZERO);
+    }
+
+    private BigDecimal normalizeOtMultiplier(BigDecimal val, BigDecimal fallback) {
+        if (val == null) {
+            return fallback;
+        }
+        if (val.compareTo(new BigDecimal("10.00")) > 0) {
+            return val.divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
         }
         return val.max(BigDecimal.ZERO);
     }

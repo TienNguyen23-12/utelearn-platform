@@ -192,19 +192,38 @@
                                 <span class="badge rounded-pill px-3 py-1" th:classappend="${order.statusBadgeClass}" th:text="${order.statusDisplayName}">Thành công</span>
                             </td>
                             <td class="text-end pe-4">
-                                <div class="d-flex justify-content-end gap-1">
-                                    <button th:if="${order.status == 'PENDING' && order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2 fw-semibold" title="Thu tiền tại quầy" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openCashierModal(this)">
-                                        <i class="bi bi-cash-coin me-1"></i>Thu tiền quầy
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 dropdown-toggle d-inline-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
+                                        <i class="bi bi-gear-wide-connected"></i>
+                                        <span>Thao tác</span>
                                     </button>
-                                    <button th:if="${order.status == 'PENDING' && !order.offline}" type="button" class="btn btn-sm btn-success rounded-pill px-2" title="Xác nhận thanh toán" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openConfirmModal(this)">
-                                        <i class="bi bi-check-lg me-1"></i>Duyệt
-                                    </button>
-                                    <button th:if="${order.status == 'PENDING'}" type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Hủy đơn hàng" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="openCancelModal(this)">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                    <a th:href="@{'/orders/' + ${order.orderCode}}" class="btn btn-sm btn-light border rounded-pill px-2" title="Xem hóa đơn / Phiếu thu">
-                                        <i class="bi bi-receipt"></i>
-                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 py-2 text-start" style="min-width: 170px; z-index: 1050;">
+                                        <li th:if="${order.status == 'PENDING' && order.offline}">
+                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-success fw-semibold" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openCashierModal(this)">
+                                                <i class="bi bi-cash-coin text-success"></i>
+                                                <span>Thu tiền quầy</span>
+                                            </button>
+                                        </li>
+                                        <li th:if="${order.status == 'PENDING' && !order.offline}">
+                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-success fw-semibold" th:data-id="${order.id}" th:data-code="${order.orderCode}" th:data-user="${order.userFullName}" th:data-amount="${order.formattedTotalAmount}" th:data-discount="${order.discountAmount != null && order.discountAmount > 0 ? order.formattedDiscountAmount : ''}" th:data-discount-code="${order.discountCode}" onclick="openConfirmModal(this)">
+                                                <i class="bi bi-check-lg text-success"></i>
+                                                <span>Duyệt đơn</span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small" th:href="@{'/orders/' + ${order.orderCode}}">
+                                                <i class="bi bi-receipt text-primary"></i>
+                                                <span>Xem hóa đơn</span>
+                                            </a>
+                                        </li>
+                                        <li th:if="${order.status == 'PENDING'}"><hr class="dropdown-divider"></li>
+                                        <li th:if="${order.status == 'PENDING'}">
+                                            <button type="button" class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 small text-danger" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="openCancelModal(this)">
+                                                <i class="bi bi-x-circle text-danger"></i>
+                                                <span>Hủy đơn hàng</span>
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>

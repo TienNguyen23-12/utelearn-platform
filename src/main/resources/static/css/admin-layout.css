@@ -1,4 +1,6 @@
 
+@import url('https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css');
+
 :root {
     --sidebar-width: 280px;
     --sidebar-bg: #ffffff;
