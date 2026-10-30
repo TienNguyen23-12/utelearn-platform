@@ -199,6 +199,19 @@
             </div>
         </div>
 
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="small text-muted" id="cohortsCountSummary">Đang tải danh sách...</span>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small text-muted text-nowrap" for="cohortPageSizeSelect">Hiển thị:</label>
+                <select id="cohortPageSizeSelect" class="form-select form-select-sm rounded-pill border" style="width: auto;" onchange="handleCohortPageSizeChange(this.value)">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
         <div class="row g-4" id="cohortsGrid">
             <div class="col-12 text-center text-muted py-5">
                 <div class="spinner-border text-primary"></div>
@@ -206,15 +219,7 @@
             </div>
         </div>
 
-        <div class="text-center mt-5" id="loadMoreSection" style="display: none;">
-            <button id="loadMoreBtn" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="loadMoreCohorts()">
-                <span id="loadMoreBtnText"><i class="bi bi-chevron-double-down me-1"></i>Xem thêm module</span>
-                <span id="loadMoreSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status"></span>
-            </button>
-            <div id="allLoadedMessage" class="text-muted small mt-3" style="display: none;">
-                <i class="bi bi-check-circle-fill text-success me-1"></i>Bạn đã xem toàn bộ danh sách module học tập
-            </div>
-        </div>
+        <div id="cohortsPaginationNav" class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2 px-1"></div>
     </section>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
@@ -242,11 +247,20 @@
                 document.getElementById('cohortSearchInput').value = urlParams.get('q');
             }
 
-            loadInitialCohorts();
-            setupCohortInfiniteScroll();
+            const savedCohortPageSize = localStorage.getItem('utelearn_cohort_page_size');
+            const cohortPageSizeSelect = document.getElementById('cohortPageSizeSelect');
+            if (savedCohortPageSize && cohortPageSizeSelect) {
+                cohortPageSizeSelect.value = savedCohortPageSize;
+            }
+            if (cohortPageSizeSelect) {
+                cohortPageSizeSelect.addEventListener('change', function () {
+                    handleCohortPageSizeChange(cohortPageSizeSelect.value);
+                });
+            }
 
             const debouncedCohortSearch = debounce(() => {
-                loadInitialCohorts();
+                isLoading = false;
+            loadInitialCohorts(0);
             }, 350);
 
             document.getElementById('cohortSearchInput').addEventListener('input', function () {
@@ -255,13 +269,28 @@
 
             document.getElementById('cohortSearchInput').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
-                    loadInitialCohorts();
+                    isLoading = false;
+            loadInitialCohorts(0);
                 }
             });
+
+            isLoading = false;
+            loadInitialCohorts(0);
         });
 
+        function handleCohortPageSizeChange(val) {
+            localStorage.setItem('utelearn_cohort_page_size', val);
+            const cohortPageSizeSelect = document.getElementById('cohortPageSizeSelect');
+            if (cohortPageSizeSelect && cohortPageSizeSelect.value !== val) {
+                cohortPageSizeSelect.value = val;
+            }
+            isLoading = false;
+            loadInitialCohorts(0);
+        }
+
         function loadCohorts() {
-            loadInitialCohorts();
+            isLoading = false;
+            loadInitialCohorts(0);
         }
 
         function createCohortCardHtml(cohort) {
@@ -457,59 +486,71 @@ function showToast(message, type = 'success') {
             `;
         }
 
-        async function fetchCohortsPage(cursor = null) {
+        let currentCohortPage = 0;
+        let totalCohortPages = 1;
+
+        async function fetchCohortsPage(page = 0) {
             const q = document.getElementById('cohortSearchInput').value.trim();
             const category = document.getElementById('cohortCategoryFilter').value;
 
             const params = new URLSearchParams();
             if (q) params.append('q', q);
             if (category) params.append('category', category);
-            if (cursor) params.append('cursor', cursor);
-            params.append('size', '10');
+            params.append('page', page);
+            const pageSizeEl = document.getElementById('cohortPageSizeSelect');
+            const pageSize = pageSizeEl ? pageSizeEl.value : '10';
+            params.append('size', pageSize);
 
             const res = await fetch('/api/cohorts?' + params.toString());
             if (!res.ok) throw new Error("Failed to fetch");
             return await res.json();
         }
 
-        async function loadInitialCohorts() {
+        let currentCohortItems = [];
+        let currentCohortRenderedCount = 0;
+        const COHORT_CHUNK_SIZE = 4;
+        let cohortScrollObserver = null;
+
+        async function loadInitialCohorts(page = 0) {
             if (isLoading) return;
             isLoading = true;
-            cohortCursor = null;
-            hasNextCohort = false;
+            currentCohortPage = page;
+
+            if (cohortScrollObserver) {
+                cohortScrollObserver.disconnect();
+            }
 
             const grid = document.getElementById('cohortsGrid');
-            const loadMoreSection = document.getElementById('loadMoreSection');
-            const allLoadedMessage = document.getElementById('allLoadedMessage');
-
-            loadMoreSection.style.display = 'none';
-            allLoadedMessage.style.display = 'none';
+            const paginationNav = document.getElementById('cohortsPaginationNav');
+            if (paginationNav) paginationNav.innerHTML = '';
             grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách module...</p></div>';
 
             try {
-                const data = await fetchCohortsPage(null);
-                cohortCursor = data.nextCursor != null ? data.nextCursor : null;
-                hasNextCohort = data.hasNext === true;
+                const data = await fetchCohortsPage(currentCohortPage);
+                totalCohortPages = data.totalPages != null ? data.totalPages : 1;
+                const totalItems = data.totalItems != null ? data.totalItems : 0;
+                const countSummaryEl = document.getElementById('cohortsCountSummary');
+                if (countSummaryEl) {
+                    countSummaryEl.textContent = totalItems > 0 ? 'Tìm thấy ' + totalItems + ' module' : '0 module';
+                }
 
                 if (!data.content || data.content.length === 0) {
                     grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Không tìm thấy module nào phù hợp.</p></div>';
                     return;
                 }
 
-                let html = '';
-                data.content.forEach(cohort => {
-                    html += createCohortCardHtml(cohort);
-                });
-                grid.innerHTML = html;
+                currentCohortItems = data.content;
+                currentCohortRenderedCount = 0;
+                grid.innerHTML = '';
 
-                updateLoadMoreControls();
+                renderNextCohortChunk();
+                renderCohortPagination(data.currentPage, totalCohortPages, totalItems);
             } catch (error) {
-                console.error(error);
                 grid.innerHTML = `
                     <div class="col-12 text-center text-danger py-5">
                         <i class="bi bi-exclamation-triangle fs-1"></i>
                         <p class="mt-2">Có lỗi xảy ra khi tải danh sách module.</p>
-                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadInitialCohorts()">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadInitialCohorts(currentCohortPage)">
                             <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
                         </button>
                     </div>
@@ -519,77 +560,98 @@ function showToast(message, type = 'success') {
             }
         }
 
-        async function loadMoreCohorts() {
-            if (isLoadingMore || !hasNextCohort || !cohortCursor) return;
-            isLoadingMore = true;
+        function renderNextCohortChunk() {
+            const grid = document.getElementById('cohortsGrid');
+            if (!grid) return;
 
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            const loadMoreBtnText = document.getElementById('loadMoreBtnText');
-            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+            let sentinel = document.getElementById('cohortLazySentinel');
+            if (sentinel) sentinel.remove();
 
-            loadMoreBtn.disabled = true;
-            loadMoreBtnText.textContent = "Đang tải...";
-            loadMoreSpinner.style.display = "inline-block";
+            const nextEnd = Math.min(currentCohortRenderedCount + COHORT_CHUNK_SIZE, currentCohortItems.length);
+            let chunkHtml = '';
+            for (let i = currentCohortRenderedCount; i < nextEnd; i++) {
+                chunkHtml += createCohortCardHtml(currentCohortItems[i]);
+            }
+            grid.insertAdjacentHTML('beforeend', chunkHtml);
+            currentCohortRenderedCount = nextEnd;
 
-            try {
-                const data = await fetchCohortsPage(cohortCursor);
-                cohortCursor = data.nextCursor != null ? data.nextCursor : null;
-                hasNextCohort = data.hasNext === true;
+            if (currentCohortRenderedCount < currentCohortItems.length) {
+                const sentinelHtml = `
+                    <div id="cohortLazySentinel" class="col-12 text-center py-4 my-2">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <span class="small text-muted ms-2">Đang cuộn để tải thêm các module còn lại của trang...</span>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', sentinelHtml);
+                sentinel = document.getElementById('cohortLazySentinel');
 
-                if (data.content && data.content.length > 0) {
-                    const grid = document.getElementById('cohortsGrid');
-                    let newHtml = '';
-                    data.content.forEach(cohort => {
-                        newHtml += createCohortCardHtml(cohort);
-                    });
-                    grid.insertAdjacentHTML('beforeend', newHtml);
-                }
-
-                updateLoadMoreControls();
-            } catch (error) {
-                console.error(error);
-                alert("Không thể tải thêm module. Vui lòng thử lại!");
-                loadMoreBtn.disabled = false;
-                loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm module';
-                loadMoreSpinner.style.display = "none";
-            } finally {
-                isLoadingMore = false;
+                if (cohortScrollObserver) cohortScrollObserver.disconnect();
+                cohortScrollObserver = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                        cohortScrollObserver.disconnect();
+                        setTimeout(() => {
+                            renderNextCohortChunk();
+                        }, 150);
+                    }
+                }, { rootMargin: '120px' });
+                cohortScrollObserver.observe(sentinel);
             }
         }
 
-        function updateLoadMoreControls() {
-            const loadMoreSection = document.getElementById('loadMoreSection');
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-            const loadMoreBtnText = document.getElementById('loadMoreBtnText');
-            const loadMoreSpinner = document.getElementById('loadMoreSpinner');
-            const allLoadedMessage = document.getElementById('allLoadedMessage');
+        function renderCohortPagination(currPage, totalPages, totalItems) {
+            const nav = document.getElementById('cohortsPaginationNav');
+            if (!nav) return;
 
-            loadMoreSection.style.display = 'block';
-            loadMoreBtn.disabled = false;
-            loadMoreSpinner.style.display = 'none';
-            loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm module';
-
-            if (hasNextCohort) {
-                loadMoreBtn.style.display = 'inline-block';
-                allLoadedMessage.style.display = 'none';
-            } else {
-                loadMoreBtn.style.display = 'none';
-                allLoadedMessage.style.display = 'block';
+            if (totalPages <= 1) {
+                nav.innerHTML = `
+                    <span class="small text-muted">Trang 1 / 1 (Tổng số ${totalItems} module)</span>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><span class="page-link rounded-pill px-3 me-1">Trước</span></li>
+                        <li class="page-item active"><span class="page-link rounded-pill px-2.5 mx-0.5">1</span></li>
+                        <li class="page-item disabled"><span class="page-link rounded-pill px-3 ms-1">Sau</span></li>
+                    </ul>
+                `;
+                return;
             }
-        }
 
-        function setupCohortInfiniteScroll() {
-            if (cohortObserver) {
-                cohortObserver.disconnect();
-            }
-            const loadMoreSection = document.getElementById('loadMoreSection');
-            if (!loadMoreSection) return;
-            cohortObserver = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && hasNextCohort && !isLoading && !isLoadingMore) {
-                    loadMoreCohorts();
+            const displayPage = currPage + 1;
+            let btnsHtml = `
+                <span class="small text-muted">Trang ${displayPage} / ${totalPages} (Tổng số ${totalItems} module)</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item ${currPage === 0 ? 'disabled' : ''}">
+                        <button type="button" class="page-link rounded-pill px-3 me-1" data-page="${currPage - 1}">Trước</button>
+                    </li>
+            `;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (totalPages > 7 && Math.abs(p - displayPage) > 2 && p !== 1 && p !== totalPages) {
+                    if (p === 2 || p === totalPages - 1) {
+                        btnsHtml += `<li class="page-item disabled"><span class="page-link border-0">...</span></li>`;
+                    }
+                    continue;
                 }
-            }, { rootMargin: '200px' });
-            cohortObserver.observe(loadMoreSection);
+                btnsHtml += `
+                    <li class="page-item ${p === displayPage ? 'active' : ''}">
+                        <button type="button" class="page-link rounded-pill px-2.5 mx-0.5" data-page="${p - 1}">${p}</button>
+                    </li>
+                `;
+            }
+
+            btnsHtml += `
+                    <li class="page-item ${currPage >= totalPages - 1 ? 'disabled' : ''}">
+                        <button type="button" class="page-link rounded-pill px-3 ms-1" data-page="${currPage + 1}">Sau</button>
+                    </li>
+                </ul>
+            `;
+            nav.innerHTML = btnsHtml;
+
+            nav.querySelectorAll('button[data-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const pageNum = Number(btn.dataset.page);
+                    loadInitialCohorts(pageNum);
+                    document.getElementById('cohortsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
         }
     </script>
 </body>

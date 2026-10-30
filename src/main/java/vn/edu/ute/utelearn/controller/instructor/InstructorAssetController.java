@@ -39,13 +39,14 @@ public class InstructorAssetController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false, defaultValue = "ALL") String scope,
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
             Model model
     ) {
         User currentUser = authService.getCurrentAuthenticatedUser()
                 .orElseThrow(() -> new RuntimeException("Chưa đăng nhập"));
 
         Page<InstructorAsset> assets = assetService.getAssets(
-                currentUser, keyword, type, scope, PageRequest.of(page, 12)
+                currentUser, keyword, type, scope, PageRequest.of(page, size)
         );
 
         model.addAttribute("assets", assets);
