@@ -46,6 +46,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE UPPER(r.code) = 'MODERATOR' AND (u.isActive IS NULL OR u.isActive = true)")
     List<User> findActiveModerators();
 
-    @Query("SELECT u FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%'))")
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%')) OR CAST(function('unaccent', LOWER(u.fullName)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :query, '%'))) AS String)")
     List<User> searchUsers(@Param("query") String query, Pageable pageable);
 }

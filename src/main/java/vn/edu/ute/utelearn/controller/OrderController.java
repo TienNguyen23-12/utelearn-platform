@@ -110,8 +110,9 @@ public class OrderController {
             return true;
         }
         String q = keyword.trim().toLowerCase();
+        String unaccentQ = vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(q).toLowerCase();
         boolean codeMatches = order.getOrderCode() != null && order.getOrderCode().toLowerCase().contains(q);
-        boolean itemsMatches = order.getItems() != null && order.getItems().toLowerCase().contains(q);
+        boolean itemsMatches = order.getItems() != null && (order.getItems().toLowerCase().contains(q) || vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(order.getItems()).toLowerCase().contains(unaccentQ));
         boolean txnMatches = order.getTransactionId() != null && order.getTransactionId().toLowerCase().contains(q);
         return codeMatches || itemsMatches || txnMatches;
     }

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -119,7 +119,7 @@
                         <label class="form-label small text-muted fw-semibold mb-1">
                             <i class="bi bi-search me-1"></i>Tìm kiếm mã / nội dung
                         </label>
-                        <input type="text" name="keyword" class="form-control form-control-sm rounded-pill px-3"
+                        <input type="text" id="orderKeywordInput" name="keyword" class="form-control form-control-sm rounded-pill px-3"
                             placeholder="Mã đơn (UTE...), tên..." th:value="${keywordFilter}">
                     </div>
                     <div class="col-6 col-md-2">
@@ -434,9 +434,33 @@
 
     <div id="orderFlashMessages" class="d-none" th:data-error="${error}" th:data-success="${success}"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script th:src="@{/js/admin-layout.js}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">        const orderKwInput = document.getElementById('orderKeywordInput');
+        if (orderKwInput && orderKwInput.form) {
+            let timer = null;
+            orderKwInput.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => orderKwInput.form.submit(), 450);
+            });
+        }
+    </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js">        const orderKwInput = document.getElementById('orderKeywordInput');
+        if (orderKwInput && orderKwInput.form) {
+            let timer = null;
+            orderKwInput.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => orderKwInput.form.submit(), 450);
+            });
+        }
+    </script>
+    <script th:src="@{/js/admin-layout.js}">        const orderKwInput = document.getElementById('orderKeywordInput');
+        if (orderKwInput && orderKwInput.form) {
+            let timer = null;
+            orderKwInput.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => orderKwInput.form.submit(), 450);
+            });
+        }
+    </script>
     <script>
         var currentDepositOrderCode = null;
         var depositPollTimer = null;
@@ -565,6 +589,14 @@
                         el.innerText = data.formattedBalance;
                     }
                 });
+        }
+            const orderKwInput = document.getElementById('orderKeywordInput');
+        if (orderKwInput && orderKwInput.form) {
+            let timer = null;
+            orderKwInput.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => orderKwInput.form.submit(), 450);
+            });
         }
     </script>
 </body>

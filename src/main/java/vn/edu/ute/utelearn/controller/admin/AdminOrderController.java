@@ -94,12 +94,13 @@ public class AdminOrderController {
 
         if (keyword != null && !keyword.isBlank()) {
             String q = keyword.trim().toLowerCase();
+            String unaccentQ = vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(q).toLowerCase();
             filtered = filtered.stream()
                     .filter(o -> (o.getOrderCode() != null && o.getOrderCode().toLowerCase().contains(q))
-                            || (o.getUser() != null && o.getUser().getFullName() != null && o.getUser().getFullName().toLowerCase().contains(q))
+                            || (o.getUser() != null && o.getUser().getFullName() != null && (o.getUser().getFullName().toLowerCase().contains(q) || vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(o.getUser().getFullName()).toLowerCase().contains(unaccentQ)))
                             || (o.getUser() != null && o.getUser().getEmail() != null && o.getUser().getEmail().toLowerCase().contains(q))
                             || (o.getTransactionId() != null && o.getTransactionId().toLowerCase().contains(q))
-                            || (o.getConfirmedBy() != null && o.getConfirmedBy().toLowerCase().contains(q)))
+                            || (o.getConfirmedBy() != null && (o.getConfirmedBy().toLowerCase().contains(q) || vn.edu.ute.utelearn.util.ValidationUtils.removeAccents(o.getConfirmedBy()).toLowerCase().contains(unaccentQ))))
                     .collect(Collectors.toList());
         }
 

@@ -61,7 +61,7 @@
                         <span>Hồ sơ cá nhân</span>
                     </a>
                 </li>
-                                <li class="nav-item" th:if="${@rbac.hasRole('STUDENT') or @rbac.hasRole('ADMIN')}">
+                                <li class="nav-item" th:if="${currentUser != null}">
                     <a class="nav-link sidebar-item" th:classappend="${activePage == 'my_courses'} ? ' active' : ''"
                         href="/courses/my-courses">
                         <i class="bi bi-journal-bookmark-fill text-warning"></i>

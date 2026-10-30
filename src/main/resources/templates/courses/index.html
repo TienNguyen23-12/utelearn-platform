@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
@@ -244,7 +244,7 @@
         </div>
         <div class="input-group input-group-sm mt-3 mt-md-0" style="max-width: 380px;">
             <input type="text" id="searchInput" class="form-control border rounded-start-pill ps-3" placeholder="Tìm tên khóa học, kỹ năng...">
-            <button class="btn btn-primary rounded-end-pill px-3" onclick="loadCourses()"><i class="bi bi-search"></i></button>
+            <button class="btn btn-primary rounded-end-pill px-3" onclick="currentFilters.q = document.getElementById('searchInput').value; loadCourses(0);"><i class="bi bi-search"></i></button>
         </div>
     </div>
 
@@ -276,6 +276,19 @@
         </div>
 
         <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="small text-muted" id="coursesCountSummary">Đang tải danh sách...</span>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted text-nowrap" for="pageSizeSelect">Hiển thị:</label>
+                    <select id="pageSizeSelect" class="form-select form-select-sm rounded-pill border" style="width: auto;" onchange="handleCoursePageSizeChange(this.value)">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
             <div class="row g-4" id="courseGrid">
                 <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 10)}">
                     <div class="course-card">
@@ -300,15 +313,7 @@
                 </div>
             </div>
 
-            <div class="text-center mt-5" id="loadMoreCourseSection" style="display: none;">
-                <button id="loadMoreCourseBtn" class="btn btn-outline-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="loadMoreCourses()">
-                    <span id="loadMoreCourseBtnText"><i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học</span>
-                    <span id="loadMoreCourseSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status"></span>
-                </button>
-                <div id="allCoursesLoadedMessage" class="text-muted small mt-3" style="display: none;">
-                    <i class="bi bi-check-circle-fill text-success me-1"></i>Bạn đã xem toàn bộ danh mục khóa học
-                </div>
-            </div>
+            <div id="coursesPaginationNav" class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2 px-1"></div>
         </div>
     </div>
 </section>
@@ -349,32 +354,57 @@
             currentFilters.category = urlParams.get('category');
         }
         loadCategories();
-        setupCourseInfiniteScroll();
+        
 
         const debouncedCourseSearch = debounce((val) => {
             currentFilters.q = val;
             loadCourses();
         }, 350);
 
+        const savedPageSize = localStorage.getItem('utelearn_catalog_page_size');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        if (savedPageSize && pageSizeSelect) {
+            pageSizeSelect.value = savedPageSize;
+        }
+        if (pageSizeSelect) {
+            pageSizeSelect.addEventListener('change', () => {
+                handleCoursePageSizeChange(pageSizeSelect.value);
+            });
+        }
+
         document.getElementById('searchInput').addEventListener('input', function() {
             debouncedCourseSearch(this.value);
         });
-        loadCourses();
 
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 currentFilters.q = this.value;
-                loadCourses();
+                isCourseLoading = false;
+        loadCourses(0);
             }
         });
+
+        isCourseLoading = false;
+        loadCourses(0);
     });
+
+    function handleCoursePageSizeChange(val) {
+        localStorage.setItem('utelearn_catalog_page_size', val);
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        if (pageSizeSelect && pageSizeSelect.value !== val) {
+            pageSizeSelect.value = val;
+        }
+        isCourseLoading = false;
+        loadCourses(0);
+    }
 
     function setFilter(type, value, element) {
         currentFilters[type] = value;
         let parent = element.parentElement;
         parent.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
-        loadCourses();
+        isCourseLoading = false;
+        loadCourses(0);
     }
 
     async function loadCategories() {
@@ -516,59 +546,69 @@
         `;
     }
 
-    async function fetchCoursesPage(cursor = null) {
+    let currentCoursePage = 0;
+    let totalCoursePages = 1;
+
+    async function fetchCoursesPage(page = 0) {
         const params = new URLSearchParams();
         if (currentFilters.q) params.append('q', currentFilters.q.trim());
         if (currentFilters.category) params.append('category', currentFilters.category);
         if (currentFilters.level && currentFilters.level !== 'ALL_LEVELS') params.append('level', currentFilters.level);
-        if (cursor) params.append('cursor', cursor);
-        params.append('size', '10');
+        params.append('page', page);
+        const pageSizeEl = document.getElementById('pageSizeSelect');
+        const pageSize = pageSizeEl ? pageSizeEl.value : '10';
+        params.append('size', pageSize);
 
         const res = await fetch('/api/courses?' + params.toString());
         if (!res.ok) throw new Error("Failed to fetch");
         return await res.json();
     }
 
-    async function loadCourses() {
+    let currentCourseItems = [];
+    let currentCourseRenderedCount = 0;
+    const COURSE_CHUNK_SIZE = 3;
+    let courseScrollObserver = null;
+
+    async function loadCourses(page = 0) {
         if (isCourseLoading) return;
         isCourseLoading = true;
-        nextCursor = null;
-        hasNextCourse = false;
+        currentCoursePage = page;
+
+        if (courseScrollObserver) {
+            courseScrollObserver.disconnect();
+        }
 
         const grid = document.getElementById('courseGrid');
-        const loadMoreSection = document.getElementById('loadMoreCourseSection');
-        const allLoadedMessage = document.getElementById('allCoursesLoadedMessage');
-
-        loadMoreSection.style.display = 'none';
-        allLoadedMessage.style.display = 'none';
+        const paginationNav = document.getElementById('coursesPaginationNav');
+        if (paginationNav) paginationNav.innerHTML = '';
         grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Đang tải danh sách khóa học...</p></div>';
 
         try {
-            const data = await fetchCoursesPage(null);
-            nextCursor = data.nextCursor != null ? data.nextCursor : null;
-            hasNextCourse = data.hasNext === true;
-
-
+            const data = await fetchCoursesPage(currentCoursePage);
+            totalCoursePages = data.totalPages != null ? data.totalPages : 1;
+            const totalItems = data.totalItems != null ? data.totalItems : 0;
+            const countSummaryEl = document.getElementById('coursesCountSummary');
+            if (countSummaryEl) {
+                countSummaryEl.textContent = totalItems > 0 ? 'Tìm thấy ' + totalItems + ' khóa học' : '0 khóa học';
+            }
 
             if (!data.content || data.content.length === 0) {
                 grid.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-inbox fs-1"></i><p class="mt-2">Không tìm thấy khóa học nào phù hợp.</p></div>';
                 return;
             }
 
-            let html = '';
-            data.content.forEach(course => {
-                html += createCourseCardHtml(course);
-            });
-            grid.innerHTML = html;
+            currentCourseItems = data.content;
+            currentCourseRenderedCount = 0;
+            grid.innerHTML = '';
 
-            updateLoadMoreCourseControls();
+            renderNextCourseChunk();
+            renderCoursePagination(data.currentPage, totalCoursePages, totalItems);
         } catch (error) {
-            console.error(error);
             grid.innerHTML = `
                 <div class="col-12 text-center text-danger py-5">
                     <i class="bi bi-exclamation-triangle fs-1"></i>
                     <p class="mt-2">Có lỗi xảy ra khi tải danh sách khóa học.</p>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadCourses()">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="loadCourses(currentCoursePage)">
                         <i class="bi bi-arrow-clockwise me-1"></i>Thử lại
                     </button>
                 </div>
@@ -578,79 +618,98 @@
         }
     }
 
-    async function loadMoreCourses() {
-        if (isCourseLoadingMore || !hasNextCourse || !nextCursor) return;
-        isCourseLoadingMore = true;
+    function renderNextCourseChunk() {
+        const grid = document.getElementById('courseGrid');
+        if (!grid) return;
 
-        const loadMoreBtn = document.getElementById('loadMoreCourseBtn');
-        const loadMoreBtnText = document.getElementById('loadMoreCourseBtnText');
-        const loadMoreSpinner = document.getElementById('loadMoreCourseSpinner');
+        let sentinel = document.getElementById('courseLazySentinel');
+        if (sentinel) sentinel.remove();
 
-        loadMoreBtn.disabled = true;
-        loadMoreBtnText.textContent = "Đang tải...";
-        loadMoreSpinner.style.display = "inline-block";
+        const nextEnd = Math.min(currentCourseRenderedCount + COURSE_CHUNK_SIZE, currentCourseItems.length);
+        let chunkHtml = '';
+        for (let i = currentCourseRenderedCount; i < nextEnd; i++) {
+            chunkHtml += createCourseCardHtml(currentCourseItems[i]);
+        }
+        grid.insertAdjacentHTML('beforeend', chunkHtml);
+        currentCourseRenderedCount = nextEnd;
 
-        try {
-            const data = await fetchCoursesPage(nextCursor);
+        if (currentCourseRenderedCount < currentCourseItems.length) {
+            const sentinelHtml = `
+                <div id="courseLazySentinel" class="col-12 text-center py-4 my-2">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="small text-muted ms-2">Đang cuộn để tải thêm các khóa học còn lại của trang...</span>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', sentinelHtml);
+            sentinel = document.getElementById('courseLazySentinel');
 
-
-            nextCursor = data.nextCursor != null ? data.nextCursor : null;
-            hasNextCourse = data.hasNext === true;
-
-            if (data.content && data.content.length > 0) {
-                const grid = document.getElementById('courseGrid');
-                let newHtml = '';
-                data.content.forEach(course => {
-                    newHtml += createCourseCardHtml(course);
-                });
-                grid.insertAdjacentHTML('beforeend', newHtml);
-            }
-
-            updateLoadMoreCourseControls();
-        } catch (error) {
-            console.error(error);
-            showToast('Không thể tải thêm khóa học. Vui lòng thử lại!', 'error');
-            loadMoreBtn.disabled = false;
-            loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học';
-            loadMoreSpinner.style.display = "none";
-        } finally {
-            isCourseLoadingMore = false;
+            if (courseScrollObserver) courseScrollObserver.disconnect();
+            courseScrollObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    courseScrollObserver.disconnect();
+                    setTimeout(() => {
+                        renderNextCourseChunk();
+                    }, 150);
+                }
+            }, { rootMargin: '120px' });
+            courseScrollObserver.observe(sentinel);
         }
     }
 
-    function updateLoadMoreCourseControls() {
-        const loadMoreSection = document.getElementById('loadMoreCourseSection');
-        const loadMoreBtn = document.getElementById('loadMoreCourseBtn');
-        const loadMoreBtnText = document.getElementById('loadMoreCourseBtnText');
-        const loadMoreSpinner = document.getElementById('loadMoreCourseSpinner');
-        const allLoadedMessage = document.getElementById('allCoursesLoadedMessage');
+    function renderCoursePagination(currPage, totalPages, totalItems) {
+        const nav = document.getElementById('coursesPaginationNav');
+        if (!nav) return;
 
-        loadMoreSection.style.display = 'block';
-        loadMoreBtn.disabled = false;
-        loadMoreSpinner.style.display = 'none';
-        loadMoreBtnText.innerHTML = '<i class="bi bi-chevron-double-down me-1"></i>Xem thêm khóa học';
-
-        if (hasNextCourse) {
-            loadMoreBtn.style.display = 'inline-block';
-            allLoadedMessage.style.display = 'none';
-        } else {
-            loadMoreBtn.style.display = 'none';
-            allLoadedMessage.style.display = 'block';
+        if (totalPages <= 1) {
+            nav.innerHTML = `
+                <span class="small text-muted">Trang 1 / 1 (Tổng số ${totalItems} khóa học)</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><span class="page-link rounded-pill px-3 me-1">Trước</span></li>
+                    <li class="page-item active"><span class="page-link rounded-pill px-2.5 mx-0.5">1</span></li>
+                    <li class="page-item disabled"><span class="page-link rounded-pill px-3 ms-1">Sau</span></li>
+                </ul>
+            `;
+            return;
         }
-    }
 
-    function setupCourseInfiniteScroll() {
-        if (courseObserver) {
-            courseObserver.disconnect();
-        }
-        const loadMoreSection = document.getElementById('loadMoreCourseSection');
-        if (!loadMoreSection) return;
-        courseObserver = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && hasNextCourse && !isCourseLoading && !isCourseLoadingMore) {
-                loadMoreCourses();
+        const displayPage = currPage + 1;
+        let btnsHtml = `
+            <span class="small text-muted">Trang ${displayPage} / ${totalPages} (Tổng số ${totalItems} khóa học)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item ${currPage === 0 ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-3 me-1" data-page="${currPage - 1}">Trước</button>
+                </li>
+        `;
+
+        for (let p = 1; p <= totalPages; p++) {
+            if (totalPages > 7 && Math.abs(p - displayPage) > 2 && p !== 1 && p !== totalPages) {
+                if (p === 2 || p === totalPages - 1) {
+                    btnsHtml += `<li class="page-item disabled"><span class="page-link border-0">...</span></li>`;
+                }
+                continue;
             }
-        }, { rootMargin: '200px' });
-        courseObserver.observe(loadMoreSection);
+            btnsHtml += `
+                <li class="page-item ${p === displayPage ? 'active' : ''}">
+                    <button type="button" class="page-link rounded-pill px-2.5 mx-0.5" data-page="${p - 1}">${p}</button>
+                </li>
+            `;
+        }
+
+        btnsHtml += `
+                <li class="page-item ${currPage >= totalPages - 1 ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-3 ms-1" data-page="${currPage + 1}">Sau</button>
+                </li>
+            </ul>
+        `;
+        nav.innerHTML = btnsHtml;
+
+        nav.querySelectorAll('button[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pageNum = Number(btn.dataset.page);
+                loadCourses(pageNum);
+                document.getElementById('courseGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     }
 
     function showToast(message, type) {

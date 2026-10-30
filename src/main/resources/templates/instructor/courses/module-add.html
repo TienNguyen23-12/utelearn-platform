@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <link rel="icon" type="image/png" href="/images/brand/UTELearn_SquareLogo_2.png">
@@ -61,7 +61,7 @@
                 <div class="col-lg-8 col-md-7">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="keyword" th:value="${keyword}" class="form-control border-start-0 ps-0" placeholder="Tìm theo mã module (VD: MOD-01, JAVA-...) hoặc tên module...">
+                        <input type="text" id="moduleAddSearchInput" name="keyword" th:value="${keyword}" class="form-control border-start-0 ps-0" placeholder="Tìm theo mã module (VD: MOD-01, JAVA-...) hoặc tên module...">
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-5 d-flex gap-2">
@@ -184,5 +184,17 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 <script th:src="@{/js/admin-main.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('moduleAddSearchInput');
+        if (input && input.form) {
+            let timer = null;
+            input.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => input.form.submit(), 450);
+            });
+        }
+    });
+</script>
 </body>
 </html>

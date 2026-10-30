@@ -1,8 +1,12 @@
 package vn.edu.ute.utelearn.util;
+
 import org.springframework.util.StringUtils;
+
 import java.net.URI;
+import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
 public class ValidationUtils {
     private static final String EMAIL_REGEX = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
@@ -14,26 +18,32 @@ public class ValidationUtils {
     private static final Pattern YOUTUBE_VIDEO_PATTERN = Pattern.compile("(?:youtu\\.be/|youtube(?:-nocookie)?\\.com/(?:embed/|v/|watch\\?v=|shorts/|live/|watch\\?.+&v=))([\\w-]{11})", Pattern.CASE_INSENSITIVE);
     private static final Pattern VIMEO_VIDEO_PATTERN = Pattern.compile("vimeo\\.com/(?:channels/(?:\\w+/)|groups/[^/]*/videos/|album/\\d+/video/|video/|)(\\d+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern DIRECT_VIDEO_EXT_PATTERN = Pattern.compile(".*\\.(mp4|webm|ogg|ogv|mov|m4v|mkv|avi|m3u8)$", Pattern.CASE_INSENSITIVE);
+
     public static boolean isNullOrEmpty(String str) {
         return !StringUtils.hasText(str);
     }
+
     public static boolean isValidLength(String str, int min, int max) {
         if (isNullOrEmpty(str)) return false;
         int length = str.trim().length();
         return length >= min && length <= max;
     }
+
     public static boolean isValidEmail(String email) {
         if (isNullOrEmpty(email)) return false;
         return EMAIL_PATTERN.matcher(email).matches();
     }
+
     public static boolean isStrongPassword(String password) {
         if (isNullOrEmpty(password)) return false;
         return PASSWORD_PATTERN.matcher(password).matches();
     }
+
     public static boolean isValidPhoneNumber(String phone) {
         if (isNullOrEmpty(phone)) return false;
         return PHONE_PATTERN.matcher(phone).matches();
     }
+
     public static boolean isValidVideoUrl(String url) {
         if (isNullOrEmpty(url)) {
             return false;
@@ -74,10 +84,19 @@ public class ValidationUtils {
             return false;
         }
     }
+
     public static String stripHtmlTags(String input) {
         if (isNullOrEmpty(input)) return input;
         return input.replaceAll("<[^>]*>", "").trim();
     }
+
+    public static String removeAccents(String input) {
+        if (isNullOrEmpty(input)) return "";
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return normalized.replace('đ', 'd').replace('Đ', 'D');
+    }
+
     public static String encodeHtml(String input) {
         if (isNullOrEmpty(input)) return input;
         return input.replace("&", "&amp;")
