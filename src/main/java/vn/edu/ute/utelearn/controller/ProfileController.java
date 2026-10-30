@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import vn.edu.ute.utelearn.service.CloudinaryService;
+import java.util.Map;
 import vn.edu.ute.utelearn.dao.UserRepository;
 import vn.edu.ute.utelearn.dao.CohortMemberRepository;
 import vn.edu.ute.utelearn.dto.ChangePasswordRequestDTO;
@@ -31,6 +34,8 @@ public class ProfileController {
     private final UserRepository userRepository;
     private final CohortMemberRepository cohortMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CloudinaryService cloudinaryService;
 
     @GetMapping
     public String showProfile(
@@ -75,6 +80,7 @@ public class ProfileController {
     public String updateProfile(
         @Valid @ModelAttribute("profileForm") ProfileUpdateRequestDTO profileForm,
         BindingResult bindingResult,
+        @RequestParam(value = "avatarFile", required = false) MultipartFile avatarFile,
         Model model,
         RedirectAttributes redirectAttributes
     ) {
@@ -89,12 +95,28 @@ public class ProfileController {
             return "profile/index";
         }
 
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            try {
+                if (cloudinaryService != null) {
+                    Map<String, Object> uploadResult = cloudinaryService.uploadFile(avatarFile, "avatars", "image");
+                    String uploadedUrl = (String) uploadResult.get("secure_url");
+                    if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                        uploadedUrl = (String) uploadResult.get("url");
+                    }
+                    if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                        user.setAvatarUrl(uploadedUrl);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Lỗi khi tải ảnh đại diện lên Cloudinary: {}", e.getMessage());
+            }
+        } else if (profileForm.getAvatarUrl() != null && !profileForm.getAvatarUrl().isBlank()) {
+            user.setAvatarUrl(profileForm.getAvatarUrl().trim());
+        }
+
         user.setFullName(profileForm.getFullName().trim());
         user.setPhoneNumber(profileForm.getPhoneNumber() != null && !profileForm.getPhoneNumber().isBlank() 
             ? profileForm.getPhoneNumber().trim() 
-            : null);
-        user.setAvatarUrl(profileForm.getAvatarUrl() != null && !profileForm.getAvatarUrl().isBlank()
-            ? profileForm.getAvatarUrl().trim()
             : null);
 
         userRepository.save(user);

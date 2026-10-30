@@ -112,11 +112,10 @@ Hệ thống tích hợp sẵn bộ dữ liệu mẫu (`DataSeeder`) tự độn
 
 ---
 
-## 📑 Tài Liệu API (Swagger / OpenAPI)
+## 📑 Tài Liệu API (Swagger)
 
 Sau khi ứng dụng khởi chạy thành công tại local, truy cập giao diện kiểm thử API tương tác tại:
 * **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-* **OpenAPI Docs**: `http://localhost:8080/v3/api-docs`
 
 ---
 
@@ -144,5 +143,5 @@ utelearn/
 ---
 
 ## 📄 Bản Quyền & Giấy Phép
-Dự án được xây dựng phục vụ mục đích nghiên cứu và bảo vệ đồ án tốt nghiệp/cuối kỳ ngành Công nghệ Thông tin - UTELearn.
+Dự án được xây dựng phục vụ mục đích nghiên cứu và bảo vệ đồ án cuối kỳ ngành Công nghệ Thông tin - UTELearn.
 Mã nguồn phát hành theo giấy phép [MIT License](LICENSE).

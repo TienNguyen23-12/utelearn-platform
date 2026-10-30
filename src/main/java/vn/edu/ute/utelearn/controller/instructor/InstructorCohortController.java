@@ -32,6 +32,8 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import vn.edu.ute.utelearn.service.CloudinaryService;
 
 @Slf4j
 @Controller
@@ -48,6 +50,8 @@ public class InstructorCohortController {
     private final vn.edu.ute.utelearn.service.ModerationService moderationService;
     private final CohortChatService cohortChatService;
     private final CohortMessageRepository cohortMessageRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CloudinaryService cloudinaryService;
 
     @GetMapping
     public String listCohorts(
@@ -96,6 +100,7 @@ public class InstructorCohortController {
     public String createCohort(
             @Valid @ModelAttribute("cohortDto") CohortRequestDTO cohortDto,
             BindingResult result,
+            @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
             RedirectAttributes redirectAttributes,
             Model model) {
         User currentUser = authService.getCurrentAuthenticatedUser()
@@ -107,6 +112,22 @@ public class InstructorCohortController {
         }
 
         try {
+            if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+                try {
+                    if (cloudinaryService != null) {
+                        Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "cohorts", "image");
+                        String uploadedUrl = (String) uploadResult.get("secure_url");
+                        if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                            uploadedUrl = (String) uploadResult.get("url");
+                        }
+                        if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                            cohortDto.setThumbnailUrl(uploadedUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[InstructorCohortController] Lỗi khi upload ảnh bìa module: {}", e.getMessage());
+                }
+            }
             cohortService.createCohort(cohortDto, currentUser);
             log.info("[InstructorCohortController] Tạo lớp học mới: {}, user: {}", cohortDto.getName(), currentUser.getEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Lớp học đã được tạo thành công!");
@@ -182,6 +203,7 @@ public class InstructorCohortController {
             @PathVariable Long id,
             @Valid @ModelAttribute("cohortDto") CohortRequestDTO cohortDto,
             BindingResult result,
+            @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
             RedirectAttributes redirectAttributes,
             Model model) {
         User currentUser = authService.getCurrentAuthenticatedUser()
@@ -194,6 +216,22 @@ public class InstructorCohortController {
         }
 
         try {
+            if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+                try {
+                    if (cloudinaryService != null) {
+                        Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "cohorts", "image");
+                        String uploadedUrl = (String) uploadResult.get("secure_url");
+                        if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                            uploadedUrl = (String) uploadResult.get("url");
+                        }
+                        if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                            cohortDto.setThumbnailUrl(uploadedUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[InstructorCohortController] Lỗi khi upload ảnh bìa module: {}", e.getMessage());
+                }
+            }
             cohortService.updateCohort(id, cohortDto, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật lớp học thành công!");
             return "redirect:/instructor/cohorts";

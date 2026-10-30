@@ -34,9 +34,12 @@
                 <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
                     <div class="position-relative">
                         <div th:if="${user.avatarUrl}" class="rounded-circle overflow-hidden shadow-sm" style="width: 80px; height: 80px; border: 3px solid #eff6ff;">
-                            <img th:src="${user.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
+                            <img id="avatarPreview" th:src="${user.avatarUrl}" alt="Avatar" class="w-100 h-100 object-fit-cover">
                         </div>
-                        <div th:unless="${user.avatarUrl}" class="user-avatar-placeholder shadow-sm rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 80px; height: 80px; font-size: 32px; background: linear-gradient(135deg, #2563eb, #4f46e5);" th:text="${#strings.substring(user.fullName, 0, 1)}">U</div>
+                        <div th:unless="${user.avatarUrl}" class="rounded-circle overflow-hidden shadow-sm" style="width: 80px; height: 80px; border: 3px solid #eff6ff;">
+                            <img id="avatarPreviewFallback" src="" alt="Avatar" class="w-100 h-100 object-fit-cover d-none">
+                            <div id="avatarPlaceholder" class="user-avatar-placeholder shadow-sm rounded-circle d-flex align-items-center justify-content-center text-white fw-bold w-100 h-100" style="font-size: 32px; background: linear-gradient(135deg, #2563eb, #4f46e5);" th:text="${#strings.substring(user.fullName, 0, 1)}">U</div>
+                        </div>
                     </div>
                     <div class="flex-grow-1">
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
@@ -77,7 +80,7 @@
                         <p class="text-muted small mb-0">Cập nhật thông tin chi tiết tài khoản của bạn</p>
                     </div>
                     <div class="card-body p-4">
-                        <form th:action="@{/profile/update}" th:object="${profileForm}" method="post">
+                        <form th:action="@{/profile/update}" th:object="${profileForm}" method="post" enctype="multipart/form-data">
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold small text-muted">Tên đăng nhập (Hệ thống)</label>
@@ -116,10 +119,11 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold small" for="avatarUrl">Đường dẫn ảnh đại diện (URL)</label>
+                                    <input type="hidden" th:field="*{avatarUrl}">
+                                    <label class="form-label fw-semibold small" for="avatarFile">Ảnh đại diện</label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-image text-primary"></i></span>
-                                        <input type="url" id="avatarUrl" th:field="*{avatarUrl}" class="form-control border-start-0" placeholder="https://example.com/avatar.jpg">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-upload text-primary"></i></span>
+                                        <input type="file" id="avatarFile" name="avatarFile" accept="image/*" class="form-control border-start-0">
                                     </div>
                                 </div>
 
@@ -230,6 +234,31 @@
                 }
             });
         });
+
+        var avatarFileInput = document.getElementById('avatarFile');
+        var avatarPreview = document.getElementById('avatarPreview');
+        var avatarFallback = document.getElementById('avatarPreviewFallback');
+        var avatarPlaceholder = document.getElementById('avatarPlaceholder');
+        if (avatarFileInput) {
+            avatarFileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (avatarPreview) {
+                            avatarPreview.src = e.target.result;
+                        }
+                        if (avatarFallback) {
+                            avatarFallback.src = e.target.result;
+                            avatarFallback.classList.remove('d-none');
+                        }
+                        if (avatarPlaceholder) {
+                            avatarPlaceholder.classList.add('d-none');
+                        }
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
     });
 </script>
 </body>

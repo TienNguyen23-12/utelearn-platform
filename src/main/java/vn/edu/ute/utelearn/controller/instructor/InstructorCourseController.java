@@ -35,6 +35,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
+import vn.edu.ute.utelearn.service.CloudinaryService;
 import vn.edu.ute.utelearn.entity.Quiz;
 import vn.edu.ute.utelearn.entity.Question;
 import vn.edu.ute.utelearn.entity.Assignment;
@@ -78,6 +80,8 @@ public class InstructorCourseController {
     private final AssignmentRepository assignmentRepository;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private GradebookService gradebookService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CloudinaryService cloudinaryService;
 
     @GetMapping
     public String listCourses(@RequestParam(defaultValue = "0") int page,
@@ -126,7 +130,9 @@ public class InstructorCourseController {
     @PostMapping("/create")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
     public String createCourse(@Valid @ModelAttribute("course") CourseRequestDTO request, 
-                               BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+                               BindingResult result,
+                               @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
+                               Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("courseObjectives", request.getObjectives());
             model.addAttribute("categories", categoryService.getRootCategories());
@@ -135,6 +141,22 @@ public class InstructorCourseController {
         }
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
         try {
+            if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+                try {
+                    if (cloudinaryService != null) {
+                        Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "courses", "image");
+                        String uploadedUrl = (String) uploadResult.get("secure_url");
+                        if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                            uploadedUrl = (String) uploadResult.get("url");
+                        }
+                        if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                            request.setThumbnailUrl(uploadedUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[InstructorCourseController] Lỗi khi upload ảnh bìa khóa học: {}", e.getMessage());
+                }
+            }
             courseService.createCourse(request, currentUser.getId());
             log.info("[InstructorCourseController] Tạo khóa học mới: {}, user: {}", request.getTitle(), currentUser.getEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Tạo khóa học thành công");
@@ -152,7 +174,9 @@ public class InstructorCourseController {
     @PostMapping("/{id}/edit")
     @PreAuthorize("@rbac.hasPermission('COURSE_CREATE')")
     public String updateCourse(@PathVariable Long id, @Valid @ModelAttribute("course") CourseRequestDTO request, 
-                               BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+                               BindingResult result,
+                               @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
+                               Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryService.getRootCategories());
             model.addAttribute("isEdit", true);
@@ -160,6 +184,22 @@ public class InstructorCourseController {
         }
         User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
         try {
+            if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+                try {
+                    if (cloudinaryService != null) {
+                        Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "courses", "image");
+                        String uploadedUrl = (String) uploadResult.get("secure_url");
+                        if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                            uploadedUrl = (String) uploadResult.get("url");
+                        }
+                        if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                            request.setThumbnailUrl(uploadedUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[InstructorCourseController] Lỗi khi upload ảnh bìa khóa học: {}", e.getMessage());
+                }
+            }
             courseService.updateCourse(id, request, currentUser.getId());
             log.info("[InstructorCourseController] Cập nhật khóa học id: {}, user: {}", id, currentUser.getEmail());
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật khóa học thành công");
@@ -514,6 +554,7 @@ public class InstructorCourseController {
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String objectives,
             @RequestParam(required = false) String thumbnailUrl,
+            @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
             @RequestParam(required = false, defaultValue = "PUBLIC") String visibility,
             @RequestParam(required = false) List<Long> lessonIds,
             RedirectAttributes redirectAttributes) {
@@ -545,6 +586,22 @@ public class InstructorCourseController {
         }
 
         String finalThumbnail = thumbnailUrl;
+        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+            try {
+                if (cloudinaryService != null) {
+                    Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "modules", "image");
+                    String uploadedUrl = (String) uploadResult.get("secure_url");
+                    if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                        uploadedUrl = (String) uploadResult.get("url");
+                    }
+                    if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                        finalThumbnail = uploadedUrl;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[InstructorCourseController] Lỗi khi upload ảnh bìa module: {}", e.getMessage());
+            }
+        }
         if (finalThumbnail == null || finalThumbnail.trim().isEmpty()) {
             finalThumbnail = (course.getThumbnailUrl() != null && !course.getThumbnailUrl().isBlank())
                     ? course.getThumbnailUrl()
@@ -659,6 +716,7 @@ public class InstructorCourseController {
             @RequestParam(required = false) String announcementTitle,
             @RequestParam(required = false) String announcementContent,
             @RequestParam(required = false) String thumbnailUrl,
+            @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
             @RequestParam(required = false, defaultValue = "PUBLIC") String visibility,
             @RequestParam(required = false) List<Long> lessonIds,
             RedirectAttributes redirectAttributes) {
@@ -692,6 +750,22 @@ public class InstructorCourseController {
         cohort.setAnnouncementTitle(announcementTitle);
         cohort.setAnnouncementContent(announcementContent);
         String finalThumbnail = thumbnailUrl;
+        if (thumbnailFile != null && !thumbnailFile.isEmpty()) {
+            try {
+                if (cloudinaryService != null) {
+                    Map<String, Object> uploadResult = cloudinaryService.uploadFile(thumbnailFile, "modules", "image");
+                    String uploadedUrl = (String) uploadResult.get("secure_url");
+                    if (uploadedUrl == null || uploadedUrl.isBlank()) {
+                        uploadedUrl = (String) uploadResult.get("url");
+                    }
+                    if (uploadedUrl != null && !uploadedUrl.isBlank()) {
+                        finalThumbnail = uploadedUrl;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[InstructorCourseController] Lỗi khi upload ảnh bìa module: {}", e.getMessage());
+            }
+        }
         if (finalThumbnail == null || finalThumbnail.trim().isEmpty()) {
             finalThumbnail = (course.getThumbnailUrl() != null && !course.getThumbnailUrl().isBlank())
                     ? course.getThumbnailUrl()
