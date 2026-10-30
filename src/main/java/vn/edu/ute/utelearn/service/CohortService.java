@@ -23,6 +23,8 @@ public interface CohortService {
     Page<Cohort> searchPublicCohorts(String keyword, String categorySlug, Long cursor, Pageable pageable);
 
     List<Cohort> getFeaturedCohorts(int limit);
+
+    List<Cohort> getFeaturedCohorts(int limit, String timeframe);
     
     Cohort getCohortById(Long id);
     
@@ -56,4 +58,3 @@ public interface CohortService {
 
     void checkAndSyncCourseCompletion(vn.edu.ute.utelearn.entity.Course course, User user);
 }
-

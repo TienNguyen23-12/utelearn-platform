@@ -907,4 +907,88 @@ public class ModuleDetailFeatureTest {
         org.junit.jupiter.api.Assertions.assertTrue(featured.get(0).getFeaturedScore() > featured.get(1).getFeaturedScore());
         org.junit.jupiter.api.Assertions.assertEquals("TS. Nguyễn Văn A", featured.get(1).getInstructorDisplayName());
     }
+
+    @Test
+    void testGetFeaturedCohortsWithTimeframeWeekAndMonth() {
+        vn.edu.ute.utelearn.service.impl.CohortServiceImpl cohortServiceImpl =
+                new vn.edu.ute.utelearn.service.impl.CohortServiceImpl(
+                        cohortRepository,
+                        cohortScheduleRepository,
+                        null,
+                        null,
+                        cohortMemberRepository,
+                        null,
+                        null,
+                        null
+                );
+
+        User standaloneCreator = User.builder().id(5L).fullName("TS. Nguyễn Văn A").build();
+        Cohort newEmptyCohort = Cohort.builder()
+                .id(100L)
+                .name("Triết học Marx - Lenin")
+                .status("UPCOMING")
+                .maxCapacity(50)
+                .createdBy(standaloneCreator)
+                .createdAt(java.time.Instant.now())
+                .build();
+
+        Cohort popularRatedCohort = Cohort.builder()
+                .id(50L)
+                .name("Nhập môn Cơ sở dữ liệu")
+                .status("ENROLLING")
+                .maxCapacity(40)
+                .course(sampleCourse)
+                .createdAt(java.time.Instant.now().minusSeconds(86400 * 2))
+                .build();
+
+        org.springframework.data.domain.Page<Cohort> mockPage =
+                new org.springframework.data.domain.PageImpl<>(List.of(newEmptyCohort, popularRatedCohort));
+        when(cohortRepository.searchPublicCohorts(org.mockito.ArgumentMatchers.eq(""), org.mockito.ArgumentMatchers.eq(""), any()))
+                .thenReturn(mockPage);
+
+        when(cohortMemberRepository.countByCohort_Id(100L)).thenReturn(0L);
+        when(cohortMemberRepository.getAverageRatingByCohortId(100L)).thenReturn(null);
+        when(cohortMemberRepository.countRatingsByCohortId(100L)).thenReturn(0L);
+
+        when(cohortMemberRepository.countByCohort_Id(50L)).thenReturn(12L);
+        when(cohortMemberRepository.getAverageRatingByCohortId(50L)).thenReturn(4.8);
+        when(cohortMemberRepository.countRatingsByCohortId(50L)).thenReturn(5L);
+
+        when(cohortMemberRepository.countEnrolledByCohortIdSince(eq(50L), any())).thenReturn(6L);
+        when(cohortMemberRepository.getAverageRatingByCohortIdSince(eq(50L), any())).thenReturn(4.9);
+        when(cohortMemberRepository.countRatingsByCohortIdSince(eq(50L), any())).thenReturn(3L);
+
+        List<Cohort> featuredWeek = cohortServiceImpl.getFeaturedCohorts(4, "week");
+        org.junit.jupiter.api.Assertions.assertEquals(2, featuredWeek.size());
+        org.junit.jupiter.api.Assertions.assertEquals(50L, featuredWeek.get(0).getId());
+
+        List<Cohort> featuredMonth = cohortServiceImpl.getFeaturedCohorts(4, "month");
+        org.junit.jupiter.api.Assertions.assertEquals(2, featuredMonth.size());
+        org.junit.jupiter.api.Assertions.assertEquals(50L, featuredMonth.get(0).getId());
+    }
+
+    @Test
+    void testHomeControllerGetFeaturedCohortsApi() throws Exception {
+        Cohort cohort1 = Cohort.builder()
+                .id(1L)
+                .name("Lập trình Web Cơ bản")
+                .code("MOD-01")
+                .price(BigDecimal.valueOf(200000))
+                .course(sampleCourse)
+                .build();
+        cohort1.setEnrolledCount(15L);
+        cohort1.setAverageRating(4.9);
+        cohort1.setRatingCount(8L);
+
+        when(cohortService.getFeaturedCohorts(4, "week")).thenReturn(List.of(cohort1));
+
+        homeMvc.perform(get("/api/cohorts/featured").param("timeframe", "week").param("limit", "4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Lập trình Web Cơ bản"))
+                .andExpect(jsonPath("$[0].enrolledCount").value(15))
+                .andExpect(jsonPath("$[0].averageRating").value(4.9))
+                .andExpect(jsonPath("$[0].ratingCount").value(8))
+                .andExpect(jsonPath("$[0].formattedPrice").value("200.000 VNĐ"));
+    }
 }

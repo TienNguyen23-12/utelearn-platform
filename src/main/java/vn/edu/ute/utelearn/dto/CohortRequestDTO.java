@@ -2,6 +2,7 @@ package vn.edu.ute.utelearn.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @Data
 public class CohortRequestDTO {
 
+    @Size(max = 50, message = "Mã module tối đa 50 ký tự")
     private String code;
 
     @NotBlank(message = "Cohort name is required")

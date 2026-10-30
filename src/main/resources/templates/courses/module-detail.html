@@ -1416,13 +1416,23 @@
                         <span class="badge bg-secondary-subtle text-secondary rounded-pill small" th:text="${totalReviewsCount}">0</span>
                     </h5>
 
-                    <div class="d-flex align-items-center gap-1 flex-wrap" id="reviewFilterBtns">
-                        <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active" data-filter="all" onclick="filterReviews('all', this)">Tất cả</button>
-                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="5" onclick="filterReviews(5, this)">5 sao</button>
-                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="4" onclick="filterReviews(4, this)">4 sao</button>
-                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="3" onclick="filterReviews(3, this)">3 sao</button>
-                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="2" onclick="filterReviews(2, this)">2 sao</button>
-                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="1" onclick="filterReviews(1, this)">1 sao</button>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="d-flex align-items-center gap-1 flex-wrap" id="reviewFilterBtns">
+                            <button type="button" class="btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active" data-filter="all" onclick="filterReviews('all', this)">Tất cả</button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="5" onclick="filterReviews(5, this)">5 sao</button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="4" onclick="filterReviews(4, this)">4 sao</button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="3" onclick="filterReviews(3, this)">3 sao</button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="2" onclick="filterReviews(2, this)">2 sao</button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn" data-filter="1" onclick="filterReviews(1, this)">1 sao</button>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm rounded-pill px-3 py-1 bg-white border text-secondary fw-semibold shadow-xs" id="moduleReviewTimeFilterSelect" onchange="filterReviewsByTime(this.value)" style="width: auto;">
+                                <option value="newest" selected>Mới nhất</option>
+                                <option value="30days">30 ngày qua</option>
+                                <option value="90days">90 ngày qua</option>
+                                <option value="oldest">Cũ nhất</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -1435,7 +1445,7 @@
                 </div>
 
                 <div th:unless="${moduleReviews == null or moduleReviews.isEmpty()}" class="d-flex flex-column gap-3" id="reviewsListContainer">
-                    <div th:each="rev : ${moduleReviews}" class="p-4 rounded-4 bg-light border review-item-card" th:data-stars="${rev.rating}">
+                    <div th:each="rev : ${moduleReviews}" class="p-4 rounded-4 bg-light border review-item-card" th:data-stars="${rev.rating}" th:data-time="${rev.reviewedAt != null ? rev.reviewedAt.toEpochMilli() : 0}">
                         <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-xs" 
@@ -2461,22 +2471,59 @@
     }
     window.toggleCohortReviewForm = toggleCohortReviewForm;
 
-    function filterReviews(stars, btn) {
-        document.querySelectorAll('.filter-rev-btn').forEach(b => {
-            b.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn';
-        });
-        if (btn) btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active';
+    let currentModuleReviewStars = 'all';
+    let currentModuleReviewTime = 'newest';
 
-        document.querySelectorAll('.review-item-card').forEach(item => {
+    function applyModuleReviewFilters() {
+        const now = Date.now();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+        const container = document.getElementById('reviewsListContainer');
+        if (!container) return;
+
+        const items = Array.from(container.querySelectorAll('.review-item-card'));
+        items.forEach(item => {
             const itemStars = item.getAttribute('data-stars');
-            if (stars === 'all' || itemStars === String(stars)) {
+            const itemTime = Number(item.getAttribute('data-time') || 0);
+
+            const matchStar = (currentModuleReviewStars === 'all' || itemStars === String(currentModuleReviewStars));
+            let matchTime = true;
+            if (currentModuleReviewTime === '30days') {
+                matchTime = (itemTime > 0 && (now - itemTime) <= thirtyDaysMs);
+            } else if (currentModuleReviewTime === '90days') {
+                matchTime = (itemTime > 0 && (now - itemTime) <= ninetyDaysMs);
+            }
+
+            if (matchStar && matchTime) {
                 item.style.display = 'block';
             } else {
                 item.style.display = 'none';
             }
         });
+
+        items.sort((a, b) => {
+            const timeA = Number(a.getAttribute('data-time') || 0);
+            const timeB = Number(b.getAttribute('data-time') || 0);
+            return currentModuleReviewTime === 'oldest' ? (timeA - timeB) : (timeB - timeA);
+        });
+        items.forEach(item => container.appendChild(item));
+    }
+
+    function filterReviews(stars, btn) {
+        currentModuleReviewStars = stars;
+        document.querySelectorAll('.filter-rev-btn').forEach(b => {
+            b.className = 'btn btn-sm btn-light border rounded-pill px-3 py-1 filter-rev-btn';
+        });
+        if (btn) btn.className = 'btn btn-sm btn-dark rounded-pill px-3 py-1 filter-rev-btn active';
+        applyModuleReviewFilters();
     }
     window.filterReviews = filterReviews;
+
+    function filterReviewsByTime(timeVal) {
+        currentModuleReviewTime = timeVal;
+        applyModuleReviewFilters();
+    }
+    window.filterReviewsByTime = filterReviewsByTime;
 
     function setCohortReviewStars(val) {
         const hiddenInput = document.getElementById('cohortReviewRatingVal');

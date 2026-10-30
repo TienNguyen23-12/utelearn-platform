@@ -29,4 +29,11 @@ public class CourseRequestDTO {
     private String objectives;
 
     private java.math.BigDecimal price;
+
+    public vn.edu.ute.utelearn.entity.Category getCategory() {
+        if (this.categoryId == null) {
+            return null;
+        }
+        return vn.edu.ute.utelearn.entity.Category.builder().id(this.categoryId).build();
+    }
 }
