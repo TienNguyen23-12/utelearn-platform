@@ -585,8 +585,59 @@
                 <div class="col-md-12" id="fieldAssetUrl">
                     <label class="form-label fw-semibold">Tài liệu đính kèm (Từ kho tài nguyên số)</label>
                     <div class="input-group">
-                        <input type="url" class="form-control" id="assetUrl" placeholder="https://...">
-                        <button class="btn btn-outline-secondary" type="button" title="Chọn từ kho" onclick="openAssetPicker()"><i class="bi bi-folder2-open"></i> Chọn</button>
+                        </div>
+                    <input type="hidden" id="assetUrl">
+                    <input type="file" id="lessonAssetFileInput" style="display: none;" onchange="handleUploadLessonAsset(this)">
+                    <div id="lessonAssetEmptyState" class="border border-2 border-dashed rounded-3 p-3 text-center bg-light">
+                        <div class="text-secondary mb-2">
+                            <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
+                            <div class="fw-semibold small mt-1">Tải lên tệp từ máy tính hoặc chọn từ Kho tài nguyên số</div>
+                            <div class="text-muted" style="font-size: 11px;">Hỗ trợ PDF, Word, PowerPoint, Excel, Video, Zip... (Tự động thêm vào kho tài nguyên)</div>
+                        </div>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="document.getElementById('lessonAssetFileInput').click()">
+                                <i class="bi bi-upload me-1"></i>Tải lên từ máy
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="openAssetPicker('lesson')">
+                                <i class="bi bi-folder2-open me-1"></i>Chọn từ kho
+                            </button>
+                        </div>
+                    </div>
+                    <div id="lessonAssetSelectedState" class="border rounded-3 p-3 bg-white shadow-sm" style="display: none;">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div id="lessonAssetIcon" class="fs-2 text-primary">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark text-truncate" id="lessonAssetFileName" style="max-width: 320px;">Tệp tin</div>
+                                    <div class="d-flex align-items-center gap-2 mt-0.5">
+                                        <span class="badge bg-light text-secondary border" id="lessonAssetTypeBadge">TÀI LIỆU</span>
+                                        <span class="text-muted small" id="lessonAssetSize"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" id="btnLessonAssetPreview" onclick="toggleLessonAssetPreview()">
+                                    <i class="bi bi-eye me-1"></i>Xem trước
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5" onclick="document.getElementById('lessonAssetFileInput').click()" title="Đổi tệp từ máy">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Đổi tệp
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5" onclick="openAssetPicker('lesson')" title="Chọn từ kho">
+                                    <i class="bi bi-folder2-open"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" onclick="clearLessonAsset()" title="Xóa tệp">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="lessonAssetPreviewContainer" class="mt-3 pt-3 border-top" style="display: none;">
+                            <div id="lessonAssetPreviewBody" class="w-100 rounded-3 overflow-hidden bg-light d-flex align-items-center justify-content-center"></div>
+                        </div>
+                    </div>
+                    <div>
+                        
                     </div>
                 </div>
 
@@ -687,6 +738,10 @@
       <div class="modal-body">
         <div class="mb-3 d-flex justify-content-between align-items-center">
             <input type="text" class="form-control me-2" id="assetSearchInput" placeholder="Tìm kiếm tài liệu...">
+            <input type="file" id="pickerUploadFileInput" style="display: none;" onchange="handleUploadInsidePicker(this)">
+            <button type="button" class="btn btn-outline-success text-nowrap me-2" onclick="document.getElementById('pickerUploadFileInput').click()">
+                <i class="bi bi-cloud-arrow-up me-1"></i>Tải lên từ máy
+            </button>
             <a href="/instructor/assets" target="_blank" class="btn btn-outline-primary text-nowrap"><i class="bi bi-box-arrow-up-right"></i> Quản lý kho</a>
         </div>
         <div class="row g-3" id="assetGrid" style="max-height: 400px; overflow-y: auto;">
@@ -1112,7 +1167,58 @@
               <div class="col-12">
                 <label class="form-label fw-semibold small text-dark">Tệp tin đề bài đính kèm (PDF, Word, ZIP...)</label>
                 <div class="input-group">
-                  <input type="url" class="form-control" id="assignmentCfgAttachmentUrl" placeholder="https://... hoặc chọn từ Kho tài nguyên số">
+                  </div>
+                <input type="hidden" id="assignmentCfgAttachmentUrl">
+                <input type="file" id="assignmentAttachmentFileInput" style="display: none;" onchange="handleUploadAssignmentAttachment(this)">
+                <div id="assignmentAttachmentEmptyState" class="border border-2 border-dashed rounded-3 p-3 text-center bg-light">
+                    <div class="text-secondary mb-2">
+                        <i class="bi bi-file-earmark-arrow-up fs-2 text-primary"></i>
+                        <div class="fw-semibold small mt-1">Đính kèm tệp đề bài (PDF, Word, Excel, Slide, Zip...)</div>
+                        <div class="text-muted" style="font-size: 11px;">Tải lên từ máy hoặc chọn từ Kho tài nguyên số (tự động thêm vào kho)</div>
+                    </div>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="document.getElementById('assignmentAttachmentFileInput').click()">
+                            <i class="bi bi-upload me-1"></i>Tải lên từ máy
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="openAssetPicker('assignment')">
+                            <i class="bi bi-folder2-open me-1"></i>Kho tài nguyên số
+                        </button>
+                    </div>
+                </div>
+                <div id="assignmentAttachmentSelectedState" class="border rounded-3 p-3 bg-white shadow-sm" style="display: none;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="assignmentAttachmentIcon" class="fs-2 text-primary">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark text-truncate" id="assignmentAttachmentFileName" style="max-width: 320px;">Tệp đề bài</div>
+                                <div class="d-flex align-items-center gap-2 mt-0.5">
+                                    <span class="badge bg-light text-secondary border" id="assignmentAttachmentTypeBadge">ĐỀ BÀI</span>
+                                    <span class="text-muted small" id="assignmentAttachmentSize"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" id="btnAssignmentAttachmentPreview" onclick="toggleAssignmentAttachmentPreview()">
+                                <i class="bi bi-eye me-1"></i>Xem trước
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5" onclick="document.getElementById('assignmentAttachmentFileInput').click()" title="Đổi tệp từ máy">
+                                <i class="bi bi-arrow-repeat me-1"></i>Đổi tệp
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-2.5" onclick="openAssetPicker('assignment')" title="Chọn từ kho">
+                                <i class="bi bi-folder2-open"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" onclick="clearAssignmentAttachment()" title="Xóa tệp">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="assignmentAttachmentPreviewContainer" class="mt-3 pt-3 border-top" style="display: none;">
+                        <div id="assignmentAttachmentPreviewBody" class="w-100 rounded-3 overflow-hidden bg-light d-flex align-items-center justify-content-center"></div>
+                    </div>
+                </div>
+                <div style="display: none;">
                   <button class="btn btn-primary px-3 fw-semibold" type="button" onclick="openAssetPicker('assignment')">
                     <i class="bi bi-folder2-open me-1"></i>Kho tài nguyên số
                   </button>
@@ -1617,7 +1723,7 @@
         document.getElementById('lessonDurationSeconds').value = '0';
         const badgeEl = document.getElementById('durationDetectionBadge');
         if (badgeEl) badgeEl.textContent = '';
-        document.getElementById('assetUrl').value = '';
+        updateLessonAssetUI('');
         document.getElementById('documentContent').value = '';
         document.getElementById('isFreePreview').checked = false;
         document.getElementById('isPublicForCohorts').checked = false;
@@ -1663,7 +1769,7 @@
                 badgeEl.textContent = '';
             }
         }
-        document.getElementById('assetUrl').value = lesson.assetUrl || '';
+        updateLessonAssetUI(lesson.assetUrl || '');
         document.getElementById('documentContent').value = lesson.documentContent || '';
         document.getElementById('isFreePreview').checked = lesson.isFreePreview || false;
         document.getElementById('isPublicForCohorts').checked = lesson.isPublicForCohorts || false;
@@ -1941,7 +2047,7 @@
             
             html += `
                 <div class="col-md-4">
-                    <div class="card h-100 border text-center p-3" style="cursor:pointer;" onclick="selectAsset('${a.cloudinaryUrl}')">
+                    <div class="card h-100 border text-center p-3" style="cursor:pointer;" onclick="selectAsset('${a.cloudinaryUrl}', '${escapeJs(a.name)}', '${a.assetType}', ${a.fileSizeBytes || 0})">
                         <div class="mb-2"><i class="bi ${icon}" style="font-size: 2rem;"></i></div>
                         <div class="text-truncate" title="${a.name}" style="font-size: 0.9rem;">${a.name}</div>
                         <small class="text-muted">${a.assetType}</small>
@@ -1952,7 +2058,334 @@
         grid.innerHTML = html;
     }
 
-    function selectAsset(url) {
+    function escapeJs(str) {
+        if (!str) return '';
+        return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function getFileIconInfo(filename, assetType) {
+        const lower = (filename || '').toLowerCase();
+        if (lower.endsWith('.pdf')) {
+            return { icon: 'bi bi-file-earmark-pdf-fill text-danger', label: 'PDF' };
+        }
+        if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+            return { icon: 'bi bi-file-earmark-word-fill text-primary', label: 'WORD' };
+        }
+        if (lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
+            return { icon: 'bi bi-file-earmark-excel-fill text-success', label: 'EXCEL' };
+        }
+        if (lower.endsWith('.ppt') || lower.endsWith('.pptx') || lower.endsWith('.pps') || lower.endsWith('.ppsx')) {
+            return { icon: 'bi bi-file-earmark-ppt-fill text-warning', label: 'POWERPOINT' };
+        }
+        if (lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.avi') || lower.endsWith('.mkv') || lower.endsWith('.webm') || assetType === 'VIDEO') {
+            return { icon: 'bi bi-file-earmark-play-fill text-danger', label: 'VIDEO' };
+        }
+        if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.svg')) {
+            return { icon: 'bi bi-file-earmark-image-fill text-info', label: 'HÌNH ẢNH' };
+        }
+        if (lower.endsWith('.zip') || lower.endsWith('.rar') || lower.endsWith('.7z') || lower.endsWith('.tar') || lower.endsWith('.gz')) {
+            return { icon: 'bi bi-file-earmark-zip-fill text-secondary', label: 'NÉN' };
+        }
+        if (lower.endsWith('.txt') || lower.endsWith('.md')) {
+            return { icon: 'bi bi-file-earmark-text-fill text-secondary', label: 'VĂN BẢN' };
+        }
+        return { icon: 'bi bi-file-earmark-text-fill text-primary', label: 'TÀI LIỆU' };
+    }
+
+    function extractFileNameFromUrl(url) {
+        if (!url) return '';
+        try {
+            const cleanUrl = url.split('?')[0].split('#')[0];
+            const parts = cleanUrl.split('/');
+            let name = parts[parts.length - 1];
+            name = decodeURIComponent(name);
+            return name;
+        } catch (e) {
+            return 'Tài liệu đính kèm';
+        }
+    }
+
+    function formatFileSizeBytes(bytes) {
+        if (!bytes || bytes <= 0) return '';
+        const kb = bytes / 1024;
+        if (kb < 1024) return kb.toFixed(1) + ' KB';
+        const mb = kb / 1024;
+        return mb.toFixed(1) + ' MB';
+    }
+
+    function renderFilePreviewContent(containerEl, url, filename) {
+        if (!containerEl || !url) return;
+        const lower = (filename || url).toLowerCase();
+        if (lower.includes('.pdf') || url.includes('/pdf')) {
+            containerEl.innerHTML = `
+                <div class="w-100 rounded-3 overflow-hidden border" style="height: 380px; background: #525659;">
+                    <iframe src="${url}#toolbar=1" width="100%" height="100%" class="border-0" allowfullscreen></iframe>
+                </div>
+                <div class="mt-2 text-end">
+                    <a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-box-arrow-up-right me-1"></i>Toàn màn hình</a>
+                </div>
+            `;
+            return;
+        }
+        if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.svg')) {
+            containerEl.innerHTML = `
+                <div class="text-center p-2 bg-light rounded-3 border">
+                    <img src="${url}" class="img-fluid rounded border shadow-sm" style="max-height: 280px;" alt="${filename}">
+                </div>
+            `;
+            return;
+        }
+        if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov')) {
+            containerEl.innerHTML = `
+                <div class="text-center bg-black rounded-3 overflow-hidden">
+                    <video src="${url}" controls class="w-100" style="max-height: 280px;"></video>
+                </div>
+            `;
+            return;
+        }
+        if (lower.endsWith('.doc') || lower.endsWith('.docx') || lower.endsWith('.ppt') || lower.endsWith('.pptx') || lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
+            const officeViewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(url);
+            containerEl.innerHTML = `
+                <div class="w-100 rounded-3 overflow-hidden border mb-2" style="height: 380px; background: #f8fafc;">
+                    <iframe src="${officeViewerUrl}" width="100%" height="100%" class="border-0" allowfullscreen></iframe>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="${url}" target="_blank" download class="btn btn-sm btn-primary rounded-pill px-3"><i class="bi bi-download me-1"></i>Tải file gốc</a>
+                </div>
+            `;
+            return;
+        }
+        containerEl.innerHTML = `
+            <div class="p-3 bg-light rounded-3 border text-center">
+                <i class="bi bi-file-earmark-check fs-1 text-primary mb-2"></i>
+                <div class="fw-semibold small">${filename || 'Tài liệu đã sẵn sàng'}</div>
+                <div class="mt-2">
+                    <a href="${url}" target="_blank" download class="btn btn-sm btn-primary rounded-pill px-3"><i class="bi bi-download me-1"></i>Tải về tệp tin</a>
+                </div>
+            </div>
+        `;
+    }
+
+    function updateLessonAssetUI(url, filename, assetType, size) {
+        const input = document.getElementById('assetUrl');
+        const emptyState = document.getElementById('lessonAssetEmptyState');
+        const selectedState = document.getElementById('lessonAssetSelectedState');
+        const previewContainer = document.getElementById('lessonAssetPreviewContainer');
+        const previewBody = document.getElementById('lessonAssetPreviewBody');
+
+        if (input) input.value = url || '';
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (previewBody) previewBody.innerHTML = '';
+
+        if (!url || url.trim() === '') {
+            if (emptyState) emptyState.style.display = 'block';
+            if (selectedState) selectedState.style.display = 'none';
+            return;
+        }
+
+        const name = filename || extractFileNameFromUrl(url);
+        const iconInfo = getFileIconInfo(name, assetType);
+
+        const iconEl = document.getElementById('lessonAssetIcon');
+        if (iconEl) iconEl.innerHTML = `<i class="${iconInfo.icon}"></i>`;
+
+        const nameEl = document.getElementById('lessonAssetFileName');
+        if (nameEl) {
+            nameEl.textContent = name;
+            nameEl.title = name;
+        }
+
+        const badgeEl = document.getElementById('lessonAssetTypeBadge');
+        if (badgeEl) badgeEl.textContent = iconInfo.label;
+
+        const sizeEl = document.getElementById('lessonAssetSize');
+        if (sizeEl) sizeEl.textContent = formatFileSizeBytes(size);
+
+        if (emptyState) emptyState.style.display = 'none';
+        if (selectedState) selectedState.style.display = 'block';
+    }
+
+    function toggleLessonAssetPreview() {
+        const url = (document.getElementById('assetUrl') || {}).value;
+        const filename = (document.getElementById('lessonAssetFileName') || {}).textContent;
+        const container = document.getElementById('lessonAssetPreviewContainer');
+        const body = document.getElementById('lessonAssetPreviewBody');
+        const btn = document.getElementById('btnLessonAssetPreview');
+
+        if (!container || !body) return;
+        if (container.style.display === 'none') {
+            renderFilePreviewContent(body, url, filename);
+            container.style.display = 'block';
+            if (btn) btn.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Ẩn xem trước';
+        } else {
+            container.style.display = 'none';
+            body.innerHTML = '';
+            if (btn) btn.innerHTML = '<i class="bi bi-eye me-1"></i>Xem trước';
+        }
+    }
+
+    function clearLessonAsset() {
+        updateLessonAssetUI('');
+    }
+
+    function updateAssignmentAttachmentUI(url, filename, assetType, size) {
+        const input = document.getElementById('assignmentCfgAttachmentUrl');
+        const emptyState = document.getElementById('assignmentAttachmentEmptyState');
+        const selectedState = document.getElementById('assignmentAttachmentSelectedState');
+        const previewContainer = document.getElementById('assignmentAttachmentPreviewContainer');
+        const previewBody = document.getElementById('assignmentAttachmentPreviewBody');
+
+        if (input) input.value = url || '';
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (previewBody) previewBody.innerHTML = '';
+
+        if (!url || url.trim() === '') {
+            if (emptyState) emptyState.style.display = 'block';
+            if (selectedState) selectedState.style.display = 'none';
+            return;
+        }
+
+        const name = filename || extractFileNameFromUrl(url);
+        const iconInfo = getFileIconInfo(name, assetType);
+
+        const iconEl = document.getElementById('assignmentAttachmentIcon');
+        if (iconEl) iconEl.innerHTML = `<i class="${iconInfo.icon}"></i>`;
+
+        const nameEl = document.getElementById('assignmentAttachmentFileName');
+        if (nameEl) {
+            nameEl.textContent = name;
+            nameEl.title = name;
+        }
+
+        const badgeEl = document.getElementById('assignmentAttachmentTypeBadge');
+        if (badgeEl) badgeEl.textContent = iconInfo.label;
+
+        const sizeEl = document.getElementById('assignmentAttachmentSize');
+        if (sizeEl) sizeEl.textContent = formatFileSizeBytes(size);
+
+        if (emptyState) emptyState.style.display = 'none';
+        if (selectedState) selectedState.style.display = 'block';
+    }
+
+    function toggleAssignmentAttachmentPreview() {
+        const url = (document.getElementById('assignmentCfgAttachmentUrl') || {}).value;
+        const filename = (document.getElementById('assignmentAttachmentFileName') || {}).textContent;
+        const container = document.getElementById('assignmentAttachmentPreviewContainer');
+        const body = document.getElementById('assignmentAttachmentPreviewBody');
+        const btn = document.getElementById('btnAssignmentAttachmentPreview');
+
+        if (!container || !body) return;
+        if (container.style.display === 'none') {
+            renderFilePreviewContent(body, url, filename);
+            container.style.display = 'block';
+            if (btn) btn.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Ẩn xem trước';
+        } else {
+            container.style.display = 'none';
+            body.innerHTML = '';
+            if (btn) btn.innerHTML = '<i class="bi bi-eye me-1"></i>Xem trước';
+        }
+    }
+
+    function clearAssignmentAttachment() {
+        updateAssignmentAttachmentUI('');
+    }
+
+    async function handleUploadLessonAsset(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        showToast('Đang tải tệp lên và lưu vào Kho tài nguyên...', 'info');
+
+        try {
+            const getCookie = function(n) { const v = '; ' + document.cookie; const p = v.split('; ' + n + '='); if (p.length === 2) return p.pop().split(';').shift(); return null; };
+            const xsrfToken = getCookie('XSRF-TOKEN');
+            const headers = {};
+            if (xsrfToken) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
+
+            const res = await fetch('/api/instructor/courses/upload-asset', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const msg = errData.message || (res.status === 404 ? 'Máy chủ chưa cập nhật endpoint (Vui lòng khởi động lại server)' : ('Lỗi máy chủ ' + res.status));
+                throw new Error(msg);
+            }
+            const data = await res.json();
+            updateLessonAssetUI(data.url, data.name || file.name, data.assetType || '', data.fileSizeBytes || file.size);
+            showToast('Tải tệp và lưu vào Kho tài nguyên thành công!', 'success');
+        } catch (e) {
+            showToast('Lỗi tải tệp: ' + e.message, 'error');
+        } finally {
+            input.value = '';
+        }
+    }
+
+    async function handleUploadInsidePicker(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        showToast('Đang tải tệp vào Kho tài nguyên...', 'info');
+
+        try {
+            const getCookie = function(n) { const v = '; ' + document.cookie; const p = v.split('; ' + n + '='); if (p.length === 2) return p.pop().split(';').shift(); return null; };
+            const xsrfToken = getCookie('XSRF-TOKEN');
+            const headers = {};
+            if (xsrfToken) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
+
+            const res = await fetch('/api/instructor/courses/upload-asset', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const msg = errData.message || (res.status === 404 ? 'Máy chủ chưa cập nhật endpoint (Vui lòng khởi động lại server)' : ('Lỗi máy chủ ' + res.status));
+                throw new Error(msg);
+            }
+            const data = await res.json();
+            showToast('Tải lên và lưu vào Kho tài nguyên thành công!', 'success');
+            await fetchAssets('');
+            selectAsset(data.url, data.name || file.name, data.assetType || '', data.fileSizeBytes || file.size);
+        } catch (e) {
+            showToast('Lỗi tải tệp: ' + e.message, 'error');
+        } finally {
+            input.value = '';
+        }
+    }
+
+    function selectAsset(url, name = '', assetType = '', size = 0) {
+        if (url) {
+            if (currentAssetPickerTarget === 'video') {
+                const videoInput = document.getElementById('videoUrl');
+                if (videoInput) videoInput.value = url;
+                handleVideoUrlChange(url, true);
+            } else if (currentAssetPickerTarget === 'assignment') {
+                updateAssignmentAttachmentUI(url, name, assetType, size);
+            } else {
+                updateLessonAssetUI(url, name, assetType, size);
+                const currentType = document.getElementById('lessonType') ? document.getElementById('lessonType').value : '';
+                const isVideoUrl = url.includes('/video/') || url.endsWith('.mp4') || url.endsWith('.webm');
+                if (currentType === 'VIDEO' || isVideoUrl) {
+                    const videoInput = document.getElementById('videoUrl');
+                    if (videoInput && (!videoInput.value || videoInput.value.trim() === '')) {
+                        videoInput.value = url;
+                    }
+                    if (typeof handleVideoUrlChange === 'function') {
+                        handleVideoUrlChange(url);
+                    }
+                }
+            }
+        }
+        assetPickerModal.hide();
+    }
+
+    function oldUnusedSelectAsset(url) {
         if (url) {
             if (currentAssetPickerTarget === 'video') {
                 const videoInput = document.getElementById('videoUrl');
@@ -3310,7 +3743,7 @@
             document.getElementById('assignmentCfgTitle').value = assignment.title || '';
             if (titleEl && assignment.title) titleEl.textContent = ` - ${assignment.title}`;
             document.getElementById('assignmentCfgInstruction').value = assignment.instruction || '';
-            document.getElementById('assignmentCfgAttachmentUrl').value = assignment.attachmentUrl || '';
+            updateAssignmentAttachmentUI(assignment.attachmentUrl || '');
             const maxScore = assignment.maxScore != null ? assignment.maxScore : 10.0;
             document.getElementById('assignmentCfgMaxScore').value = maxScore;
             document.getElementById('assignmentCfgPassingScore').value = assignment.passingScore != null ? assignment.passingScore : 5.0;
@@ -3421,13 +3854,23 @@
         showToast('Đang tải tệp đính kèm...', 'info');
 
         try {
+            const getCookie = function(n) { const v = '; ' + document.cookie; const p = v.split('; ' + n + '='); if (p.length === 2) return p.pop().split(';').shift(); return null; };
+            const xsrfToken = getCookie('XSRF-TOKEN');
+            const headers = {};
+            if (xsrfToken) headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
+
             const res = await fetch('/api/instructor/assignments/upload-attachment', {
                 method: 'POST',
+                headers: headers,
                 body: formData
             });
-            if (!res.ok) throw new Error('Không thể tải tệp lên');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const msg = errData.message || (res.status === 404 ? 'Máy chủ chưa cập nhật endpoint (Vui lòng khởi động lại server)' : ('Lỗi máy chủ ' + res.status));
+                throw new Error(msg);
+            }
             const data = await res.json();
-            document.getElementById('assignmentCfgAttachmentUrl').value = data.url;
+            updateAssignmentAttachmentUI(data.url, data.name || file.name, data.assetType || '', data.fileSizeBytes || file.size);
             showToast('Tải tệp thành công!', 'success');
         } catch (e) {
             showToast('Lỗi tải tệp: ' + e.message, 'error');

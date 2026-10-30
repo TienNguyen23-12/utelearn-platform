@@ -95,7 +95,12 @@ public class InstructorAssignmentApiController {
         try {
             User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
             String url = assignmentService.uploadAssignmentAttachment(file, currentUser.getId());
-            return ResponseEntity.ok(Map.of("url", url));
+            String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "Tai_lieu";
+            return ResponseEntity.ok(Map.of(
+                    "url", url,
+                    "name", filename,
+                    "fileSizeBytes", file.getSize()
+            ));
         } catch (Exception e) {
             log.error("[InstructorAssignmentApiController] Lỗi tải tài liệu đề bài: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

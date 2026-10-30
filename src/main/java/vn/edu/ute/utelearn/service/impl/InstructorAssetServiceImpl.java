@@ -26,6 +26,9 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
     private final InstructorAssetRepository assetRepository;
     private final CloudinaryService cloudinaryService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.service.ModerationService moderationService;
+
     @Override
     @Transactional(readOnly = true)
     public Page<InstructorAsset> getAssetsByInstructor(User instructor, String keyword, String type, Pageable pageable) {
@@ -169,5 +172,83 @@ public class InstructorAssetServiceImpl implements InstructorAssetService {
         }
         return assetRepository.findByIdAndInstructor(assetId, instructor)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài nguyên hoặc không có quyền"));
+    }
+
+    @Override
+    @Transactional
+    public InstructorAsset uploadAndRegisterAsset(org.springframework.web.multipart.MultipartFile file, User user) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Tệp tin tải lên không được để trống");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = "Tai_lieu_" + System.currentTimeMillis();
+        } else {
+            originalFilename = originalFilename.trim();
+        }
+
+        List<InstructorAsset> existing = assetRepository.findByInstructorAndNameAndFileSizeBytes(user, originalFilename, file.getSize());
+        if (existing != null && !existing.isEmpty()) {
+            return existing.get(0);
+        }
+
+        String assetType = resolveAssetType(originalFilename);
+        String resourceType = resolveResourceType(assetType);
+
+        java.util.Map<String, Object> uploadResult;
+        try {
+            uploadResult = cloudinaryService.uploadFile(file, "/assets", resourceType);
+        } catch (Exception e) {
+            log.error("[InstructorAssetService] Lỗi upload tệp lên Cloudinary: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi tải tệp lên máy chủ: " + e.getMessage());
+        }
+
+        String cloudinaryUrl = (String) uploadResult.get("secure_url");
+        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) {
+            cloudinaryUrl = (String) uploadResult.get("url");
+        }
+
+        InstructorAsset asset = saveAssetMetadata(
+                user,
+                originalFilename,
+                assetType,
+                "/",
+                "COHORT_PUBLIC",
+                null,
+                cloudinaryUrl,
+                file.getSize()
+        );
+
+        if (moderationService != null && !SecurityUtils.isAdmin(user)) {
+            try {
+                moderationService.createAssetModerationTask(asset.getId(), user.getId());
+            } catch (Exception ignored) {}
+        }
+
+        return asset;
+    }
+
+    private String resolveAssetType(String filename) {
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".mp4") || lower.endsWith(".avi") || lower.endsWith(".mov") || lower.endsWith(".mkv") || lower.endsWith(".webm")) {
+            return "VIDEO";
+        }
+        if (lower.endsWith(".ppt") || lower.endsWith(".pptx") || lower.endsWith(".pps") || lower.endsWith(".ppsx")) {
+            return "SLIDE";
+        }
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif") || lower.endsWith(".webp") || lower.endsWith(".svg")) {
+            return "IMAGE";
+        }
+        return "DOCUMENT";
+    }
+
+    private String resolveResourceType(String assetType) {
+        if ("VIDEO".equalsIgnoreCase(assetType)) {
+            return "video";
+        }
+        if ("IMAGE".equalsIgnoreCase(assetType)) {
+            return "image";
+        }
+        return "raw";
     }
 }

@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
 
 @Slf4j
 @Controller
@@ -54,6 +56,11 @@ public class ModeratorController {
     private final RbacHelper rbacHelper;
     private final InstructorAssetRepository assetRepository;
     private final ModerationService moderationService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.LessonRepository lessonRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.AssignmentRepository assignmentRepository;
 
     @GetMapping("/queue")
     @PreAuthorize("@rbac.hasPermission('CONTENT_APPROVE')")
@@ -169,6 +176,7 @@ public class ModeratorController {
             model.addAttribute("lessonsMap", lessonsMap);
             model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
             model.addAttribute("totalDraftLessons", totalDraftLessons);
+            populateAssetStatusMap(model, lessonsMap);
             return "moderator/review_course";
         } else if ("COHORT".equals(task.getItemType())) {
             Cohort cohort = cohortRepository.findById(task.getItemId()).orElse(null);
@@ -196,6 +204,7 @@ public class ModeratorController {
             model.addAttribute("lessonsMap", lessonsMap);
             model.addAttribute("sectionDraftCountMap", sectionDraftCountMap);
             model.addAttribute("totalDraftLessons", totalDraftLessons);
+            populateAssetStatusMap(model, lessonsMap);
             return "moderator/review_course";
         }
 
@@ -279,5 +288,30 @@ public class ModeratorController {
             redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
         return "redirect:/moderator/attendance";
+    }
+
+    private void populateAssetStatusMap(Model model, Map<Long, List<Lesson>> lessonsMap) {
+        if (assetRepository == null || lessonsMap == null) {
+            return;
+        }
+        Map<String, String> assetStatusMap = new HashMap<>();
+        Set<String> urls = new HashSet<>();
+        for (List<Lesson> lList : lessonsMap.values()) {
+            if (lList != null) {
+                for (Lesson l : lList) {
+                    if (l.getAssetUrl() != null && !l.getAssetUrl().isBlank()) urls.add(l.getAssetUrl().trim());
+                    if (l.getVideoUrl() != null && !l.getVideoUrl().isBlank()) urls.add(l.getVideoUrl().trim());
+                }
+            }
+        }
+        if (!urls.isEmpty()) {
+            List<InstructorAsset> assets = assetRepository.findByCloudinaryUrlIn(urls);
+            for (InstructorAsset a : assets) {
+                if (a.getCloudinaryUrl() != null && a.getStatus() != null) {
+                    assetStatusMap.put(a.getCloudinaryUrl(), a.getStatus());
+                }
+            }
+        }
+        model.addAttribute("assetStatusMap", assetStatusMap);
     }
 }

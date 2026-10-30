@@ -42,6 +42,8 @@ public class ModerationServiceImpl implements ModerationService {
     private final vn.edu.ute.utelearn.dao.SectionRepository sectionRepository;
     private final NotificationService notificationService;
     private final vn.edu.ute.utelearn.dao.InstructorAssetRepository assetRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.dao.AssignmentRepository assignmentRepository;
 
     @Override
     public ModerationTask createCourseModerationTask(Long courseId, Long authorId) {
@@ -152,6 +154,7 @@ public class ModerationServiceImpl implements ModerationService {
             course.setStatus("PUBLISHED");
             courseRepository.save(course);
             publishLessonsForCourse(course.getId());
+            approveAssetsForCourse(course.getId(), moderator);
             itemTitle = course.getTitle();
             if (author == null) {
                 author = course.getCreatedBy();
@@ -161,6 +164,7 @@ public class ModerationServiceImpl implements ModerationService {
             cohort.setModerationStatus("APPROVED");
             cohortRepository.save(cohort);
             publishLessonsForCohort(cohort.getId());
+            approveAssetsForCohort(cohort.getId(), moderator);
             itemLabel = "module";
             itemTitle = cohort.getName();
             if (author == null) {
@@ -361,6 +365,11 @@ public class ModerationServiceImpl implements ModerationService {
         for (ModerationTask task : pendingTasks) {
             Boolean approved = null;
             if ("PUBLISHED".equalsIgnoreCase(newStatus) || "APPROVED".equalsIgnoreCase(newStatus)) {
+                if ("COURSE".equalsIgnoreCase(itemType)) {
+                    approveAssetsForCourse(itemId, actor);
+                } else if ("COHORT".equalsIgnoreCase(itemType)) {
+                    approveAssetsForCohort(itemId, actor);
+                }
                 task.setStatus("APPROVED");
                 task.setAssignedTo(actor);
                 task.setFeedback("Được phê duyệt trực tiếp bởi " + (actor != null && actor.getFullName() != null ? actor.getFullName() : "Admin"));
@@ -519,5 +528,93 @@ public class ModerationServiceImpl implements ModerationService {
     private ModerationTask getTask(Long taskId) {
         return moderationTaskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
+    }
+
+    private void approveAssetsForCourse(Long courseId, User actor) {
+        if (courseId == null || assetRepository == null) {
+            return;
+        }
+        java.util.Set<String> assetUrls = new java.util.HashSet<>();
+        java.util.List<vn.edu.ute.utelearn.entity.Lesson> courseLessons = lessonRepository.findBySectionCourseIdOrderByOrderIndexAsc(courseId);
+        for (vn.edu.ute.utelearn.entity.Lesson l : courseLessons) {
+            collectLessonAssetUrls(l, assetUrls);
+        }
+        approveAssetsByUrls(assetUrls, actor, "khóa học id: " + courseId);
+    }
+
+    private void approveAssetsForCohort(Long cohortId, User actor) {
+        if (cohortId == null || assetRepository == null) {
+            return;
+        }
+        java.util.Set<String> assetUrls = new java.util.HashSet<>();
+        java.util.List<vn.edu.ute.utelearn.entity.CohortSchedule> schedules = cohortScheduleRepository.findByCohortIdWithDetails(cohortId);
+        for (vn.edu.ute.utelearn.entity.CohortSchedule cs : schedules) {
+            if (cs.getLesson() != null) {
+                collectLessonAssetUrls(cs.getLesson(), assetUrls);
+            }
+        }
+        java.util.List<vn.edu.ute.utelearn.entity.Section> cohortSections = sectionRepository.findByCohortIdOrderByOrderIndexAsc(cohortId);
+        for (vn.edu.ute.utelearn.entity.Section sec : cohortSections) {
+            java.util.List<vn.edu.ute.utelearn.entity.Lesson> lessons = lessonRepository.findBySectionIdOrderByOrderIndexAsc(sec.getId());
+            for (vn.edu.ute.utelearn.entity.Lesson l : lessons) {
+                collectLessonAssetUrls(l, assetUrls);
+            }
+        }
+        approveAssetsByUrls(assetUrls, actor, "module id: " + cohortId);
+    }
+
+    private void collectLessonAssetUrls(vn.edu.ute.utelearn.entity.Lesson lesson, java.util.Set<String> assetUrls) {
+        if (lesson == null) {
+            return;
+        }
+        if (lesson.getAssetUrl() != null && !lesson.getAssetUrl().isBlank()) {
+            assetUrls.add(lesson.getAssetUrl().trim());
+        }
+        if (lesson.getVideoUrl() != null && !lesson.getVideoUrl().isBlank()) {
+            assetUrls.add(lesson.getVideoUrl().trim());
+        }
+        if (assignmentRepository != null && lesson.getId() != null) {
+            assignmentRepository.findByLessonId(lesson.getId()).ifPresent(assign -> {
+                if (assign.getAttachmentUrl() != null && !assign.getAttachmentUrl().isBlank()) {
+                    assetUrls.add(assign.getAttachmentUrl().trim());
+                }
+            });
+        }
+    }
+
+    private void approveAssetsByUrls(java.util.Set<String> urls, User actor, String contextDesc) {
+        if (urls == null || urls.isEmpty() || assetRepository == null) {
+            return;
+        }
+        java.util.List<vn.edu.ute.utelearn.entity.InstructorAsset> matchingAssets = assetRepository.findByCloudinaryUrlIn(urls);
+        if (matchingAssets == null || matchingAssets.isEmpty()) {
+            return;
+        }
+        java.util.List<vn.edu.ute.utelearn.entity.InstructorAsset> toSave = new java.util.ArrayList<>();
+        for (vn.edu.ute.utelearn.entity.InstructorAsset asset : matchingAssets) {
+            if ("REJECTED".equalsIgnoreCase(asset.getStatus())) {
+                log.warn("[ModerationService] Bỏ qua tự động duyệt tài nguyên id: {} vì đang ở trạng thái REJECTED", asset.getId());
+                continue;
+            }
+            if (!"APPROVED".equalsIgnoreCase(asset.getStatus())) {
+                asset.setStatus("APPROVED");
+                toSave.add(asset);
+            }
+            if (moderationTaskRepository != null && asset.getId() != null) {
+                java.util.List<ModerationTask> tasks = moderationTaskRepository.findByItemTypeAndItemIdAndStatusIn(
+                        "ASSET", asset.getId(), java.util.List.of("PENDING", "ESCALATED"));
+                for (ModerationTask t : tasks) {
+                    t.setStatus("APPROVED");
+                    t.setAssignedTo(actor);
+                    t.setFeedback("Tự động phê duyệt theo " + contextDesc);
+                    moderationTaskRepository.save(t);
+                    log.info("[ModerationService] Tự động phê duyệt nhiệm vụ tài nguyên số {} theo {}", t.getId(), contextDesc);
+                }
+            }
+        }
+        if (!toSave.isEmpty()) {
+            assetRepository.saveAll(toSave);
+            log.info("[ModerationService] Đã tự động phê duyệt {} tài nguyên số cho {}", toSave.size(), contextDesc);
+        }
     }
 }
