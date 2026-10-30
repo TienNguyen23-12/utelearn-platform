@@ -20,21 +20,21 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
 
     @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH c.createdBy WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE (c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')")
     Page<Cohort> searchCohortsByInstructor(@Param("instructorId") Long instructorId, @Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
 
     @Query(value = "SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH cr.createdBy LEFT JOIN FETCH c.createdBy WHERE " +
            "(c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '') ORDER BY c.createdAt DESC",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr WHERE " +
            "(c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "AND (c.status = :status OR :status = '')")
     Page<Cohort> searchAllCohorts(@Param("keyword") String keyword, @Param("status") String status, Pageable pageable);
 
@@ -42,13 +42,13 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(cr.title)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))))) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(cr.title)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cr IS NOT NULL AND cr.category IS NOT NULL AND cr.category.slug = :categorySlug))",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.category cat WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(cr.title)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))))) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(cr.title)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cat IS NOT NULL AND cat.slug = :categorySlug))")
     Page<Cohort> searchPublicCohorts(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, Pageable pageable);
 
@@ -56,14 +56,14 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(cr.title)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))))) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(cr.title)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cr IS NOT NULL AND cr.category IS NOT NULL AND cr.category.slug = :categorySlug)) " +
            "AND (:cursor IS NULL OR c.id < :cursor)",
            countQuery = "SELECT count(c) FROM Cohort c LEFT JOIN c.course cr LEFT JOIN cr.category cat WHERE " +
            "(c.visibility = 'PUBLIC' OR c.visibility IS NULL) " +
            "AND (c.status = 'ENROLLING' OR c.status = 'UPCOMING' OR c.status = 'IN_PROGRESS') " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(cr.title)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))))) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (cr.title IS NOT NULL AND (LOWER(cr.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(cr.title)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String))) OR :keyword = '') " +
            "AND (:categorySlug = '' OR (cat IS NOT NULL AND cat.slug = :categorySlug)) " +
            "AND (:cursor IS NULL OR c.id < :cursor)")
     Page<Cohort> searchPublicCohortsWithCursor(@Param("keyword") String keyword, @Param("categorySlug") String categorySlug, @Param("cursor") Long cursor, Pageable pageable);
@@ -74,7 +74,7 @@ public interface CohortRepository extends JpaRepository<Cohort, Long> {
     @Query("SELECT c FROM Cohort c LEFT JOIN FETCH c.course cr LEFT JOIN FETCH c.createdBy WHERE " +
            "(c.visibility = 'PUBLIC' OR c.createdBy.id = :instructorId OR (c.createdBy IS NULL AND cr.createdBy.id = :instructorId)) " +
            "AND (c.code NOT LIKE '%-ALL' AND (c.name IS NULL OR LOWER(c.name) NOT LIKE 'toàn bộ khóa học%')) " +
-           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR function('unaccent', LOWER(c.name)) LIKE function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
+           "AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR CAST(function('unaccent', LOWER(c.name)) AS String) LIKE CAST(function('unaccent', LOWER(CONCAT('%', :keyword, '%'))) AS String) OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) OR :keyword = '') " +
            "ORDER BY c.createdAt DESC")
     java.util.List<Cohort> searchShareableCohorts(@Param("instructorId") Long instructorId, @Param("keyword") String keyword);
 
