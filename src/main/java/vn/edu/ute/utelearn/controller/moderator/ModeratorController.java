@@ -237,8 +237,12 @@ public class ModeratorController {
             return "redirect:/login";
         }
         try {
-            attendanceService.checkIn(currentUserOpt.get());
-            redirectAttributes.addFlashAttribute("success", "Điểm danh (Check-in) thành công!");
+            ModeratorAttendance att = attendanceService.checkIn(currentUserOpt.get());
+            if (Boolean.TRUE.equals(att.getIsOvertime()) || (att.getOtCheckInAt() != null && att.getOtCheckOutAt() == null)) {
+                redirectAttributes.addFlashAttribute("success", "Bắt đầu ca làm việc ngoài giờ (OT) thành công!");
+            } else {
+                redirectAttributes.addFlashAttribute("success", "Bắt đầu ca làm việc tiêu chuẩn thành công!");
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
@@ -252,8 +256,12 @@ public class ModeratorController {
             return "redirect:/login";
         }
         try {
-            attendanceService.checkOut(currentUserOpt.get());
-            redirectAttributes.addFlashAttribute("success", "Kết thúc ca trực (Check-out) thành công!");
+            ModeratorAttendance att = attendanceService.checkOut(currentUserOpt.get());
+            if (att.getOtWorkloadMinutes() != null && att.getOtWorkloadMinutes() > 0) {
+                redirectAttributes.addFlashAttribute("success", "Kết thúc ca làm việc thành công! (Bao gồm " + att.getOtWorkloadMinutes() + " phút OT)");
+            } else {
+                redirectAttributes.addFlashAttribute("success", "Kết thúc ca làm việc thành công!");
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
         }
@@ -262,32 +270,12 @@ public class ModeratorController {
 
     @PostMapping("/attendance/check-in-ot")
     public String checkInOvertime(RedirectAttributes redirectAttributes) {
-        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
-        if (currentUserOpt.isEmpty()) {
-            return "redirect:/login";
-        }
-        try {
-            attendanceService.checkInOvertime(currentUserOpt.get());
-            redirectAttributes.addFlashAttribute("success", "Bắt đầu ca làm việc ngoài giờ (Check-in OT) thành công!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
-        }
-        return "redirect:/moderator/attendance";
+        return checkIn(redirectAttributes);
     }
 
     @PostMapping("/attendance/check-out-ot")
     public String checkOutOvertime(RedirectAttributes redirectAttributes) {
-        Optional<User> currentUserOpt = authService.getCurrentAuthenticatedUser();
-        if (currentUserOpt.isEmpty()) {
-            return "redirect:/login";
-        }
-        try {
-            attendanceService.checkOutOvertime(currentUserOpt.get());
-            redirectAttributes.addFlashAttribute("success", "Kết thúc ca làm việc ngoài giờ (Check-out OT) thành công!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Lỗi: " + e.getMessage());
-        }
-        return "redirect:/moderator/attendance";
+        return checkOut(redirectAttributes);
     }
 
     private void populateAssetStatusMap(Model model, Map<Long, List<Lesson>> lessonsMap) {

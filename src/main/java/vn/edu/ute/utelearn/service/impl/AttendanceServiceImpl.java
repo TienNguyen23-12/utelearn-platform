@@ -33,36 +33,47 @@ public class AttendanceServiceImpl implements AttendanceService {
     public ModeratorAttendance checkIn(User moderator) {
         ZonedDateTime nowHcm = ZonedDateTime.now(HCM_ZONE);
         LocalTime timeHcm = nowHcm.toLocalTime();
-        if (timeHcm.isBefore(SHIFT_START_TIME)) {
-            throw new IllegalStateException("Hệ thống chỉ cho phép bắt đầu ca trực (Check-in) từ 07:00 sáng.");
-        }
-        if (!timeHcm.isBefore(SHIFT_END_TIME)) {
-            throw new IllegalStateException("Ca trực tiêu chuẩn kết thúc lúc 18:00. Vui lòng chọn Bắt đầu ca làm thêm (Check-in OT) nếu cần làm việc ngoài giờ.");
-        }
-
         LocalDate today = nowHcm.toLocalDate();
-        Optional<ModeratorAttendance> existing = attendanceRepository.findByModeratorAndWorkDate(moderator, today);
+        Instant now = nowHcm.toInstant();
 
+        boolean isOutsideStandardHours = timeHcm.isBefore(SHIFT_START_TIME) || !timeHcm.isBefore(SHIFT_END_TIME);
+
+        Optional<ModeratorAttendance> existing = attendanceRepository.findByModeratorAndWorkDate(moderator, today);
         if (existing.isPresent()) {
             ModeratorAttendance attendance = existing.get();
             applyAutoCheckOutIfNeeded(attendance);
-            if (attendance.getCheckInAt() == null) {
-                attendance.setCheckInAt(Instant.now());
+
+            if (Boolean.TRUE.equals(attendance.getIsActive())) {
+                return attendance;
+            }
+
+            if (isOutsideStandardHours || attendance.getCheckOutAt() != null) {
+                attendance.setIsOvertime(true);
+                attendance.setOtCheckInAt(now);
+                attendance.setOtCheckOutAt(null);
                 attendance.setIsActive(true);
                 return attendanceRepository.save(attendance);
             }
-            if (attendance.getCheckOutAt() != null) {
-                throw new IllegalStateException("Bạn đã hoàn thành ca trực tiêu chuẩn hôm nay. Vui lòng chọn Bắt đầu ca làm thêm (Check-in OT) để tiếp tục làm việc.");
+
+            if (attendance.getCheckInAt() == null) {
+                attendance.setCheckInAt(now);
+                attendance.setIsOvertime(false);
+                attendance.setIsActive(true);
+                return attendanceRepository.save(attendance);
             }
-            return attendance;
+
+            attendance.setIsOvertime(true);
+            attendance.setOtCheckInAt(now);
+            attendance.setOtCheckOutAt(null);
+            attendance.setIsActive(true);
+            return attendanceRepository.save(attendance);
         }
 
         ModeratorAttendance newAttendance = ModeratorAttendance.builder()
                 .moderator(moderator)
                 .workDate(today)
-                .checkInAt(Instant.now())
                 .isActive(true)
-                .isOvertime(false)
+                .isOvertime(isOutsideStandardHours)
                 .assignedTasksCount(0)
                 .completedTasksCount(0)
                 .activeTasksCount(0)
@@ -70,6 +81,13 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .otWorkloadMinutes(0)
                 .maxDailyMinutes(480)
                 .build();
+
+        if (isOutsideStandardHours) {
+            newAttendance.setOtCheckInAt(now);
+        } else {
+            newAttendance.setCheckInAt(now);
+        }
+
         return attendanceRepository.save(newAttendance);
     }
 
@@ -77,90 +95,71 @@ public class AttendanceServiceImpl implements AttendanceService {
     public ModeratorAttendance checkOut(User moderator) {
         LocalDate today = LocalDate.now(HCM_ZONE);
         Optional<ModeratorAttendance> existing = attendanceRepository.findByModeratorAndWorkDate(moderator, today);
-
-        if (existing.isPresent()) {
-            ModeratorAttendance attendance = existing.get();
-            if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() == null) {
-                Instant now = Instant.now();
-                Instant cutoff18h = today.atTime(SHIFT_END_TIME).atZone(HCM_ZONE).toInstant();
-                Instant checkoutTime = now.isAfter(cutoff18h) ? cutoff18h : now;
-                attendance.setCheckOutAt(checkoutTime);
-                attendance.setIsActive(false);
-                int standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), checkoutTime));
-                int otMinutes = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
-                attendance.setTotalWorkloadMinutes(standardMinutes + otMinutes);
-                return attendanceRepository.save(attendance);
-            }
+        if (existing.isEmpty()) {
+            throw new IllegalStateException("Không tìm thấy thông tin ca trực cho ngày hôm nay.");
+        }
+        ModeratorAttendance attendance = existing.get();
+        if (!Boolean.TRUE.equals(attendance.getIsActive())) {
             return attendance;
         }
-        throw new IllegalStateException("Không tìm thấy thông tin ca trực cho ngày hôm nay.");
+
+        Instant now = Instant.now();
+
+        if (attendance.getOtCheckInAt() != null && attendance.getOtCheckOutAt() == null) {
+            attendance.setOtCheckOutAt(now);
+            attendance.setIsActive(false);
+            int sessionOt = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getOtCheckInAt(), now));
+            int prevOt = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
+            int totalOt = prevOt + sessionOt;
+            attendance.setOtWorkloadMinutes(totalOt);
+
+            int standardMinutes = 0;
+            if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() != null) {
+                standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), attendance.getCheckOutAt()));
+            }
+            attendance.setTotalWorkloadMinutes(standardMinutes + totalOt);
+            return attendanceRepository.save(attendance);
+        }
+
+        if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() == null) {
+            Instant cutoff18h = today.atTime(SHIFT_END_TIME).atZone(HCM_ZONE).toInstant();
+            attendance.setIsActive(false);
+
+            if (now.isAfter(cutoff18h)) {
+                attendance.setCheckOutAt(cutoff18h);
+                if (attendance.getOtCheckInAt() == null) {
+                    attendance.setOtCheckInAt(cutoff18h);
+                }
+                attendance.setOtCheckOutAt(now);
+                attendance.setIsOvertime(true);
+
+                int standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), cutoff18h));
+                int sessionOt = (int) Math.max(0, ChronoUnit.MINUTES.between(cutoff18h, now));
+                int prevOt = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
+                int totalOt = prevOt + sessionOt;
+                attendance.setOtWorkloadMinutes(totalOt);
+                attendance.setTotalWorkloadMinutes(standardMinutes + totalOt);
+            } else {
+                attendance.setCheckOutAt(now);
+                int standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), now));
+                int otMinutes = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
+                attendance.setTotalWorkloadMinutes(standardMinutes + otMinutes);
+            }
+            return attendanceRepository.save(attendance);
+        }
+
+        attendance.setIsActive(false);
+        return attendanceRepository.save(attendance);
     }
 
     @Override
     public ModeratorAttendance checkInOvertime(User moderator) {
-        LocalDate today = LocalDate.now(HCM_ZONE);
-        Optional<ModeratorAttendance> existing = attendanceRepository.findByModeratorAndWorkDate(moderator, today);
-        ModeratorAttendance attendance;
-
-        if (existing.isPresent()) {
-            attendance = existing.get();
-            applyAutoCheckOutIfNeeded(attendance);
-            if (Boolean.TRUE.equals(attendance.getIsActive()) && attendance.getCheckInAt() != null && attendance.getCheckOutAt() == null) {
-                throw new IllegalStateException("Bạn đang trong ca trực tiêu chuẩn. Vui lòng kết thúc ca trực tiêu chuẩn trước khi bắt đầu OT.");
-            }
-            if (attendance.getOtCheckInAt() != null && attendance.getOtCheckOutAt() == null) {
-                return attendance;
-            }
-            attendance.setIsOvertime(true);
-            attendance.setOtCheckInAt(Instant.now());
-            attendance.setOtCheckOutAt(null);
-            attendance.setIsActive(true);
-            return attendanceRepository.save(attendance);
-        }
-
-        attendance = ModeratorAttendance.builder()
-                .moderator(moderator)
-                .workDate(today)
-                .isActive(true)
-                .isOvertime(true)
-                .otCheckInAt(Instant.now())
-                .assignedTasksCount(0)
-                .completedTasksCount(0)
-                .activeTasksCount(0)
-                .totalWorkloadMinutes(0)
-                .otWorkloadMinutes(0)
-                .maxDailyMinutes(480)
-                .build();
-        return attendanceRepository.save(attendance);
+        return checkIn(moderator);
     }
 
     @Override
     public ModeratorAttendance checkOutOvertime(User moderator) {
-        LocalDate today = LocalDate.now(HCM_ZONE);
-        Optional<ModeratorAttendance> existing = attendanceRepository.findByModeratorAndWorkDate(moderator, today);
-        if (existing.isEmpty()) {
-            throw new IllegalStateException("Không tìm thấy thông tin ca làm việc cho ngày hôm nay.");
-        }
-        ModeratorAttendance attendance = existing.get();
-        if (attendance.getOtCheckInAt() == null) {
-            throw new IllegalStateException("Bạn chưa điểm danh bắt đầu ca làm việc OT.");
-        }
-        if (attendance.getOtCheckOutAt() != null) {
-            return attendance;
-        }
-
-        Instant otCheckout = Instant.now();
-        attendance.setOtCheckOutAt(otCheckout);
-        attendance.setIsActive(false);
-        int otMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getOtCheckInAt(), otCheckout));
-        attendance.setOtWorkloadMinutes(otMinutes);
-
-        int standardMinutes = 0;
-        if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() != null) {
-            standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), attendance.getCheckOutAt()));
-        }
-        attendance.setTotalWorkloadMinutes(standardMinutes + otMinutes);
-        return attendanceRepository.save(attendance);
+        return checkOut(moderator);
     }
 
     @Override
@@ -184,40 +183,58 @@ public class AttendanceServiceImpl implements AttendanceService {
         return list;
     }
 
-    @Scheduled(cron = "0 0 18 * * ?", zone = "Asia/Ho_Chi_Minh")
+    @Scheduled(cron = "0 5 0 * * ?", zone = "Asia/Ho_Chi_Minh")
     @Scheduled(fixedDelay = 900000)
     @Override
     public void autoCheckOutExpiredAttendances() {
         List<ModeratorAttendance> list = attendanceRepository.findAll();
         for (ModeratorAttendance att : list) {
-            if (Boolean.TRUE.equals(att.getIsActive()) && att.getCheckInAt() != null && att.getCheckOutAt() == null && !Boolean.TRUE.equals(att.getIsOvertime())) {
+            if (Boolean.TRUE.equals(att.getIsActive())) {
                 applyAutoCheckOutIfNeeded(att);
             }
         }
     }
 
     private ModeratorAttendance applyAutoCheckOutIfNeeded(ModeratorAttendance attendance) {
-        if (attendance == null || attendance.getCheckInAt() == null) {
+        if (attendance == null) {
+            return null;
+        }
+        if (!Boolean.TRUE.equals(attendance.getIsActive())) {
             return attendance;
         }
+
         ZonedDateTime nowHcm = ZonedDateTime.now(HCM_ZONE);
         LocalDate today = nowHcm.toLocalDate();
 
-        if (Boolean.TRUE.equals(attendance.getIsActive()) && attendance.getCheckOutAt() == null && !Boolean.TRUE.equals(attendance.getIsOvertime())) {
-            boolean isPastDay = attendance.getWorkDate().isBefore(today);
-            boolean isPast18hToday = attendance.getWorkDate().isEqual(today) && !nowHcm.toLocalTime().isBefore(SHIFT_END_TIME);
-            if (isPastDay || isPast18hToday) {
+        if (attendance.getWorkDate().isBefore(today)) {
+            Instant endOfDay = attendance.getWorkDate().atTime(23, 59, 59).atZone(HCM_ZONE).toInstant();
+            attendance.setIsActive(false);
+
+            if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() == null) {
                 Instant cutoff18h = attendance.getWorkDate().atTime(SHIFT_END_TIME).atZone(HCM_ZONE).toInstant();
-                Instant checkIn = attendance.getCheckInAt();
-                Instant checkout = cutoff18h.isAfter(checkIn) ? cutoff18h : checkIn;
-                attendance.setCheckOutAt(checkout);
-                attendance.setIsActive(false);
-                int standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(checkIn, checkout));
+                attendance.setCheckOutAt(cutoff18h);
+                int standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), cutoff18h));
                 int otMinutes = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
                 attendance.setTotalWorkloadMinutes(standardMinutes + otMinutes);
-                return attendanceRepository.save(attendance);
             }
+
+            if (attendance.getOtCheckInAt() != null && attendance.getOtCheckOutAt() == null) {
+                attendance.setOtCheckOutAt(endOfDay);
+                int sessionOt = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getOtCheckInAt(), endOfDay));
+                int prevOt = attendance.getOtWorkloadMinutes() != null ? attendance.getOtWorkloadMinutes() : 0;
+                int totalOt = prevOt + sessionOt;
+                attendance.setOtWorkloadMinutes(totalOt);
+
+                int standardMinutes = 0;
+                if (attendance.getCheckInAt() != null && attendance.getCheckOutAt() != null) {
+                    standardMinutes = (int) Math.max(0, ChronoUnit.MINUTES.between(attendance.getCheckInAt(), attendance.getCheckOutAt()));
+                }
+                attendance.setTotalWorkloadMinutes(standardMinutes + totalOt);
+            }
+
+            return attendanceRepository.save(attendance);
         }
+
         return attendance;
     }
 }

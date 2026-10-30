@@ -161,7 +161,7 @@
                                         <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">Workload + OT + KPI - SLA</span>
                                     </div>
                                     <div class="small text-muted bg-white p-2 rounded-3 border mb-3">
-                                        <strong>Công thức:</strong> <code>Thực lĩnh = (Phút thường × Đơn giá) + (Phút OT × Đơn giá × Hệ số) + (Bài duyệt × Thưởng) - (Quá hạn × Phạt) + Phụ cấp</code>
+                                        <strong>Công thức:</strong> <code>Thực lĩnh = (Phút thường × Đơn giá) + (Phút OT × Đơn giá × Tỷ lệ OT) + (Bài duyệt × Thưởng) - (Quá hạn × Phạt) + Phụ cấp</code>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-sm-3">
@@ -172,10 +172,10 @@
                                             </div>
                                         </div>
                                         <div class="col-sm-3">
-                                            <label class="form-label small fw-semibold text-dark mb-1">Hệ số nhân OT</label>
+                                            <label class="form-label small fw-semibold text-dark mb-1">Tỷ lệ lương OT (% / hệ số)</label>
                                             <div class="input-group input-group-sm">
-                                                <input type="number" step="0.1" min="1" max="5" name="moderatorOtMultiplier" class="form-control fw-bold" th:value="${globalConfig.moderatorOtMultiplier}" required>
-                                                <span class="input-group-text">x</span>
+                                                <input type="number" step="0.05" min="0" max="500" name="moderatorOtMultiplier" class="form-control fw-bold" th:value="${globalConfig.moderatorOtMultiplier}" required>
+                                                <span class="input-group-text">x (150%)</span>
                                             </div>
                                         </div>
                                         <div class="col-sm-3">
@@ -396,7 +396,7 @@
                                 </td>
                                 <td class="text-center text-nowrap">
                                     <div class="fw-semibold text-dark" th:text="${item.regularMinutes} + ' phút'">0 phút</div>
-                                    <small class="text-warning-emphasis fw-semibold" th:if="${item.otMinutes > 0}" th:text="'+' + ${item.otMinutes} + 'p OT (x' + ${item.effectiveOtMultiplier} + ')'"></small>
+                                    <small class="text-warning-emphasis fw-semibold" th:if="${item.otMinutes > 0}" th:text="'+' + ${item.otMinutes} + 'p OT (' + ${#numbers.formatDecimal(item.effectiveOtMultiplier.multiply(new java.math.BigDecimal(100)), 0, 'POINT', 0, 'POINT')} + '% / x' + ${item.effectiveOtMultiplier} + ')'"></small>
                                     <small class="text-muted" th:unless="${item.otMinutes > 0}" th:text="${#numbers.formatDecimal(item.effectiveMinuteRate, 0, 'COMMA', 0, 'POINT')} + ' đ/phút'"></small>
                                 </td>
                                 <td class="text-end fw-semibold text-dark text-nowrap" th:text="${#numbers.formatDecimal(item.regularShiftPay, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
@@ -539,10 +539,10 @@
                             </div>
                         </div>
                         <div class="col-sm-6">
-                            <label class="form-label small fw-semibold">Hệ số nhân OT</label>
+                            <label class="form-label small fw-semibold">Tỷ lệ lương OT (% / hệ số)</label>
                             <div class="input-group input-group-sm">
-                                <input type="number" step="0.1" min="1" max="5" name="moderatorOtMultiplier" id="modModalOtMult" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorOtMultiplier}">
-                                <span class="input-group-text">x</span>
+                                <input type="number" step="0.05" min="0" max="500" name="moderatorOtMultiplier" id="modModalOtMult" class="form-control" th:placeholder="'Mặc định: ' + ${globalConfig.moderatorOtMultiplier} + ' (x / %)'">
+                                <span class="input-group-text">x / %</span>
                             </div>
                         </div>
                         <div class="col-sm-6">
@@ -625,4 +625,3 @@
 </script>
 </body>
 </html>
-
