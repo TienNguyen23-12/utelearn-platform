@@ -36,7 +36,7 @@
                     </span>
                     <h2 class="fw-bold text-white mb-2">Xin chào, <span th:text="${currentUser != null ? currentUser.fullName : 'Quản trị viên'}">Quản trị viên</span>! 👋</h2>
                     <p class="text-slate-300 text-light opacity-75 mb-4" style="font-size: 14.5px; max-width: 600px;">
-                        Chào mừng bạn quay trở lại Nền tảng Học tập số theo đợt & Kinh doanh khóa học trực tuyến HCMUTE. Chúc bạn một ngày làm việc hiệu quả!
+                        Chào mừng bạn quay trở lại Nền tảng Học tập số theo đợt & Kinh doanh khóa học trực tuyến UTELearn. Chúc bạn một ngày làm việc hiệu quả!
                     </p>
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <span class="text-light opacity-75 small">Vai trò của bạn:</span>
@@ -71,6 +71,7 @@
             </a>
         </div>
 
+        <th:block th:if="${@rbac.hasRole('ADMIN')}">
         <div class="d-flex justify-content-end align-items-center mb-3">
             <span class="text-muted small fw-semibold me-3"><i class="bi bi-funnel-fill me-1"></i>Lọc dữ liệu:</span>
             <div class="d-inline-flex flex-wrap gap-2 ">
@@ -162,6 +163,7 @@
                 </div>
             </div>
         </div>
+        </th:block>
 
         <div class="row g-4 mb-4">
 

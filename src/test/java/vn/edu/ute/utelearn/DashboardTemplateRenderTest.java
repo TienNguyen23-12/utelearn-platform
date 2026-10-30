@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DashboardTemplateRenderTest {
@@ -87,5 +88,7 @@ public class DashboardTemplateRenderTest {
         assertNotNull(html);
         assertTrue(html.contains("Bảng điều khiển"));
         assertTrue(html.contains("Kho tài nguyên số"));
+        assertFalse(html.contains("Tổng Doanh Thu"));
+        assertFalse(html.contains("Lọc dữ liệu:"));
     }
 }

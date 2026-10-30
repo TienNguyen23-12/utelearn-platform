@@ -123,7 +123,7 @@ public class EmailServiceImpl implements EmailService {
                 + "</table>"
                 + "<div style=\"background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 4px; margin-bottom: 20px;\">"
                 + "<h4 style=\"margin: 0 0 8px; color: #1e3a8a; font-size: 15px;\">Địa điểm và cách thức thanh toán:</h4>"
-                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>1. Quầy thu ngân:</strong> Phòng Kế hoạch - Tài chính (A1-01), Trường ĐH Sư phạm Kỹ thuật TP.HCM</p>"
+                + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>1. Quầy thu ngân:</strong> Phòng Kế hoạch - Tài chính (A1-01), Trường ĐH Công nghệ Kỹ thuật TP.HCM</p>"
                 + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>2. Địa chỉ:</strong> Số 1 Võ Văn Ngân, P. Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh</p>"
                 + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>3. Thời gian làm việc:</strong> Thứ 2 - Thứ 6 (07:30 - 16:30)</p>"
                 + "<p style=\"margin: 4px 0; font-size: 13px; color: #1e40af;\"><strong>4. Hình thức chấp nhận:</strong> Tiền mặt hoặc Quét mã chuyển khoản trực tiếp tại quầy</p>"
@@ -139,7 +139,7 @@ public class EmailServiceImpl implements EmailService {
                 + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5;\">Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ Ban Đào tạo qua Hotline: (028) 38968641 hoặc gửi email tới support@utelearn.edu.vn.</p>"
                 + "</div>"
                 + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
-                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM &bull; Hệ thống đào tạo trực tuyến"
+                + "UTELearn Platform &bull; Đại học Công nghệ Kỹ thuật TP.HCM &bull; Hệ thống đào tạo trực tuyến"
                 + "<p style=\"margin: 6px 0 0; font-size: 11px; color: #94a3b8;\">&#9432; Đây là email thông báo tự động từ địa chỉ No-Reply, vui lòng không trả lời thư này.</p>"
                 + "</div>"
                 + "</div>";
@@ -251,7 +251,7 @@ public class EmailServiceImpl implements EmailService {
                 + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5;\">Chúc bạn có những trải nghiệm học tập tuyệt vời tại UTELearn Platform!</p>"
                 + "</div>"
                 + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
-                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM &bull; Số 1 Võ Văn Ngân, TP. Thủ Đức, TP.HCM"
+                + "UTELearn Platform &bull; Đại học Công nghệ Kỹ thuật TP.HCM &bull; Số 1 Võ Văn Ngân, TP. Thủ Đức, TP.HCM"
                 + "<p style=\"margin: 6px 0 0; font-size: 11px; color: #94a3b8;\">&#9432; Đây là email biên nhận tự động từ địa chỉ No-Reply, vui lòng không trả lời thư này.</p>"
                 + "</div>"
                 + "</div>";
@@ -283,7 +283,7 @@ public class EmailServiceImpl implements EmailService {
                 + "<p style=\"font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 20px;\">Nếu bạn không gửi yêu cầu đăng ký này, vui lòng bỏ qua thư này.</p>"
                 + "</div>"
                 + "<div style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8;\">"
-                + "UTELearn Platform &bull; Đại học Sư phạm Kỹ thuật TP.HCM"
+                + "UTELearn Platform &bull; Đại học Công nghệ Kỹ thuật TP.HCM"
                 + "</div>"
                 + "</div>";
 
