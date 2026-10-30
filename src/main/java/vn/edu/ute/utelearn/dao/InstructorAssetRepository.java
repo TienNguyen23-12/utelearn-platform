@@ -47,6 +47,12 @@ public interface InstructorAssetRepository extends JpaRepository<InstructorAsset
 
     Optional<InstructorAsset> findByIdAndInstructor(Long id, User instructor);
 
+    List<InstructorAsset> findByInstructorAndNameAndFileSizeBytes(User instructor, String name, Long fileSizeBytes);
+
+    List<InstructorAsset> findByCloudinaryUrlIn(java.util.Collection<String> cloudinaryUrls);
+
+    List<InstructorAsset> findByCloudinaryUrl(String cloudinaryUrl);
+
     @Query(value = "SELECT a FROM InstructorAsset a LEFT JOIN FETCH a.instructor WHERE " +
            "(:isAdmin = true OR a.instructor = :user OR (a.status = 'APPROVED' AND (a.visibility = 'PUBLIC' OR a.visibility = 'COHORT_PUBLIC' OR (:isInstructor = true AND a.visibility = 'DEPARTMENT_SHARED') OR (:userEmailPattern <> '' AND a.sharedEmails LIKE :userEmailPattern)))) " +
            "AND (:keyword = '' OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +

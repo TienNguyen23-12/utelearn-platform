@@ -11,4 +11,5 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     Optional<Assignment> findByLessonId(Long lessonId);
     boolean existsByLessonId(Long lessonId);
     void deleteByLessonId(Long lessonId);
+    java.util.List<Assignment> findByAttachmentUrl(String attachmentUrl);
 }

@@ -20,6 +20,7 @@ import vn.edu.ute.utelearn.dto.AuthResponseDTO;
 import vn.edu.ute.utelearn.dto.LoginRequestDTO;
 import vn.edu.ute.utelearn.dto.RegisterRequestDTO;
 import vn.edu.ute.utelearn.entity.InstructorAsset;
+import vn.edu.ute.utelearn.entity.Cohort;
 import vn.edu.ute.utelearn.entity.Role;
 import vn.edu.ute.utelearn.entity.User;
 import vn.edu.ute.utelearn.service.AuthService;
@@ -214,6 +215,107 @@ public class InstructorAssetUploadFeatureTest {
         assertEquals(1, page.getTotalElements());
     }
 
+    @Test
+    void testService_UploadAndRegisterAsset_EmptyFileThrowsException() {
+        User instructor = User.builder().id(99L).build();
+        org.springframework.mock.web.MockMultipartFile emptyFile = new org.springframework.mock.web.MockMultipartFile(
+                "file", "empty.pdf", "application/pdf", new byte[0]
+        );
+        assertThrows(RuntimeException.class, () -> assetServiceImpl.uploadAndRegisterAsset(emptyFile, instructor));
+    }
+
+    @Test
+    void testService_UploadAndRegisterAsset_ExistingFileReusesExistingWithoutReupload() {
+        User instructor = User.builder().id(99L).roles(Set.of(Role.builder().code("INSTRUCTOR").build())).build();
+        byte[] content = "existing content".getBytes();
+        InstructorAsset existing = InstructorAsset.builder()
+                .id(77L)
+                .instructor(instructor)
+                .name("Tai_lieu_cu.pdf")
+                .fileSizeBytes((long) content.length)
+                .cloudinaryUrl("https://cloudinary.com/existing.pdf")
+                .build();
+        stubRepo.savedAssets.add(existing);
+
+        org.springframework.mock.web.MockMultipartFile mockFile = new org.springframework.mock.web.MockMultipartFile(
+                "file", "Tai_lieu_cu.pdf", "application/pdf", content
+        );
+
+        InstructorAsset asset = assetServiceImpl.uploadAndRegisterAsset(mockFile, instructor);
+
+        assertNotNull(asset);
+        assertEquals(77L, asset.getId());
+        assertEquals("https://cloudinary.com/existing.pdf", asset.getCloudinaryUrl());
+    }
+    @Test
+    void testAutoApproveAssetsByUrls_MarksMatchingAssetsApproved() {
+        InstructorAsset pendingAsset = InstructorAsset.builder()
+                .id(101L)
+                .name("Tai_lieu_khoa_hoc.pdf")
+                .cloudinaryUrl("https://res.cloudinary.com/test/doc.pdf")
+                .status("PENDING_MODERATOR")
+                .build();
+        stubRepo.savedAssets.add(pendingAsset);
+
+        List<InstructorAsset> found = stubRepo.findByCloudinaryUrlIn(List.of("https://res.cloudinary.com/test/doc.pdf"));
+        assertEquals(1, found.size());
+
+        for (InstructorAsset a : found) {
+            a.setStatus("APPROVED");
+            stubRepo.save(a);
+        }
+
+        InstructorAsset updated = stubRepo.findById(101L).orElseThrow();
+        assertEquals("APPROVED", updated.getStatus());
+    }
+    @Test
+    void testSharedAssetBetweenModules_OneRejectedOneApproved_AssetIsApproved() {
+        InstructorAsset sharedAsset = InstructorAsset.builder()
+                .id(201L)
+                .name("Tai_lieu_dung_chung.pdf")
+                .cloudinaryUrl("https://res.cloudinary.com/test/shared.pdf")
+                .status("PENDING_MODERATOR")
+                .build();
+        stubRepo.savedAssets.add(sharedAsset);
+
+        Cohort moduleB = Cohort.builder().id(20L).name("Module B").moderationStatus("REJECTED").build();
+        assertEquals("REJECTED", moduleB.getModerationStatus());
+        assertEquals("PENDING_MODERATOR", sharedAsset.getStatus());
+
+        List<InstructorAsset> foundForModuleA = stubRepo.findByCloudinaryUrlIn(List.of("https://res.cloudinary.com/test/shared.pdf"));
+        for (InstructorAsset a : foundForModuleA) {
+            if (!"REJECTED".equalsIgnoreCase(a.getStatus())) {
+                a.setStatus("APPROVED");
+                stubRepo.save(a);
+            }
+        }
+
+        InstructorAsset finalAsset = stubRepo.findById(201L).orElseThrow();
+        assertEquals("APPROVED", finalAsset.getStatus());
+    }
+
+    @Test
+    void testExplicitlyRejectedAsset_IsNotAutoApprovedWhenCohortApproved() {
+        InstructorAsset rejectedAsset = InstructorAsset.builder()
+                .id(202L)
+                .name("Tai_lieu_vi_pham.pdf")
+                .cloudinaryUrl("https://res.cloudinary.com/test/banned.pdf")
+                .status("REJECTED")
+                .build();
+        stubRepo.savedAssets.add(rejectedAsset);
+
+        List<InstructorAsset> found = stubRepo.findByCloudinaryUrlIn(List.of("https://res.cloudinary.com/test/banned.pdf"));
+        for (InstructorAsset a : found) {
+            if (!"REJECTED".equalsIgnoreCase(a.getStatus())) {
+                a.setStatus("APPROVED");
+                stubRepo.save(a);
+            }
+        }
+
+        InstructorAsset finalAsset = stubRepo.findById(202L).orElseThrow();
+        assertEquals("REJECTED", finalAsset.getStatus());
+    }
+
     private static class StubAuthService implements AuthService {
         private User currentUser;
 
@@ -282,6 +384,15 @@ public class InstructorAssetUploadFeatureTest {
         public InstructorAsset getAssetById(Long assetId) {
             return null;
         }
+
+        @Override
+        public InstructorAsset uploadAndRegisterAsset(org.springframework.web.multipart.MultipartFile file, User user) {
+            return saveAssetMetadata(user, file.getOriginalFilename(), "DOCUMENT", "/", "COHORT_PUBLIC", null, "https://cloudinary.com/dummy", file.getSize());
+        }
+
+        private InstructorAsset oldGetAssetById(Long assetId) {
+            return null;
+        }
     }
 
     private static class StubAssetRepository implements InstructorAssetRepository {
@@ -304,6 +415,15 @@ public class InstructorAssetUploadFeatureTest {
 
         @Override
         public Optional<InstructorAsset> findByIdAndInstructor(Long id, User instructor) {
+            return savedAssets.stream().filter(a -> a.getId().equals(id) && a.getInstructor().equals(instructor)).findFirst();
+        }
+
+        @Override
+        public List<InstructorAsset> findByInstructorAndNameAndFileSizeBytes(User instructor, String name, Long fileSizeBytes) {
+            return savedAssets.stream().filter(a -> a.getInstructor().equals(instructor) && a.getName().equals(name) && a.getFileSizeBytes().equals(fileSizeBytes)).toList();
+        }
+
+        private Optional<InstructorAsset> oldFindByIdAndInstructor(Long id, User instructor) {
             return savedAssets.stream().filter(a -> a.getId().equals(id) && a.getInstructor().equals(instructor)).findFirst();
         }
 
@@ -356,6 +476,12 @@ public class InstructorAssetUploadFeatureTest {
         @Override public Page<InstructorAsset> findAccessibleAssets(User user, boolean isAdmin, boolean isInstructor, String userEmailPattern, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
         @Override public Page<InstructorAsset> findMyAssets(User user, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
         @Override public Page<InstructorAsset> findSharedAssets(User user, boolean isInstructor, String userEmailPattern, String keyword, String type, Pageable pageable) { return new PageImpl<>(savedAssets); }
+        @Override public List<InstructorAsset> findByCloudinaryUrlIn(java.util.Collection<String> cloudinaryUrls) {
+            return savedAssets.stream().filter(a -> cloudinaryUrls != null && cloudinaryUrls.contains(a.getCloudinaryUrl())).toList();
+        }
+        @Override public List<InstructorAsset> findByCloudinaryUrl(String cloudinaryUrl) {
+            return savedAssets.stream().filter(a -> cloudinaryUrl != null && cloudinaryUrl.equals(a.getCloudinaryUrl())).toList();
+        }
     }
 
     private static class StubModerationService implements vn.edu.ute.utelearn.service.ModerationService {

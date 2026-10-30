@@ -325,6 +325,28 @@ public class InstructorCurriculumApiController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping(value = "/upload-asset", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")
+    public ResponseEntity<?> uploadAsset(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            User currentUser = authService.getCurrentAuthenticatedUser().orElseThrow();
+            InstructorAsset asset = assetService.uploadAndRegisterAsset(file, currentUser);
+            Map<String, Object> res = new HashMap<>();
+            res.put("url", asset.getCloudinaryUrl());
+            res.put("name", asset.getName());
+            res.put("assetType", asset.getAssetType() != null ? asset.getAssetType() : "");
+            res.put("fileSizeBytes", asset.getFileSizeBytes() != null ? asset.getFileSizeBytes() : 0L);
+            res.put("id", asset.getId());
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            log.error("[InstructorCurriculumApiController] Lỗi upload tài liệu: {}", e.getMessage());
+            Map<String, Object> err = new HashMap<>();
+            err.put("message", e.getMessage() != null ? e.getMessage() : "Lỗi tải tệp lên máy chủ");
+            return ResponseEntity.badRequest().body(err);
+        }
+    }
+
     @PutMapping("/{courseId}/inline")
     @Transactional
     @PreAuthorize("hasAnyAuthority('INSTRUCTOR', 'ROLE_INSTRUCTOR', 'ADMIN', 'ROLE_ADMIN') or @rbac.hasPermission('COURSE_CREATE')")

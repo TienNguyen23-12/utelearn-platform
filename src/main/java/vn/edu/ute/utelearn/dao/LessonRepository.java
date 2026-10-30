@@ -11,4 +11,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     List<Lesson> findBySectionIdOrderByOrderIndexAsc(Long sectionId);
 
     List<Lesson> findBySectionCourseIdOrderByOrderIndexAsc(Long courseId);
+
+    List<Lesson> findByAssetUrl(String assetUrl);
+
+    List<Lesson> findByVideoUrl(String videoUrl);
 }

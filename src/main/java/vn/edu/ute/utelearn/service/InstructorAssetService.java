@@ -17,4 +17,5 @@ public interface InstructorAssetService {
     void deleteAsset(Long assetId, User instructor) throws IOException;
     InstructorAsset getAssetByIdAndInstructor(Long assetId, User instructor);
     InstructorAsset getAssetById(Long assetId);
+    InstructorAsset uploadAndRegisterAsset(org.springframework.web.multipart.MultipartFile file, User user);
 }

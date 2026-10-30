@@ -43,6 +43,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final ApplicationEventPublisher eventPublisher;
     @Lazy
     private final GradebookService gradebookService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vn.edu.ute.utelearn.service.InstructorAssetService instructorAssetService;
 
     private boolean isInstructorAuthorized(Lesson lesson, Long instructorId) {
         if (instructorId == null || lesson == null) {
@@ -653,6 +655,13 @@ public class AssignmentServiceImpl implements AssignmentService {
             throw new RuntimeException("Tệp tin rỗng");
         }
         try {
+            if (instructorAssetService != null) {
+                User instructor = userRepository.findById(instructorId).orElse(null);
+                if (instructor != null) {
+                    vn.edu.ute.utelearn.entity.InstructorAsset asset = instructorAssetService.uploadAndRegisterAsset(file, instructor);
+                    return asset.getCloudinaryUrl();
+                }
+            }
             Map<String, Object> res = cloudinaryService.uploadFile(file, "/assignments/attachments", "raw");
             String url = (String) res.get("secure_url");
             return url != null ? url : (String) res.get("url");
