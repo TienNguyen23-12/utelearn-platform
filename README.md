@@ -1,6 +1,6 @@
 # 🎓 UTELearn - Nền Tảng Học Trực Tuyến Theo Đợt & Quản Trị Giáo Dục Doanh Nghiệp
 
-> **Đồ án cuối kỳ môn Lập trình Web** - Trường Đại học Sư phạm Kỹ thuật TP.HCM (HCMUTE)  
+> **Đồ án cuối kỳ môn Lập trình Web** - Trường Đại học Công nghệ Kỹ thuật TP.HCM (UTELearn)  
 > Hệ thống giáo dục trực tuyến kết hợp đào tạo theo đợt học (Cohort-Based Learning), tích hợp thanh toán VietQR đối soát tự động, kiểm duyệt đa cấp, sổ điểm Excel và tính lương giảng viên/kiểm duyệt viên.
 
 [![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://www.oracle.com/java/)
@@ -144,5 +144,5 @@ utelearn/
 ---
 
 ## 📄 Bản Quyền & Giấy Phép
-Dự án được xây dựng phục vụ mục đích nghiên cứu và bảo vệ đồ án tốt nghiệp/cuối kỳ ngành Công nghệ Thông tin - HCMUTE.
+Dự án được xây dựng phục vụ mục đích nghiên cứu và bảo vệ đồ án tốt nghiệp/cuối kỳ ngành Công nghệ Thông tin - UTELearn.
 Mã nguồn phát hành theo giấy phép [MIT License](LICENSE).

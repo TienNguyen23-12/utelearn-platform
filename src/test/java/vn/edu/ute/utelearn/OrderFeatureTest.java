@@ -90,7 +90,7 @@ public class OrderFeatureTest {
         properties = new UtelearnProperties();
         properties.getPayment().setBankId("MB");
         properties.getPayment().setAccountNo("0901234567");
-        properties.getPayment().setAccountName("DAI HOC SU PHAM KY THUAT TPHCM");
+        properties.getPayment().setAccountName("DAI HOC CONG NGHE KY THUAT TPHCM");
         properties.getPayment().setTemplate("compact");
         properties.getPayment().setSepayApiKey("TEST_SEPAY_API_KEY");
 
