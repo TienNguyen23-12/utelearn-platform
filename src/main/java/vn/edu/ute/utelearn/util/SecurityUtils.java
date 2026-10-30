@@ -74,7 +74,7 @@ public final class SecurityUtils {
     }
 
     public static boolean isInstructor(User user) {
-        return hasRole(user, "INSTRUCTOR", "TEACHER") || hasPermission(user, "COURSE_CREATE") || hasPermission(user, "ASSET_MANAGE");
+        return hasRole(user, "INSTRUCTOR", "TEACHER") || hasPermission(user, "COURSE_CREATE");
     }
 
     public static boolean isModerator(User user) {

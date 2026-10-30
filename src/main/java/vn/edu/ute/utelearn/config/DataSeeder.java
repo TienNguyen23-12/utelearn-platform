@@ -46,6 +46,8 @@ public class DataSeeder implements CommandLineRunner {
             seedRoles();
             seedPermissions();
             assignPermissionsToRoles();
+            jdbcTemplate.execute("DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE code = 'MODERATOR') AND permission_id IN (SELECT id FROM permissions WHERE code = 'ASSET_MANAGE')");
+            jdbcTemplate.execute("INSERT INTO role_permissions (role_id, permission_id) SELECT r.id, p.id FROM roles r, permissions p WHERE r.code = 'MODERATOR' AND p.code = 'CONTENT_APPROVE' ON CONFLICT DO NOTHING");
 
             if (properties.getSeeder().isSeedSampleUsers()) {
                 seedUsers();
