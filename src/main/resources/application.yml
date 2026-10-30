@@ -8,8 +8,8 @@ server:
       force: true
       enabled: true
   tomcat:
-    max-threads: 200
-    min-spare-threads: 20
+    max-threads: ${SERVER_TOMCAT_MAX_THREADS:50}
+    min-spare-threads: ${SERVER_TOMCAT_MIN_SPARE_THREADS:4}
     max-connections: 8192
     accept-count: 100
     connection-timeout: 20000ms

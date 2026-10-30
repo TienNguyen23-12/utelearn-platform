@@ -15,4 +15,4 @@ COPY --from=builder /app/target/*.jar app.jar
 ENV SERVER_PORT=10000
 EXPOSE 10000
 
-CMD ["java", "-Xmx384m", "-Xms256m", "-jar", "app.jar"]
+CMD ["java", "-XX:+UseSerialGC", "-XX:TieredStopAtLevel=1", "-Xss256k", "-Xms128m", "-Xmx256m", "-XX:MaxMetaspaceSize=128m", "-jar", "app.jar"]
