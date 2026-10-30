@@ -10,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,5 +109,48 @@ class LockedUserSecurityTest {
 
         assertTrue(result.isEmpty());
         assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+    @Test
+    void testFilter_WhenTokenMissing_ClearsSecurityContextAndSession() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/dashboard");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, "dummy_context");
+        request.setSession(session);
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken("user", null, java.util.List.of())
+        );
+
+        when(tokenProvider.resolveToken(request)).thenReturn(null);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertNull(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY));
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void testFilter_WhenTokenInvalid_ClearsTokenCookieAndSecurityContext() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/courses");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, "dummy_context");
+        request.setSession(session);
+
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken("user", null, java.util.List.of())
+        );
+
+        when(tokenProvider.resolveToken(request)).thenReturn("invalid_token");
+        when(tokenProvider.validateToken("invalid_token")).thenReturn(false);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertNull(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY));
+        verify(tokenProvider).clearTokenCookie(response);
+        verify(filterChain).doFilter(request, response);
     }
 }

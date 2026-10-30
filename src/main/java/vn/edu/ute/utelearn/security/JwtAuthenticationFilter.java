@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -54,12 +55,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } else {
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-                    String username = (auth.getPrincipal() instanceof UserDetails ud) ? ud.getUsername() : auth.getName();
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    if (!userDetails.isEnabled()) {
-                        accountLocked = true;
+                if (StringUtils.hasText(token)) {
+                    tokenProvider.clearTokenCookie(response);
+                }
+                String uri = request.getRequestURI();
+                if (uri == null || (!uri.startsWith("/oauth2/") && !uri.startsWith("/login/oauth2/"))) {
+                    SecurityContextHolder.clearContext();
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        session.removeAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
                     }
                 }
             }
